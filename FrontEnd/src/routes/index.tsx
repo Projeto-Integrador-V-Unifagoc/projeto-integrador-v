@@ -4,6 +4,7 @@ import MainLayout from "../Layout/MainLayout/MainLayout";
 import Home from "../Pages/Home/Home";
 import BuildingPage from "../Pages/BuildingPage/BuildingPage";
 import NotFound from "../Pages/NotFound/NotFound";
+import Alunos from "../Pages/Alunos/Alunos";
 
 
 export function AppRoutes() {
@@ -12,7 +13,12 @@ export function AppRoutes() {
             <Route element={<MainLayout />}>
                 <Route path="*" element={<NotFound />} />
                 <Route path="/" element={<Home />}/>
-                <Route path="/professores/lista" element={<BuildingPage />}/>
+                <Route path="/home" element={<Home />}/>
+                <Route path="/tarefas/lista" element={<BuildingPage />} />
+                <Route path="/professores/lista" element={<BuildingPage />} />
+                <Route path="/alunos/lista" element={<Alunos />} />
+                <Route path="/cursos/lista" element={<BuildingPage />} />
+                <Route path="/disciplinas/lista" element={<BuildingPage />} />
             </Route>
         </Routes>
     )

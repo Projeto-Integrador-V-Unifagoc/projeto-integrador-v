@@ -43,7 +43,7 @@ export default function Sidebar() {
             >
                 <List component='nav'>
 
-                    <ListItemButton>
+                    <ListItemButton href="/tarefas/lista">
                         <ListItemIcon
                             sx={{
                                 minWidth: 28
@@ -91,7 +91,7 @@ export default function Sidebar() {
                     <Collapse in={abrirMenu} timeout='auto' unmountOnExit >
                         <List component='div' disablePadding >
 
-                            <ListItemButton sx={{ pl: 4 }} href="professores/lista">
+                            <ListItemButton sx={{ pl: 4 }} href="/professores/lista">
                                 <ListItemIcon
                                     sx={{
                                         minWidth: 28
@@ -107,7 +107,7 @@ export default function Sidebar() {
                                 />
                             </ListItemButton>
 
-                            <ListItemButton
+                            <ListItemButton href="/alunos/lista"
                                 sx={{ pl: 4 }} >
                                 <ListItemIcon
                                     sx={{
@@ -124,7 +124,7 @@ export default function Sidebar() {
                                 />
                             </ListItemButton>
 
-                            <ListItemButton sx={{ pl: 4 }}>
+                            <ListItemButton sx={{ pl: 4 }} href="/cursos/lista">
                                 <ListItemIcon
                                     sx={{
                                         minWidth: 28
@@ -140,7 +140,7 @@ export default function Sidebar() {
                                 />
                             </ListItemButton>
 
-                            <ListItemButton sx={{ pl: 4 }}>
+                            <ListItemButton sx={{ pl: 4 }} href="/disciplinas/lista">
                                 <ListItemIcon
                                     sx={{
                                         minWidth: 28

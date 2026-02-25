@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import Button from "../../components/Button";
 import UserMenu from "./UserMenu";
 
@@ -14,6 +15,12 @@ import { Menu } from "lucide-react";
 
 
 export default function Header() {
+    const navegar = useNavigate()
+
+    function navegarParaHome(){
+        navegar("/home")
+    }
+
     return (
         <Box sx={{ flexGrow: 1 }}>
             <AppBar
@@ -37,14 +44,14 @@ export default function Header() {
                         <Menu size={19} />
                     </IconButton>
                     <Typography
-
                         component='div'
                         sx={(theme) => ({
                             color: theme.palette.primary.main,
                             flexGrow: 1,
                             fontWeight: 'bold',
+                            cursor: 'pointer'
                         })}
-
+                        onClick={navegarParaHome}
                     >
                         UniEduca
                     </Typography>

@@ -1,9 +1,12 @@
-import { Box, CssBaseline } from "@mui/material";
 import { Outlet } from "react-router-dom";
-import Header from "../Header/Header";
+
+import { Box, CssBaseline } from "@mui/material";
+
 import Sidebar from "../Sidebar/Sidebar";
+import Header from "../Header/Header";
 
 const sidebarWidth = 260;
+const headerHeight = 49;
 
 export default function MainLayout() {
   return (
@@ -16,11 +19,12 @@ export default function MainLayout() {
       <Box
         component="main"
         sx={{
-          flexGrow: 1,
-          width: `calc(100% - ${sidebarWidth}px)`
+          height: `calc(100vh - ${headerHeight}px)`,
+          width: `calc(100vw - ${sidebarWidth}px)`,
+          mt: `${headerHeight}px`,
+          p: 3,
         }}
       >
-
         <Outlet />
       </Box>
     </Box>
