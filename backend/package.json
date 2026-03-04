@@ -1,28 +1,26 @@
 {
   "name": "projeto-integrador-v",
   "version": "1.0.0",
-  "description": "��#\u0000 \u0000p\u0000r\u0000o\u0000j\u0000e\u0000t\u0000o\u0000-\u0000i\u0000n\u0000t\u0000e\u0000g\u0000r\u0000a\u0000d\u0000o\u0000r\u0000-\u0000v\u0000\r\u0000 \u0000",
-  "homepage": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v#readme",
-  "bugs": {
-    "url": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v.git"
-  },
-  "license": "ISC",
-  "author": "",
+  "description": "Backend - Grupo 3 - Módulo de Autenticação",
+  "main": "src/server.ts",
   "type": "commonjs",
-  "main": "app.ts",
   "scripts": {
-    "test": "test"
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "dependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "express": "^5.2.1",
-    "typescript": "^5.9.3"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1"
   },
-  "devDependencies": {},
-  "keywords": []
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  }
 }
