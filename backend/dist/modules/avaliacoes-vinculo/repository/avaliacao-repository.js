@@ -1,5 +1,5 @@
-import db from 'database/index ';
-export const AvavaliacaoRepository = {
+import db from '../../../database/index.js';
+export const AvaliacaoRepository = {
     async buscarTodas() {
         return db('avaliacoes').select('*');
     },

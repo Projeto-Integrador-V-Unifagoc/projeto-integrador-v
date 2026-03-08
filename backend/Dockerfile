@@ -1,4 +1,5 @@
 # backend/Dockerfile
+#automação para subir o ambiente
 FROM node:20
 
 WORKDIR /app

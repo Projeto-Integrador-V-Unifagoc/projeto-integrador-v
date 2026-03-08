@@ -47,3 +47,8 @@ O docker-compose.yml é essencial para que o seu professor ou qualquer outro des
 
   ## -- Para derrubar tudo:
   docker-compose down
+
+  ## npm run build
+  > irá criar a pasta dist com as informações dentro (isso só é possível após toda a configuração da conexão com o banco e configuração do docker)
+
+## Criando as migrations

@@ -8,6 +8,6 @@ app.use(cors({
 }));
 app.use(express.json());
 app.listen(PORT, () => {
-    console.log(`Olá, Lorena!!! Eu sou o servidor!!`);
+    console.log(`Olá, eu sou o servidor!`);
 });
 //# sourceMappingURL=index.js.map

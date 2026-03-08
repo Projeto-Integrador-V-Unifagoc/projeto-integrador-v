@@ -1,13 +1,13 @@
 import db from '../../../database/index.js';
 import type { Avaliacao } from '../models/interface.js';
 
-export const AvavaliacaoRepository = {
+export const AvaliacaoRepository = {
    
     async buscarTodas():Promise<Avaliacao[]>{
         return db<Avaliacao>('avaliacoes').select('*');
     },
 
-    async criar(dados: Avaliacao): Promise<Avaliacao> {
+    async criar(dados: Avaliacao): Promise<Avaliacao | undefined> {
         const [novaAvaliacao] = await db<Avaliacao>('avaliacoes')
             .insert(dados)
             .returning('*');
@@ -15,7 +15,7 @@ export const AvavaliacaoRepository = {
         return novaAvaliacao;
     },
 
-    async atualizar(id: number, dados: Partial<Avaliacao>): Promise<Avaliacao> {
+    async atualizar(id: number, dados: Partial<Avaliacao>): Promise<Avaliacao | undefined> {
         const [avaliacaoAtualizada] = await db<Avaliacao>('avaliacoes')
             .where({ avaliacaoId:id })
             .update(dados)
