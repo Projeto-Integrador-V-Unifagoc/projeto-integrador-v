@@ -1,0 +1,46 @@
+services: #(onde ficam as máquinas)
+  # Serviço do Banco de Dados
+  db:
+    image: postgres:15
+    container_name: pi_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: grupo_4
+      POSTGRES_PASSWORD: grupo_4@123
+      POSTGRES_DB: projeto_integrador
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Serviço da API node.js
+  api:
+    build:
+      context: . # Caminho para a pasta onde está o seu package.json
+      dockerfile: Dockerfile
+    container_name: pi_grupo4_api
+    ports: 
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://grupo_4:grupo_4@123@db:5432/projeto_integrador
+      - PORT=3000
+    depends_on:
+      - db # Garante que o banco suba antes da API
+
+
+volumes: #(onde ficam os discos rígidos virtuais)
+  pgdata: # Garante que os dados do banco não sumam ao desligar o Docker
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Atenção ao DATABASE_URL
+
+# Note que na sua DATABASE_URL, o endereço é @db:5432. 
+# Isso está correto! Dentro da rede do Docker, a sua API não enxerga o banco como localhost, 
+# mas sim pelo nome do serviço que definimos lá em cima (db).
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Por que o volumes é importante?
+
+# Sem o bloco volumes no final, toda vez que você desligasse o Docker, 
+# todos os dados que você cadastrou no seu Projeto Integrador (as avaliações, usuários, etc.)
+#  seriam apagados. O volume cria uma pasta "persistente" no seu HD que o Docker usa para salvar o estado do banco.

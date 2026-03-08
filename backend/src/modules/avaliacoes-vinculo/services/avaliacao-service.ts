@@ -1,0 +1,1 @@
+import type { Avaliacao } from '../models/interface.js';
