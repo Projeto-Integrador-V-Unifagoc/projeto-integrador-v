@@ -9,7 +9,7 @@ export class AutenticacaoServices {
                     role: "admin"
                 };
             
-            const secret = process.env.JWT_SECRET || 'chave-secreta-padrao';
+            const secret = process.env.JWT_SECRET || 'process.env.JWT_SECRET';
             const token = jwt.sign(payload, secret, { expiresIn: '1h' });
 
             return { sucesso: true, token };

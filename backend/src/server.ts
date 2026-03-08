@@ -26,3 +26,12 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+import { autenticar } from "./middlewares/autenticacao";
+
+app.get("/auth/validar", autenticar, (req, res) => {
+  res.json({
+    message: "Token válido",
+    user: (req as any).user
+  });
+});
