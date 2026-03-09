@@ -6,10 +6,10 @@ export class AutenticacaoServices {
                 const payload = {
                     id: 1,
                     email: email,
-                    role: "admin"
+                    perfil: "admin"
                 };
             
-            const secret = process.env.JWT_SECRET || 'process.env.JWT_SECRET';
+            const secret = process.env.JWT_SECRET || ' ';
             const token = jwt.sign(payload, secret, { expiresIn: '1h' });
 
             return { sucesso: true, token };

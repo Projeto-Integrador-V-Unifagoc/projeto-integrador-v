@@ -28,10 +28,18 @@ app.listen(PORT, () => {
 });
 
 import { autenticar } from "./middlewares/autenticacao";
+import { eAdmin } from "./middlewares/autorizacao";
 
 app.get("/auth/validar", autenticar, (req, res) => {
   res.json({
     message: "Token válido",
     user: (req as any).user
+  });
+});
+
+app.get("/admin/painel", autenticar, eAdmin, (req, res) => {
+  res.json({ 
+    mensagem: "Sucesso! Você entrou na Área Administrativa.",
+    dadosDoUsuario: (req as any).user 
   });
 });
