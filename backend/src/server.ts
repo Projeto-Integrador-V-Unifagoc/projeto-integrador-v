@@ -1,3 +1,8 @@
+/**
+ * Nesse código, é onde tudo se une: as rotas, os seguranças (middlewares) 
+ * e as configurações que fazem o servidor do projeto começar a rodar.
+ */
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -9,12 +14,15 @@ dotenv.config();
 
 const app = express();
 
+// Configurações para a API aceitar conversas de outros sites e ler JSON
 app.use(cors());
 app.use(express.json());
+
+//Liga as rotas de login e cadastro no caminho "/auth"
 app.use("/auth", authRoutes);
 
 app.get("/", (req, res) => {
-  res.send("API rodando 🚀");
+  res.send("API rodando");
 });
 
 app.get("/health", (req, res) => {
@@ -30,13 +38,15 @@ app.listen(PORT, () => {
 import { autenticar } from "./middlewares/autenticacao";
 import { eAdmin } from "./middlewares/autorizacao";
 
+//Rota que usa o porteiro para conferir se o seu crachá (token) é real
 app.get("/auth/validar", autenticar, (req, res) => {
   res.json({
     message: "Token válido",
-    user: (req as any).user
+    user: (req as any).user //Mostra os dados que estão gravados no crachá
   });
 });
 
+//Rota que só deixa entrar quem está logado E é administrador
 app.get("/admin/painel", autenticar, eAdmin, (req, res) => {
   res.json({ 
     mensagem: "Sucesso! Você entrou na Área Administrativa.",
