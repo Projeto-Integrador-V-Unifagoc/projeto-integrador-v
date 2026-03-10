@@ -7,6 +7,7 @@ export async function up(knex: Knex): Promise<void> {
         table.uuid('usuario_id').references('id').inTable('usuarios').notNullable()
         table.string('pessoa_id').references('cpf').inTable('pessoas').notNullable()
         //table.uuid('curso_id').references('id').inTable('cursos').notNullable()
+        
         table.string('periodo').notNullable()
     })
 }
