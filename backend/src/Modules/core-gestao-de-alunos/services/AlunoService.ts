@@ -54,12 +54,58 @@ export class AlunoService {
 
     async listarAlunos(){
         const alunos = await this.alunoRepository.listarAlunos()
-        return alunos
-    }  
+        const alunosComDetalhes = await Promise.all(alunos.map(async (aluno) => {
+            const pessoa = await this.pessoaRepository.buscarPessoaPorCpf(aluno.pessoa_id)
+            const usuario = await this.usuarioRepository.buscarUsuarioPorId(aluno.usuario_id)
+            return {
+                matricula: aluno.matricula,
+                periodo: aluno.periodo,
+                pessoa: {
+                    cpf: pessoa?.cpf,
+                    nome: pessoa?.nome,
+                    data_nascimento: pessoa?.data_nascimento,
+                    logradouro: pessoa?.logradouro,
+                    numero: pessoa?.numero,
+                    bairro: pessoa?.bairro,
+                    cidade: pessoa?.cidade,
+                    estado: pessoa?.estado,
+                    cep: pessoa?.cep
+                },
+                usuario: {
+                    email: usuario?.email,
+                    tipo_usuario: usuario?.tipo_usuario
+                }
+            }
+        }))
+        return alunosComDetalhes
+    }
 
     async buscarAlunoPorMatricula(matricula: string){
         const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula)
-        return aluno
+        const alunosComDetalhes = await Promise.all(aluno.map(async (aluno) => {
+            const pessoa = await this.pessoaRepository.buscarPessoaPorCpf(aluno.pessoa_id)
+            const usuario = await this.usuarioRepository.buscarUsuarioPorId(aluno.usuario_id)
+            return {
+                matricula: aluno.matricula,
+                periodo: aluno.periodo,
+                pessoa: {
+                    cpf: pessoa?.cpf,
+                    nome: pessoa?.nome,
+                    data_nascimento: pessoa?.data_nascimento,
+                    logradouro: pessoa?.logradouro,
+                    numero: pessoa?.numero,
+                    bairro: pessoa?.bairro,
+                    cidade: pessoa?.cidade,
+                    estado: pessoa?.estado,
+                    cep: pessoa?.cep
+                },
+                usuario: {
+                    email: usuario?.email,
+                    tipo_usuario: usuario?.tipo_usuario
+                }
+            }
+        }))
+        return alunosComDetalhes[0]
     }
     
 }
