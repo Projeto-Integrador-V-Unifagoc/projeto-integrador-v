@@ -5,6 +5,7 @@ import Home from "../Pages/Home/Home";
 import BuildingPage from "../Pages/BuildingPage/BuildingPage";
 import NotFound from "../Pages/NotFound/NotFound";
 import Alunos from "../Pages/Alunos/Alunos";
+import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
 
 
 export function AppRoutes() {
@@ -19,6 +20,7 @@ export function AppRoutes() {
                 <Route path="/alunos/lista" element={<Alunos />} />
                 <Route path="/cursos/lista" element={<BuildingPage />} />
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />
+                <Route path="/alunos/cadastro" element={<CadastroAlunos />}/>
             </Route>
         </Routes>
     )
