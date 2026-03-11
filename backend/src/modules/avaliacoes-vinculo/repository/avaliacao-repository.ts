@@ -12,6 +12,10 @@ export const AvaliacaoRepository = {
             .returning('*');
         return novaAvaliacao;
     },
+};
+/*
+//so pra testar as rotas
+import type { Avaliacao } from '../models/interface';
 
     async atualizar(id: number, dados: Partial<Avaliacao>): Promise<Avaliacao | undefined> {
         const [avaliacaoAtualizada] = await db<Avaliacao>('avaliacoes')
