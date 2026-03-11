@@ -3,7 +3,7 @@ import type { Avaliacao } from '../models/interface.js';
 
 export const AvaliacaoRepository = {
    
-    async buscarTodas():Promise<Avaliacao[]>{
+    async buscarTodas(): Promise<Avaliacao[]> {
         return db<Avaliacao>('avaliacoes').select('*');
     },
 
@@ -17,7 +17,7 @@ export const AvaliacaoRepository = {
 
     async atualizar(id: number, dados: Partial<Avaliacao>): Promise<Avaliacao | undefined> {
         const [avaliacaoAtualizada] = await db<Avaliacao>('avaliacoes')
-            .where({ avaliacaoId:id })
+            .where({ avaliacaoId: id })
             .update(dados)
             .returning('*');
 
@@ -26,9 +26,9 @@ export const AvaliacaoRepository = {
     
     async deletar(id: number) {
         return db('avaliacoes')
-            .where({ avaliacaoId:id })
+            .where({ avaliacaoId: id })
             .del();
     }
-    
+
 };
  

@@ -12,7 +12,7 @@
   },
   "license": "ISC",
   "author": "",
-  "type": "module",
+  "type": "commonjs",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -25,6 +25,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "knex": "^3.1.0",
+    "node": "^22.22.1",
     "pg": "^8.20.0"
   },
   "keywords": [],
