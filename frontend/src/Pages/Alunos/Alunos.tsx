@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 export default function Alunos() {
 
   const columns = [
-    { field: "id", headerName: "Id", width: 90 },
+    { field: "matricula", headerName: "Matricula", width: 90 },
     { field: "nome", headerName: "Nome", flex: 1 },
     { field: "email", headerName: "Email", flex: 1 },
   ];
@@ -15,12 +15,19 @@ export default function Alunos() {
   const [alunos, setAlunos] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:8080/alunos")
-      .then((response) => {
-        setAlunos(response.data);
-      })
-      .catch((err) => console.log(err));
-  }, []); 
+  axios.get("http://localhost:3000/alunos")
+    .then((response) => {
+      const dados = response.data.map((aluno) => ({
+        id: aluno.matricula,
+        matricula: aluno.matricula,
+        nome: aluno.pessoa?.nome,
+        email: aluno.usuario?.email
+      }));
+
+      setAlunos(dados);
+    })
+    .catch((err) => console.log(err));
+}, []);
 
   return (
     <Container>

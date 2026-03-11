@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Container from "../../components/Container";
 import TextField from "../../components/TextField";
@@ -13,6 +14,8 @@ import { useViaCep } from "../../hooks/use-cep";
 import { alunoSchema } from "../../validators/aluno-schema";
 
 export default function CadastroAlunos() {
+
+  const navigate = useNavigate();
 
   const initialForm = {
     nome: "",
@@ -122,6 +125,10 @@ export default function CadastroAlunos() {
       })
 
       setForm(initialForm)
+
+      setTimeout(() => {
+        navigate("/alunos/lista")
+      }, 2000)
 
     } catch (err) {
       console.error(err)
