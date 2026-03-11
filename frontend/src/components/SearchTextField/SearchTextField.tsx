@@ -14,6 +14,7 @@ import TextField from "../TextField";
 import Button from "../Button";
 
 import { ListFilter, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface SearchTextFieldProps {
     children: ReactNode
@@ -23,6 +24,12 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     const { children } = props
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [curso, setCurso] = useState<Cursos | ''>('');
+    
+    const navigate = useNavigate()
+
+    function navegarPaginaCadastro(){
+        navigate("/alunos/cadastro")
+    }
 
     const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -70,7 +77,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
                         },
                     }}
                 />
-                <Button variant="contained" sx={{ width: '80px' }}>Adicionar</Button>
+                <Button variant="contained" sx={{ width: '80px' }} onClick={navegarPaginaCadastro}>Adicionar</Button>
             </Stack>
             <FilterMenu.Root
                 open={open}

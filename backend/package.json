@@ -1,35 +1,38 @@
-  {
+{
     "name": "projeto-integrador-v",
     "version": "1.0.0",
     "description": "��#\u0000 \u0000p\u0000r\u0000o\u0000j\u0000e\u0000t\u0000o\u0000-\u0000i\u0000n\u0000t\u0000e\u0000g\u0000r\u0000a\u0000d\u0000o\u0000r\u0000-\u0000v\u0000\r\u0000 \u0000",
     "homepage": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v#readme",
     "bugs": {
-      "url": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v/issues"
+        "url": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v/issues"
     },
     "repository": {
-      "type": "git",
-      "url": "git+https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v.git"
+        "type": "git",
+        "url": "git+https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v.git"
     },
     "license": "ISC",
     "author": "",
     "type": "commonjs",
     "main": "app.ts",
     "scripts": {
-      "test": "test",
-      "start": "ts-node app.ts",
-      "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts"
+        "test": "test",
+        "start": "ts-node src/app.ts",
+        "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts"
     },
     "dependencies": {
-      "@types/cors": "^2.8.19",
-      "@types/express": "^5.0.6",
-      "dotenv": "^17.3.1",
-      "express": "^5.2.1",
-      "knex": "^3.1.0",
-      "pg": "^8.20.0",
-      "typescript": "^5.9.3"
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "cors": "^2.8.6",
+        "dotenv": "^17.3.1",
+        "express": "^5.2.1",
+        "knex": "^3.1.0",
+        "pg": "^8.20.0",
+        "typescript": "^5.9.3"
     },
     "keywords": [],
     "devDependencies": {
-      "ts-node": "^10.9.2"
+        "@types/bcrypt": "^6.0.0",
+        "bcrypt": "^6.0.0",
+        "ts-node": "^10.9.2"
     }
-  }
+}
