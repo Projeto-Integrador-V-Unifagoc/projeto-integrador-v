@@ -5,9 +5,8 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "lib": ["ES2022"],
     "target": "ES2022",
     "rootDir": "./src",                /* Onde está seu código TypeScript */
