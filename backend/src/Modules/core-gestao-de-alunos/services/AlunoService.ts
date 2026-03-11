@@ -51,4 +51,15 @@ export class AlunoService {
             aluno
         }
     }
+
+    async listarAlunos(){
+        const alunos = await this.alunoRepository.listarAlunos()
+        return alunos
+    }  
+
+    async buscarAlunoPorMatricula(matricula: string){
+        const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula)
+        return aluno
+    }
+    
 }
