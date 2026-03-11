@@ -1,8 +1,10 @@
 //Pasta models/interface.ts para que vários outros arquivos possam acessar a classe abaixo.
 
 export interface Avaliacao {
-    avaliacaoId?: number;
-    avaliacaoVinculoId: number; //caso haja relação com outra tabela.
-    avaliacaoNota: number;
-    avalicaoNome: string;
+    id_avaliacao?: number;
+    tipo_avaliacao: 'prova' | 'trabalho' | 'tpi';
+    descricao_avaliacao: string;
+    valor_avaliacao: number;
+    data_avaliacao: number;
+    data_devolucao_avaliacao: number;
 }

@@ -1,1 +1,0 @@
-{"version":3,"file":"interface.d.ts","sourceRoot":"","sources":["../../../../src/modules/avaliacoes-vinculo/models/interface.ts"],"names":[],"mappings":"AAEA,MAAM,WAAW,SAAS;IACtB,WAAW,CAAC,EAAE,MAAM,CAAC;IACrB,kBAAkB,EAAE,MAAM,CAAC;IAC3B,aAAa,EAAE,MAAM,CAAC;IACtB,YAAY,EAAE,MAAM,CAAC;CACxB"}
