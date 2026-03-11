@@ -17,6 +17,8 @@ app.use(express.json());
 const alunoController = new AlunoController();
 
 app.post('/alunos', (req, res) => alunoController.criarAluno(req, res))
+app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res))
+app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res))
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
