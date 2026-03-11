@@ -7,4 +7,12 @@ export class PessoaService {
     async criarPessoa(data: Pessoa){
         return await this.pessoaRepository.criarPessoa(data)
     }
+
+    async listarPessoas(){
+        return await this.pessoaRepository.listarPessoas()
+    }
+
+    async buscarPessoaPorCpf(cpf: string){
+        return await this.pessoaRepository.buscarPessoaPorCpf(cpf)
+    }
 }

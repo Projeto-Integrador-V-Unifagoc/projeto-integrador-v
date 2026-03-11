@@ -8,4 +8,15 @@ export class UsuarioService {
     async criarUsuario(data: Usuario){
         return await this.usuarioRepository.criariUsuario(data)
     }
+    async listarUsuarios(){
+        return await this.usuarioRepository.listarUsuarios()
+    }
+
+    async buscarUsuarioPorEmail(email: string){
+        return await this.usuarioRepository.buscarUsuarioPorEmail(email)
+    }
+
+    async buscarUsuarioPorId(id: string){
+        return await this.usuarioRepository.buscarUsuarioPorId(id)
+    }
 }
