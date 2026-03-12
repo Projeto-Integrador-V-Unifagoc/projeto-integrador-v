@@ -1,8 +1,3 @@
-import { Router } from 'express';
-import { AvaliacaoController } from '../modules/avaliacoes-vinculo/controller/avaliacao-controller';
+import routes from "./routes-avaliacoes.js";
 
-const router = Router();
-
-router.post('/', AvaliacaoController.create);
-
-export default router;
+export default routes;

@@ -5,6 +5,7 @@ export function Header(props: StackProps) {
 
     return (
         <Stack
+            {...rest}
             component="header"
             height="44px"
             position="absolute"
@@ -27,3 +28,4 @@ export function Header(props: StackProps) {
         </Stack>
     )
 }
+

@@ -1,85 +1,57 @@
-import type { Avaliacao } from '../models/interface.js';
-import type { Request, Response} from 'express';
-import { AvaliacaoRepository } from '../repository/avaliacao-repository.js';
+import type { Request, Response } from "express";
 
-export const deletarAvaliacao = async (req: Request, res: Response) => {
-    const dadosMock = [
-    { "avaliacaoId": 1, "nota": 14, "comentario": "Prova Estudo Dirigido 1" },
-    { "avaliacaoId": 2, "nota": 12, "comentario": "Prova Estudo Dirigido 2" },
-    { "avaliacaoId": 3, "nota": 10, "comentario": "Prova Estudo Dirigido 3" },
-    { "avaliacaoId": 4, "nota": 9, "comentario": "Prova Estudo Dirigido 4" }];
+import { AvaliacaoService } from "../services/avaliacao-service";
 
-    const id = Number(req.body.avaliacaoId);
+const service = new AvaliacaoService();
 
-    for (let i = 0; i < dadosMock.length; i++) {
-        if (dadosMock[i]?.avaliacaoId == id) {
-            dadosMock.splice(i, 1);
-                return res.json({
-                    message: "Avaliação deletada",
-                    dados: dadosMock
-                });
-            }
-    }
-
-    return res.status(404).json({
-        message: "Avaliação não encontrada"
-    });
-    
-};
-import type { Request, Response } from 'express';
-import type { Avaliacao } from '../models/interface';
-import { AvaliacaoRepository } from '../repository/avaliacao-repository';
-
-const repo = AvaliacaoRepository;
-
-export const getAvaliacoes = async (req: Request, res: Response) => {
-    try {
-        // Mock temporário com todos os campos obrigatórios da interface
-        const dadosMock: Avaliacao[] = [
-            { 
-                avaliacaoId: 1, 
-                avaliacaoNota: 5, 
-                avalicaoNome: "Teste",
-                avaliacaoVinculoId: 101 // Campo adicionado para sanar o erro
-            }
-        ];
-
-        res.json(dadosMock);
-
-    } catch (error) {
-        console.error("Erro no Controller:", error);
-        res.status(500).json({ erro: "Erro ao buscar dados" });
-    }
-};
-
-// PUT - Atualizar
-export const atualizar = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const avaliacao = await service.atualizar(Number(id), req.body);
-    return res.json(avaliacao);
-  } catch (error: any) {
-    return res.status(400).json({ erro: error.message });
-  }
-};
-
-// POST - Criar
 export const AvaliacaoController = {
- 
-  async create(req: Request, res: Response): Promise<any> {
+  async listar(req: Request, res: Response) {
     try {
-      const { tipo_avaliacao, descricao_avaliacao, valor_avaliacao, data_avaliacao, data_devolucao_avaliacao } = req.body;
-      
-      const novaAvaliacao = await AvaliacaoService.criarAvaliacao({ 
-        tipo_avaliacao, 
-        descricao_avaliacao,
-        valor_avaliacao, 
-        data_avaliacao,
-        data_devolucao_avaliacao
-      });
-      return res.status(201).json(novaAvaliacao);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      const avaliacoes = await service.listar();
+      return res.json(avaliacoes);
+    } catch (error) {
+      console.error("Erro ao listar avaliacoes:", error);
+      return res.status(500).json({ erro: "Erro ao buscar avaliacoes" });
     }
-  }
-}
+  },
+
+  async criar(req: Request, res: Response) {
+    try {
+      const avaliacao = await service.criar(req.body);
+      return res.status(201).json(avaliacao);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao criar avaliacao";
+      return res.status(400).json({ erro: message });
+    }
+  },
+
+  async atualizar(req: Request<{ id: string }>, res: Response) {
+    try {
+      const avaliacao = await service.atualizar(Number(req.params.id), req.body);
+
+      if (!avaliacao) {
+        return res.status(404).json({ erro: "Avaliacao nao encontrada" });
+      }
+
+      return res.json(avaliacao);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao atualizar avaliacao";
+      return res.status(400).json({ erro: message });
+    }
+  },
+
+  async deletar(req: Request<{ id: string }>, res: Response) {
+    try {
+      const deleted = await service.deletar(Number(req.params.id));
+
+      if (!deleted) {
+        return res.status(404).json({ erro: "Avaliacao nao encontrada" });
+      }
+
+      return res.status(204).send();
+    } catch (error) {
+      console.error("Erro ao deletar avaliacao:", error);
+      return res.status(500).json({ erro: "Erro ao deletar avaliacao" });
+    }
+  },
+};

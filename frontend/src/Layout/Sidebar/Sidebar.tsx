@@ -1,26 +1,24 @@
 import { useState } from "react";
 
-import { 
-    Box, 
-    Collapse, 
-    List, 
-    ListItemButton, 
-    ListItemIcon, 
-    ListItemText 
+import {
+    Box,
+    Collapse,
+    List,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText
 } from "@mui/material";
-import { 
-    Archive, 
-    ChevronDown, 
-    ChevronUp, 
-    ClipboardList, 
-    GraduationCap, 
-    NotebookPen, 
-    Users, 
-    UserStar 
+import {
+    Archive,
+    ChevronDown,
+    ChevronUp,
+    ClipboardCheck,
+    ClipboardList,
+    GraduationCap,
+    NotebookPen,
+    Users,
+    UserStar
 } from "lucide-react";
-
-import { theme } from "../../theme";
-
 
 export default function Sidebar() {
     const [abrirMenu, setAbrirMenu] = useState(true)
@@ -38,7 +36,7 @@ export default function Sidebar() {
                     height: '100vh',
                 })}
                 paddingTop={7}
-                paddingLeft={1}            
+                paddingLeft={1}
                 position='fixed'
             >
                 <List component='nav'>
@@ -60,8 +58,8 @@ export default function Sidebar() {
                     </ListItemButton>
 
 
-                    <ListItemButton 
-                        onClick={clicarMenu} 
+                    <ListItemButton
+                        onClick={clicarMenu}
                         sx={(theme) => ({
                             borderRadius: '3px',
                             "&:focus": {
@@ -118,6 +116,22 @@ export default function Sidebar() {
                                 </ListItemIcon>
                                 <ListItemText
                                     primary='Alunos'
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+
+                            <ListItemButton href="/avaliacoes/lista" sx={{ pl: 4 }}>
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 28
+                                    }}
+                                >
+                                    <ClipboardCheck size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Avaliacoes'
                                     primaryTypographyProps={{
                                         fontSize: 14
                                     }}
