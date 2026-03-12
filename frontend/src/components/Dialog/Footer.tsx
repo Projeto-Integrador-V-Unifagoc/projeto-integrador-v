@@ -4,6 +4,7 @@ import { theme } from "../../theme"
 export function Footer({ children, ...rest }: StackProps) {
     return (
         <Stack
+            {...rest}
             component="footer"
             position="absolute"
             direction="row"
@@ -22,3 +23,4 @@ export function Footer({ children, ...rest }: StackProps) {
         </Stack>
     )
 }
+

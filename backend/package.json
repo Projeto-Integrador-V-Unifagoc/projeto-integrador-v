@@ -18,21 +18,23 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile src/knexfile.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "knex": "^3.1.0",
-    "node": "^22.22.1",
     "pg": "^8.20.0"
   },
   "keywords": [],
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.6",
     "@types/node": "^25.3.5",
+    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

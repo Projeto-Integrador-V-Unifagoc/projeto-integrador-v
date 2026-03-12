@@ -1,18 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import Button from "../../components/Button";
 import UserMenu from "./UserMenu";
 
-import { 
-    AppBar, 
-    Box, 
-    IconButton, 
-    Stack, 
-    Toolbar, 
-    Typography 
+import {
+    AppBar,
+    Box,
+    IconButton,
+    Stack,
+    Toolbar,
+    Typography
 } from "@mui/material";
 
 import { Menu } from "lucide-react";
-
 
 export default function Header() {
     const navegar = useNavigate()
@@ -55,11 +53,17 @@ export default function Header() {
                     >
                         UniEduca
                     </Typography>
-                    <Stack  flexDirection='row' >
-                        <Button sx={{ width: 'auto' }} >
-                            <UserMenu />
+                    <Stack flexDirection='row' alignItems='center' spacing={1}>
+                        <UserMenu />
+                        <Typography
+                            variant='body2'
+                            sx={(theme) => ({
+                                color: theme.palette.text.primary,
+                                fontWeight: 500
+                            })}
+                        >
                             João Pedro Vidal
-                        </Button>
+                        </Typography>
                     </Stack>
                 </Toolbar>
             </AppBar>

@@ -1,25 +1,24 @@
-import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import routes from '../src/routes/routes-avaliacoes.js';
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
 
-import { AvaliacaoController } from './modules/avaliacoes-vinculo/controller/avaliacao-controller.js';
+import routes from "./routes/routes-avaliacoes.js";
+
+dotenv.config({ path: ".env.development" });
 
 const PORT = process.env.PORT || 3000;
 
 const app = express();
 
-app.use(cors({
-  origin: "*"
-}));
+app.use(
+  cors({
+    origin: "*", // "Qualquer site, de qualquer lugar do mundo, tem permissao para consumir os dados desta API."
+  }),
+);
 
 app.use(express.json());
 app.use(routes);
 
-const avaliacaoController = new AvaliacaoController();
-
-app.put('/avaliacoes/:id', avaliacaoController.atualizar);
-
 app.listen(PORT, () => {
-  console.log('Olá, eu sou o servidor!');
+  console.log("Ola, eu sou o servidor!");
 });
