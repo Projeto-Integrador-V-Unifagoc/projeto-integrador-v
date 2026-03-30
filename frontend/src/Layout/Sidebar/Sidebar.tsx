@@ -12,14 +12,13 @@ import {
     Archive, 
     ChevronDown, 
     ChevronUp, 
+    ClipboardCheck, 
     ClipboardList, 
     GraduationCap, 
     NotebookPen, 
     Users, 
     UserStar 
 } from "lucide-react";
-
-import { theme } from "../../theme";
 
 
 export default function Sidebar() {
@@ -150,6 +149,22 @@ export default function Sidebar() {
                                 </ListItemIcon>
                                 <ListItemText
                                     primary='Disciplinas'
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+
+                            <ListItemButton sx={{ pl: 4 }} href="/matricula/nova">
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 28
+                                    }}
+                                >
+                                    <ClipboardCheck size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Matrícula'
                                     primaryTypographyProps={{
                                         fontSize: 14
                                     }}
