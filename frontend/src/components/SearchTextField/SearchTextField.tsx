@@ -15,6 +15,8 @@ import Button from "../Button";
 
 import { ListFilter, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import DropDownPeriodos from "../DropDownPeriodos/DropDownsPeriodos";
+import type { Periodos } from "../../enums/periodos";
 
 interface SearchTextFieldProps {
     children: ReactNode
@@ -23,7 +25,8 @@ interface SearchTextFieldProps {
 export default function SearchTextField(props: SearchTextFieldProps) {
     const { children } = props
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [curso, setCurso] = useState<Cursos | ''>('');
+    const [curso, setCurso] = useState<Cursos | ''>('')
+    const [periodo, setPeiodo] = useState<Periodos | ''>('')
     
     const navigate = useNavigate()
 
@@ -101,11 +104,9 @@ export default function SearchTextField(props: SearchTextFieldProps) {
                         value={curso}
                         onChange={setCurso}
                     />
-                    <TextField
-                        label="Período"
-                        InputLabelProps={{
-                            shrink: true
-                        }}
+                    <DropDownPeriodos 
+                        value={periodo}
+                        onChange={setPeiodo}
                     />
                 </FilterMenu.Content>
                 <FilterMenu.Footer />
