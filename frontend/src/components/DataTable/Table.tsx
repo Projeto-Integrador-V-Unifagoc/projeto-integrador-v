@@ -2,6 +2,7 @@ import { DataGrid, type DataGridProps } from "@mui/x-data-grid";
 import CustomPagination from "./Pagination";
 import { theme } from "../../theme";
 import NoData from "./NoData";
+import SkeletonOverlay from "./Skeleton";
 
 export default function Table(props: DataGridProps) {
   return (
@@ -15,6 +16,7 @@ export default function Table(props: DataGridProps) {
       }
       slots={{
         //pagination: CustomPagination,
+        loadingOverlay: SkeletonOverlay,
         noRowsOverlay: NoData,
       }}
       sx={{

@@ -13,6 +13,7 @@ export default function Alunos() {
   ];
 
   const [alunos, setAlunos] = useState([]);
+  const [carregando, setCarregando] = useState<boolean>(true)
 
   useEffect(() => {
   axios.get("http://localhost:3000/alunos")
@@ -26,13 +27,14 @@ export default function Alunos() {
 
       setAlunos(dados);
     })
-    .catch((err) => console.log(err));
+    .catch((err) => console.log(err))
+    .finally(() => setCarregando(false))
 }, []);
 
   return (
     <Container>
       <SearchTextField>Alunos</SearchTextField>
-      <DataTable columns={columns} rows={alunos} />
+      <DataTable columns={columns} rows={alunos} loading={carregando}/>
     </Container>
   );
 }
