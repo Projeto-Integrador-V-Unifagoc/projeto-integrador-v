@@ -1,16 +1,17 @@
-import { MenuItem } from "@mui/material";
+import { MenuItem, type TextFieldProps } from "@mui/material";
 import { Periodos } from "../../enums/periodos";
 import TextField from "../TextField";
 import { theme } from "../../theme";
 
-interface DropDownPeriodosProps {
+type DropDownPeriodosProps = TextFieldProps & {
     value: Periodos | ''
     onChange: (value: Periodos) => void
 }
 
 export default function DropDownPeriodos({
     value,
-    onChange
+    onChange,
+    ...rest
 }: DropDownPeriodosProps) {
     return (
         <TextField
@@ -34,6 +35,7 @@ export default function DropDownPeriodos({
                     }
                 }
             }}
+            {...rest}
         >
             {Object.values(Periodos).map((periodo) => (
                 <MenuItem

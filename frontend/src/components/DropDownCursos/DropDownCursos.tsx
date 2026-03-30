@@ -1,16 +1,17 @@
 import { Cursos } from "../../enums/cursos";
-import { MenuItem } from "@mui/material";
+import { MenuItem, type TextFieldProps } from "@mui/material";
 import TextField from "../TextField";
 import { theme } from "../../theme";
 
-interface DropDownCursosProps {
+type DropDownCursosProps = TextFieldProps & {
     value: Cursos | '';
     onChange: (value: Cursos) => void;
 }
 
 export default function DropDownCursos({
     value,
-    onChange
+    onChange,
+    ...rest
 }: DropDownCursosProps) {
 
     return (
@@ -35,6 +36,7 @@ export default function DropDownCursos({
                     }
                 }
             }}
+            {...rest}
         >
             {Object.values(Cursos).map((curso) => (
                 <MenuItem
