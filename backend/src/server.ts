@@ -7,6 +7,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./Modules/usuario-perfil-autenticacao/routes/auth-routes";
+import AutenticacaoController from "./Modules/usuario-perfil-autenticacao/controller/autenticacao-controller";
 
 console.log("INICIANDO SERVIDOR...");
 
@@ -26,8 +27,11 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  return res.status(200).json({ status: "ok" });
+    return res.status(200).json({ status: "ok" });
 });
+
+// SUA ROTA DE CADASTRO (TAREFA 2)
+app.post("/usuarios", AutenticacaoController.cadastrar);
 
 const PORT = process.env.PORT || 3000;
 

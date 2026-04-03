@@ -1,30 +1,28 @@
-/**
- * Nesse codigo, ele recebe os dados de quem está tentando entrar (email e senha) 
- * e decide se libera o acesso ou se barra a entrada, entregando o crachá (token).
- */
-
 import { Request, Response } from 'express';
-import { AutenticacaoServices } from '../services/autenticacao-services';
+import AutenticacaoService from '../services/autenticacao-services';
 
-const service = new AutenticacaoServices();
-
-export class AutenticacaoController {
-    async login (req: Request, res: Response) {
-        // Pega o e-mail e a senha que o usuário preencheu no formulário
-        const { email, senha } = req.body;
-        // Chama o serviço para conferir se esses dados estão corretos
-        const resultado = await service.validarLogin(email, senha);
-        // Se o login der certo, ele entra aqui
-        if (resultado.sucesso) {
-            return res.status(200).json({
-                mensagem: "Login bem-sucedido",
-                // Entrega o crachá (token) para o usuário usar nas próximas páginas
-                token: resultado.token
+class AutenticacaoController {
+    async cadastrar(req: Request, res: Response) {
+        try {
+            const usuario = await AutenticacaoService.cadastrarUsuario(req.body);
+            
+            return res.status(201).json({
+                message: "Usuário cadastrado com sucesso!",
+                usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email }
+            });
+        } catch (error: any) {
+            // Se der erro, agora o Insomnia vai te dizer o PORQUÊ
+            return res.status(400).json({ 
+                error: error.message || "Erro interno",
+                detalhes: error.toString() 
             });
         }
-        // Se os dados estiverem errados, ele avisa que o acesso não foi permitido
-        return res.status(401).json({
-            mensagem: "Credenciais inválidas"
-        });
+    }
+
+    // "Esqueleto" para não quebrar as rotas (Tarefa 3)
+    async login(req: Request, res: Response) {
+        return res.status(200).json({ message: "Rota de login pronta!" });
     }
 }
+
+export default new AutenticacaoController();

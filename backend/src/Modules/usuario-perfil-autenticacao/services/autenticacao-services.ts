@@ -1,34 +1,40 @@
-import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { UsuarioRepository } from '../repository/usuario-repository';
 
-const usuarioRepo = new UsuarioRepository();
+const usuarioRepository = new UsuarioRepository();
 
-export class AuthService {
-  async cadastrar(dados: any) {
-    return await usuarioRepo.create(dados);
-  }
+class AutenticacaoService {
+    async cadastrarUsuario(dados: any) {
+        const { nome, email, senha, perfil } = dados;
 
-  async buscarPorEmail(email: string) {
-    return await usuarioRepo.findByEmail(email);
-  }
+        // 1. VALIDAÇÃO DE CAMPOS
+        if (!nome || !email || !senha || !perfil) {
+            throw new Error("Preencha todos os campos obrigatórios.");
+        }
 
-  async buscarPorId(id: string) {
-    return await usuarioRepo.findById(id);
-  }
+        // 2. FORMATAÇÃO (Garante que o banco aceite o perfil)
+        const perfilFormatado = perfil.toLowerCase();
 
-  gerarToken(usuario: { id: string; email: string; perfil: string }) {
-    const secret = process.env.JWT_SECRET || '';
-    
-    if (!secret) {
-      throw new Error('JWT_SECRET não configurado');
+        // 3. SEGURANÇA: Verificar e-mail duplicado
+        const usuarioExiste = await usuarioRepository.findByEmail(email);
+        if (usuarioExiste) {
+            throw new Error("Este e-mail já está cadastrado.");
+        }
+
+        // 4. SEGURANÇA: Hash de senha com bcrypt
+        const saltRounds = 10;
+        const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
+
+        // 5. SALVAMENTO REAL no Postgres do Jhonathan
+        const novoUsuario = await usuarioRepository.create({
+            nome,
+            email,
+            senha: senhaCriptografada,
+            perfil: perfilFormatado
+        });
+
+        return novoUsuario;
     }
-
-    const payload = {
-      id: usuario.id,
-      email: usuario.email,
-      perfil: usuario.perfil,
-    };
-
-    return jwt.sign(payload, secret, { expiresIn: '1h' });
-  }
 }
+
+export default new AutenticacaoService();
