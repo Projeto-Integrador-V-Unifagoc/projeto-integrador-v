@@ -1,31 +1,28 @@
 import bcrypt from 'bcrypt';
 import { UsuarioRepository } from '../repository/usuario-repository';
+import jwt from 'jsonwebtoken';
 
 const usuarioRepository = new UsuarioRepository();
 
 class AutenticacaoService {
+
     async cadastrarUsuario(dados: any) {
         const { nome, email, senha, perfil } = dados;
 
-        // 1. VALIDAÇÃO DE CAMPOS
         if (!nome || !email || !senha || !perfil) {
             throw new Error("Preencha todos os campos obrigatórios.");
         }
 
-        // 2. FORMATAÇÃO (Garante que o banco aceite o perfil)
         const perfilFormatado = perfil.toLowerCase();
 
-        // 3. SEGURANÇA: Verificar e-mail duplicado
         const usuarioExiste = await usuarioRepository.findByEmail(email);
         if (usuarioExiste) {
             throw new Error("Este e-mail já está cadastrado.");
         }
 
-        // 4. SEGURANÇA: Hash de senha com bcrypt
         const saltRounds = 10;
         const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
 
-        // 5. SALVAMENTO REAL no Postgres do Jhonathan
         const novoUsuario = await usuarioRepository.create({
             nome,
             email,
@@ -34,6 +31,34 @@ class AutenticacaoService {
         });
 
         return novoUsuario;
+    }
+
+    async login(email: string, senha: string) {
+
+        const usuario = await usuarioRepository.findByEmail(email);
+
+        if (!usuario) {
+            throw new Error("Usuário não encontrado");
+        }
+
+        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+        if (!senhaValida) {
+            throw new Error("Senha inválida");
+        }
+
+        const token = jwt.sign(
+            {
+                id: usuario.id,
+                perfil: usuario.perfil
+            },
+            process.env.JWT_SECRET || 'segredo',
+            {
+                expiresIn: '1h'
+            }
+        );
+
+        return { token };
     }
 }
 

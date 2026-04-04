@@ -16,7 +16,7 @@ export const autenticar = (req: Request, res: Response, next: NextFunction) => {
     const token = authHeader.split(' ')[1];
 
     try {
-        const secret = process.env.JWT_SECRET || 'process.env.JWT_SECRET';
+        const secret = process.env.JWT_SECRET || 'segredo';
         const decoded = jwt.verify(token, secret);
         // Salva as informações do usuário para usar depois
         (req as any).user = decoded;
