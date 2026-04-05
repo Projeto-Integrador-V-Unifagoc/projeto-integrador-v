@@ -19,32 +19,34 @@ export function Cadastro() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-
     try {
-      // Chama o serviço que criamos no passo anterior
-      await authService.cadastrar(formData);
-      
-      alert('Usuário criado com sucesso! Agora você pode fazer login.');
-      navigate('/login'); // Redireciona o usuário
+      // ERRO PROVÁVEL: Você pode estar chamando o .login() aqui por acidente!
+      // O correto para esta tela é o .cadastrar()
+      await authService.cadastrar({
+        nome: formData.nome,
+        email: formData.email,
+        senha: formData.senha,
+        tipo_usuario: formData.tipo_usuario,
+      }); 
+    
+      alert('Cadastro realizado!');
+      navigate('/login');
     } catch (error) {
-      console.error(error);
-      alert('Erro ao cadastrar. Verifique se o e-mail já existe ou se o backend está ligado.');
-    } finally {
-      setLoading(false);
-    }
+        console.error(error);
+      }
   }
 
   return (
     <div className="cadastro-container">
       <form onSubmit={handleSubmit}>
-        <h1>Criar Conta - Fire and Blood</h1>
+        <h1>Criar Conta - UniEduca</h1>
         
         <input 
           type="text" 
-          placeholder="Nome Completo"
-          required
-          onChange={e => setFormData({ ...formData, nome: e.target.value })}
+          placeholder="Nome Completo" 
+          value={formData.nome} 
+          onChange={e => setFormData({ ...formData, nome: e.target.value })} 
+          required 
         />
 
         <input 

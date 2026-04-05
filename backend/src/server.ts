@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // 2. ROTAS PÚBLICAS (Sem segurança)
-app.use("/auth", authRoutes);
+app.use(authRoutes)
 app.post("/usuarios", AutenticacaoController.cadastrar);
 
 app.get("/", (req, res) => res.send("API rodando"));

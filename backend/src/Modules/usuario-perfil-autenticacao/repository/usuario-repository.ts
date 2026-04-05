@@ -2,6 +2,7 @@ import db from '../../../database/conexao';
 
 export interface Usuario {
   id?: number;
+  nome: string;
   email: string;
   senha: string;
   tipo_usuario: 'aluno' | 'professor' | 'secretaria';

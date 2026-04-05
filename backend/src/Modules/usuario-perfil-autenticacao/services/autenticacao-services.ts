@@ -6,9 +6,9 @@ const usuarioRepository = new UsuarioRepository();
 
 class AutenticacaoService {
   async cadastrarUsuario(dados: any) {
-    const { email, senha, tipo_usuario } = dados;
+    const { nome,email, senha, tipo_usuario } = dados;
 
-    if (!email || !senha || !tipo_usuario) {
+    if (!nome || !email || !senha || !tipo_usuario) {
       throw new Error('Preencha todos os campos obrigatórios.');
     }
 
@@ -23,6 +23,7 @@ class AutenticacaoService {
     const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
 
     const novoUsuario = await usuarioRepository.create({
+      nome,
       email,
       senha: senhaCriptografada,
       tipo_usuario: tipoUsuarioFormatado,
@@ -55,7 +56,15 @@ class AutenticacaoService {
       }
     );
 
-    return { token };
+    return { 
+      token, 
+      usuario: { 
+        id: usuario.id,
+        nome: usuario.nome, 
+        email: usuario.email, 
+        tipo_usuario: usuario.tipo_usuario 
+      } 
+    };
   }
 }
 
