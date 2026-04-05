@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Para redirecionar após o sucesso
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/auth-services';
 import { Perfil } from '../../enums/perfil';
 import type { Usuario } from '../../models/usuario';
@@ -7,12 +7,11 @@ import type { Usuario } from '../../models/usuario';
 export function Cadastro() {
   const navigate = useNavigate();
   
-  // Estado inicial seguindo a sua interface Usuario
   const [formData, setFormData] = useState<Usuario>({
     nome: '',
     email: '',
     senha: '',
-    tipo_usuario: Perfil.ALUNO // Valor padrão
+    tipo_usuario: Perfil.ALUNO
   });
 
   const [loading, setLoading] = useState(false);
@@ -20,8 +19,6 @@ export function Cadastro() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      // ERRO PROVÁVEL: Você pode estar chamando o .login() aqui por acidente!
-      // O correto para esta tela é o .cadastrar()
       await authService.cadastrar({
         nome: formData.nome,
         email: formData.email,

@@ -11,7 +11,7 @@ export function Login() {
     e.preventDefault();
     try {
       const data = await authService.login({
-        email: email, // Teste com 'E' maiúsculo se o erro persistir
+        email: email,
         senha: senha,
       });
       console.log("O que o servidor mandou:", data);
@@ -20,7 +20,7 @@ export function Login() {
       localStorage.setItem('@UniEduca:user', JSON.stringify(data.user));
 
       alert('Login realizado com sucesso!');
-      navigate('/home'); // Leva para a Home do outro grupo
+      navigate('/home');
     } catch (error) {
       alert('E-mail ou senha incorretos.');
     }

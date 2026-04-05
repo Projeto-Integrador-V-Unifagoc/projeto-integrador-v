@@ -13,12 +13,12 @@ import { PrivateRoute } from "../components/PrivateRoute";
 export function AppRoutes() {
     return (
         <Routes>
-            {/* 🔓 ROTAS PÚBLICAS */}
+            {/* ROTAS PÚBLICAS */}
             <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/login" element={<Login />} />
 
-            {/* 🔒 ROTAS PRIVADAS (Protegidas pelo PrivateRoute) */}
-            {/* Envolvemos o MainLayout: se não tiver token, nada aqui dentro carrega */}
+            {/* ROTAS PRIVADAS (Protegidas pelo PrivateRoute) */}
+            {/* Se não tiver token, nada aqui dentro carrega */}
             <Route 
                 element={
                     <PrivateRoute>
