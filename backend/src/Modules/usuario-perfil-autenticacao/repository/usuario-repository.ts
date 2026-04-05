@@ -1,40 +1,39 @@
 import db from '../../../database/conexao';
 
 export interface Usuario {
-  id?: string;
-  nome: string;
+  id?: number;
   email: string;
   senha: string;
-  perfil: 'aluno' | 'professor' | 'secretaria';
-  criado_em?: Date;
-  atualizado_em?: Date;
+  tipo_usuario: 'aluno' | 'professor' | 'secretaria';
+  created_at?: Date;
+  updated_at?: Date;
 }
 
-export interface IUsuarioRepository {
-  create(dados: Usuario): Promise<Usuario>;
-  findByEmail(email: string): Promise<Usuario | null>;
-  findById(id: string): Promise<Usuario | null>;
-}
-
-export class UsuarioRepository implements IUsuarioRepository {
+export class UsuarioRepository {
   async create(usuario: Usuario): Promise<Usuario> {
-    const [novoUsuario] = await db<Usuario>('usuarios')
+    const result = await db
+      .withSchema('piv')
+      .table('usuario')
       .insert(usuario)
       .returning('*');
 
-    return novoUsuario;
+    return result[0] as Usuario;
   }
 
   async findByEmail(email: string): Promise<Usuario | null> {
-    const usuario = await db<Usuario>('usuarios')
+    const usuario = await db
+      .withSchema('piv')
+      .table('usuario')
       .where({ email })
       .first();
 
     return usuario || null;
   }
 
-  async findById(id: string): Promise<Usuario | null> {
-    const usuario = await db<Usuario>('usuarios')
+  async findById(id: number): Promise<Usuario | null> {
+    const usuario = await db
+      .withSchema('piv')
+      .table('usuario')
       .where({ id })
       .first();
 
