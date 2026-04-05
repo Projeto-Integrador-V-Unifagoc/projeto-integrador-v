@@ -1,17 +1,27 @@
+<<<<<<< HEAD
+import express from "express";
+import cors from "cors";
+import matriculaRoutes from "./Modules/matricula-vinculos/routes/matricula.routes";
+=======
 import express from 'express';
 import cors from 'cors';
 import { db, setupDatabase } from './database';
 
 const PORT = process.env.PORT || 3000;
+>>>>>>> origin/g5-sprint2-matriculas-API+View
 
 const app = express();
 
-app.use(cors({
-    origin: '*',
-}))
-
+app.use(cors());
 app.use(express.json());
 
+<<<<<<< HEAD
+app.use("/api", matriculaRoutes);
+
+app.listen(3000, () => {
+  console.log("Servidor rodando em http://localhost:3000");
+});
+=======
 type SituacaoMatricula = 'SEM_MATRICULA' | 'MATRICULADO' | 'TRANCADO' | 'CANCELADO';
 
 type Matricula = {
@@ -185,3 +195,4 @@ async function startServer() {
 }
 
 startServer();
+>>>>>>> origin/g5-sprint2-matriculas-API+View

@@ -20,6 +20,10 @@ import {
     UserStar 
 } from "lucide-react";
 
+<<<<<<< HEAD
+import { theme } from "../../theme";
+=======
+>>>>>>> origin/g5-sprint2-matriculas-API+View
 
 export default function Sidebar() {
     const [abrirMenu, setAbrirMenu] = useState(true)
@@ -57,7 +61,6 @@ export default function Sidebar() {
                             }}
                         />
                     </ListItemButton>
-
 
                     <ListItemButton 
                         onClick={clicarMenu} 
@@ -117,6 +120,24 @@ export default function Sidebar() {
                                 </ListItemIcon>
                                 <ListItemText
                                     primary='Alunos'
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+
+                            {/* NOVO BOTÃO DE MATRÍCULAS ADICIONADO AQUI */}
+                            <ListItemButton href="/matriculas"
+                                sx={{ pl: 4 }} >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 28
+                                    }}
+                                >
+                                    <ClipboardList size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Matrículas'
                                     primaryTypographyProps={{
                                         fontSize: 14
                                     }}
