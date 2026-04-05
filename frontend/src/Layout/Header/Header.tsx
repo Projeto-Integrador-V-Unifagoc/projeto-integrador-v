@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import Button from "../../components/Button";
 import UserMenu from "./UserMenu";
 
 import { 
@@ -55,11 +54,16 @@ export default function Header() {
                     >
                         UniEduca
                     </Typography>
-                    <Stack  flexDirection='row' >
-                        <Button sx={{ width: 'auto' }} >
-                            <UserMenu />
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={0.5}
+                        sx={{ cursor: "default" }}
+                    >
+                        <UserMenu />
+                        <Typography variant="body2" fontWeight={600}>
                             João Pedro Vidal
-                        </Button>
+                        </Typography>
                     </Stack>
                 </Toolbar>
             </AppBar>
