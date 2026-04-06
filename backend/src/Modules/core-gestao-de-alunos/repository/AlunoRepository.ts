@@ -3,18 +3,18 @@ import { Aluno } from "../models/Aluno";
 
 export class AlunoRepository {
   async criarAluno(data: Aluno) {
-    const aluno = await db("alunos").insert(data).returning("*");
+    const aluno = await db("aluno").insert(data).returning("*");
 
     return aluno[0];
   }
 
   async listarAlunos() {
-    const alunos = await db("alunos").select("*");
+    const alunos = await db("aluno").select("*");
     return alunos;
   }
 
   async buscarAlunoPorMatricula(matricula: string) {
-    const aluno = await db("alunos").select("*").where("matricula", matricula);
+    const aluno = await db("aluno").select("*").where("matricula", matricula);
     return aluno[0];
   }
 }

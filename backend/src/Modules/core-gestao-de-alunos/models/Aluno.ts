@@ -6,4 +6,5 @@ export interface Aluno {
     pessoa: Pessoa
     usuario: Usuario
     periodo: number
+    curso: string
 }

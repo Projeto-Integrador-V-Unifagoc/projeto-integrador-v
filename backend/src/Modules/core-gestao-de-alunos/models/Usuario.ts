@@ -1,8 +1,9 @@
-    export interface Usuario {
-        id: string
-        email: string
-        tipo_usuario: string
-        password: string
-        created_at: string
-        updated_at: string
-    }
+export interface Usuario {
+  id: string;
+  email: string;
+  senha: string;
+  tipo_usuario: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
