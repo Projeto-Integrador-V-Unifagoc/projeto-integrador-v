@@ -1,7 +1,7 @@
 {
   "name": "projeto-integrador-v",
   "version": "1.0.0",
-  "description": "��#\u0000 \u0000p\u0000r\u0000o\u0000j\u0000e\u0000t\u0000o\u0000-\u0000i\u0000n\u0000t\u0000e\u0000g\u0000r\u0000a\u0000d\u0000o\u0000r\u0000-\u0000v\u0000\r\u0000 \u0000",
+  "description": "projeto-integrador-v",
   "homepage": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v#readme",
   "bugs": {
     "url": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v/issues"
@@ -15,39 +15,24 @@
   "type": "commonjs",
   "main": "src/app.ts",
   "scripts": {
-<<<<<<< HEAD
-    "dev": "ts-node-dev src/app.ts"
-=======
     "dev": "tsx watch src/app.ts",
-    "start": "tsx src/app.ts",
-    "test": "test"
->>>>>>> origin/g5-sprint2-matriculas-API+View
+    "start": "tsx src/app.ts"
   },
   "dependencies": {
     "@types/express": "^5.0.6",
-<<<<<<< HEAD
-    "cors": "^2.8.6",
-=======
     "@types/pg": "^8.20.0",
     "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
->>>>>>> origin/g5-sprint2-matriculas-API+View
+    "dotenv": "^17.4.1",
     "express": "^5.2.1",
-    "pg": "^8.20.0",
-    "typescript": "^5.9.3"
+    "knex": "^3.1.0",
+    "pg": "^8.20.0"
   },
-<<<<<<< HEAD
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/node": "^25.4.0",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0"
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
   },
   "keywords": []
-=======
-  "keywords": [],
-  "devDependencies": {
-    "tsx": "^4.21.0"
-  }
->>>>>>> origin/g5-sprint2-matriculas-API+View
 }

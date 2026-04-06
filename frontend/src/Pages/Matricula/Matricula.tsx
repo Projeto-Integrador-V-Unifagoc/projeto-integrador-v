@@ -163,12 +163,7 @@ export default function Matricula() {
       setErroRequisicao("");
       setSucessoRequisicao("");
 
-      const payload = {
-        alunoId: alunoIdNumerico,
-        alunoNome: nome.trim() || null,
-        periodoLetivo,
-        disciplinas: disciplinasSelecionadas.map((item) => item.nome),
-      };
+      const payload = { alunoId: String(alunoIdNumerico) };
 
       await matriculaApi.post("/matriculas", payload);
 
