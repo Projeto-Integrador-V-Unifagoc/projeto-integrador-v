@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const baseURL =
-  import.meta.env.VITE_API_URL?.toString().trim() || "http://localhost:3000";
+  import.meta.env.VITE_API_URL?.toString().trim() || "http://localhost:3000/api";
 
 const matriculaApi = axios.create({
   baseURL,
