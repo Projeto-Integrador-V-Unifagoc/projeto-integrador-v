@@ -2,11 +2,11 @@ import bcrypt from 'bcrypt';
 import { UsuarioRepository } from '../repository/usuario-repository';
 import jwt from 'jsonwebtoken';
 
-const usuarioRepository = new UsuarioRepository();
-
 class AutenticacaoService {
+  private usuarioRepository = new UsuarioRepository();
+
   async cadastrarUsuario(dados: any) {
-    const { nome,email, senha, tipo_usuario } = dados;
+    const { nome, email, senha, tipo_usuario } = dados;
 
     if (!nome || !email || !senha || !tipo_usuario) {
       throw new Error('Preencha todos os campos obrigatórios.');
@@ -14,7 +14,7 @@ class AutenticacaoService {
 
     const tipoUsuarioFormatado = tipo_usuario.toLowerCase();
 
-    const usuarioExiste = await usuarioRepository.findByEmail(email);
+    const usuarioExiste = await this.usuarioRepository.findByEmail(email);
     if (usuarioExiste) {
       throw new Error('Este e-mail já está cadastrado.');
     }
@@ -22,7 +22,7 @@ class AutenticacaoService {
     const saltRounds = 10;
     const senhaCriptografada = await bcrypt.hash(senha, saltRounds);
 
-    const novoUsuario = await usuarioRepository.create({
+    const novoUsuario = await this.usuarioRepository.create({
       nome,
       email,
       senha: senhaCriptografada,
@@ -33,7 +33,7 @@ class AutenticacaoService {
   }
 
   async login(email: string, senha: string) {
-    const usuario = await usuarioRepository.findByEmail(email);
+    const usuario = await this.usuarioRepository.findByEmail(email);
 
     if (!usuario) {
       throw new Error('Usuário não encontrado');
@@ -66,6 +66,18 @@ class AutenticacaoService {
       } 
     };
   }
+
+  async getMe(id: string) {
+    const usuario = await this.usuarioRepository.buscarPorId(id);
+
+    if (!usuario) {
+      throw new Error("Usuário não encontrado!");
+    }
+
+    const { senha, ...dadosSeguros } = usuario;
+
+    return dadosSeguros;
+  }  
 }
 
 export default new AutenticacaoService();

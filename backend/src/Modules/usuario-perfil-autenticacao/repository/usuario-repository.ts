@@ -1,4 +1,5 @@
 import db from '../../../database/conexao';
+import knex from 'knex';
 
 export interface Usuario {
   id?: number;
@@ -39,5 +40,12 @@ export class UsuarioRepository {
       .first();
 
     return usuario || null;
+  }
+
+  async buscarPorId(id: string) {
+    return await db('piv.usuario')
+      .select('id', 'nome', 'email', 'tipo_usuario', 'created_at') // 👈 Não liste a 'senha' aqui!
+      .where({ id })
+      .first();
   }
 }

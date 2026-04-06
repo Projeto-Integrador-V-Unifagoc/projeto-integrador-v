@@ -12,7 +12,7 @@ export const autenticar = (req: Request, res: Response, next: NextFunction) => {
   const [, token] = authHeader.split(' ');
 
   try {
-    const secret = process.env.JWT_SECRET || 'chave_secreta_do_felipe';
+    const secret = process.env.JWT_SECRET || 'segredo';
     const decoded = jwt.verify(token, secret) as any;
 
     // Salva os dados do crachá na requisição para o próximo middleware usar
@@ -23,6 +23,9 @@ export const autenticar = (req: Request, res: Response, next: NextFunction) => {
 
     return next();
   } catch (err) {
-    return res.status(401).json({ erro: "Token inválido ou expirado." });
+    return res.status(401).json({ 
+      success: false, 
+      message: "Token inválido ou expirado." 
+    });
   }
 };
