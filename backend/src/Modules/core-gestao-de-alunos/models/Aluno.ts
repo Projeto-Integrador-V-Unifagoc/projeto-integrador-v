@@ -1,3 +1,4 @@
+import { Curso } from "./Curso";
 import { Pessoa } from "./Pessoa";
 import { Usuario } from "./Usuario";
 
@@ -6,4 +7,5 @@ export interface Aluno {
     pessoa: Pessoa
     usuario: Usuario
     periodo: number
+    curso: Curso
 }
