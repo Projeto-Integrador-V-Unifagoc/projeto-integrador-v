@@ -2,7 +2,7 @@ import { db } from "../../../database/connection";
 
 export class UsuarioRepository {
     async criariUsuario(data: any ){
-        const usuario = await db("usuarios")
+        const usuario = await db("usuario")
             .insert(data)
             .returning("*")
 
@@ -10,17 +10,17 @@ export class UsuarioRepository {
     }
 
     async listarUsuarios(){
-        const usuarios = await db("usuarios").select("*")
+        const usuarios = await db("usuario").select("*")
         return usuarios
     }
 
     async buscarUsuarioPorEmail(email: string){
-        const usuario = await db("usuarios").select("*").where("email", email)
+        const usuario = await db("usuario").select("*").where("email", email)
         return usuario[0]
     }
 
     async buscarUsuarioPorId(id: string){
-        const usuario = await db("usuarios").select("*").where("id", id)
+        const usuario = await db("usuario").select("*").where("id", id)
         return usuario[0]
     }
 }
