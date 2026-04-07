@@ -10,6 +10,7 @@ const config: { [key: string]: Knex.Config } = {
       user: String(process.env.DATABASE_USERNAME),
       password: String(process.env.DATABASE_PASSWORD)
     },
+    searchPath: ['piv'],
     pool: {
       min: 2,
       max: 10
