@@ -20,7 +20,7 @@ export const alunoApi = {
             usuario: {
                 email: data.usuario.email,
                 tipo_usuario: data.usuario.tipoUsuario,
-                password: data.usuario.password
+                senha: data.usuario.senha
             }
         }
         

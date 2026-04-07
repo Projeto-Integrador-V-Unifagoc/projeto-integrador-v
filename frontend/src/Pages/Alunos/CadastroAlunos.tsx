@@ -1,5 +1,6 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { MapPin } from "lucide-react";
 
 import Container from "../../components/Container";
 import TextField from "../../components/TextField";
@@ -9,8 +10,8 @@ import { Card } from "../../components/Card";
 import { Alert, Grid, IconButton, Stack } from "@mui/material";
 
 import { useAluno } from "../../hooks/use-aluno";
-import { MapPin } from "lucide-react";
 import { useViaCep } from "../../hooks/use-cep";
+
 import { alunoSchema } from "../../validators/aluno-schema";
 
 export default function CadastroAlunos() {
@@ -114,7 +115,7 @@ export default function CadastroAlunos() {
         usuario: {
           email: form.email,
           tipoUsuario: "Aluno",
-          password: form.senha
+          senha: form.senha
         }
       }
 
