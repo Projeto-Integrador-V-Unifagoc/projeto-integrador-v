@@ -11,6 +11,9 @@ const config: { [key: string]: Knex.Config } = {
       password: String(process.env.DATABASE_PASSWORD)
     },
     searchPath: ['piv'],
+    seeds: {
+      directory: "./seeds"
+    },
     pool: {
       min: 2,
       max: 10
