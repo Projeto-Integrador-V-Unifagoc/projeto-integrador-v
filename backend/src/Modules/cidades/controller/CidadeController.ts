@@ -5,7 +5,12 @@ export class CidadeController {
     private cidadeService = new CidadeService()
 
     async listarCidades(req: Request, res: Response) {
-        const cidades = await this.cidadeService.listarCidades()
+
+        const { ibge } = req.query
+
+        const cidades = await this.cidadeService.listarCidades({
+            ibge: ibge as string
+        })
         return res.json(cidades)
     }
 }

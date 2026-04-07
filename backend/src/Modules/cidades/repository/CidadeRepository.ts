@@ -1,8 +1,12 @@
 import { db } from "../../../database/connection";
 
 export class CidadeRepository {
-    async listarCidades() {
-        const cidades = await db("cidade").select("*")
-        return cidades
+    async listarCidades(filtros?: { ibge?: string }) {
+        const query = db('cidade')
+
+        if(filtros?.ibge) {
+            query.where("ibge", filtros.ibge)
+        }
+        return await query.select("*")
     }
 }
