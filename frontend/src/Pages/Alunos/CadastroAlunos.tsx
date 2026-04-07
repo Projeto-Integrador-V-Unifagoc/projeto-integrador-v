@@ -13,6 +13,8 @@ import { useAluno } from "../../hooks/use-aluno";
 import { useViaCep } from "../../hooks/use-cep";
 
 import { alunoSchema } from "../../validators/aluno-schema";
+import DropDownCidades from "../../components/DropDownCidades/DropDownCidades";
+import { useCidade } from "../../hooks/use-cidade";
 
 export default function CadastroAlunos() {
 
@@ -44,22 +46,27 @@ export default function CadastroAlunos() {
   const [erros, setErros] = useState<Record<string, string>>({})
   const { carregando, criarAluno } = useAluno()
   const { carregando: isCarregando, buscarCep } = useViaCep()
+  const { listarCidades } = useCidade()
 
   async function buscarEnderecoPeloCep() {
-    const data = await buscarCep(form.cep)
+  const data = await buscarCep(form.cep)
 
-    if (!data) {
-      return
-    }
-
-    setForm((prev) => ({
-      ...prev,
-      logradouro: data.logradouro,
-      bairro: data.bairro,
-      cidade: data.localidade,
-      estado: data.estado
-    }))
+  if (!data) {
+    return
   }
+  
+  const cidades = await listarCidades({ ibge: data.ibge })
+
+  const cidadeEncontrada = cidades?.[0]
+
+  setForm((prev) => ({
+    ...prev,
+    logradouro: data.logradouro,
+    bairro: data.bairro,
+    estado: data.uf,
+    cidade: cidadeEncontrada ? cidadeEncontrada.id : ''
+  }))
+}
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target
@@ -226,7 +233,7 @@ export default function CadastroAlunos() {
                 </Grid>
 
                 <Grid size={4}>
-                  <TextField
+                  {/*<TextField
                     required
                     label="Cidade"
                     name="cidade"
@@ -234,6 +241,15 @@ export default function CadastroAlunos() {
                     error={!!erros.cidade}
                     helperText={erros.cidade}                    
                     onChange={handleChange}
+                  />*/}
+                  <DropDownCidades 
+                    value={form.cidade}
+                    onChange={(value) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        cidade: value
+                      }))
+                    }}
                   />
                 </Grid>
 
