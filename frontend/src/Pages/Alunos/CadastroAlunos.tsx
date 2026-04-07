@@ -108,7 +108,7 @@ export default function CadastroAlunos() {
           logradouro: form.logradouro,
           numero: Number(form.numero),
           bairro: form.bairro,
-          cidade: form.cidade,
+          cidadeId: form.cidade,
           estado: form.estado,
           cep: form.cep
         },

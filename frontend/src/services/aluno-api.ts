@@ -13,7 +13,7 @@ export const alunoApi = {
                 logradouro: data.pessoa.logradouro,
                 numero: data.pessoa.numero,
                 bairro: data.pessoa.bairro,
-                cidade: data.pessoa.cidade,
+                cidade_id: data.pessoa.cidadeId,
                 estado: data.pessoa.estado,
                 cep: data.pessoa.cep,
             },

@@ -5,7 +5,7 @@ export interface Pessoa {
   logradouro: string
   numero: number
   bairro: string
-  cidade: string
+  cidadeId: string
   estado: string
   cep: string
 }
