@@ -13,8 +13,11 @@ import {
 
 import { Menu } from "lucide-react";
 
+interface HeaderProps {
+    clicarMenu: () => void
+}
 
-export default function Header() {
+export default function Header({ clicarMenu }: HeaderProps) {
     const navegar = useNavigate()
 
     function navegarParaHome(){
@@ -40,6 +43,7 @@ export default function Header() {
                         edge='start'
                         aria-label="menu"
                         sx={{ mr: 2 }}
+                        onClick={clicarMenu}
                     >
                         <Menu size={19} />
                     </IconButton>
