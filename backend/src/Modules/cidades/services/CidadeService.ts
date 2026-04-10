@@ -6,4 +6,8 @@ export class CidadeService {
     async listarCidades(filtros?: { ibge?: string }) {
         return this.cidadeRepository.listarCidades(filtros)
     }
+
+    async buscarCidadePorIbge(ibge: string) {
+        return this.cidadeRepository.buscarCidadePorIbge(ibge)
+    }
 }

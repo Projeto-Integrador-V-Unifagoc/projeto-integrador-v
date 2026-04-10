@@ -12,5 +12,13 @@ export class CidadeController {
             ibge: ibge as string
         })
         return res.json(cidades)
+
+    }
+
+    async buscarCidadePorIbge(req: Request, res: Response) {
+
+        const { ibge } = req.params
+        const cidade = await this.cidadeService.buscarCidadePorIbge(ibge as string)
+        return res.json(cidade)
     }
 }

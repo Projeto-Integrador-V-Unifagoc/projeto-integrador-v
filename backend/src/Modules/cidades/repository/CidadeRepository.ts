@@ -9,4 +9,9 @@ export class CidadeRepository {
         }
         return await query.select("*")
     }
+
+    async buscarCidadePorIbge(ibge: string) {
+        const cidade = await db("cidade").where("ibge", ibge).first()
+        return cidade
+    }
 }

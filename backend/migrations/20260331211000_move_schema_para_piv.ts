@@ -50,6 +50,7 @@ const createPivTables = async (db: Knex) => {
     uuidPrimary(table, db);
     table.string("nome").notNullable();
     table.string("uf", 2).notNullable();
+    table.string("ibge").unique().notNullable()
   });
 
   await db.schema.withSchema(SCHEMA).createTable("usuario", (table) => {
@@ -75,7 +76,7 @@ const createPivTables = async (db: Knex) => {
   await db.schema.withSchema(SCHEMA).createTable("faculdade", (table) => {
     uuidPrimary(table, db);
     table.string("nome").notNullable();
-    table.uuid("cidade_id").notNullable().references("id").inTable(`${SCHEMA}.cidade`).onDelete("RESTRICT");
+    table.string("cidade_id").notNullable().references("ibge").inTable(`${SCHEMA}.cidade`).onDelete("RESTRICT");
     table.string("logradouro").notNullable();
     table.string("numero").notNullable();
     table.string("bairro").notNullable();
@@ -103,7 +104,7 @@ const createPivTables = async (db: Knex) => {
     table.string("logradouro").notNullable();
     table.string("numero").notNullable();
     table.string("bairro").notNullable();
-    table.uuid("cidade_id").notNullable().references("id").inTable(`${SCHEMA}.cidade`).onDelete("RESTRICT");
+    table.string("cidade_id").notNullable().references("ibge").inTable(`${SCHEMA}.cidade`).onDelete("RESTRICT");
     table.string("estado", 2).notNullable();
     table.string("cep", 9).notNullable();
     table.string("cpf", 14).notNullable().unique();
