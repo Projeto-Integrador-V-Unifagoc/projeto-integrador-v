@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { AlunoController } from './Modules/core-gestao-de-alunos/controller/AlunoController';
-import { PessoaController } from './Modules/core-gestao-de-alunos/controller/PessoaController';
+import { AlunoController } from './Modules/modulo-gestao-alunos/controller/AlunoController';
 import { CidadeController } from './Modules/cidades/controller/CidadeController';
 import { FaculdadeController } from './Modules/modulo-facul-dp-curso/controller/FaculdadeController';
 import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controller/DepartamentoController';
@@ -30,7 +29,8 @@ app.post('/departamentos', (req, res) => departamentoController.criarDepartament
 app.post('/cursos', (req, res) => cursoController.criarCurso(req, res))
 
 app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res))
-app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res))
+app.get('/alunos/:id', (req, res) => alunoController.buscarAlunoPorId(req, res))
+//app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res))
 
 app.get('/cidades', (req, res) => cidadeController.listarCidades(req, res))
 app.get('/cidades/:ibge', (req, res) => cidadeController.buscarCidadePorIbge(req, res))
