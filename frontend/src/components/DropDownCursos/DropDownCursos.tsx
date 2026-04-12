@@ -9,7 +9,7 @@ type Curso = {
     nome: string;
 };
 
-type DropDownCursosProps = TextFieldProps & {
+type DropDownCursosProps = Omit<TextFieldProps, "onChange"> & {
     value: string;
     onChange: (value: string) => void;
 };

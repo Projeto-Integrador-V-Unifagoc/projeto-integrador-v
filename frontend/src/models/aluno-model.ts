@@ -1,12 +1,28 @@
 import type { Usuario } from "./usuario-model"
 import type { Pessoa } from "./pessoa-model"
 
+// Deprecated
 export interface AlunoRequest {
   id: string
   matricula: number
   periodo: number
   pessoa: Pessoa
   usuario: Usuario
+}
+
+export interface CriarAlunoRequest  {
+  periodo: number
+  pessoa: {
+    cpf: string
+    nome: string
+    dataNascimento: string
+    logradouro: string
+    numero: number
+    bairro: string
+    cidadeIbge: string
+    estado: string
+    cep: string
+  }
 }
 
 export interface AlunoView {

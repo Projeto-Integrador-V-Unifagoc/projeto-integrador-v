@@ -17,23 +17,12 @@ export const alunoSchema = yup.object({
         .string()
         .required("Número é obrigatório"),
     bairro: yup.string().required("Bairro é obrigatório"),
-    cidade: yup.string().required("Cidade é obrigatória"),
+    cidadeIbge: yup.string().required("Cidade é obrigatória"),
     estado: yup.string().required("Estado é obrigatório"),
     cep: yup   
         .string()
         .required("CEP é obrigatório")
         .min(8, "CEP inválido"),
-    email: yup
-        .string()
-        .email("Email inválido")
-        .required("Email é obrigatório"),
-    senha: yup
-        .string()
-        .required("Senha é obrigatória")
-        .min(6, "Senha deve ter no mínimo 6 caracteres"),
-    confirmarSenha: yup
-        .string()
-        .oneOf([yup.ref("senha")], "As senhas devem ser iguais"),
     curso: yup.string().required("Curso é obrigatório"), 
     periodo: yup
         .string()

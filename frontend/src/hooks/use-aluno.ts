@@ -1,11 +1,11 @@
 import { useState } from "react";
-import type { AlunoRequest } from "../models/aluno-model";
+import type { CriarAlunoRequest } from "../models/aluno-model";
 import { alunoApi } from "../services/aluno-api";
 
 export function useAluno() {
     const [carregando, setCarregando] = useState<boolean>(false)
 
-    const criarAluno = async (data: AlunoRequest) => {
+    const criarAluno = async (data: CriarAlunoRequest) => {
         setCarregando(true)
 
         try {

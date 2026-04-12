@@ -1,26 +1,20 @@
 import { api } from "../lib/axios";
-import type { AlunoRequest } from "../models/aluno-model";
+import type { AlunoRequest, CriarAlunoRequest } from "../models/aluno-model";
 
 export const alunoApi = {
-    async criarAluno(data: AlunoRequest) {
+    async criarAluno(data: CriarAlunoRequest) {
         const payload = {
-            matricula: data.matricula,
             periodo: data.periodo,
             pessoa: {
                 cpf: data.pessoa.cpf,
                 nome: data.pessoa.nome,
-                data_nascimento: data.pessoa.dataNascimento,
+                dataNascimento: data.pessoa.dataNascimento,
                 logradouro: data.pessoa.logradouro,
                 numero: data.pessoa.numero,
                 bairro: data.pessoa.bairro,
-                cidadeIbge: data.pessoa.cidade.igbe,
+                cidadeIbge: data.pessoa.cidadeIbge,
                 estado: data.pessoa.estado,
                 cep: data.pessoa.cep,
-            },
-            usuario: {
-                email: data.usuario.email,
-                tipo_usuario: data.usuario.tipoUsuario,
-                senha: data.usuario.senha
             }
         }
         

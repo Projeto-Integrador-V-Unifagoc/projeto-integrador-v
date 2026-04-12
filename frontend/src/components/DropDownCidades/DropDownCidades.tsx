@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import type { CidadeModel } from "../../models/cidade-model";
 import { theme } from "../../theme";
 
-type DropDownCidadesProps = TextFieldProps & {
-    value: number | ''
-    onChange: (value: number) => void
+type DropDownCidadesProps = Omit<TextFieldProps, "onChange"> & {
+    value: number | string | ''
+    onChange: (value: string) => void
 }
 
 
@@ -22,6 +22,7 @@ export default function DropDownCidades({
     useEffect(() => {
         async function carregar() {
             const data = await listarCidades()
+            console.log(data)
             setCidades(data)
         }
         carregar()
@@ -34,7 +35,7 @@ export default function DropDownCidades({
             select
             fullWidth
             value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
+            onChange={(e) => onChange(String(e.target.value))}
             SelectProps={{
                 MenuProps: {
                     PaperProps: {
@@ -55,7 +56,7 @@ export default function DropDownCidades({
                 cidades.map((cidade) => (
                     <MenuItem
                         key={cidade.id}
-                        value={cidade.id}
+                        value={cidade.ibge}
                         sx={{
                             backgroundColor: `${theme.palette.background.default}`,
                             borderRadius: '8px',

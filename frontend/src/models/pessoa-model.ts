@@ -11,4 +11,5 @@ export interface Pessoa {
   estado: string
   cep: string
   cidade: CidadeModel
+  cidadeIbge: number
 }
