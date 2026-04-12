@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/Button";
 import UserMenu from "./UserMenu";
@@ -13,12 +14,26 @@ import {
 
 import { Menu } from "lucide-react";
 
-
 export default function Header() {
-    const navegar = useNavigate()
+    const navegar = useNavigate();
+    const [userName, setUserName] = useState('Usuário');
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('@UniEduca:user');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            setUserName(user.nome); //
+        }
+    }, []);
 
     function navegarParaHome(){
-        navegar("/home")
+        navegar("/home");
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('@UniEduca:token');
+        localStorage.removeItem('@UniEduca:user');
+        navegar("/login");
     }
 
     return (
@@ -55,14 +70,14 @@ export default function Header() {
                     >
                         UniEduca
                     </Typography>
-                    <Stack  flexDirection='row' >
-                        <Button sx={{ width: 'auto' }} >
+                    <Stack flexDirection='row' alignItems='center'>
+                        <Button sx={{ width: 'auto' }} onClick={handleLogout}>
                             <UserMenu />
-                            João Pedro Vidal
+                            {userName}
                         </Button>
                     </Stack>
                 </Toolbar>
             </AppBar>
         </Box>
-    )
+    );
 }

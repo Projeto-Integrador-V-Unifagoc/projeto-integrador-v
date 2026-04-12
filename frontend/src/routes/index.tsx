@@ -6,7 +6,7 @@ import BuildingPage from "../Pages/BuildingPage/BuildingPage";
 import NotFound from "../Pages/NotFound/NotFound";
 import Alunos from "../Pages/Alunos/Alunos";
 
-import { Cadastro } from "../Pages/Cadastro/cadastro";
+import Cadastro from "../Pages/Usuario/Usuario";
 import { Login } from "../Pages/Login/Login";
 import { PrivateRoute } from "../components/PrivateRoute";
 
@@ -14,7 +14,6 @@ export function AppRoutes() {
     return (
         <Routes>
             {/* ROTAS PÚBLICAS */}
-            <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/login" element={<Login />} />
 
             {/* ROTAS PRIVADAS (Protegidas pelo PrivateRoute) */}
@@ -30,6 +29,7 @@ export function AppRoutes() {
                 <Route path="/home" element={<Home />}/>
                 <Route path="/tarefas/lista" element={<BuildingPage />} />
                 <Route path="/professores/lista" element={<BuildingPage />} />
+                <Route path="/usuarios/lista" element={<Cadastro />} />
                 <Route path="/alunos/lista" element={<Alunos />} />
                 <Route path="/cursos/lista" element={<BuildingPage />} />
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />
@@ -37,7 +37,6 @@ export function AppRoutes() {
                 <Route path="*" element={<NotFound />} />
             </Route>
 
-            {/* Redirecionamento de segurança caso o cara caia numa rota fantasma fora do layout */}
             <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
     );

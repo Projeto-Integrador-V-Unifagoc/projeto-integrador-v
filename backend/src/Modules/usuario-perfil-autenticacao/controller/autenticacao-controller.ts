@@ -63,10 +63,23 @@ class AutenticacaoController {
 
       return res.status(200).json({
         success: true,
-        data: usuario // Aqui já deve vir sem a senha se você mudou o Service
+        data: usuario
       });
     } catch (error: any) {
       return res.status(401).json({ success: false, message: error.message });
+    }
+  }
+
+  async listar(req: Request, res: Response) {
+    try {
+      const usuarios = await AutenticacaoService.listarTodos();
+
+      return res.status(200).json(usuarios);
+    } catch (error: any) {
+      console.error('Erro ao listar usuários:', error);
+      return res.status(500).json({ 
+        error: 'Erro interno ao buscar a lista de usuários.' 
+      });
     }
   }
 }

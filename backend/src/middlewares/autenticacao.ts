@@ -7,25 +7,30 @@ export const autenticar = (req: Request, res: Response, next: NextFunction) => {
   if (!authHeader) {
     return res.status(401).json({ erro: "Token não fornecido. Acesso negado." });
   }
+  const parts = authHeader.split(' ');
+  
+  if (parts.length !== 2) {
+    return res.status(401).json({ erro: "Erro no formato do token (Bearer esperado)." });
+  }
 
-  // Separa o "Bearer" do "Token"
-  const [, token] = authHeader.split(' ');
+  const [scheme, token] = parts;
 
   try {
     const secret = process.env.JWT_SECRET || 'segredo';
     const decoded = jwt.verify(token, secret) as any;
 
-    // Salva os dados do crachá na requisição para o próximo middleware usar
     (req as any).user = {
       id: decoded.id,
-      perfil: decoded.perfil 
+      tipo_usuario: decoded.tipo_usuario 
     };
 
     return next();
-  } catch (err) {
+  } catch (err: any) {
+    console.error("❌ Erro na validação do JWT:", err.message);
+    
     return res.status(401).json({ 
       success: false, 
-      message: "Token inválido ou expirado." 
+      message: "Token inválido ou expirado. Faça login novamente." 
     });
   }
 };

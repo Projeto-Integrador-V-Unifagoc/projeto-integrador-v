@@ -44,8 +44,20 @@ export class UsuarioRepository {
 
   async buscarPorId(id: string) {
     return await db('piv.usuario')
-      .select('id', 'nome', 'email', 'tipo_usuario', 'created_at') // 👈 Não liste a 'senha' aqui!
+      .select('id', 'nome', 'email', 'tipo_usuario', 'created_at')
       .where({ id })
       .first();
+  }
+
+  async findAll(): Promise<any[]> {
+    return await db
+      .withSchema('piv')
+      .table('usuario')
+      .select(
+        'usuario.id',
+        'usuario.nome',
+        'usuario.email',
+        'usuario.tipo_usuario'
+      );
   }
 }
