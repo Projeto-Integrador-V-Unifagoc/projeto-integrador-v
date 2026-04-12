@@ -163,19 +163,7 @@ export default function CadastroAlunos() {
           <FormCadatroMobile.Title>Cadastrar Aluno</FormCadatroMobile.Title>
           <FormCadatroMobile.Content>
             <FormCadastroAluno />
-          </FormCadatroMobile.Content>
-
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            isLoading={carregando}
-            sx={{
-              width: "100%",
-              mt: 2
-            }}
-          >
-            Cadastrar Aluno
-          </Button>
+          </FormCadatroMobile.Content>          
         </Stack>
 
       ) : (
