@@ -1,11 +1,14 @@
+import type { CidadeModel } from "./cidade-model"
+
 export interface Pessoa {
-  cpf: string
+  id: string
+  cpf: string | number
   nome: string
   dataNascimento: string
   logradouro: string
-  numero: number
+  numero: string
   bairro: string
-  cidadeId: string
   estado: string
   cep: string
+  cidade: CidadeModel
 }

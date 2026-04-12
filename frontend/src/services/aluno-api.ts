@@ -13,7 +13,7 @@ export const alunoApi = {
                 logradouro: data.pessoa.logradouro,
                 numero: data.pessoa.numero,
                 bairro: data.pessoa.bairro,
-                cidade_id: data.pessoa.cidadeId,
+                cidadeIbge: data.pessoa.cidade.igbe,
                 estado: data.pessoa.estado,
                 cep: data.pessoa.cep,
             },
@@ -25,6 +25,11 @@ export const alunoApi = {
         }
         
         const response = await api.post("/alunos", payload)
+        return response.data
+    },
+
+    async buscarAluno (params?: { id?: string, matricula?: string, nome?: string }) {
+        const response = await api.get("alunos", { params })
         return response.data
     }
 }

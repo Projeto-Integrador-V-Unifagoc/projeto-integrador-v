@@ -16,8 +16,20 @@ export function useAluno() {
         }
     }
 
+    const listarAlunos = async (params?: any) => {
+        setCarregando(true)
+
+        try {
+            const response = await alunoApi.buscarAluno(params)
+            return response
+        } finally {
+            setCarregando(false)
+        }
+    }
+
     return {
         criarAluno,
+        listarAlunos,
         carregando
     }
 }
