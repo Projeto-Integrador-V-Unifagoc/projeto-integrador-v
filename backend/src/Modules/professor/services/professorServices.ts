@@ -1,8 +1,33 @@
 import { professorRepository } from '../repository/professorRepository.js';
-import type { AtualizarProfessor } from '../models/professorModels.js';
-import type { Professor } from '../models/professorModels.js';
+import type { AtualizarProfessor, CriarProfessorDTO } from '../models/professorModels.js';
 
-async function atualizar(id: number, dados: AtualizarProfessor): Promise<Professor> {
+async function listarTodos() {
+  return await professorRepository.listarTodos();
+}
+
+async function buscarPorId(id: number) {
+  const professor = await professorRepository.buscarPorId(id);
+  if (!professor) {
+    throw new Error('Professor não encontrado.');
+  }
+  return professor;
+}
+
+async function criar(dados: CriarProfessorDTO) {
+  const emailExistente = await professorRepository.buscarPorEmail(dados.email);
+  if (emailExistente) {
+    throw new Error('Já existe um professor cadastrado com este e-mail.');
+  }
+
+  const cpfExistente = await professorRepository.buscarPorCpf(dados.cpf);
+  if (cpfExistente) {
+    throw new Error('Já existe um professor cadastrado com este CPF.');
+  }
+
+  return await professorRepository.criar(dados);
+}
+
+async function atualizar(id: number, dados: AtualizarProfessor) {
   const professor = await professorRepository.buscarPorId(id);
 
   if (!professor) {
@@ -26,10 +51,18 @@ async function atualizar(id: number, dados: AtualizarProfessor): Promise<Profess
   return await professorRepository.atualizar(id, dados);
 }
 
+async function remover(id: number) {
+  const professor = await professorRepository.buscarPorId(id);
+  if (!professor) {
+    throw new Error('Professor não encontrado.');
+  }
+  await professorRepository.remover(id);
+}
+
 export const professorService = {
+  listarTodos,
+  buscarPorId,
+  criar,
   atualizar,
-  listarTodos: async (): Promise<Professor[]> => [],
-  buscarPorId: async (id: number): Promise<Professor> => ({ id, nome: '', email: '', senha: '', cpf: '' }),
-  criar: async (dados: Professor): Promise<Professor> => dados,
-  remover: async (id: number): Promise<void> => {},
+  remover,
 };

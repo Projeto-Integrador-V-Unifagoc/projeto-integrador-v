@@ -34,7 +34,6 @@ async function criar(req: Request, res: Response): Promise<void> {
   try {
     const { nome, email, senha, cpf, telefone, especialidade } = req.body;
  
-    // Validação dos campos obrigatórios
     if (!nome || !email || !senha || !cpf) {
       res.status(400).json({ mensagem: 'Os campos nome, email, senha e cpf são obrigatórios.' });
       return;
@@ -70,7 +69,6 @@ async function atualizar(req: Request, res: Response): Promise<void> {
  
     const { nome, email, senha, cpf, telefone, especialidade, ativo } = req.body;
  
-    // Remove campos undefined para não sobrescrever dados existentes
     const dadosParaAtualizar = Object.fromEntries(
       Object.entries({ nome, email, senha, cpf, telefone, especialidade, ativo }).filter(
         ([_, valor]) => valor !== undefined

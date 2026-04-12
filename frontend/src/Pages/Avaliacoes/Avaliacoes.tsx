@@ -9,7 +9,6 @@ import {
   MenuItem,
   Stack,
   Typography,
-  TextField as MuiTextField,
 } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { CalendarDays, ClipboardCheck, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
@@ -23,7 +22,7 @@ import { Dialog } from "../../components/Dialog";
 import TextField from "../../components/TextField";
 import {
   type Avaliacao,
-  type AvaliacaoPayload,
+  type CriarAvaliacaoDTO,
   REGRAS_AVALIACAO,
   type TipoAvaliacao,
 } from "../../models/avaliacao-model";
@@ -32,31 +31,27 @@ import { avaliacaoApi } from "../../services/avaliacao-api";
 const tipoOptions: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
 
 interface AvaliacaoFormState {
-  id_disciplina: number | "";
+  turma_id: string;
   tipo_avaliacao: TipoAvaliacao;
   descricao_avaliacao: string;
-  texto_tarefa: string;
-  valor_avaliacao: number | "";
-  data_avaliacao: string;
-  data_devolucao_avaliacao: string;
+  valor: number | "";
+  data_lancamento: string;
+  data_devolucao: string;
 }
 
 const initialForm: AvaliacaoFormState = {
-  id_disciplina: 0,
+  turma_id: "",
   tipo_avaliacao: "PROVA",
   descricao_avaliacao: "",
-  texto_tarefa: "",
-  valor_avaliacao: REGRAS_AVALIACAO.valorProva,
-  data_avaliacao: "",
-  data_devolucao_avaliacao: "",
+  valor: REGRAS_AVALIACAO.valorProva,
+  data_lancamento: "",
+  data_devolucao: "",
 };
 
 function formatarData(value: string) {
   if (!value) return "-";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-
   return date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
@@ -75,16 +70,14 @@ function normalizarTexto(value: string) {
 
 function getMensagemErro(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
-    const apiMessage = error.response?.data?.erro;
+    const apiMessage = error.response?.data?.mensagem;
     if (typeof apiMessage === "string" && apiMessage.trim()) {
       return apiMessage;
     }
   }
-
   if (error instanceof Error && error.message.trim()) {
     return error.message;
   }
-
   return fallback;
 }
 
@@ -93,14 +86,13 @@ export default function Avaliacoes() {
   const [saving, setSaving] = useState<boolean>(false);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<AvaliacaoFormState>(initialForm);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   async function carregarAvaliacoes() {
     setErrorMessage(null);
-
     try {
       const data = await avaliacaoApi.listar();
       setAvaliacoes(data);
@@ -115,75 +107,65 @@ export default function Avaliacoes() {
   }, []);
 
   const provas = useMemo(
-    () => avaliacoes.filter((avaliacao) => avaliacao.tipo_avaliacao === "PROVA"),
+    () => avaliacoes.filter((av) => av.tipo_avaliacao === "PROVA"),
     [avaliacoes],
   );
   const tpis = useMemo(
-    () => avaliacoes.filter((avaliacao) => avaliacao.tipo_avaliacao === "TPI"),
+    () => avaliacoes.filter((av) => av.tipo_avaliacao === "TPI"),
     [avaliacoes],
   );
   const trabalhos = useMemo(
-    () => avaliacoes.filter((avaliacao) => avaliacao.tipo_avaliacao === "TRABALHO"),
+    () => avaliacoes.filter((av) => av.tipo_avaliacao === "TRABALHO"),
     [avaliacoes],
   );
 
   const pontosTrabalhos = useMemo(
-    () => trabalhos.reduce((total, avaliacao) => total + Number(avaliacao.valor_avaliacao || 0), 0),
+    () => trabalhos.reduce((total, av) => total + Number(av.valor || 0), 0),
     [trabalhos],
   );
 
   const pontosDisponiveisTrabalhos = REGRAS_AVALIACAO.limiteTrabalhos - pontosTrabalhos;
 
-  const avaliacaoFiltradas = useMemo(() => {
+  const avaliacoesFiltradas = useMemo(() => {
     const term = normalizarTexto(search);
+    if (!term) return avaliacoes;
 
-    if (!term) {
-      return avaliacoes;
-    }
-
-    return avaliacoes.filter((avaliacao) => {
+    return avaliacoes.filter((av) => {
       const camposPesquisaveis = [
-        String(avaliacao.id_avaliacao),
-        String(avaliacao.id_disciplina),
-        avaliacao.tipo_avaliacao,
-        formatarTipo(avaliacao.tipo_avaliacao),
-        avaliacao.descricao_avaliacao ?? "",
-        avaliacao.texto_tarefa ?? "",
-        String(avaliacao.valor_avaliacao),
-        `${Number(avaliacao.valor_avaliacao).toFixed(1)} pts`,
-        formatarData(avaliacao.data_avaliacao),
-        formatarData(avaliacao.data_devolucao_avaliacao ?? ""),
+        av.id,
+        av.turma_id,
+        av.tipo_avaliacao,
+        formatarTipo(av.tipo_avaliacao),
+        av.descricao_avaliacao ?? "",
+        String(av.valor),
+        `${Number(av.valor).toFixed(1)} pts`,
+        formatarData(av.data_lancamento),
+        formatarData(av.data_devolucao ?? ""),
       ];
-
       return camposPesquisaveis.some((campo) => normalizarTexto(campo).includes(term));
     });
   }, [avaliacoes, search]);
 
   const rows = useMemo(
-    () =>
-      avaliacaoFiltradas.map((avaliacao) => ({
-        ...avaliacao,
-        id: avaliacao.id_avaliacao,
-      })),
-    [avaliacaoFiltradas],
+    () => avaliacoesFiltradas.map((av) => ({ ...av })),
+    [avaliacoesFiltradas],
   );
 
   const valorTotal = useMemo(
-    () => avaliacoes.reduce((total, avaliacao) => total + Number(avaliacao.valor_avaliacao || 0), 0),
+    () => avaliacoes.reduce((total, av) => total + Number(av.valor || 0), 0),
     [avaliacoes],
   );
 
   const avaliacaoEmEdicao = useMemo(
-    () => avaliacoes.find((avaliacao) => avaliacao.id_avaliacao === editingId) ?? null,
+    () => avaliacoes.find((av) => av.id === editingId) ?? null,
     [avaliacoes, editingId],
   );
 
   const pontosTrabalhoRestantesNoFormulario = useMemo(() => {
     const valorAtual =
       avaliacaoEmEdicao?.tipo_avaliacao === "TRABALHO"
-        ? Number(avaliacaoEmEdicao.valor_avaliacao || 0)
+        ? Number(avaliacaoEmEdicao.valor || 0)
         : 0;
-
     return REGRAS_AVALIACAO.limiteTrabalhos - (pontosTrabalhos - valorAtual);
   }, [avaliacaoEmEdicao, pontosTrabalhos]);
 
@@ -196,15 +178,14 @@ export default function Avaliacoes() {
   }
 
   function abrirEdicao(avaliacao: Avaliacao) {
-    setEditingId(avaliacao.id_avaliacao);
+    setEditingId(avaliacao.id);
     setForm({
-      id_disciplina: avaliacao.id_disciplina,
+      turma_id: avaliacao.turma_id,
       tipo_avaliacao: avaliacao.tipo_avaliacao,
       descricao_avaliacao: avaliacao.descricao_avaliacao ?? "",
-      texto_tarefa: avaliacao.texto_tarefa ?? "",
-      valor_avaliacao: Number(avaliacao.valor_avaliacao),
-      data_avaliacao: avaliacao.data_avaliacao.slice(0, 10),
-      data_devolucao_avaliacao: avaliacao.data_devolucao_avaliacao?.slice(0, 10) ?? "",
+      valor: Number(avaliacao.valor),
+      data_lancamento: avaliacao.data_lancamento.slice(0, 10),
+      data_devolucao: avaliacao.data_devolucao?.slice(0, 10) ?? "",
     });
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -221,85 +202,67 @@ export default function Avaliacoes() {
 
     if (name === "tipo_avaliacao") {
       const tipo = value as TipoAvaliacao;
-
       setForm((current) => ({
         ...current,
         tipo_avaliacao: tipo,
-        valor_avaliacao:
+        valor:
           tipo === "PROVA"
             ? REGRAS_AVALIACAO.valorProva
             : tipo === "TPI"
               ? REGRAS_AVALIACAO.valorTpi
               : current.tipo_avaliacao === "TRABALHO"
-                ? current.valor_avaliacao
+                ? current.valor
                 : "",
       }));
       return;
     }
 
-    if (name === "valor_avaliacao") {
+    if (name === "valor") {
       setForm((current) => ({
         ...current,
-        valor_avaliacao: value === "" ? "" : Math.max(0, Number(value)),
+        valor: value === "" ? "" : Math.max(0, Number(value)),
       }));
       return;
     }
 
-    if (name === "id_disciplina") {
-      setForm((current) => ({
-        ...current,
-        id_disciplina: value === "" ? "" : Math.max(0, Number(value)),
-      }));
-      return;
-    }
-
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    setForm((current) => ({ ...current, [name]: value }));
   }
 
-  function validarFormulario(payload: AvaliacaoPayload) {
-    if (!payload.id_disciplina || payload.id_disciplina <= 0) {
-      throw new Error("Informe uma disciplina valida para a avaliacao.");
+  function validarFormulario(payload: CriarAvaliacaoDTO) {
+    if (!payload.turma_id) {
+      throw new Error("Informe a turma para a avaliacao.");
     }
 
-    if (!payload.data_avaliacao) {
-      throw new Error("Informe a data de aplicacao da avaliacao.");
+    if (!payload.data_lancamento) {
+      throw new Error("Informe a data de lancamento da avaliacao.");
     }
 
-    const outrasAvaliacoes = avaliacoes.filter((avaliacao) => avaliacao.id_avaliacao !== editingId);
-    const provasExistentes = outrasAvaliacoes.filter((avaliacao) => avaliacao.tipo_avaliacao === "PROVA");
-    const tpisExistentes = outrasAvaliacoes.filter((avaliacao) => avaliacao.tipo_avaliacao === "TPI");
-    const trabalhosExistentes = outrasAvaliacoes.filter((avaliacao) => avaliacao.tipo_avaliacao === "TRABALHO");
+    const outrasAvaliacoes = avaliacoes.filter((av) => av.id !== editingId);
+    const provasExistentes = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === "PROVA");
+    const tpisExistentes = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === "TPI");
+    const trabalhosExistentes = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === "TRABALHO");
 
     if (payload.tipo_avaliacao === "PROVA") {
       if (provasExistentes.length >= REGRAS_AVALIACAO.maxProvas) {
         throw new Error("Ja existem 3 provas cadastradas de 20 pontos.");
       }
-
-      payload.valor_avaliacao = REGRAS_AVALIACAO.valorProva;
     }
 
     if (payload.tipo_avaliacao === "TPI") {
       if (tpisExistentes.length >= 1) {
         throw new Error("Ja existe um TPI cadastrado de 5 pontos.");
       }
-
-      payload.valor_avaliacao = REGRAS_AVALIACAO.valorTpi;
     }
 
     if (payload.tipo_avaliacao === "TRABALHO") {
-      if (payload.valor_avaliacao <= 0) {
+      if (!payload.valor || payload.valor <= 0) {
         throw new Error("Informe um valor maior que zero para o trabalho.");
       }
-
       const totalTrabalhos = trabalhosExistentes.reduce(
-        (total: number, avaliacao: Avaliacao) => total + Number(avaliacao.valor_avaliacao || 0),
+        (total, av) => total + Number(av.valor || 0),
         0,
       );
-
-      if (totalTrabalhos + payload.valor_avaliacao > REGRAS_AVALIACAO.limiteTrabalhos) {
+      if (totalTrabalhos + payload.valor > REGRAS_AVALIACAO.limiteTrabalhos) {
         throw new Error("Os trabalhos podem somar no maximo 25 pontos.");
       }
     }
@@ -311,14 +274,13 @@ export default function Avaliacoes() {
     setSuccessMessage(null);
 
     try {
-      const payload: AvaliacaoPayload = {
-        id_disciplina: Number(form.id_disciplina),
+      const payload: CriarAvaliacaoDTO = {
+        turma_id: form.turma_id,
         tipo_avaliacao: form.tipo_avaliacao,
         descricao_avaliacao: form.descricao_avaliacao?.trim() || undefined,
-        texto_tarefa: form.texto_tarefa?.trim() || undefined,
-        valor_avaliacao: Number(form.valor_avaliacao),
-        data_avaliacao: form.data_avaliacao,
-        data_devolucao_avaliacao: form.data_devolucao_avaliacao || undefined,
+        valor: Number(form.valor),
+        data_lancamento: form.data_lancamento,
+        data_devolucao: form.data_devolucao || null,
       };
 
       validarFormulario(payload);
@@ -342,12 +304,9 @@ export default function Avaliacoes() {
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: string) {
     const confirmed = window.confirm("Deseja realmente excluir esta avaliacao?");
-
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -364,9 +323,9 @@ export default function Avaliacoes() {
 
   const columns: GridColDef[] = [
     {
-      field: "id_avaliacao",
+      field: "id",
       headerName: "Id",
-      width: 80,
+      width: 120,
     },
     {
       field: "tipo_avaliacao",
@@ -392,24 +351,24 @@ export default function Avaliacoes() {
       valueGetter: (_, row) => row.descricao_avaliacao || "Sem descricao",
     },
     {
-      field: "id_disciplina",
-      headerName: "Disciplina",
-      width: 110,
+      field: "turma_id",
+      headerName: "Turma",
+      width: 140,
     },
     {
-      field: "valor_avaliacao",
+      field: "valor",
       headerName: "Valor",
       width: 110,
       valueFormatter: (value) => `${Number(value).toFixed(1)} pts`,
     },
     {
-      field: "data_avaliacao",
-      headerName: "Aplicacao",
-      width: 120,
+      field: "data_lancamento",
+      headerName: "Lancamento",
+      width: 130,
       valueFormatter: (value) => formatarData(String(value)),
     },
     {
-      field: "data_devolucao_avaliacao",
+      field: "data_devolucao",
       headerName: "Devolucao",
       width: 120,
       valueFormatter: (value) => formatarData(String(value ?? "")),
@@ -425,7 +384,7 @@ export default function Avaliacoes() {
           <IconButton size="small" onClick={() => abrirEdicao(row)}>
             <Pencil size={16} />
           </IconButton>
-          <IconButton size="small" color="error" onClick={() => handleDelete(row.id_avaliacao)}>
+          <IconButton size="small" color="error" onClick={() => handleDelete(row.id)}>
             <Trash2 size={16} />
           </IconButton>
         </Stack>
@@ -454,7 +413,7 @@ export default function Avaliacoes() {
               </Stack>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
                 <TextField
-                  placeholder="Pesquisar por tipo, disciplina, valor ou data"
+                  placeholder="Pesquisar por tipo, turma, valor ou data"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   sx={{ minWidth: { sm: 320 } }}
@@ -532,7 +491,6 @@ export default function Avaliacoes() {
                     <Typography variant="body2" color="text.secondary">Total configurado</Typography>
                     <Typography variant="h5" fontWeight="bold">{valorTotal.toFixed(1)} pts</Typography>
                   </Stack>
-
                 </Stack>
               </Card.Content>
             </Card.Root>
@@ -544,10 +502,7 @@ export default function Avaliacoes() {
             <Card.Title>Lista de avaliacoes</Card.Title>
           </Card.Header>
           <Card.Content sx={{ minHeight: 520 }}>
-            <DataTable
-              rows={rows}
-              columns={columns}
-            />
+            <DataTable rows={rows} columns={columns} />
           </Card.Content>
         </Card.Root>
       </Stack>
@@ -563,18 +518,17 @@ export default function Avaliacoes() {
               Provas sempre valem 20 pontos, o TPI sempre vale 5 e os trabalhos podem somar no maximo 25 pontos.
             </Alert>
             <Grid container spacing={2}>
-              <Grid size={4}>
+              <Grid size={12}>
                 <TextField
-                  label="Disciplina"
-                  name="id_disciplina"
-                  type="number"
-                  value={form.id_disciplina}
+                  label="Turma (UUID)"
+                  name="turma_id"
+                  value={form.turma_id}
                   onChange={handleChange}
-                  inputProps={{ min: 0 }}
+                  placeholder="Ex.: 550e8400-e29b-41d4-a716-446655440000"
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid size={8}>
+              <Grid size={12}>
                 <TextField
                   label="Tipo"
                   name="tipo_avaliacao"
@@ -601,32 +555,12 @@ export default function Avaliacoes() {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid size={12}>
-                <MuiTextField
-                  label="Texto da tarefa"
-                  name="texto_tarefa"
-                  value={form.texto_tarefa}
-                  onChange={handleChange}
-                  placeholder="Digite as instrucoes, enunciado ou orientacoes da tarefa"
-                  multiline
-                  minRows={4}
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  sx={{
-                    
-                    "& .MuiInputBase-root": {
-                      height: "auto",
-                      alignItems: "flex-start",
-                    }
-                  }}
-                />
-              </Grid>
               <Grid size={4}>
                 <TextField
                   label="Valor"
-                  name="valor_avaliacao"
+                  name="valor"
                   type="number"
-                  value={form.valor_avaliacao}
+                  value={form.valor}
                   onChange={handleChange}
                   disabled={valorTravado}
                   inputProps={{ min: 0 }}
@@ -642,10 +576,10 @@ export default function Avaliacoes() {
               </Grid>
               <Grid size={4}>
                 <TextField
-                  label="Data de aplicacao"
-                  name="data_avaliacao"
+                  label="Data de lancamento"
+                  name="data_lancamento"
                   type="date"
-                  value={form.data_avaliacao}
+                  value={form.data_lancamento}
                   onChange={handleChange}
                   InputLabelProps={{ shrink: true }}
                 />
@@ -653,9 +587,9 @@ export default function Avaliacoes() {
               <Grid size={4}>
                 <TextField
                   label="Data de devolucao"
-                  name="data_devolucao_avaliacao"
+                  name="data_devolucao"
                   type="date"
-                  value={form.data_devolucao_avaliacao}
+                  value={form.data_devolucao}
                   onChange={handleChange}
                   InputLabelProps={{ shrink: true }}
                 />

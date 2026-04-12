@@ -1,18 +1,29 @@
-export type TipoAvaliacao = "PROVA" | "TPI" | "TRABALHO";
+export type TipoAvaliacao = 'PROVA' | 'TPI' | 'TRABALHO';
 
-export interface AvaliacaoPayload {
-  id_disciplina: number;
+export interface Avaliacao {
+  id: string;                       
+  tipo_avaliacao: TipoAvaliacao;
+  descricao_avaliacao?: string | null;
+  data_lancamento: string;
+  valor: number;
+  nota?: number | null;
+  data_devolucao?: string | null;
+  aluno_turma_id?: string | null;
+  turma_id: string;
+}
+
+export interface CriarAvaliacaoDTO {
   tipo_avaliacao: TipoAvaliacao;
   descricao_avaliacao?: string;
-  texto_tarefa?: string;
-  valor_avaliacao: number;
-  data_avaliacao: string;
-  data_devolucao_avaliacao?: string;
+  data_lancamento: string;
+  valor: number;
+  nota?: number;
+  data_devolucao?: string | null;
+  aluno_turma_id?: string | null;
+  turma_id: string;
 }
 
-export interface Avaliacao extends AvaliacaoPayload {
-  id_avaliacao: number;
-}
+export type AtualizarAvaliacaoDTO = Partial<CriarAvaliacaoDTO>;
 
 export const REGRAS_AVALIACAO = {
   maxProvas: 3,

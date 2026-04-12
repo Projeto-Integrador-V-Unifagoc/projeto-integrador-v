@@ -16,7 +16,7 @@ export interface Usuario {
 export interface Pessoa {
   id?: string;
   nome: string;
-  data_nascimento: string;
+  data_nascimento: string | Date;
   logradouro: string;
   numero: string;
   bairro: string;
@@ -32,4 +32,36 @@ export interface Professor {
   pessoa_id: string;
   curso_id: string;
   faculdade_id: string;
+}
+
+export interface CriarProfessorDTO {
+  nome: string;
+  email: string;
+  senha: string;
+  cpf: string;
+  data_nascimento: string | Date;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cidade_id: string;
+  estado: string;
+  cep: string;
+  curso_id: string;
+  faculdade_id: string;
+}
+
+export interface AtualizarProfessor {
+  nome?: string;
+  email?: string;
+  senha?: string;
+  cpf?: string;
+  data_nascimento?: string | Date;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  cidade_id?: string;
+  estado?: string;
+  cep?: string;
+  curso_id?: string;
+  faculdade_id?: string;
 }
