@@ -93,7 +93,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
                         "& .MuiOutlinedInput-root": {
                             borderRadius: '17px',
                         },
-                        width: isMobile ? "100%" : "auto",
+                        width: '100%',
                     }}
                 />
                 <Button 
