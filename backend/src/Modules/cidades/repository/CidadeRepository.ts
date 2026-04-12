@@ -7,7 +7,9 @@ export class CidadeRepository {
         if(filtros?.ibge) {
             query.where("ibge", filtros.ibge)
         }
-        return await query.select("*")
+        return await query
+        .select("*")
+        .limit(10)
     }
 
     async buscarCidadePorIbge(ibge: string) {
