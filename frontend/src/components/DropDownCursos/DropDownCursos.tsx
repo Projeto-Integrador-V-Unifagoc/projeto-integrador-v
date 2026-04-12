@@ -1,12 +1,18 @@
-import { Cursos } from "../../enums/cursos";
+import { useEffect, useState } from "react";
 import { MenuItem, type TextFieldProps } from "@mui/material";
 import TextField from "../TextField";
-import { theme } from "../../theme";
+import { useCurso } from "../../hooks/use-curso";
+
+
+type Curso = {
+    id: number;
+    nome: string;
+};
 
 type DropDownCursosProps = TextFieldProps & {
-    value: Cursos | '';
-    onChange: (value: Cursos) => void;
-}
+    value: string;
+    onChange: (value: string) => void;
+};
 
 export default function DropDownCursos({
     value,
@@ -14,16 +20,26 @@ export default function DropDownCursos({
     ...rest
 }: DropDownCursosProps) {
 
+    const { listarCursos, carregando } = useCurso();
+    const [cursos, setCursos] = useState<Curso[]>([]);
+
+    useEffect(() => {
+        async function carregarCursos() {
+            const data = await listarCursos();
+            setCursos(data);
+        }
+
+        carregarCursos();
+    }, []);
+
     return (
         <TextField
-            label= 'Curso'
-            InputLabelProps={{
-                shrink: true
-            }}
+            label="Curso"
+            InputLabelProps={{ shrink: true }}
             select
             fullWidth
             value={value}
-            onChange={(e) => onChange(e.target.value as Cursos)}
+            onChange={(e) => onChange(e.target.value)}
             SelectProps={{
                 MenuProps: {
                     PaperProps: {
@@ -38,18 +54,15 @@ export default function DropDownCursos({
             }}
             {...rest}
         >
-            {Object.values(Cursos).map((curso) => (
-                <MenuItem
-                    key={curso}
-                    value={curso}
-                    sx={{
-                        backgroundColor: `${theme.palette.background.default}`,
-                        borderRadius: '8px',
-                    }}
-                >
-                    {curso}
-                </MenuItem>
-            ))}
+            {carregando ? (
+                <MenuItem disabled>Carregando...</MenuItem>
+            ) : (
+                cursos.map((curso) => (
+                    <MenuItem key={curso.id} value={curso.nome}>
+                        {curso.nome}
+                    </MenuItem>
+                ))
+            )}
         </TextField>
     );
 }
