@@ -1,7 +1,7 @@
 {
   "name": "projeto-integrador-v",
   "version": "1.0.0",
-  "description": "",
+  "description": "Projeto Integrador V - Unifagoc",
   "homepage": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v#readme",
   "bugs": {
     "url": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v/issues"
@@ -17,7 +17,9 @@
   "scripts": {
     "dev": "tsx watch src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "clean": "rm -rf dist",
+    "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile src/knexfile.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",
@@ -29,8 +31,11 @@
   },
   "keywords": [],
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.2",
+    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }

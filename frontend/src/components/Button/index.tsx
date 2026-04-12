@@ -6,7 +6,6 @@ import {
     type ButtonProps as MuiButtonProps 
 } from "@mui/material";
 
-import { theme } from "../../theme";
 
 
 interface ButtonProps extends MuiButtonProps {
@@ -15,7 +14,7 @@ interface ButtonProps extends MuiButtonProps {
 }
 
 export default function Button(props: ButtonProps ){
-    const { children, onClick, isLoading, disabled, ...rest } = props
+    const { children, isLoading, disabled, ...rest } = props
 
     return (
         <MuiButton

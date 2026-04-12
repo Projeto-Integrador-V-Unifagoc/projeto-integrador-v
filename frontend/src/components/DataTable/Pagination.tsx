@@ -4,8 +4,7 @@ import {
   Typography,
   Select,
   MenuItem,
-  FormControl,
-  Box
+  FormControl
 } from "@mui/material";
 
 import {

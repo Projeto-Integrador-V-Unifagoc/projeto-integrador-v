@@ -1,0 +1,54 @@
+## Documentação auxiliar para aprendizado do grupo
+
+## 1° Puxamos as informações da branch develop
+- Somente selecionamos a opção;
+
+## 2° Procesos
+- npm init -y
+- npm install (node)
+- npm install -D typescript @types/node @types/express
+- npm npx tsc --init
+- npm install -D tsx  -> Eles rodam o código TS direto, sem você precisar compilar manualmente toda hora.
+  npx tsx index.ts
+
+- npx tsc        # Isso cria os arquivos .js na pasta de saída
+ node dist/index.js
+
+- CONFIGURAÇÃO DO packege.json
+
+"scripts": {
+  "dev": "tsx watch index.ts",
+  "build": "tsc",
+  "start": "node dist/index.js"
+}
+
+- npm install dotenv
+- npm install express knex pg
+
+
+## O que é o cors?
+CORS significa Cross-Origin Resource Sharing (Compartilhamento de Recursos de Origem Cruzada). Por segurança, os navegadores bloqueiam requisições feitas de um domínio (ex: meu-site.com) para outro (ex: api.meu-site.com), a menos que o servidor da API dê uma "autorização" explícita.
+
+## Importante (Organização de pastas):
+- Controllers/: recebe a requisição;
+- Repository/: faz as queries (Knex);
+- Services/: Regras de negócio;
+- Types/: ou arquivo interface.ts: Define o formato do dado;
+
+## Sobre o docker-compose:
+O Gemini disse:
+O docker-compose.yml é essencial para que o seu professor ou qualquer outro desenvolvedor consiga rodar o seu projeto (API + Banco de Dados) com apenas um comando, sem precisar instalar o PostgreSQL manualmente na máquina.
+
+  ## -- Para subir tudo: No terminal, na raiz do projeto, digite:
+  docker-compose up -d
+
+  ## -- Para ver se está rodando:
+  docker ps
+
+  ## -- Para derrubar tudo:
+  docker-compose down
+
+  ## npm run build
+  > irá criar a pasta dist com as informações dentro (isso só é possível após toda a configuração da conexão com o banco e configuração do docker)
+
+## Criando as migrations
