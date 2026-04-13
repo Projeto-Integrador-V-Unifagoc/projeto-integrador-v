@@ -33,4 +33,18 @@ export class AlunoController {
             res.status(400).json({ error: (error as Error).message });
         }
     }
+
+    async buscarAlunoPorMatricula(req: any, res: any) {
+        try {
+            const aluno = await this.alunoService.buscarAlunoPorMatricula(req.params.matricula);
+            if (aluno) {
+                res.status(200).json(aluno);
+            } else {
+                res.status(404).json({ error: "Aluno não encontrado" });
+            }
+        } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
+        }
+    }
+
 }

@@ -29,8 +29,8 @@ app.post('/departamentos', (req, res) => departamentoController.criarDepartament
 app.post('/cursos', (req, res) => cursoController.criarCurso(req, res))
 
 app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res))
-app.get('/alunos/:id', (req, res) => alunoController.buscarAlunoPorId(req, res))
-//app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res))
+app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, res))
+app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res))
 
 app.get('/cidades', (req, res) => cidadeController.listarCidades(req, res))
 app.get('/cidades/:ibge', (req, res) => cidadeController.buscarCidadePorIbge(req, res))
