@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CriarAlunoRequest } from "../models/aluno-model";
+import type { AlunoResponse, CriarAlunoRequest } from "../models/aluno-model";
 import { alunoApi } from "../services/aluno-api";
 
 export function useAluno() {
@@ -27,7 +27,7 @@ export function useAluno() {
         }
     }
     
-    const buscarAlunoPorMatricula = async (matricula: string) => {
+    const buscarAlunoPorMatricula = async (matricula: string): Promise<AlunoResponse> => {
         setCarregando(true)
 
         try {

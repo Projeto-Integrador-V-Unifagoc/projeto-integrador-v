@@ -10,17 +10,26 @@ import Container from "../../components/Container";
 
 import type { AlunoRequest, AlunoView } from "../../models/aluno-model";
 import { useAluno } from "../../hooks/use-aluno";
+import { useNavigate } from "react-router-dom";
 
 export default function Alunos() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const [alunos, setAlunos] = useState<AlunoView[]>([])
-  const { listarAlunos, carregando } = useAluno()
+  const { listarAlunos, buscarAlunoPorMatricula, carregando } = useAluno()
+  const navigate = useNavigate()
+
 
   const columns = [
     { field: "matricula", headerName: "Matricula", width: 90 },
     { field: "nome", headerName: "Nome", flex: 1 },
-    { field: "email", headerName: "Email", flex: 1 },
+    { field: "cpf", headerName: "CPF", flex: 1 },
+    { field: "logradouro", headerName: "Logradouro", flex: 1 },
+    { field: "bairro", headerName: "Bairro", flex: 1 },
+    { field: "cidade", headerName: "Cidade", flex: 1 },
+    { field: "estado", headerName: "Estado", flex: 1 },
+    { field: "cep", headerName: "Cep", flex: 1 },
+    { field: "periodo", headerName: "Período", flex: 1 },
   ];
 
   useEffect(() => {
@@ -54,7 +63,7 @@ export default function Alunos() {
       {isMobile ? (
         alunos.map((aluno) => (
           <MobileCard.Root
-            
+            onClick={() => navigate(`/alunos/${aluno.matricula}`)}
             key={aluno.id}
           >
             <MobileCard.Header 

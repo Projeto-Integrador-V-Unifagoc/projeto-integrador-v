@@ -141,7 +141,7 @@ export default function FormCadastroAluno() {
     return (
         <>
             <Stack
-                spacing={0.8}
+                spacing={2}
                 width='100%'
                 mt={1}
             >

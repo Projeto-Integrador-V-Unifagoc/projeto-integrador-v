@@ -1,7 +1,6 @@
 import type { Usuario } from "./usuario-model"
-import type { Pessoa } from "./pessoa-model"
+import type { Pessoa, PessoaV2 } from "./pessoa-model"
 
-// Deprecated
 export interface AlunoRequest {
   id: string
   matricula: number
@@ -10,7 +9,7 @@ export interface AlunoRequest {
   usuario: Usuario
 }
 
-export interface CriarAlunoRequest  {
+export interface CriarAlunoRequest {
   periodo: number
   pessoa: {
     cpf: string
@@ -38,4 +37,12 @@ export interface AlunoView {
   estado: string
   cep: string
   periodo: number | string
+}
+
+export interface AlunoResponse {
+  id: string
+  matricula: number
+  periodo: string
+  curso: string
+  pessoa: PessoaV2
 }
