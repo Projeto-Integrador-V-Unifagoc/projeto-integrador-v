@@ -46,4 +46,9 @@ export class AlunoService {
         const aluno = await this.alunoRepository.buscarAlunoPorId(id);
         return aluno;
     }
+
+    async buscarAlunoPorMatricula(matricula: string) {
+        const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula);
+        return aluno;
+    }
 }
