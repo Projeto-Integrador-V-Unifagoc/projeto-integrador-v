@@ -25,5 +25,10 @@ export const alunoApi = {
     async buscarAluno (params?: { id?: string, matricula?: string, nome?: string }) {
         const response = await api.get("alunos", { params })
         return response.data
+    },
+
+    async buscarAlunoPorMatricula(matricula: string) {
+        const response = await api.get(`/alunos/${matricula}`)
+        return response.data
     }
 }
