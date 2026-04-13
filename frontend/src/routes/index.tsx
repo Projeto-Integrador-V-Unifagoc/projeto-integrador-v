@@ -9,6 +9,7 @@ import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 
 
+
 export function AppRoutes() {
     return (
         <Routes>
