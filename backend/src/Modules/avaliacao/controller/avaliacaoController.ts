@@ -12,9 +12,10 @@ async function listarTodos(req: Request, res: Response): Promise<void> {
 
 async function buscarPorId(req: Request, res: Response): Promise<void> {
   try {
-    const id = req.params.id;
+    // Garantindo que id seja tratado como string
+    const id = String(req.params.id);
 
-    if (!id) {
+    if (!id || id === 'undefined') {
       res.status(400).json({ mensagem: 'ID inválido.' });
       return;
     }
@@ -41,7 +42,7 @@ async function criar(req: Request, res: Response): Promise<void> {
 
     const novaAvaliacao = await avaliacaoService.criar({
       tipo_avaliacao,
-      descricao_avaliacao,
+      descricao_avaliacao: descricao_avaliacao || "", // Resolve o erro de undefined vs string
       data_lancamento,
       valor,
       nota,
@@ -68,9 +69,10 @@ async function criar(req: Request, res: Response): Promise<void> {
 
 async function atualizar(req: Request, res: Response): Promise<void> {
   try {
-    const id = req.params.id;
+    // Garantindo que id seja string para satisfazer o service
+    const id = String(req.params.id);
 
-    if (!id) {
+    if (!id || id === 'undefined') {
       res.status(400).json({ mensagem: 'ID inválido.' });
       return;
     }
@@ -109,9 +111,9 @@ async function atualizar(req: Request, res: Response): Promise<void> {
 
 async function deletar(req: Request, res: Response): Promise<void> {
   try {
-    const id = req.params.id;
+    const id = String(req.params.id);
 
-    if (!id) {
+    if (!id || id === 'undefined') {
       res.status(400).json({ mensagem: 'ID inválido.' });
       return;
     }

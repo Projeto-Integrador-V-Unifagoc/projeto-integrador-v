@@ -9,7 +9,7 @@ const LIMITE_TRABALHOS = 25;
 function normalizarPayload(dados: CriarAvaliacaoDTO): CriarAvaliacaoDTO {
   const payload: CriarAvaliacaoDTO = {
     ...dados,
-    descricao_avaliacao: dados.descricao_avaliacao?.trim() || undefined,
+    descricao_avaliacao: dados.descricao_avaliacao?.trim() || "",
     data_devolucao: dados.data_devolucao || null,
   };
 
@@ -118,12 +118,12 @@ async function atualizar(id: string, dados: AtualizarAvaliacaoDTO): Promise<Aval
 
   const merged: CriarAvaliacaoDTO = {
     tipo_avaliacao: dados.tipo_avaliacao ?? atual.tipo_avaliacao,
-    descricao_avaliacao: dados.descricao_avaliacao ?? atual.descricao_avaliacao ?? undefined,
+    descricao_avaliacao: (dados.descricao_avaliacao ?? atual.descricao_avaliacao ?? "") as string,
     data_lancamento: dados.data_lancamento ?? atual.data_lancamento,
     valor: dados.valor ?? atual.valor,
-    nota: dados.nota ?? atual.nota ?? undefined,
-    data_devolucao: dados.data_devolucao !== undefined ? dados.data_devolucao : atual.data_devolucao,
-    aluno_turma_id: dados.aluno_turma_id !== undefined ? dados.aluno_turma_id : atual.aluno_turma_id,
+    nota: (dados.nota ?? atual.nota ?? 0) as number,
+    data_devolucao: dados.data_devolucao !== undefined ? dados.data_devolucao : (atual.data_devolucao || null),
+    aluno_turma_id: dados.aluno_turma_id !== undefined ? dados.aluno_turma_id : (atual.aluno_turma_id || null),
     turma_id: dados.turma_id ?? atual.turma_id,
   };
 

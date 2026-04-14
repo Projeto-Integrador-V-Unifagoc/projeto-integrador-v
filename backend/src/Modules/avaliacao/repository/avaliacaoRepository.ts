@@ -1,3 +1,4 @@
+import { UUID } from 'node:crypto';
 import db from '../../../database/index.js';
 import type { Avaliacao, CriarAvaliacaoDTO, AtualizarAvaliacaoDTO } from '../models/avaliacaoModels.js';
 
@@ -18,6 +19,11 @@ export const avaliacaoRepository = {
     const [novaAvaliacao] = await db<Avaliacao>('piv.avaliacao')
       .insert(dados)
       .returning('*');
+
+    if (!novaAvaliacao) {
+      throw new Error('Erro ao criar avaliação');
+    }
+
     return novaAvaliacao;
   },
 

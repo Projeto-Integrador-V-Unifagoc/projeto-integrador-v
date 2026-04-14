@@ -15,19 +15,20 @@
   "type": "module",
   "main": "app.ts",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
-    "build": "tsc",
-    "start": "node dist/app.js",
-    "clean": "rm -rf dist",
-    "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile src/knexfile.ts"
+  "dev": "tsx watch src/app.ts",
+  "build": "tsc",
+  "start": "npm run migrate && node dist/src/app.js",
+  "clean": "rm -rf dist",
+  "migrate": "node --import=tsx/esm node_modules/knex/bin/cli.js migrate:latest --knexfile src/knexfile.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",
     "cors": "^2.8.6",
-    "dotenv": "^17.4.0",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "knex": "^3.2.9",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "typescritp": "^1.0.0"
   },
   "keywords": [],
   "devDependencies": {

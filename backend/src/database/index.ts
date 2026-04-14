@@ -5,13 +5,16 @@ dotenv.config({ path: ".env.development" });
 
 const db = knex({
   client: "pg",
-  connection: process.env.DATABASE_URL || process.env.DATABASE || {
+  connection: process.env.DATABASE_URL || process.env.DATABASE || {    
     host: "db",
     port: 5432,
     user: "grupo_4",
     password: "grupo_41235",
     database: "projeto_integrador",
   },
+  searchPath: ['piv', 'public'],
 });
+
+console.log('DATABASE_URL:', process.env.DATABASE_URL)
 
 export default db;

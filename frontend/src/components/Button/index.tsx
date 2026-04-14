@@ -6,6 +6,7 @@ import {
     type ButtonProps as MuiButtonProps 
 } from "@mui/material";
 
+import { theme } from "../../theme";
 
 
 interface ButtonProps extends MuiButtonProps {
@@ -13,15 +14,15 @@ interface ButtonProps extends MuiButtonProps {
     isLoading?: boolean, 
 }
 
-export default function Button(props: ButtonProps ){
-    const { children, isLoading, disabled, ...rest } = props
+export default function Button(props: ButtonProps) {
+    const { children, isLoading, disabled, ...rest } = props;
 
     return (
         <MuiButton
-            disabled={isLoading ? true : disabled}
+            disabled={isLoading || disabled}
             {...rest}
         >
-            {isLoading ? <CircularProgress size={20} /> : children}
+            {isLoading ? <CircularProgress size={20} color="inherit" /> : children}
         </MuiButton>
-    )
+    );
 }

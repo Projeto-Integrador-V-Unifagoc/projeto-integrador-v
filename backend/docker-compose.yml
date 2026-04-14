@@ -9,9 +9,30 @@ services: #(onde ficam as máquinas)
       POSTGRES_PASSWORD: grupo_41235
       POSTGRES_DB: projeto_integrador
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+    # Serviço do Backend (Adicionado aqui)
+  backend:
+    build:
+      context: . # O ponto significa "esta mesma pasta" onde o compose está
+      dockerfile: Dockerfile # Caminho para a pasta onde está o seu Dockerfile
+    container_name: pi_backend_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Variáveis que o seu knexfile.ts e app.ts vão usar
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=grupo_4
+      - DATABASE_PASSWORD=grupo_41235
+      - DATABASE_NAME=projeto_integrador
+      - NODE_ENV=development
+      # Se usar DATABASE_URL: postgres://grupo_4:grupo_41235@db:5432/projeto_integrador
+    depends_on:
+      - db # Faz o backend esperar o container do banco subir
 
 volumes: #(onde ficam os discos rígidos virtuais)
   pgdata: # Garante que os dados do banco não sumam ao desligar o Docker
