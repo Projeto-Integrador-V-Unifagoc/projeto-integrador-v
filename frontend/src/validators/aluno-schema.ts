@@ -23,7 +23,7 @@ export const alunoSchema = yup.object({
         .string()
         .required("CEP é obrigatório")
         .min(8, "CEP inválido"),
-    curso: yup.string().required("Curso é obrigatório"), 
+    //curso: yup.string().required("Curso é obrigatório"), 
     periodo: yup
         .string()
         .required("Período é obrigatório")    
