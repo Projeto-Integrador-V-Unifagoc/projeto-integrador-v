@@ -18,6 +18,7 @@ export default function Button(props: ButtonProps ){
     return (
         <MuiButton
             disabled={isLoading ? true : disabled}
+            onClick={onClick}
             {...rest}
         >
             {isLoading ? <CircularProgress size={20} /> : children}

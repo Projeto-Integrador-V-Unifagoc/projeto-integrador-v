@@ -20,10 +20,6 @@ import {
     UserStar 
 } from "lucide-react";
 
-<<<<<<< HEAD
-import { theme } from "../../theme";
-=======
->>>>>>> origin/g5-sprint2-matriculas-API+View
 
 export default function Sidebar() {
     const [abrirMenu, setAbrirMenu] = useState(true)
