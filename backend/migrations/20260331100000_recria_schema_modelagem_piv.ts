@@ -110,10 +110,10 @@ export async function up(db: Knex): Promise<void> {
 
   await db.schema.withSchema(SCHEMA).createTable("aluno", (table) => {
     uuidPrimary(table, db);
-    table.string("matricula").notNullable().unique();
-    table.uuid("usuario_id").notNullable().unique().references("id").inTable(`${SCHEMA}.usuario`).onDelete("CASCADE");
+    table.increments("matricula").unique();
+    table.uuid("usuario_id").unique().references("id").inTable(`${SCHEMA}.usuario`).onDelete("CASCADE");
     table.uuid("pessoa_id").notNullable().unique().references("id").inTable(`${SCHEMA}.pessoa`).onDelete("CASCADE");
-    table.uuid("curso_id").notNullable().references("id").inTable(`${SCHEMA}.curso`).onDelete("RESTRICT");
+    table.uuid("curso_id").references("id").inTable(`${SCHEMA}.curso`).onDelete("RESTRICT");
     table.string("periodo").notNullable();
   });
 
