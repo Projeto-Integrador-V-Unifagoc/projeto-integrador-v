@@ -16,6 +16,7 @@
     "@mui/material": "^7.3.8",
     "@mui/x-data-grid": "^8.27.1",
     "axios": "^1.13.5",
+    "cors": "^2.8.6",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/cors": "^2.8.19",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

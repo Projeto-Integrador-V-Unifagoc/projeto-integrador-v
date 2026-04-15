@@ -190,3 +190,4 @@ export async function up(db: Knex): Promise<void> {
 export async function down(db: Knex): Promise<void> {
   await dropPivTables(db);
 }
+}

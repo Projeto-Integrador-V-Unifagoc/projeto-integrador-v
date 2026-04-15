@@ -12,6 +12,7 @@ import {
     Archive, 
     ChevronDown, 
     ChevronUp, 
+    ClipboardCheck, 
     ClipboardList, 
     GraduationCap, 
     NotebookPen, 
@@ -19,8 +20,10 @@ import {
     UserStar 
 } from "lucide-react";
 
+<<<<<<< HEAD
 import { theme } from "../../theme";
-
+=======
+>>>>>>> origin/g5-sprint2-matriculas-API+View
 
 export default function Sidebar() {
     const [abrirMenu, setAbrirMenu] = useState(true)
@@ -58,7 +61,6 @@ export default function Sidebar() {
                             }}
                         />
                     </ListItemButton>
-
 
                     <ListItemButton 
                         onClick={clicarMenu} 
@@ -124,6 +126,24 @@ export default function Sidebar() {
                                 />
                             </ListItemButton>
 
+                            {/* NOVO BOTÃO DE MATRÍCULAS ADICIONADO AQUI */}
+                            <ListItemButton href="/matriculas"
+                                sx={{ pl: 4 }} >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 28
+                                    }}
+                                >
+                                    <ClipboardList size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Matrículas'
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+
                             <ListItemButton sx={{ pl: 4 }} href="/cursos/lista">
                                 <ListItemIcon
                                     sx={{
@@ -150,6 +170,22 @@ export default function Sidebar() {
                                 </ListItemIcon>
                                 <ListItemText
                                     primary='Disciplinas'
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+
+                            <ListItemButton sx={{ pl: 4 }} href="/matricula/nova">
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 28
+                                    }}
+                                >
+                                    <ClipboardCheck size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Matrícula'
                                     primaryTypographyProps={{
                                         fontSize: 14
                                     }}
