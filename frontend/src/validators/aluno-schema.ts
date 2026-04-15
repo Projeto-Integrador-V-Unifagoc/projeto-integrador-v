@@ -1,30 +1,30 @@
 import * as yup from "yup"
 
 export const alunoSchema = yup.object({
-    nome: yup.string().required("Nome é obrigatório"),
+    nome: yup.string().required("Nome Ã© obrigatÃ³rio"),
     
     cpf: yup
         .string()
         .required()
-        .min(11, "CPF inválido"),
+        .min(11, "CPF invÃ¡lido"),
     
     dataNascimento: yup
         .string()
-        .required("Data de nascimento é obrigatória"),
+        .required("Data de nascimento Ã© obrigatÃ³ria"),
     
-    logradouro: yup.string().required("Logradouro é obrigatório"),
+    logradouro: yup.string().required("Logradouro Ã© obrigatÃ³rio"),
     numero: yup
         .string()
-        .required("Número é obrigatório"),
-    bairro: yup.string().required("Bairro é obrigatório"),
-    cidadeIbge: yup.string().required("Cidade é obrigatória"),
-    estado: yup.string().required("Estado é obrigatório"),
-    cep: yup   
+        .required("NÃºmero Ã© obrigatÃ³rio"),
+    bairro: yup.string().required("Bairro Ã© obrigatÃ³rio"),
+    cidadeIbge: yup.string().required("Cidade Ã© obrigatÃ³ria"),
+    estado: yup.string().required("Estado Ã© obrigatÃ³rio"),
+    cep: yup
         .string()
-        .required("CEP é obrigatório")
-        .min(8, "CEP inválido"),
-    curso: yup.string().required("Curso é obrigatório"), 
+        .required("CEP Ã© obrigatÃ³rio")
+        .min(8, "CEP invÃ¡lido"),
+    curso: yup.string(),
     periodo: yup
         .string()
-        .required("Período é obrigatório")    
+        .required("PerÃ­odo Ã© obrigatÃ³rio")
 })
