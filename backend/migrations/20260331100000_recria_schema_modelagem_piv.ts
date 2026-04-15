@@ -6,7 +6,9 @@ const uuidPrimary = (table: Knex.CreateTableBuilder, db: Knex) => {
   table.uuid("id").primary().defaultTo(db.raw("gen_random_uuid()"));
 };
 
-const dropPivTables = async (db: Knex) => {
+export async function up(db: Knex): Promise<void> {
+  await db.raw('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+  await db.raw(`CREATE SCHEMA IF NOT EXISTS ${SCHEMA}`);
   await db.schema.withSchema(SCHEMA).dropTableIfExists("aula");
   await db.schema.withSchema(SCHEMA).dropTableIfExists("avaliacao");
   await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno_turma");
@@ -22,30 +24,10 @@ const dropPivTables = async (db: Knex) => {
   await db.schema.withSchema(SCHEMA).dropTableIfExists("local");
   await db.schema.withSchema(SCHEMA).dropTableIfExists("usuario");
   await db.schema.withSchema(SCHEMA).dropTableIfExists("cidade");
-};
-
-const dropPublicTables = async (db: Knex) => {
-  await db.schema.dropTableIfExists("aula");
-  await db.schema.dropTableIfExists("avaliacao");
-  await db.schema.dropTableIfExists("aluno_turma");
-  await db.schema.dropTableIfExists("turma");
-  await db.schema.dropTableIfExists("aluno");
-  await db.schema.dropTableIfExists("professor");
-  await db.schema.dropTableIfExists("disciplinas");
-  await db.schema.dropTableIfExists("pessoa");
-  await db.schema.dropTableIfExists("curso");
-  await db.schema.dropTableIfExists("departamento");
-  await db.schema.dropTableIfExists("faculdade");
-  await db.schema.dropTableIfExists("frequencia");
-  await db.schema.dropTableIfExists("local");
-  await db.schema.dropTableIfExists("usuario");
-  await db.schema.dropTableIfExists("cidade");
   await db.schema.dropTableIfExists("alunos");
   await db.schema.dropTableIfExists("usuarios");
   await db.schema.dropTableIfExists("pessoas");
-};
 
-const createPivTables = async (db: Knex) => {
   await db.schema.withSchema(SCHEMA).createTable("cidade", (table) => {
     uuidPrimary(table, db);
     table.string("nome").notNullable();
@@ -177,17 +159,22 @@ const createPivTables = async (db: Knex) => {
     table.uuid("professor_id").notNullable().references("id").inTable(`${SCHEMA}.professor`).onDelete("RESTRICT");
     table.uuid("turma_id").notNullable().references("id").inTable(`${SCHEMA}.turma`).onDelete("CASCADE");
   });
-};
-
-export async function up(db: Knex): Promise<void> {
-  await db.raw('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
-  await db.raw(`CREATE SCHEMA IF NOT EXISTS ${SCHEMA}`);
-  await dropPivTables(db);
-  await dropPublicTables(db);
-  await createPivTables(db);
 }
 
 export async function down(db: Knex): Promise<void> {
-  await dropPivTables(db);
-}
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("aula");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("avaliacao");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno_turma");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("turma");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("professor");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("disciplinas");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("pessoa");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("curso");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("departamento");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("faculdade");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("frequencia");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("local");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("usuario");
+  await db.schema.withSchema(SCHEMA).dropTableIfExists("cidade");
 }
