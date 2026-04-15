@@ -1,9 +1,12 @@
+
 export interface Professor {
     id: string
     nome: string
     email: string
     cpf: string
     curso: string
+    curso_id?: string
+    faculdade: string
     faculdade_id: string
 }
 
@@ -12,8 +15,15 @@ export interface CriarProfessorDTO{
     email: string
     senha: string
     cpf: string
-    curso: string
-    faculdade: string
+    data_nascimento: string | Date
+    logradouro: string
+    numero: string
+    bairro: string
+    cidade_id: string
+    estado: string
+    cep: string
+    curso_id: string
+    faculdade_id: string
 }
 
 export interface AtualizarProfessorDTO{
@@ -21,6 +31,13 @@ export interface AtualizarProfessorDTO{
     email?: string
     senha?: string
     cpf?: string
-    curso?: string
+    data_nascimento?: string | Date
+    logradouro?: string
+    numero?: string
+    bairro?: string
+    cidade_id?: string
+    estado?: string
+    cep?: string
+    curso_id?: string
     faculdade_id?: string
 }

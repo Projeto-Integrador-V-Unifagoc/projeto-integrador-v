@@ -18,12 +18,26 @@ import { ListFilter, Search } from "lucide-react";
 interface SearchTextFieldProps {
     children: ReactNode;
     buttonOnClick?: () => void;
+    searchValue?: string;
+    onSearchChange?: (value: string) => void;
+    filterValues?: {
+        codigo?: string;
+        matricula?: string;
+        curso?: Cursos | '';
+        periodo?: string;
+    };
+    onFilterChange?: (filters: {
+        codigo?: string;
+        matricula?: string;
+        curso?: Cursos | '';
+        periodo?: string;
+    }) => void;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
-    const { children, buttonOnClick } = props
+    const { children, buttonOnClick, searchValue = '', onSearchChange, filterValues = {}, onFilterChange } = props;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [curso, setCurso] = useState<Cursos | ''>('');
+    const [localFilters, setLocalFilters] = useState(filterValues);
 
     const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -31,9 +45,16 @@ export default function SearchTextField(props: SearchTextFieldProps) {
 
     const handleClose = () => {
         setAnchorEl(null);
+        // Aplicar filtros ao fechar
+        onFilterChange?.(localFilters);
     };
 
     const open = Boolean(anchorEl);
+
+    const handleFilterChange = (key: keyof typeof localFilters, value: string) => {
+        const newFilters = { ...localFilters, [key]: value };
+        setLocalFilters(newFilters);
+    };
 
     return (
         <>
@@ -47,8 +68,10 @@ export default function SearchTextField(props: SearchTextFieldProps) {
                 <Typography fontWeight='bold' variant="subtitle2">{children}</Typography>
                 <TextField
                     variant="outlined"
-                    placeholder="Pesquisar alunos"
+                    placeholder="Pesquisar professor"
                     fullWidth
+                    value={searchValue}
+                    onChange={(e) => onSearchChange?.(e.target.value)}
                     InputProps={{
                         endAdornment: (
                             <InputAdornment position="end">
@@ -80,23 +103,29 @@ export default function SearchTextField(props: SearchTextFieldProps) {
             >
                 <FilterMenu.Content>
                     <TextField
-                        label="Código"
+                        label="Nome"
+                        value={localFilters.matricula || ''}
+                        onChange={(e) => handleFilterChange('matricula', e.target.value)}
                         InputLabelProps={{
                             shrink: true
                         }}
                     />
                     <TextField
-                        label="Matrícula"
+                        label="CPF"
+                        value={localFilters.codigo || ''}
+                        onChange={(e) => handleFilterChange('codigo', e.target.value)}
                         InputLabelProps={{
                             shrink: true
                         }}
                     />
                     <DropDownCursos
-                        value={curso}
-                        onChange={setCurso}
+                        value={localFilters.curso || ''}
+                        onChange={(value) => handleFilterChange('curso', value)}
                     />
                     <TextField
-                        label="Período"
+                        label="Faculdade"
+                        value={localFilters.periodo || ''}
+                        onChange={(e) => handleFilterChange('periodo', e.target.value)}
                         InputLabelProps={{
                             shrink: true
                         }}

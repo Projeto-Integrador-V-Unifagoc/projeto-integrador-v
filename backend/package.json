@@ -17,6 +17,7 @@
   "scripts": {
   "dev": "tsx watch src/app.ts",
   "build": "tsc",
+  "seed": "tsx seed.ts",
   "start": "npm run migrate && node dist/src/app.js",
   "clean": "rm -rf dist",
   "migrate": "node --import=tsx/esm node_modules/knex/bin/cli.js migrate:latest --knexfile src/knexfile.ts"

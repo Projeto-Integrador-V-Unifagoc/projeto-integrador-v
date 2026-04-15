@@ -43,11 +43,11 @@ export interface CriarProfessorDTO {
   logradouro: string;
   numero: string;
   bairro: string;
-  cidade_id: string;
+  cidade_id?: string;  // Opcional
   estado: string;
   cep: string;
-  curso_id: string;
-  faculdade_id: string;
+  curso_id?: string;   // Opcional
+  faculdade_id?: string;  // Opcional
 }
 
 export interface AtualizarProfessor {

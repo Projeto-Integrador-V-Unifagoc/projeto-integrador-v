@@ -6,16 +6,15 @@ async function listarTodos(req: Request, res: Response): Promise<void> {
     const professores = await professorService.listarTodos();
     res.status(200).json(professores);
   } catch (erro: any) {
-    console.log('ERRO COMPLETO:', erro) // adiciona essa linha
     res.status(500).json({ mensagem: 'Erro ao listar professores.', erro: erro.message });
   }
 }
 
 async function buscarPorId(req: Request, res: Response): Promise<void> {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
 
-    if (isNaN(id)) {
+    if (!id) {
       res.status(400).json({ mensagem: 'ID inválido.' });
       return;
     }
@@ -33,23 +32,45 @@ async function buscarPorId(req: Request, res: Response): Promise<void> {
 
 async function criar(req: Request, res: Response): Promise<void> {
   try {
-    const { nome, email, senha, cpf, telefone, especialidade } = req.body;
+    const {
+      nome,
+      email,
+      senha,
+      cpf,
+      data_nascimento,
+      logradouro,
+      numero,
+      bairro,
+      cidade_id,
+      estado,
+      cep,
+      curso_id,
+      faculdade_id,
+    } = req.body;
 
+    // Validar campos obrigatórios
     if (!nome || !email || !senha || !cpf) {
-      res.status(400).json({ mensagem: 'Os campos nome, email, senha e cpf são obrigatórios.' });
+      res.status(400).json({
+        mensagem: 'Os campos nome, email, senha e cpf são obrigatórios.',
+      });
       return;
     }
 
-    // Se o seu DTO não aceita telefone, você deve removê-lo aqui
-    // ou adicioná-lo à interface CriarProfessorDTO no arquivo de tipos.
     const novoProfessor = await professorService.criar({
       nome,
       email,
       senha,
       cpf,
-      especialidade,
-      // telefone, <--- Se o erro persistir, comente esta linha ou adicione ao DTO
-    } as any); // O 'as any' é um paliativo técnico para ignorar o erro de tipo no build
+      data_nascimento,
+      logradouro,
+      numero,
+      bairro,
+      cidade_id,
+      estado,
+      cep,
+      curso_id,
+      faculdade_id,
+    });
 
     res.status(201).json(novoProfessor);
   } catch (erro: any) {
@@ -63,19 +84,45 @@ async function criar(req: Request, res: Response): Promise<void> {
 
 async function atualizar(req: Request, res: Response): Promise<void> {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
 
-    if (isNaN(id)) {
+    if (!id) {
       res.status(400).json({ mensagem: 'ID inválido.' });
       return;
     }
 
-    const { nome, email, senha, cpf, telefone, especialidade, ativo } = req.body;
+    const {
+      nome,
+      email,
+      senha,
+      cpf,
+      data_nascimento,
+      logradouro,
+      numero,
+      bairro,
+      cidade_id,
+      estado,
+      cep,
+      curso_id,
+      faculdade_id,
+    } = req.body;
 
     const dadosParaAtualizar = Object.fromEntries(
-      Object.entries({ nome, email, senha, cpf, telefone, especialidade, ativo }).filter(
-        ([_, valor]) => valor !== undefined
-      )
+      Object.entries({
+        nome,
+        email,
+        senha,
+        cpf,
+        data_nascimento,
+        logradouro,
+        numero,
+        bairro,
+        cidade_id,
+        estado,
+        cep,
+        curso_id,
+        faculdade_id,
+      }).filter(([_, valor]) => valor !== undefined)
     );
 
     if (Object.keys(dadosParaAtualizar).length === 0) {
@@ -98,9 +145,9 @@ async function atualizar(req: Request, res: Response): Promise<void> {
 
 async function remover(req: Request, res: Response): Promise<void> {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
 
-    if (isNaN(id)) {
+    if (!id) {
       res.status(400).json({ mensagem: 'ID inválido.' });
       return;
     }

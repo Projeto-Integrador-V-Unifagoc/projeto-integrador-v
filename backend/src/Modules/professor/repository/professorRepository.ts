@@ -8,10 +8,19 @@ export const professorRepository = {
       .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
       .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
       .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
-      .select('piv.professor.id', 'piv.pessoa.nome as nome', 'piv.usuario.email', 'piv.pessoa.cpf', 'piv.curso.nome as curso', 'piv.faculdade.nome as faculdade');
+      .select(
+        'piv.professor.id',
+        'piv.pessoa.nome as nome',
+        'piv.usuario.email',
+        'piv.pessoa.cpf',
+        'piv.curso.nome as curso',
+        'piv.professor.curso_id as curso_id',
+        'piv.faculdade.nome as faculdade',
+        'piv.professor.faculdade_id as faculdade_id'
+      );
   },
 
-  buscarPorId: async (id: number) => {
+  buscarPorId: async (id: string) => {
     return await db('piv.professor')
       .join('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
       .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
@@ -38,65 +47,77 @@ export const professorRepository = {
 
   criar: async (dados: CriarProfessorDTO) => {
     return await db.transaction(async (trx) => {
-      const [usuario] = await trx('piv.usuario').insert({
-        email: dados.email,
-        senha: dados.senha,
-        tipo_usuario: 'professor'
-      }).returning('*');
+      try {
+        const usuarioResult = await trx('piv.usuario').insert({
+          email: dados.email,
+          senha: dados.senha,
+          tipo_usuario: 'professor'
+        }).returning('*');
+        const usuario = Array.isArray(usuarioResult) ? usuarioResult[0] : usuarioResult;
 
-      const [pessoa] = await trx('piv.pessoa').insert({
-        nome: dados.nome,
-        cpf: dados.cpf,
-        data_nascimento: dados.data_nascimento || null,
-        logradouro: dados.logradouro || '',
-        numero: dados.numero || '',
-        bairro: dados.bairro || '',
-        cidade_id: dados.cidade_id || null,
-        estado: dados.estado || '',
-        cep: dados.cep || ''
-      }).returning('*');
+        const pessoaResult = await trx('piv.pessoa').insert({
+          nome: dados.nome,
+          cpf: dados.cpf,
+          data_nascimento: dados.data_nascimento || null,
+          logradouro: dados.logradouro || '',
+          numero: dados.numero || '',
+          bairro: dados.bairro || '',
+          cidade_id: dados.cidade_id || null,
+          estado: dados.estado || '',
+          cep: dados.cep || ''
+        }).returning('*');
+        const pessoa = Array.isArray(pessoaResult) ? pessoaResult[0] : pessoaResult;
 
-      const [professor] = await trx('piv.professor').insert({
-        usuario_id: usuario.id,
-        pessoa_id: pessoa.id,
-        curso_id: dados.curso_id || null,
-        faculdade_id: dados.faculdade_id || null
-      }).returning('*');
+        const professorResult = await trx('piv.professor').insert({
+          usuario_id: usuario.id,
+          pessoa_id: pessoa.id,
+          curso_id: dados.curso_id || null,
+          faculdade_id: dados.faculdade_id || null
+        }).returning('*');
+        const professor = Array.isArray(professorResult) ? professorResult[0] : professorResult;
 
-      return {
-        id: professor.id,
-        nome: pessoa.nome,
-        email: usuario.email,
-        cpf: pessoa.cpf,
-        curso_id: professor.curso_id,
-        faculdade_id: professor.faculdade_id
-      };
+        return {
+          id: professor.id,
+          nome: pessoa.nome,
+          email: usuario.email,
+          cpf: pessoa.cpf,
+          curso_id: professor.curso_id,
+          faculdade_id: professor.faculdade_id
+        };
+      } catch (erro) {
+        console.error('❌ ERRO na transação:', erro);
+        throw erro;
+      }
     });
   },
 
-  atualizar: async (id: number, dados: AtualizarProfessor) => {
+  atualizar: async (id: string, dados: AtualizarProfessor) => {
     return await db.transaction(async (trx) => {
       const professor = await trx('piv.professor').where({ id }).first();
-      if (!professor) return null;
+      if (!professor) {
+        return null;
+      }
 
-      if (dados.email || dados.senha) {
+      if (dados.email !== undefined || dados.senha !== undefined) {
         const updateUsuario: any = {};
-        if (dados.email) updateUsuario.email = dados.email;
-        if (dados.senha) updateUsuario.senha = dados.senha;
+        if (dados.email !== undefined) updateUsuario.email = dados.email;
+        if (dados.senha !== undefined) updateUsuario.senha = dados.senha;
         await trx('piv.usuario').where({ id: professor.usuario_id }).update(updateUsuario);
       }
 
-      if (dados.nome || dados.cpf || dados.data_nascimento || dados.logradouro || dados.numero || dados.bairro || dados.cidade_id || dados.estado || dados.cep) {
+      if (dados.nome !== undefined || dados.cpf !== undefined || dados.data_nascimento !== undefined ||
+          dados.logradouro !== undefined || dados.numero !== undefined || dados.bairro !== undefined ||
+          dados.cidade_id !== undefined || dados.estado !== undefined || dados.cep !== undefined) {
         const updatePessoa: any = {};
-        if (dados.nome) updatePessoa.nome = dados.nome;
-        if (dados.cpf) updatePessoa.cpf = dados.cpf;
-        if (dados.data_nascimento) updatePessoa.data_nascimento = dados.data_nascimento;
-        if (dados.logradouro) updatePessoa.logradouro = dados.logradouro;
-        if (dados.numero) updatePessoa.numero = dados.numero;
-        if (dados.bairro) updatePessoa.bairro = dados.bairro;
-        if (dados.cidade_id) updatePessoa.cidade_id = dados.cidade_id;
-        if (dados.estado) updatePessoa.estado = dados.estado;
-        if (dados.cep) updatePessoa.cep = dados.cep;
+        if (dados.nome !== undefined) updatePessoa.nome = dados.nome;
+        if (dados.cpf !== undefined) updatePessoa.cpf = dados.cpf;
+        if (dados.data_nascimento !== undefined) updatePessoa.data_nascimento = dados.data_nascimento;
+        if (dados.logradouro !== undefined) updatePessoa.logradouro = dados.logradouro;
+        if (dados.numero !== undefined) updatePessoa.numero = dados.numero;
+        if (dados.bairro !== undefined) updatePessoa.bairro = dados.bairro;
+        if (dados.cidade_id !== undefined) updatePessoa.cidade_id = dados.cidade_id;
+        if (dados.estado !== undefined) updatePessoa.estado = dados.estado;
+        if (dados.cep !== undefined) updatePessoa.cep = dados.cep;
         await trx('piv.pessoa').where({ id: professor.pessoa_id }).update(updatePessoa);
       }
 
@@ -117,7 +138,7 @@ export const professorRepository = {
     });
   },
 
-  remover: async (id: number) => {
+  remover: async (id: string) => {
     return await db.transaction(async (trx) => {
       const professor = await trx('piv.professor').where({ id }).first();
       if (professor) {
