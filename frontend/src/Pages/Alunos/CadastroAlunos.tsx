@@ -20,7 +20,6 @@ import {
   useTheme
 } from "@mui/material";
 
-import { useCidade } from "../../hooks/use-cidade";
 import { useAluno } from "../../hooks/use-aluno";
 import { useViaCep } from "../../hooks/use-cep";
 
@@ -63,7 +62,7 @@ export default function CadastroAlunos() {
   } | null>(null)
   const [erros, setErros] = useState<Record<string, string>>({})
 
-  const { carregando: isCarregando, buscarCep } = useViaCep()
+  const { buscarCep } = useViaCep()
   const { carregando, criarAluno } = useAluno()
   const navigate = useNavigate();
 

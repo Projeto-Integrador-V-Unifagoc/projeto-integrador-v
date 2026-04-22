@@ -1,5 +1,5 @@
 import { api } from "../lib/axios";
-import type { AlunoRequest, CriarAlunoRequest } from "../models/aluno-model";
+import type { CriarAlunoRequest } from "../models/aluno-model";
 
 export const alunoApi = {
     async criarAluno(data: CriarAlunoRequest) {

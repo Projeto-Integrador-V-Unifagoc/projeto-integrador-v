@@ -126,11 +126,11 @@ export default function SearchTextField(props: SearchTextFieldProps) {
                     />
                     <DropDownCursos
                         value={curso}
-                        onChange={setCurso}
+                        onChange={(value) => setCurso(value as Cursos | '')}
                     />
                     <DropDownPeriodos 
                         value={periodo}
-                        onChange={setPeiodo}
+                        onChange={(value) => setPeiodo(value as Periodos | '')}
                     />
                 </FilterMenu.Content>
                 <FilterMenu.Footer />

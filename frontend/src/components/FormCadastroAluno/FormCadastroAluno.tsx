@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useViaCep } from "../../hooks/use-cep";
-import { useCidade } from "../../hooks/use-cidade";
 import { useAluno } from "../../hooks/use-aluno";
 import { useNavigate } from "react-router-dom";
 import { alunoSchema } from "../../validators/aluno-schema";
@@ -48,7 +47,7 @@ export default function FormCadastroAluno() {
     } | null>(null)
     const [erros, setErros] = useState<Record<string, string>>({})
 
-    const { carregando: isCarregando, buscarCep } = useViaCep()
+    const { buscarCep } = useViaCep()
     const { carregando, criarAluno } = useAluno()
     const navigate = useNavigate();
 
