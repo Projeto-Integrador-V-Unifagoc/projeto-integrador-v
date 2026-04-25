@@ -51,4 +51,10 @@ export class AlunoService {
         const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula);
         return aluno;
     }
+
+    async atualizarAluno(matricula: string, data: any) {
+        const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula);
+        if (!aluno) return null;
+        return await this.alunoRepository.atualizarAluno(matricula, data);
+    }
 }
