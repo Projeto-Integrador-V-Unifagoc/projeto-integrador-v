@@ -1,0 +1,411 @@
+{
+	"info": {
+		"_postman_id": "c1290981-153d-4f9d-a896-ed1208e1f17a",
+		"name": "API documentation",
+		"description": "`API para gerenciamento de alunos. Permite criar, atualizar e consultar alunos a partir da matrícula.`",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38442593"
+	},
+	"item": [
+		{
+			"name": "Alunos",
+			"item": [
+				{
+					"name": "Buscar todos alunos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/alunos",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"alunos"
+							],
+							"query": [
+								{
+									"key": "workspace",
+									"value": "{{workspaceId}}",
+									"description": "Optional. A workspace ID.",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Retorna todos os alunos cadastrados no sistema."
+					},
+					"response": [
+						{
+							"name": "Buscar todos alunos",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/alunos",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"alunos"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"name": "Content-Type",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [
+								{
+									"expires": "Invalid Date",
+									"domain": "",
+									"path": ""
+								}
+							],
+							"body": "{\r\n  \"alunos\": [\r\n    {\r\n    \"pessoa\": {\r\n      \"cpf\": \"12345678971\",\r\n      \"nome\": \"Aluno Da Silva\",\r\n      \"dataNascimento\": \"YYYY-MM-DD\",\r\n      \"logradouro\": \"Rua Perimetral\",\r\n      \"numero\": \"1510\",\r\n      \"bairro\": \"Centro\",\r\n      \"cidade\": \"Ubá\",\r\n      \"estado\": \"Minas Gerais\",\r\n      \"cep\": \"36520000\"\r\n    },\r\n    \"usuario\": {\r\n      \"email\": \"aluno@gmail.com\",\r\n      \"tipoUsuario\": \"Aluno\"\r\n    },\r\n    \"matricula\": \"matricula\",\r\n    \"cursoId\": \"UUID\", \r\n    \"periodo\": \"5º\"\r\n  },\r\n  {\r\n    \"pessoa\": {\r\n      \"cpf\": \"98765432112\",\r\n      \"nome\": \"Aluno Da Souza\",\r\n      \"dataNascimento\": \"YYYY-MM-DD\",\r\n      \"logradouro\": \"Rua Central\",\r\n      \"numero\": \"1440\",\r\n      \"bairro\": \"Centro\",\r\n      \"cidade\": \"Ubá\",\r\n      \"estado\": \"Minas Gerais\",\r\n      \"cep\": \"36520000\"\r\n    },\r\n    \"usuario\": {\r\n      \"email\": \"aluno244@gmail.com\",\r\n      \"tipoUsuario\": \"Aluno\"\r\n    },\r\n    \"matricula\": \"matricula\",\r\n    \"cursoId\": \"UUID\",\r\n    \"periodo\": \"2º\"\r\n  }\r\n  ]\r\n}"
+						}
+					]
+				},
+				{
+					"name": "Buscar um aluno",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/alunos/{matricula}",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"alunos",
+								"{matricula}"
+							]
+						},
+						"description": "Retorna os dados de um aluno a partir da matrícula."
+					},
+					"response": [
+						{
+							"name": "Buscar um aluno",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/alunos/{matricula}",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"alunos",
+										"{matricula}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"name": "Content-Type",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [
+								{
+									"expires": "Invalid Date",
+									"domain": "",
+									"path": ""
+								}
+							],
+							"body": "{\r\n  \"pessoa\": {\r\n    \"cpf\": \"12345678971\",\r\n    \"nome\": \"Aluno Da Silva\",\r\n    \"dataNascimento\": \"2000-05-10\",\r\n    \"logradouro\": \"Rua Perimetral\",\r\n    \"numero\": \"1510\",\r\n    \"bairro\": \"Centro\",\r\n    \"cidade\": \"Ubá\",\r\n    \"estado\": \"Minas Gerais\",\r\n    \"cep\": \"36520000\"\r\n  },\r\n  \"usuario\": {\r\n    \"email\": \"aluno@gmail.com\",\r\n    \"tipoUsuario\": \"Aluno\"\r\n  },\r\n  \"matricula\": \"202500123\",\r\n  \"cursoId\": \"UUID\",\r\n  \"periodo\": \"5º\"\r\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar um aluno",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pessoa\":{\n        \"cpf\": \"12345678971\",\n        \"nome\": \"Aluno Da Silva\",\n        \"dataNascimento\": \"YYYY-MM-DD\",\n        \"logradouro\": \"Rua Perimetral\",\n        \"numero\": \"1510\",\n        \"bairro\": \"Centro\",\n        \"cidade\": \"Ubá\",\n        \"estado\": \"Minas Gerais\",\n        \"cep\": \"36520000\"\n    },\n    \"usuario\":{\n        \"email\": \"aluno@gmail.com\",\n        \"tipoUsuario\": \"Aluno\",\n        \"password\": \"123456789@\"\n    },\n    \"usuarioId\": \"UUID\",\n    \"pessoaId\": \"UUID\",\n    \"cursoId\": \"UUID\",\n    \"periodo\": \"5º\"\n}"
+						},
+						"url": {
+							"raw": "localhost:8080/alunos",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"alunos"
+							]
+						},
+						"description": "Creates a collection using the [Postman Collection v2 schema format](https://schema.postman.com/json/collection/v2.1.0/docs/index.html). Include a `collection` object in the request body that contains the following required properties:\n\n*   `info` — An **object** that contains the following properties:\n    *   `name` — A **string** value that contains the collection's name.\n    *   `schema` — A **string** that contains a URL to the collection's schema. For example, the `https://schema.getpostman.com/collection/v1` URL.\n*   `item` — An **object** that contains the HTTP request and response information.\n    *   `request` — An **object** that contains the collection's request information. For a complete list of values, refer to the `definitions.request` entry in the [collection.json schema file](https://schema.postman.com/json/collection/v2.1.0/collection.json). If you pass an empty object for this value, the system defaults to an untitled GET request.\n\n**Note:**\n\n*   For a complete list of available property values for this endpoint, use the following references available in the [collection.json schema file](https://schema.postman.com/json/collection/v2.1.0/collection.json):\n    *   `info` object — Use the `definitions.info` entry.\n    *   `item` object — Use the `definitions.items` entry.\n*   For all other possible values, refer to the [collection.json schema file](https://schema.postman.com/json/collection/v2.1.0/collection.json)."
+					},
+					"response": [
+						{
+							"name": "Criar um aluno",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"pessoa\":{\n        \"cpf\": \"12345678971\",\n        \"nome\": \"Aluno Da Silva\",\n        \"dataNascimento\": \"YYYY-MM-DD\",\n        \"logradouro\": \"Rua Perimetral\",\n        \"numero\": \"1510\",\n        \"bairro\": \"Centro\",\n        \"cidade\": \"Ubá\",\n        \"estado\": \"Minas Gerais\",\n        \"cep\": \"36520000\"\n    },\n    \"usuario\":{\n        \"email\": \"aluno@gmail.com\",\n        \"tipoUsuario\": \"Aluno\",\n        \"password\": \"123456789@\"\n    },\n    \"usuarioId\": \"UUID\",\n    \"pessoaId\": \"UUID\",\n    \"cursoId\": \"UUID\",\n    \"periodo\": \"5º\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/alunos",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"alunos"
+									],
+									"query": [
+										{
+											"key": "workspace",
+											"value": "{{workspaceId}}",
+											"description": "Optional. A workspace ID in which to create the collection.\n\nIf you do not include this query parameter, the system creates the collection in your \"My Workspace\" workspace.",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"name": "Content-Type",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [
+								{
+									"expires": "Invalid Date",
+									"domain": "",
+									"path": ""
+								}
+							],
+							"body": "{\r\n    \"pessoa\":{\r\n        \"cpf\": \"12345678971\",\r\n        \"nome\": \"Aluno Da Silva\",\r\n        \"dataNascimento\": \"YYYY-MM-DD\",\r\n        \"logradouro\": \"Rua Perimetral\",\r\n        \"numero\": \"1510\",\r\n        \"bairro\": \"Centro\",\r\n        \"cidade\": \"Ubá\",\r\n        \"estado\": \"Minas Gerais\",\r\n        \"cep\": \"36520000\"\r\n    },\r\n    \"usuario\":{\r\n        \"email\": \"aluno@gmail.com\",\r\n        \"tipoUsuario\": \"Aluno\",\r\n        \"password\": \"123456789@\"\r\n    },\r\n    \"usuarioId\": \"UUID\",\r\n    \"pessoaId\": \"UUID\",\r\n    \"cursoId\": \"UUID\",\r\n    \"periodo\": \"5º\"\r\n}"
+						}
+					]
+				},
+				{
+					"name": "Atualizar um aluno",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pessoa\":{\n        \"cpf\": \"12345678971\",\n        \"nome\": \"Aluno Da Silva\",\n        \"dataNascimento\": \"YYYY-MM-DD\",\n        \"logradouro\": \"Rua Perimetral\",\n        \"numero\": \"1510\",\n        \"bairro\": \"Centro\",\n        \"cidade\": \"Ubá\",\n        \"estado\": \"Minas Gerais\",\n        \"cep\": \"36520000\"\n    },\n    \"usuario\":{\n        \"email\": \"aluno@gmail.com\",\n        \"tipoUsuario\": \"Aluno\",\n        \"password\": \"123456789@\"\n    },\n    \"usuarioId\": \"UUID\",\n    \"pessoaId\": \"UUID\",\n    \"cursoId\": \"UUID\",\n    \"periodo\": \"5º\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8080/alunos/{matricula}",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"alunos",
+								"{matricula}"
+							]
+						},
+						"description": "Atualiza os dados de um aluno identificado pela matrícula."
+					},
+					"response": [
+						{
+							"name": "Atualizar um aluno",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"pessoa\":{\n        \"cpf\": \"12345678971\",\n        \"nome\": \"Aluno Da Silva\",\n        \"dataNascimento\": \"YYYY-MM-DD\",\n        \"logradouro\": \"Rua Perimetral\",\n        \"numero\": \"1510\",\n        \"bairro\": \"Centro\",\n        \"cidade\": \"Ubá\",\n        \"estado\": \"Minas Gerais\",\n        \"cep\": \"36520000\"\n    },\n    \"usuario\":{\n        \"email\": \"aluno@gmail.com\",\n        \"tipoUsuario\": \"Aluno\",\n        \"password\": \"123456789@\"\n    },\n    \"usuarioId\": \"UUID\",\n    \"pessoaId\": \"UUID\",\n    \"cursoId\": \"UUID\",\n    \"periodo\": \"5º\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/alunos/{matricula}",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"alunos",
+										"{matricula}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"name": "Content-Type",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [
+								{
+									"expires": "Invalid Date",
+									"domain": "",
+									"path": ""
+								}
+							],
+							"body": "{\n    \"pessoa\": {\n        \"cpf\": \"12345678971\",\n        \"nome\": \"Aluno Da Silva\",\n        \"dataNascimento\": \"YYYY-MM-DD\",\n        \"logradouro\": \"Rua Perimetral\",\n        \"numero\": \"1510\",\n        \"bairro\": \"Centro\",\n        \"cidade\": \"Ubá\",\n        \"estado\": \"Minas Gerais\",\n        \"cep\": \"36520000\"\n    },\n    \"usuario\": {\n        \"email\": \"aluno@gmail.com\",\n        \"tipoUsuario\": \"Aluno\",\n        \"password\": \"123456789@\"\n    },\n    \"usuarioId\": \"UUID\",\n    \"pessoaId\": \"UUID\",\n    \"cursoId\": \"UUID\",\n    \"periodo\": \"5º\"\n}"
+						}
+					]
+				}
+			],
+			"description": "Endpoints responsáveis pelo gerenciamento de alunos."
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "key",
+				"value": "X-API-Key",
+				"type": "string"
+			},
+			{
+				"key": "value",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		}
+	]
+}

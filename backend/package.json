@@ -1,29 +1,36 @@
 {
   "name": "projeto-integrador-v",
   "version": "1.0.0",
-  "description": "Backend - Grupo 3 - Módulo de Autenticação",
+  "description": "Backend - Grupo 3 - Gestão de Usuários e Autenticação",
   "main": "src/server.ts",
   "type": "commonjs",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "start": "ts-node src/app.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.19.2",
+    "axios": "^1.14.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
-    "knex": "^3.2.8",
-    "pg": "^8.20.0"
+    "knex": "^3.1.0",
+    "pg": "^8.20.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.12.7",
+    "@types/uuid": "^10.0.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.9.3"
   }
 }

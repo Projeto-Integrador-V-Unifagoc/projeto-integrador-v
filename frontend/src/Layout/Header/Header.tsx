@@ -14,15 +14,28 @@ import {
 
 import { Menu } from "lucide-react";
 
-export default function Header() {
+// 1. Definição da Interface
+interface HeaderProps {
+    clicarMenu: () => void;
+}
+
+export default function Header({ clicarMenu }: HeaderProps) {
     const navegar = useNavigate();
     const [userName, setUserName] = useState('Usuário');
 
+    // 2. Lógica para buscar o nome do usuário logado
     useEffect(() => {
         const storedUser = localStorage.getItem('@UniEduca:user');
         if (storedUser) {
-            const user = JSON.parse(storedUser);
-            setUserName(user.nome); //
+            try {
+                const user = JSON.parse(storedUser);
+                // Se o campo 'nome' existir no seu banco/localStorage, ele aparecerá aqui
+                if (user.nome) {
+                    setUserName(user.nome);
+                }
+            } catch (error) {
+                console.error("Erro ao ler dados do usuário", error);
+            }
         }
     }, []);
 
@@ -30,6 +43,7 @@ export default function Header() {
         navegar("/home");
     }
 
+    // 3. Lógica de Logout
     function handleLogout() {
         localStorage.removeItem('@UniEduca:token');
         localStorage.removeItem('@UniEduca:user');
@@ -55,9 +69,11 @@ export default function Header() {
                         edge='start'
                         aria-label="menu"
                         sx={{ mr: 2 }}
+                        onClick={clicarMenu}
                     >
                         <Menu size={19} />
                     </IconButton>
+
                     <Typography
                         component='div'
                         sx={(theme) => ({
@@ -70,10 +86,13 @@ export default function Header() {
                     >
                         UniEduca
                     </Typography>
+
                     <Stack flexDirection='row' alignItems='center'>
                         <Button sx={{ width: 'auto' }} onClick={handleLogout}>
                             <UserMenu />
-                            {userName}
+                            <Box component="span" sx={{ ml: 1 }}>
+                                {userName}
+                            </Box>
                         </Button>
                     </Stack>
                 </Toolbar>

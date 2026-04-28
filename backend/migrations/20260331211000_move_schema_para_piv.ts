@@ -50,10 +50,12 @@ const createPivTables = async (db: Knex) => {
     uuidPrimary(table, db);
     table.string("nome").notNullable();
     table.string("uf", 2).notNullable();
+    table.string("ibge").unique().notNullable()
   });
 
   await db.schema.withSchema(SCHEMA).createTable("usuario", (table) => {
     uuidPrimary(table, db);
+    table.string("nome").notNullable();
     table.string("email").notNullable().unique();
     table.string("senha").notNullable();
     table.timestamp("created_at", { useTz: true }).notNullable().defaultTo(db.fn.now());
@@ -75,7 +77,7 @@ const createPivTables = async (db: Knex) => {
   await db.schema.withSchema(SCHEMA).createTable("faculdade", (table) => {
     uuidPrimary(table, db);
     table.string("nome").notNullable();
-    table.uuid("cidade_id").notNullable().references("id").inTable(`${SCHEMA}.cidade`).onDelete("RESTRICT");
+    table.string("cidade_id").notNullable().references("ibge").inTable(`${SCHEMA}.cidade`).onDelete("RESTRICT");
     table.string("logradouro").notNullable();
     table.string("numero").notNullable();
     table.string("bairro").notNullable();
@@ -103,7 +105,7 @@ const createPivTables = async (db: Knex) => {
     table.string("logradouro").notNullable();
     table.string("numero").notNullable();
     table.string("bairro").notNullable();
-    table.uuid("cidade_id").notNullable().references("id").inTable(`${SCHEMA}.cidade`).onDelete("RESTRICT");
+    table.string("cidade_id").notNullable().references("ibge").inTable(`${SCHEMA}.cidade`).onDelete("RESTRICT");
     table.string("estado", 2).notNullable();
     table.string("cep", 9).notNullable();
     table.string("cpf", 14).notNullable().unique();
@@ -128,10 +130,10 @@ const createPivTables = async (db: Knex) => {
 
   await db.schema.withSchema(SCHEMA).createTable("aluno", (table) => {
     uuidPrimary(table, db);
-    table.string("matricula").notNullable().unique();
-    table.uuid("usuario_id").notNullable().unique().references("id").inTable(`${SCHEMA}.usuario`).onDelete("CASCADE");
+    table.increments("matricula").unique();
+    table.uuid("usuario_id").unique().references("id").inTable(`${SCHEMA}.usuario`).onDelete("CASCADE");
     table.uuid("pessoa_id").notNullable().unique().references("id").inTable(`${SCHEMA}.pessoa`).onDelete("CASCADE");
-    table.uuid("curso_id").notNullable().references("id").inTable(`${SCHEMA}.curso`).onDelete("RESTRICT");
+    table.uuid("curso_id").references("id").inTable(`${SCHEMA}.curso`).onDelete("RESTRICT");
     table.string("periodo").notNullable();
   });
 
