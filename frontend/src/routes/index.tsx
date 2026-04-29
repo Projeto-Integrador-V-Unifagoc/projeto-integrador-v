@@ -6,7 +6,7 @@ import BuildingPage from "../Pages/BuildingPage/BuildingPage";
 import NotFound from "../Pages/NotFound/NotFound";
 import Alunos from "../Pages/Alunos/Alunos";
 import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
-import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
+import FichaAluno from "../Pages/Alunos/FichaAluno";
 
 
 
@@ -23,7 +23,7 @@ export function AppRoutes() {
                 <Route path="/cursos/lista" element={<BuildingPage />} />
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />
                 <Route path="/alunos/cadastro" element={<CadastroAlunos />}/>
-                <Route path="alunos/:matricula" element={<EditFormCadastroAluno />} />
+                <Route path="alunos/:matricula" element={<FichaAluno />} />
             </Route>
         </Routes>
     )
