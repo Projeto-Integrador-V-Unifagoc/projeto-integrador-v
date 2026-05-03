@@ -2,7 +2,6 @@ import bcrypt from 'bcrypt';
 import { UsuarioRepository } from '../repository/usuario-repository';
 import jwt from 'jsonwebtoken';
 
-
 class AutenticacaoService {
   private usuarioRepository = new UsuarioRepository();
 
@@ -85,6 +84,17 @@ class AutenticacaoService {
   }
 
   
+ async excluirUsuario(id: string) {
+    
+    const usuario = await this.usuarioRepository.buscarPorId(id);
+
+    if (!usuario) {
+      throw new Error('Usuário não encontrado'); 
+    }
+
+    
+    return await this.usuarioRepository.delete(id); 
+  }
 }
 
 export default new AutenticacaoService();

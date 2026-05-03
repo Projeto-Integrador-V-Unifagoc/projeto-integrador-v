@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import AutenticacaoService from '../services/autenticacao-services';
 
 class AutenticacaoController {
+  // --- TAREFA: CADASTRAR ---
   async cadastrar(req: Request, res: Response) {
     try {
-      const { nome, email, senha, tipo_usuario } = req.body; 
+      const { nome, email, senha, tipo_usuario } = req.body;
 
       if (!nome || !email || !senha || !tipo_usuario) {
         return res.status(400).json({
@@ -13,7 +14,7 @@ class AutenticacaoController {
       }
 
       const usuario = await AutenticacaoService.cadastrarUsuario({
-        nome, 
+        nome,
         email,
         senha,
         tipo_usuario,
@@ -36,28 +37,30 @@ class AutenticacaoController {
     }
   }
 
+  // --- TAREFA: LOGIN ---
   async login(req: Request, res: Response) {
-  try {
-    const { email, senha } = req.body;
+    try {
+      const { email, senha } = req.body;
 
-    if (!email || !senha) {
-      return res.status(400).json({ error: 'Email e senha são obrigatórios' });
-    }
+      if (!email || !senha) {
+        return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+      }
 
-    const { token, usuario } = await AutenticacaoService.login(email, senha);
+      const { token, usuario } = await AutenticacaoService.login(email, senha);
 
-    return res.status(200).json({
-      token,
-      user: usuario
-    });
-  } catch (error: any) {
+      return res.status(200).json({
+        token,
+        user: usuario
+      });
+    } catch (error: any) {
       console.error('Erro no login:', error);
       return res.status(401).json({ error: error?.message || 'Erro ao realizar login' });
     }
   }
 
+  // --- TAREFA: MEU PERFIL (TAREFA 3) ---
   async me(req: Request, res: Response) {
-  try {
+    try {
       const id = (req as any).user.id;
       const usuario = await AutenticacaoService.getMe(id);
 
@@ -70,15 +73,33 @@ class AutenticacaoController {
     }
   }
 
+  // --- TAREFA: LISTAR ---
   async listar(req: Request, res: Response) {
     try {
       const usuarios = await AutenticacaoService.listarTodos();
-
       return res.status(200).json(usuarios);
     } catch (error: any) {
       console.error('Erro ao listar usuários:', error);
-      return res.status(500).json({ 
-        error: 'Erro interno ao buscar a lista de usuários.' 
+      return res.status(500).json({
+        error: 'Erro interno ao buscar a lista de usuários.'
+      });
+    }
+  }
+
+  // --- TAREFA 2: EXCLUIR USUÁRIO ---
+  async excluir(req: Request, res: Response) {
+    try {
+      const { id } = req.params; 
+      
+      await AutenticacaoService.excluirUsuario(id); 
+
+      return res.status(200).json({
+        message: 'Usuário removido com sucesso', 
+      });
+    } catch (error: any) {
+      console.error('Erro ao excluir usuário:', error);
+      return res.status(400).json({
+        error: error?.message || 'Erro ao excluir usuário',
       });
     }
   }

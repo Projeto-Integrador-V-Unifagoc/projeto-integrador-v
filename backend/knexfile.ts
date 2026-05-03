@@ -1,63 +1,25 @@
 import type { Knex } from "knex";
 
-require('dotenv').config({ path: '.env.development' });
+
+require('dotenv').config({ path: '.env' }); 
 
 const config: { [key: string]: Knex.Config } = {
   development: {
     client: "pg",
     connection: {
-      database: String(process.env.DATABASE_NAME),
-      user: String(process.env.DATABASE_USERNAME),
-      password: String(process.env.DATABASE_PASSWORD)
+      host: process.env.DB_HOST || "localhost", 
+      port: Number(process.env.DB_PORT) || 5432, 
+      database: String(process.env.DB_NAME),     
+      user: String(process.env.DB_USER),         
+      password: String(process.env.DB_PASSWORD)  
     },
     searchPath: ['piv'],
-    seeds: {
-      directory: "./seeds"
-    },
-    pool: {
-      min: 2,
-      max: 10
-    },
     migrations: {
       tableName: "knex_migrations",
-      directory: "./migrations"
-    }
-  },
-
-  staging: {
-    client: process.env.DATABASE_CLIENT,
-    connection: {
-      database: String(process.env.DATABASE_NAME),
-      user: String(process.env.DATABASE_USERNAME),
-      password: String(process.env.DATABASE_PASSWORD)
-    },
-    pool: {
-      min: 2,
-      max: 10
-    },
-    migrations: {
-      tableName: "knex_migrations",
-      directory: "./migrations"
-    }
-  },
-
-  production: {
-    client: "postgresql",
-    connection: {
-      database: "my_db",
-      user: "username",
-      password: "password"
-    },
-    pool: {
-      min: 2,
-      max: 10
-    },
-    migrations: {
-      tableName: "knex_migrations",
-      directory: "./migrations"
+      directory: "./migrations",
+      extension: 'ts' 
     }
   }
-
 };
 
 module.exports = config;

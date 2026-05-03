@@ -60,4 +60,13 @@ export class UsuarioRepository {
         'usuario.tipo_usuario'
       );
   }
+  
+  async delete(id: string | number): Promise<void> {
+    await db
+      .withSchema('piv')
+      .table('usuario')
+      .where({ id })
+      .del(); // Comando para apagar do banco
+  }
+
 }
