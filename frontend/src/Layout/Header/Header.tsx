@@ -88,7 +88,7 @@ export default function Header({ clicarMenu }: HeaderProps) {
                     </Typography>
 
                     <Stack flexDirection='row' alignItems='center'>
-                        <Button sx={{ width: 'auto' }} onClick={handleLogout}>
+                       <Button sx={{ width: 'auto' }} onClick={() => navegar("/perfil")}>
                             <UserMenu />
                             <Box component="span" sx={{ ml: 1 }}>
                                 {userName}

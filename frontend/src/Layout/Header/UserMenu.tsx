@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
     Box,
@@ -9,20 +10,26 @@ import {
     Stack,
     Typography
 } from "@mui/material";
+
 import { AccountCircle } from "@mui/icons-material";
-import { 
-    CircleQuestionMark, 
-    CircleUserRound, 
-    LogOut, 
-    NotebookPen 
+
+import {
+    CircleQuestionMark,
+    CircleUserRound,
+    LogOut,
+    NotebookPen
 } from "lucide-react";
 
 import { theme } from "../../theme";
 
-
 export default function UserMenu() {
+    const navigate = useNavigate();
+
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
     const open = Boolean(anchorEl)
+
+    const storedUser = localStorage.getItem('@UniEduca:user');
+    const user = storedUser ? JSON.parse(storedUser) : null;
 
     function handleClick(event: React.MouseEvent<HTMLElement>) {
         setAnchorEl(event.currentTarget)
@@ -30,6 +37,18 @@ export default function UserMenu() {
 
     function handleClose() {
         setAnchorEl(null)
+    }
+
+    function handlePerfil() {
+        handleClose();
+        navigate("/perfil");
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('@UniEduca:token');
+        localStorage.removeItem('@UniEduca:user');
+
+        navigate("/login");
     }
 
     return (
@@ -65,25 +84,28 @@ export default function UserMenu() {
                                 }
                             }}
                         >
-                            <AccountCircle
-                                fontSize="large"
-                            />
+                            <AccountCircle fontSize="large" />
                         </IconButton>
+
                         <Stack
                             display='flex'
                             justifyContent='center'
                             alignItems='center'
                         >
-                            <Typography fontWeight='bold' variant="inherit">Olá, João Pedro Vidal!</Typography>
-                            <Typography sx={(theme) => ({ color: theme.palette.text.disabled })}>contatojoaopedrovidal@gmail.com</Typography>
+                            <Typography fontWeight='bold' variant="inherit">
+                                Olá, {user?.nome || "Usuário"}!
+                            </Typography>
+
+                            <Typography sx={(theme) => ({ color: theme.palette.text.disabled })}>
+                                {user?.email || ""}
+                            </Typography>
                         </Stack>
                     </Stack>
                 </Box>
 
                 <Box mt={2}>
-
                     <MenuItem
-                        onClick={handleClose}
+                        onClick={handlePerfil}
                         sx={{
                             borderTop: `1px solid ${theme.palette.grey[200]}`,
                         }}
@@ -91,9 +113,11 @@ export default function UserMenu() {
                         <ListItemIcon
                             sx={(theme) => ({
                                 color: theme.palette.text.primary
-                            })}>
+                            })}
+                        >
                             <CircleUserRound size={18} />
                         </ListItemIcon>
+
                         Minha Conta
                     </MenuItem>
 
@@ -106,9 +130,11 @@ export default function UserMenu() {
                         <ListItemIcon
                             sx={(theme) => ({
                                 color: theme.palette.text.primary
-                            })}>
+                            })}
+                        >
                             <NotebookPen size={18} />
                         </ListItemIcon>
+
                         Matrícula
                     </MenuItem>
 
@@ -121,14 +147,16 @@ export default function UserMenu() {
                         <ListItemIcon
                             sx={(theme) => ({
                                 color: theme.palette.text.primary
-                            })}>
+                            })}
+                        >
                             <CircleQuestionMark size={18} />
                         </ListItemIcon>
+
                         Manual do Sistema
                     </MenuItem>
 
                     <MenuItem
-                        onClick={handleClose}
+                        onClick={handleLogout}
                         sx={{
                             borderTop: `1px solid ${theme.palette.grey[200]}`
                         }}
@@ -136,9 +164,11 @@ export default function UserMenu() {
                         <ListItemIcon
                             sx={(theme) => ({
                                 color: theme.palette.text.primary
-                            })}>
+                            })}
+                        >
                             <LogOut size={18} />
                         </ListItemIcon>
+
                         Sair
                     </MenuItem>
                 </Box>

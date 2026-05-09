@@ -7,6 +7,7 @@ import NotFound from "../Pages/NotFound/NotFound";
 import Alunos from "../Pages/Alunos/Alunos";
 import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
+import Perfil from "../Pages/Perfil/Perfil";
 
 
 import Cadastro from "../Pages/Usuario/Usuario";
@@ -34,6 +35,7 @@ export function AppRoutes() {
                 <Route path="/professores/lista" element={<BuildingPage />} />
                 <Route path="/usuarios/lista" element={<Cadastro />} />
                 <Route path="/alunos/lista" element={<Alunos />} />
+                <Route path="/perfil" element={<Perfil />} />
                 <Route path="/cursos/lista" element={<BuildingPage />} />
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />                
                 <Route path="*" element={<NotFound />} />
