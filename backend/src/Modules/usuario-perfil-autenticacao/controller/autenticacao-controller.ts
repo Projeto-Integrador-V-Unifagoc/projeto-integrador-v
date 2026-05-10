@@ -1,8 +1,9 @@
+import bcrypt from 'bcrypt';
+import db from '../../../database/conexao';
 import { Request, Response } from 'express';
 import AutenticacaoService from '../services/autenticacao-services';
 
 class AutenticacaoController {
-  // --- TAREFA: CADASTRAR ---
   async cadastrar(req: Request, res: Response) {
     try {
       const { nome, email, senha, tipo_usuario } = req.body;
@@ -37,7 +38,6 @@ class AutenticacaoController {
     }
   }
 
-  // --- TAREFA: LOGIN ---
   async login(req: Request, res: Response) {
     try {
       const { email, senha } = req.body;
@@ -58,7 +58,6 @@ class AutenticacaoController {
     }
   }
 
-  // --- TAREFA: MEU PERFIL (TAREFA 3) ---
   async me(req: Request, res: Response) {
     try {
       const id = (req as any).user.id;
@@ -73,7 +72,6 @@ class AutenticacaoController {
     }
   }
 
-  // --- TAREFA: LISTAR ---
   async listar(req: Request, res: Response) {
     try {
       const usuarios = await AutenticacaoService.listarTodos();
@@ -86,10 +84,9 @@ class AutenticacaoController {
     }
   }
 
-  // --- TAREFA 2: EXCLUIR USUÁRIO ---
   async excluir(req: Request, res: Response) {
     try {
-      const { id } = req.params; 
+      const id = req.params.id as string;
       
       await AutenticacaoService.excluirUsuario(id); 
 
@@ -103,6 +100,43 @@ class AutenticacaoController {
       });
     }
   }
+
+async atualizar(req: Request, res: Response) {
+    console.log("🚀 Body recebido:", req.body);
+
+    try {
+        const { id } = req.params;
+        const { nome, email, senha } = req.body || {}; 
+        
+        if (!nome && !email && !senha) {
+            return res.status(400).json({ error: "Nenhum dado enviado para atualização." });
+        }
+
+        const dadosParaAtualizar: any = { nome, email };
+
+        if (senha && senha.trim() !== "") {
+            const salt = await bcrypt.genSalt(10);
+            dadosParaAtualizar.senha = await bcrypt.hash(senha, salt);
+        }
+
+        const atualizou = await db('usuario')
+            .withSchema('piv')
+            .where({ id })
+            .update(dadosParaAtualizar);
+
+        if (!atualizou) {
+            return res.status(404).json({ error: 'Usuário não encontrado no banco.' });
+        }
+
+        return res.status(200).json({ message: 'Dados atualizados com sucesso!' });
+    } catch (error: any) {
+    console.error(error);
+    return res.status(500).json({ 
+        error: 'Erro interno ao atualizar.',
+        detalhe: error.message
+    });
+}
+}
 }
 
 export default new AutenticacaoController();

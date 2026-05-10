@@ -11,7 +11,8 @@ router.get('/me', autenticar, (req, res) => AutenticacaoController.me(req, res))
 
 router.get('/usuarios', autenticar, (req, res) => AutenticacaoController.listar(req, res));
 
-
 router.delete('/usuarios/:id', autenticar, (req, res) => AutenticacaoController.excluir(req, res));
+
+router.put('/usuarios/:id', autenticar, (req, res) => AutenticacaoController.atualizar(req, res));
 
 export default router;
