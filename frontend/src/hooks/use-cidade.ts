@@ -5,7 +5,10 @@ import { cidadeApi } from "../services/cidade-api";
 export function useCidade() {
     const [carregando, setCarregando] = useState<boolean>(false)
 
-    const listarCidades = async (params?: any) => {
+    const listarCidades = async (params?: {
+        ibge?: string
+        nome?: string
+    }) => {
         setCarregando(true)
 
         try {
@@ -16,7 +19,19 @@ export function useCidade() {
         }
     }
 
+    const buscarCidadePorIbge = async (ibge: string) => {
+        setCarregando(true)
+
+        try {
+            const response = await cidadeApi.buscarCidadePorIbge(ibge)
+            return response
+        } finally {
+            setCarregando(false)
+        }
+    }
+
     return {
+        buscarCidadePorIbge,
         listarCidades,
         carregando
     }

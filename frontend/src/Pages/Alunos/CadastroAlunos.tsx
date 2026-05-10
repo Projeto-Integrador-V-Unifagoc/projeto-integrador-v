@@ -20,12 +20,13 @@ import {
   useTheme
 } from "@mui/material";
 
-import { useCidade } from "../../hooks/use-cidade";
 import { useAluno } from "../../hooks/use-aluno";
 import { useViaCep } from "../../hooks/use-cep";
 
 import { alunoSchema } from "../../validators/aluno-schema";
 import DropDownCursos from "../../components/DropDownCursos/DropDownCursos";
+import type { CidadeModel } from "../../models/cidade-model";
+import { useCidade } from "../../hooks/use-cidade";
 
 export default function CadastroAlunos() {
 
@@ -36,7 +37,7 @@ export default function CadastroAlunos() {
     logradouro: string
     numero: string
     bairro: string
-    cidadeIbge: string
+    cidade: CidadeModel | null
     estado: string
     cep: string
     curso: string
@@ -49,7 +50,7 @@ export default function CadastroAlunos() {
     logradouro: "",
     numero: "",
     bairro: "",
-    cidadeIbge: "",
+    cidade: null,
     estado: "",
     cep: "",
     curso: "",
@@ -63,7 +64,8 @@ export default function CadastroAlunos() {
   } | null>(null)
   const [erros, setErros] = useState<Record<string, string>>({})
 
-  const { carregando: isCarregando, buscarCep } = useViaCep()
+  const { buscarCep } = useViaCep()
+  const { buscarCidadePorIbge } = useCidade()
   const { carregando, criarAluno } = useAluno()
   const navigate = useNavigate();
 
@@ -71,21 +73,24 @@ export default function CadastroAlunos() {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
   async function buscarEnderecoPeloCep() {
+
     const data = await buscarCep(form.cep)
 
     if (!data) {
-      return
+        return
     }
 
+    const cidade = await buscarCidadePorIbge(String(data.ibge))
 
     setForm((prev) => ({
-      ...prev,
-      logradouro: data.logradouro,
-      bairro: data.bairro,
-      estado: data.uf,
-      cidadeIbge: String(data.ibge),
+        ...prev,
+        logradouro: data.logradouro,
+        bairro: data.bairro,
+        estado: data.uf,
+        cep: data.cep,
+        cidade
     }))
-  }
+}
 
   function handleChange<K extends keyof FormType>(
     name: K,
@@ -128,7 +133,7 @@ export default function CadastroAlunos() {
           logradouro: form.logradouro,
           numero: Number(form.numero),
           bairro: form.bairro,
-          cidadeIbge: form.cidadeIbge,
+          cidadeIbge: String(form.cidade?.ibge || ""),
           estado: form.estado,
           cep: form.cep
         }
@@ -252,8 +257,8 @@ export default function CadastroAlunos() {
 
                   <Grid size={4}>
                     <DropDownCidades
-                      value={form.cidadeIbge}
-                      onChange={(value) => handleChange("cidadeIbge", value)}
+                      value={form.cidade}
+                      onChange={(cidade) => handleChange("cidade", cidade)}
                     />
                   </Grid>
 
@@ -310,6 +315,8 @@ export default function CadastroAlunos() {
                   <Grid size={4}>
                     <DropDownCursos
                       value={form.curso}
+                      error={!!erros.cidade}
+                      helperText={erros.cidade}
                       onChange={(value) => handleChange("curso", value)}
                     />
                   </Grid>

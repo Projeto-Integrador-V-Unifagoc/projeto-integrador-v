@@ -1,71 +1,91 @@
-import { MenuItem, type TextFieldProps } from "@mui/material";
-import TextField from "../TextField";
-import { useCidade } from "../../hooks/use-cidade";
-import { useEffect, useState } from "react";
-import type { CidadeModel } from "../../models/cidade-model";
-import { theme } from "../../theme";
+import {
+    Autocomplete,
+    CircularProgress,
+    TextField
+} from "@mui/material"
 
-type DropDownCidadesProps = Omit<TextFieldProps, "onChange"> & {
-    value: number | string | ''
-    onChange: (value: string) => void
+import { useEffect, useState } from "react"
+import { useCidade } from "../../hooks/use-cidade"
+import type { CidadeModel } from "../../models/cidade-model"
+import { theme } from "../../theme"
+
+type Props = {
+    value: CidadeModel | null
+    onChange: (cidade: CidadeModel | null) => void
 }
-
 
 export default function DropDownCidades({
     value,
-    onChange,
-    ...rest
-}: DropDownCidadesProps) {
-    const { carregando, listarCidades } = useCidade()
+    onChange
+}: Props) {
+
+    const { listarCidades, carregando } = useCidade()
+
+    const [inputValue, setInputValue] = useState("")
     const [cidades, setCidades] = useState<CidadeModel[]>([])
 
     useEffect(() => {
-        async function carregar() {
-            const data = await listarCidades()
-            console.log(data)
+
+        async function buscar() {
+
+            if (inputValue.length < 2) {
+                setCidades([])
+                return
+            }
+
+            const data = await listarCidades({
+                nome: inputValue
+            })
+
             setCidades(data)
         }
-        carregar()
-    }, [])
+
+        buscar()
+
+    }, [inputValue])
 
     return (
-        <TextField
-            label='Cidade'
-            InputLabelProps={{ shrink: true }}
-            select
-            fullWidth
+        <Autocomplete
+            options={cidades}
             value={value}
-            onChange={(e) => onChange(String(e.target.value))}
-            SelectProps={{
-                MenuProps: {
-                    PaperProps: {
-                        sx: {
-                            maxHeight: 300,
-                            overflow: 'auto',
-                            borderRadius: 3,
-                            backgroundColor: "background.default"
-                        }
+            inputValue={value ? `${value.nome} - ${value.uf}` : inputValue}
+            loading={carregando}
+            getOptionLabel={(option) =>
+                `${option.nome} - ${option.uf}`
+            }
+            isOptionEqualToValue={(option, value) => 
+                option.ibge === value.ibge
+            }
+            onInputChange={(_, newInputValue) => {
+                setInputValue(newInputValue)
+            }}
+            onChange={(_, newValue) => {
+                onChange(newValue)
+            }}
+            renderInput={(params) => (
+                <TextField
+                    {...params}
+                    label="Cidade"
+                    InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                            <>
+                                {carregando ? (
+                                    <CircularProgress size={20} />
+                                ) : null}
+                                {params.InputProps.endAdornment}
+                            </>
+                        )
+                    }}
+                />
+            )}
+            slotProps={{
+                paper: {
+                    sx: {
+                        backgroundColor: "#FFF"
                     }
                 }
             }}
-            {...rest}
-        >
-            {carregando ? (
-                <MenuItem disabled>Carregando...</MenuItem>
-            ) : (
-                cidades.map((cidade) => (
-                    <MenuItem
-                        key={cidade.id}
-                        value={cidade.ibge}
-                        sx={{
-                            backgroundColor: `${theme.palette.background.default}`,
-                            borderRadius: '8px',
-                        }}
-                    >
-                        {cidade.nome} - {cidade.uf}
-                    </MenuItem>
-                ))
-            )}
-        </TextField>
-    );
+        />
+    )
 }

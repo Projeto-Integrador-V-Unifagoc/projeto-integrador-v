@@ -12,6 +12,7 @@ import { useAluno } from "../../hooks/use-aluno";
 import { useParams } from "react-router-dom";
 
 import { Card } from "../Card";
+import type { CidadeModel } from "../../models/cidade-model";
 
 export default function EditFormCadastroAlunoDesktop() {
 
@@ -22,7 +23,7 @@ export default function EditFormCadastroAlunoDesktop() {
         logradouro: string
         numero: string
         bairro: string
-        cidadeIbge: string | number
+        cidade: CidadeModel | null
         estado: string
         cep: string
         curso: string
@@ -35,7 +36,7 @@ export default function EditFormCadastroAlunoDesktop() {
         logradouro: "",
         numero: "",
         bairro: "",
-        cidadeIbge: "",
+        cidade: null,
         estado: "",
         cep: "",
         curso: "",
@@ -61,7 +62,7 @@ export default function EditFormCadastroAlunoDesktop() {
                 logradouro: data.pessoa?.logradouro || "",
                 numero: data.pessoa?.numero || "",
                 bairro: data.pessoa?.bairro || "",
-                cidadeIbge: data.pessoa?.cidade?.ibge || "",
+                cidade: data.pessoa?.cidade || null,
                 estado: data.pessoa?.estado || "",
                 cep: data.pessoa?.cep || "",
                 curso: data.curso || "",
@@ -154,9 +155,8 @@ export default function EditFormCadastroAlunoDesktop() {
 
                             <Grid size={4}>
                                 <DropDownCidades
-                                    disabled
-                                    value={form.cidadeIbge}
-                                    onChange={(value) => handleChange("cidadeIbge", value)}
+                                    value={form.cidade}
+                                    onChange={(cidade) => handleChange("cidade", cidade)}
                                 />
                             </Grid>
 
