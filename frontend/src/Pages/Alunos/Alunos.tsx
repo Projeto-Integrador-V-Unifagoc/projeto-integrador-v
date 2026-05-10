@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-import { useMediaQuery, useTheme } from "@mui/material";
+import { IconButton, useMediaQuery, useTheme } from "@mui/material";
 
 import SearchTextField from "../../components/SearchTextField/SearchTextField";
 import DataTable from "../../components/DataTable/DataTable";
@@ -11,6 +11,8 @@ import Container from "../../components/Container";
 import type { AlunoRequest, AlunoView } from "../../models/aluno-model";
 import { useAluno } from "../../hooks/use-aluno";
 import { useNavigate } from "react-router-dom";
+import type { GridColDef } from "@mui/x-data-grid";
+import { Pencil } from "lucide-react";
 
 export default function Alunos() {
   const theme = useTheme()
@@ -20,16 +22,65 @@ export default function Alunos() {
   const navigate = useNavigate()
 
 
-  const columns = [
-    { field: "matricula", headerName: "Matricula", width: 90 },
-    { field: "nome", headerName: "Nome", flex: 1 },
-    { field: "cpf", headerName: "CPF", flex: 1 },
-    { field: "logradouro", headerName: "Logradouro", flex: 1 },
-    { field: "bairro", headerName: "Bairro", flex: 1 },
-    { field: "cidade", headerName: "Cidade", flex: 1 },
-    { field: "estado", headerName: "Estado", flex: 1 },
-    { field: "cep", headerName: "Cep", flex: 1 },
-    { field: "periodo", headerName: "Período", flex: 1 },
+  const columns: GridColDef<AlunoView>[] = [
+    {
+      field: "matricula",
+      headerName: "Matricula",
+      width: 90
+    },
+    {
+      field: "nome",
+      headerName: "Nome",
+      flex: 1
+    },
+    {
+      field: "cpf",
+      headerName: "CPF",
+      flex: 1
+    },
+    {
+      field: "logradouro",
+      headerName: "Logradouro",
+      flex: 1
+    },
+    {
+      field: "bairro",
+      headerName: "Bairro",
+      flex: 1
+    },
+    {
+      field: "cidade",
+      headerName: "Cidade",
+      flex: 1
+    },
+    {
+      field: "estado",
+      headerName: "Estado",
+      flex: 1
+    },
+    {
+      field: "cep",
+      headerName: "Cep",
+      flex: 1
+    },
+    {
+      field: "periodo",
+      headerName: "Período",
+      flex: 1
+    },
+    {
+      field: "id",
+      headerName: "Ações",
+      flex: 1,
+      renderCell: (params) => (
+        <IconButton
+          onClick={() => navigate(`/alunos/${params.row.matricula}`)}
+          color="primary"
+        >
+          <Pencil size={20} />
+        </IconButton>
+      )
+    }
   ];
 
   useEffect(() => {
@@ -66,8 +117,8 @@ export default function Alunos() {
             onClick={() => navigate(`/alunos/${aluno.matricula}`)}
             key={aluno.id}
           >
-            <MobileCard.Header 
-              matricula={aluno.matricula}  
+            <MobileCard.Header
+              matricula={aluno.matricula}
             />
             <MobileCard.Content
               nome={aluno.nome}
