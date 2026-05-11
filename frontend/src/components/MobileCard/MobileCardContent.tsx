@@ -8,8 +8,6 @@ import {
 
 import { InfoItem } from "../InfoItem/InfoItem";
 
-import { theme } from "../../theme";
-
 
 interface CardProps extends MuiCardProps {
     nome: string

@@ -1,7 +1,6 @@
 import Container from "../../components/Container";
 import Aluno from '../../../public/assets/aluno.svg'
 import { Box, Stack, Typography } from "@mui/material";
-import { theme } from "../../theme";
 
 
 export default function Home() {
