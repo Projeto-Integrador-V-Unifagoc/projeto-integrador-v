@@ -29,6 +29,9 @@ import {
 import { avaliacaoApi } from "../../services/avaliacao-api";
 
 const tipoOptions: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
+const MOCK_TURMAS = [
+  { id: "550e8400-e29b-41d4-a716-446655449001", nome: "Turma ES-2026/1 - Engenharia de Software" },
+];
 
 interface AvaliacaoFormState {
   turma_id: string;
@@ -40,7 +43,7 @@ interface AvaliacaoFormState {
 }
 
 const initialForm: AvaliacaoFormState = {
-  turma_id: "",
+  turma_id: MOCK_TURMAS[0].id,
   tipo_avaliacao: "PROVA",
   descricao_avaliacao: "",
   valor: REGRAS_AVALIACAO.valorProva,
@@ -68,6 +71,10 @@ function normalizarTexto(value: string) {
     .trim();
 }
 
+function getNomeTurma(turmaId: string) {
+  return MOCK_TURMAS.find((turma) => turma.id === turmaId)?.nome || turmaId;
+}
+
 function getMensagemErro(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
     const apiMessage = error.response?.data?.mensagem;
@@ -84,9 +91,12 @@ function getMensagemErro(error: unknown, fallback: string) {
 export default function Avaliacoes() {
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [saving, setSaving] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogDeleteOpen, setDialogDeleteOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [avaliacaoParaExcluir, setAvaliacaoParaExcluir] = useState<Avaliacao | null>(null);
   const [form, setForm] = useState<AvaliacaoFormState>(initialForm);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -133,7 +143,7 @@ export default function Avaliacoes() {
     return avaliacoes.filter((av) => {
       const camposPesquisaveis = [
         av.id,
-        av.turma_id,
+        getNomeTurma(av.turma_id),
         av.tipo_avaliacao,
         formatarTipo(av.tipo_avaliacao),
         av.descricao_avaliacao ?? "",
@@ -197,6 +207,17 @@ export default function Avaliacoes() {
     setDialogOpen(false);
   }
 
+  function abrirDialogExclusao(avaliacao: Avaliacao) {
+    setAvaliacaoParaExcluir(avaliacao);
+    setDialogDeleteOpen(true);
+  }
+
+  function fecharDialogExclusao() {
+    if (deleting) return;
+    setDialogDeleteOpen(false);
+    setAvaliacaoParaExcluir(null);
+  }
+
   function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = event.target;
 
@@ -237,7 +258,9 @@ export default function Avaliacoes() {
       throw new Error("Informe a data de lancamento da avaliacao.");
     }
 
-    const outrasAvaliacoes = avaliacoes.filter((av) => av.id !== editingId);
+    const outrasAvaliacoes = avaliacoes.filter(
+      (av) => av.id !== editingId && av.turma_id === payload.turma_id,
+    );
     const provasExistentes = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === "PROVA");
     const tpisExistentes = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === "TPI");
     const trabalhosExistentes = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === "TRABALHO");
@@ -304,20 +327,22 @@ export default function Avaliacoes() {
     }
   }
 
-  async function handleDelete(id: string) {
-    const confirmed = window.confirm("Deseja realmente excluir esta avaliacao?");
-    if (!confirmed) return;
-
+  async function confirmarExclusao() {
+    if (!avaliacaoParaExcluir) return;
+    setDeleting(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
     try {
-      await avaliacaoApi.deletar(id);
+      await avaliacaoApi.deletar(avaliacaoParaExcluir.id);
       setSuccessMessage("Avaliacao removida com sucesso.");
       await carregarAvaliacoes();
+      fecharDialogExclusao();
     } catch (error) {
       console.error(error);
       setErrorMessage(getMensagemErro(error, "Nao foi possivel remover a avaliacao."));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -353,7 +378,9 @@ export default function Avaliacoes() {
     {
       field: "turma_id",
       headerName: "Turma",
-      width: 140,
+      minWidth: 220,
+      flex: 1,
+      valueGetter: (_, row) => getNomeTurma(row.turma_id),
     },
     {
       field: "valor",
@@ -384,7 +411,7 @@ export default function Avaliacoes() {
           <IconButton size="small" onClick={() => abrirEdicao(row)}>
             <Pencil size={16} />
           </IconButton>
-          <IconButton size="small" color="error" onClick={() => handleDelete(row.id)}>
+          <IconButton size="small" color="error" onClick={() => abrirDialogExclusao(row)}>
             <Trash2 size={16} />
           </IconButton>
         </Stack>
@@ -408,7 +435,7 @@ export default function Avaliacoes() {
                   Cadastre, acompanhe e atualize as avaliacoes academicas.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Regras ativas: 3 provas de 20 pontos, 1 TPI de 5 pontos e ate 25 pontos livres para trabalhos.
+                  Regras ativas por turma: 3 provas de 20 pontos, 1 TPI de 5 pontos e ate 25 pontos livres para trabalhos.
                 </Typography>
               </Stack>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
@@ -520,13 +547,19 @@ export default function Avaliacoes() {
             <Grid container spacing={2}>
               <Grid size={12}>
                 <TextField
-                  label="Turma (UUID)"
+                  label="Turma"
                   name="turma_id"
+                  select
                   value={form.turma_id}
                   onChange={handleChange}
-                  placeholder="Ex.: 550e8400-e29b-41d4-a716-446655440000"
                   InputLabelProps={{ shrink: true }}
-                />
+                >
+                  {MOCK_TURMAS.map((turma) => (
+                    <MenuItem key={turma.id} value={turma.id}>
+                      {turma.nome}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               <Grid size={12}>
                 <TextField
@@ -603,6 +636,38 @@ export default function Avaliacoes() {
           </Button>
           <Button variant="contained" sx={{ width: 110 }} onClick={handleSubmit} isLoading={saving}>
             Salvar
+          </Button>
+        </Dialog.Footer>
+      </Dialog.Root>
+
+      <Dialog.Root
+        open={dialogDeleteOpen}
+        onClose={fecharDialogExclusao}
+        maxWidth="xs"
+      >
+        <Dialog.Header>
+          <Dialog.Title>Confirmar Exclusao</Dialog.Title>
+          <Dialog.ActionClose onClose={fecharDialogExclusao} />
+        </Dialog.Header>
+        <Dialog.Content>
+          <p style={{ margin: 0 }}>
+            Tem certeza que deseja excluir a avaliacao{" "}
+            <strong>{avaliacaoParaExcluir?.descricao_avaliacao || formatarTipo(avaliacaoParaExcluir?.tipo_avaliacao || "PROVA")}</strong>
+            ?
+            Esta acao nao pode ser desfeita.
+          </p>
+        </Dialog.Content>
+        <Dialog.Footer>
+          <Button variant="outlined" onClick={fecharDialogExclusao} disabled={deleting}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmarExclusao}
+            isLoading={deleting}
+          >
+            Excluir
           </Button>
         </Dialog.Footer>
       </Dialog.Root>

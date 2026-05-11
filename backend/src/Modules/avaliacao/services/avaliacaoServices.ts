@@ -57,7 +57,9 @@ function validarRegrasDePontuacao(
   avaliacoes: Avaliacao[],
   idAtual?: string,
 ): void {
-  const outrasAvaliacoes = avaliacoes.filter((av) => av.id !== idAtual);
+  const outrasAvaliacoes = avaliacoes.filter(
+    (av) => av.id !== idAtual && av.turma_id === candidato.turma_id,
+  );
   const provas = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === 'PROVA');
   const tpis = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === 'TPI');
   const trabalhos = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === 'TRABALHO');

@@ -48,10 +48,24 @@ async function criar(req: Request, res: Response): Promise<void> {
       faculdade_id,
     } = req.body;
 
-    // Validar campos obrigatórios
-    if (!nome || !email || !senha || !cpf) {
+    if (
+      !nome ||
+      !email ||
+      !senha ||
+      !cpf ||
+      !data_nascimento ||
+      !logradouro ||
+      !numero ||
+      !bairro ||
+      !cidade_id ||
+      !estado ||
+      !cep ||
+      !curso_id ||
+      !faculdade_id
+    ) {
       res.status(400).json({
-        mensagem: 'Os campos nome, email, senha e cpf são obrigatórios.',
+        mensagem:
+          'Os campos nome, email, senha, cpf, data_nascimento, logradouro, numero, bairro, cidade_id, estado, cep, curso_id e faculdade_id são obrigatórios.',
       });
       return;
     }

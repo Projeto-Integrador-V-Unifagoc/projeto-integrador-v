@@ -328,6 +328,16 @@ export default function Professores() {
         setDialogEditOpen(true);
     };
 
+    const abrirEdicaoCompleta = async (professor: Professor) => {
+        try {
+            const professorCompleto = await professorApi.buscarPorId(professor.id);
+            abrirEdicao(professorCompleto);
+        } catch (error) {
+            console.error("Erro ao carregar professor para ediÃ§Ã£o:", error);
+            setErrorMessage("Erro ao carregar os dados completos do professor.");
+        }
+    };
+
     const abrirExclusao = (professor: Professor) => {
         setProfessorSelecionado(professor);
         setDialogDeleteOpen(true);
@@ -404,6 +414,10 @@ export default function Professores() {
                 cep: editData.cep,
                 curso_id: editData.curso_id,
                 faculdade_id: editData.faculdade_id,
+                curso_nome: editData.curso_nome,
+                faculdade_nome: editData.faculdade_nome,
+                cidade_nome: editData.cidade_nome,
+                uf_nome: editData.uf_nome,
             };
 
             const payloadFiltrado = Object.fromEntries(
@@ -421,7 +435,13 @@ export default function Professores() {
             setDialogEditOpen(false);
         } catch (error) {
             console.error("Erro ao atualizar professor:", error);
-            setErrorMessage("Erro ao atualizar professor. Verifique o console.");
+            const erroDaApi = error as { response?: { data?: { mensagem?: string; message?: string } } };
+            setErrorMessage(
+                erroDaApi.response?.data?.mensagem ||
+                erroDaApi.response?.data?.message ||
+                (error instanceof Error ? error.message : '') ||
+                "Erro ao atualizar professor."
+            );
         } finally {
             setLoadingSalvar(false);
         }
@@ -437,7 +457,13 @@ export default function Professores() {
             setDialogDeleteOpen(false);
         } catch (error) {
             console.error("Erro ao excluir professor:", error);
-            setErrorMessage("Erro ao excluir professor. Verifique o console.");
+            const erroDaApi = error as { response?: { data?: { mensagem?: string; message?: string } } };
+            setErrorMessage(
+                erroDaApi.response?.data?.mensagem ||
+                erroDaApi.response?.data?.message ||
+                (error instanceof Error ? error.message : '') ||
+                "Erro ao excluir professor."
+            );
         } finally {
             setLoadingDeletar(false);
         }
@@ -449,7 +475,7 @@ export default function Professores() {
         { field: "curso", headerName: "Curso", flex: 1 },
         { field: "email", headerName: "Email", flex: 1 },
         { field: "cpf", headerName: "CPF", flex: 1 },
-        { field: "faculdade_id", headerName: "Faculdade", flex: 1 },
+        { field: "faculdade", headerName: "Faculdade", flex: 1 },
         {
             field: "acoes",
             headerName: "Ações",
@@ -461,7 +487,7 @@ export default function Professores() {
                         <IconButton
                             size="small"
                             color="primary"
-                            onClick={() => abrirEdicao(params.row as Professor)}
+                            onClick={() => abrirEdicaoCompleta(params.row as Professor)}
                         >
                             <Pencil size={16} />
                         </IconButton>

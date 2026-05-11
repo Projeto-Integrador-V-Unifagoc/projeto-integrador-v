@@ -260,6 +260,7 @@ export default function Cadastro() {
         // Apenas campos pessoais/básicos são obrigatórios por enquanto
         const camposObrigatorios: (keyof ProfessorFormData)[] = [
             'nome', 'cpf', 'dataNascimento', 'email', 'senha',
+            'curso_id', 'faculdade_id', 'cidade_id', 'uf',
             'logradouro', 'bairro', 'numero', 'cep',
         ];
 
@@ -313,14 +314,22 @@ export default function Cadastro() {
                 cep: formData.cep,
                 curso_id: formData.curso_id,
                 faculdade_id: formData.faculdade_id,
+                curso_nome: formData.curso_nome,
+                faculdade_nome: formData.faculdade_nome,
+                cidade_nome: formData.cidade_nome,
+                uf_nome: formData.uf_nome,
             };
 
             await professorApi.criar(payload);
             setSuccessMessage('Professor cadastrado com sucesso!');
             setTimeout(() => navigate('/professores/lista'), 1200);
         } catch (error: unknown) {
-            const erroDaApi = error as { response?: { data?: { message: string } } };
-            const mensagem = erroDaApi.response?.data?.message || 'Erro ao cadastrar professor.';
+            const erroDaApi = error as { response?: { data?: { mensagem?: string; message?: string } } };
+            const mensagem =
+                erroDaApi.response?.data?.mensagem ||
+                erroDaApi.response?.data?.message ||
+                (error instanceof Error ? error.message : '') ||
+                'Erro ao cadastrar professor.';
             
             // Tentar mapear mensagem para campo específico
             if (mensagem.toLowerCase().includes('cpf')) {

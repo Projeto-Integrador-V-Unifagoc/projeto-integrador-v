@@ -24,7 +24,27 @@ export const professorRepository = {
     return await db('piv.professor')
       .join('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
       .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
-      .select('piv.professor.id', 'piv.professor.usuario_id', 'piv.professor.pessoa_id', 'piv.pessoa.nome', 'piv.usuario.email', 'piv.pessoa.cpf', 'piv.professor.curso_id', 'piv.professor.faculdade_id')
+      .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
+      .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
+      .select(
+        'piv.professor.id',
+        'piv.professor.usuario_id',
+        'piv.professor.pessoa_id',
+        'piv.pessoa.nome',
+        'piv.usuario.email',
+        'piv.pessoa.cpf',
+        'piv.pessoa.data_nascimento',
+        'piv.pessoa.logradouro',
+        'piv.pessoa.numero',
+        'piv.pessoa.bairro',
+        'piv.pessoa.cidade_id',
+        'piv.pessoa.estado',
+        'piv.pessoa.cep',
+        'piv.professor.curso_id',
+        'piv.curso.nome as curso',
+        'piv.professor.faculdade_id',
+        'piv.faculdade.nome as faculdade'
+      )
       .where('piv.professor.id', id)
       .first();
   },
