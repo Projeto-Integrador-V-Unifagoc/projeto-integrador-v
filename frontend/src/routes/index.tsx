@@ -15,6 +15,9 @@ import CadastroDisciplinas from "../Pages/Disciplinas/CadastroDisciplinas";
 import EditDisciplina from "../Pages/Disciplinas/EditDisciplina";
 
 
+import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
+import Professores from "../Pages/Professores/Professores";
+import CadastroProfessores from "../Pages/Professores/Cadastro";
 
 export function AppRoutes() {
     return (
@@ -24,7 +27,8 @@ export function AppRoutes() {
                 <Route path="/" element={<Home />}/>
                 <Route path="/home" element={<Home />}/>
                 <Route path="/tarefas/lista" element={<BuildingPage />} />
-                <Route path="/professores/lista" element={<BuildingPage />} />
+                <Route path="/professores/lista" element={<Professores />} />
+                <Route path="/professores/cadastro" element={<CadastroProfessores />} />
                 <Route path="/alunos/lista" element={<Alunos />} />
                 <Route path="/cursos/lista" element={<Cursos />} />
                 <Route path="/disciplinas/lista" element={<Disciplinas />} />
@@ -34,6 +38,8 @@ export function AppRoutes() {
                 <Route path="alunos/:matricula" element={<EditFormCadastroAluno />} />
                 <Route path="cursos/:id" element={<EditCurso />} />
                 <Route path="disciplinas/:id" element={<EditDisciplina />} />
+                <Route path="/avaliacoes/lista" element={<Avaliacoes />} />
+
             </Route>
         </Routes>
     )

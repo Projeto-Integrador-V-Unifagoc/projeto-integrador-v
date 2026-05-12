@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { 
+import {
     CardHeader as MuiCardHeader, 
     Typography, 
     type CardProps as MuiCardProps 
