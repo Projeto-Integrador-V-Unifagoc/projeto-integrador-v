@@ -11,6 +11,7 @@ import {
   Archive,
   ChevronDown,
   ChevronUp,
+  ClipboardCheck,
   ClipboardList,
   GraduationCap,
   NotebookPen,
@@ -140,7 +141,7 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
           </>
         )}
 
-        {(ehSecretaria || ehProfessor) && (
+        {(ehSecretaria || ehProfessor || ehAluno) && (
           <>
             <ListItemButton
               onClick={() => setAbrirAcademico(!abrirAcademico)}
@@ -179,6 +180,16 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                   </ListItemIcon>
                   <ListItemText
                     primary="Alunos"
+                    primaryTypographyProps={{ fontSize: 14 }}
+                  />
+                </ListItemButton>
+
+                <ListItemButton sx={{ pl: 4 }} href="/avaliacoes/lista">
+                  <ListItemIcon sx={{ minWidth: 28 }}>
+                    <ClipboardCheck size={17} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Avaliações"
                     primaryTypographyProps={{ fontSize: 14 }}
                   />
                 </ListItemButton>

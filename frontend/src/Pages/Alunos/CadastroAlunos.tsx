@@ -16,7 +16,7 @@ import {
   IconButton,
   Stack,
   useMediaQuery,
-  useTheme
+  useTheme,
 } from "@mui/material";
 
 import { useAluno } from "../../hooks/use-aluno";
@@ -51,7 +51,7 @@ export default function CadastroAlunos() {
     estado: "",
     cep: "",
     curso: "",
-    periodo: ""
+    periodo: "",
   };
 
   const [form, setForm] = useState<FormType>(initialForm);
@@ -99,7 +99,7 @@ export default function CadastroAlunos() {
   function handleChange<K extends keyof FormType>(name: K, value: FormType[K]) {
     setForm((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   }
 
@@ -132,15 +132,15 @@ export default function CadastroAlunos() {
           bairro: form.bairro,
           cidadeIbge: form.cidadeIbge,
           estado: form.estado,
-          cep: form.cep
-        }
+          cep: form.cep,
+        },
       };
 
       await criarAluno(alunoData);
 
       setAlerta({
         tipo: "success",
-        mensagem: "Que beleza, seu aluno foi cadastrado com sucesso!"
+        mensagem: "Que beleza, seu aluno foi cadastrado com sucesso!",
       });
 
       setForm(initialForm);
@@ -152,7 +152,7 @@ export default function CadastroAlunos() {
       console.error(err);
       setAlerta({
         tipo: "error",
-        mensagem: "Opss, parece que algo deu errado durante o cadastro do aluno."
+        mensagem: "Opss, parece que algo deu errado durante o cadastro do aluno.",
       });
     }
   }
@@ -334,7 +334,7 @@ export default function CadastroAlunos() {
                   width: "100%",
                   height: "35px",
                   display: "flex",
-                  alignItems: "center"
+                  alignItems: "center",
                 }}
               >
                 {alerta.mensagem}

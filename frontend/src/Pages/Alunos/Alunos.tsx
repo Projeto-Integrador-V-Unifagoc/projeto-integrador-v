@@ -18,7 +18,7 @@ export default function Alunos() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const [alunos, setAlunos] = useState<AlunoView[]>([])
-  const { listarAlunos, buscarAlunoPorMatricula, carregando } = useAluno()
+  const { listarAlunos, carregando } = useAluno()
   const navigate = useNavigate()
 
 

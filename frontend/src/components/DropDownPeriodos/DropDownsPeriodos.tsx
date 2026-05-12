@@ -1,12 +1,13 @@
 import { MenuItem, type TextFieldProps } from "@mui/material";
+
 import { Periodos } from "../../enums/periodos";
 import TextField from "../TextField";
 import { theme } from "../../theme";
 
-type DropDownPeriodosProps = TextFieldProps & {
-    value: Periodos | ''
-    onChange: (value: Periodos) => void
-}
+type DropDownPeriodosProps = Omit<TextFieldProps, "value" | "onChange"> & {
+    value: Periodos | '';
+    onChange: (value: Periodos) => void;
+};
 
 export default function DropDownPeriodos({
     value,
@@ -18,7 +19,7 @@ export default function DropDownPeriodos({
             label='Período'
             InputLabelProps={{
                 shrink: true
-            }}        
+            }}
             select
             fullWidth
             value={value}
@@ -44,11 +45,11 @@ export default function DropDownPeriodos({
                     sx={{
                         backgroundColor: `${theme.palette.background.default}`,
                         borderRadius: '8px'
-                    }}                
+                    }}
                 >
                     {periodo}
                 </MenuItem>
             ))}
         </TextField>
-    )
+    );
 }

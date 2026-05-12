@@ -8,10 +8,12 @@ import Alunos from "../Pages/Alunos/Alunos";
 import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import Perfil from "../Pages/Perfil/Perfil";
-
 import Cadastro from "../Pages/Usuario/Usuario";
 import { Login } from "../Pages/Login/Login";
 import { PrivateRoute } from "../components/PrivateRoute";
+import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
+import Professores from "../Pages/Professores/Professores";
+import CadastroProfessores from "../Pages/Professores/Cadastro";
 
 function RouteByRole({
   children,
@@ -60,7 +62,9 @@ export default function AppRoutes() {
         }
       >
         <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
+        <Route path="/tarefas/lista" element={<BuildingPage />} />
 
         <Route
           path="/usuarios/lista"
@@ -76,6 +80,24 @@ export default function AppRoutes() {
           element={
             <RouteByRole perfisPermitidos={["secretaria"]}>
               <Cadastro />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/professores/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <Professores />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/professores/cadastro"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <CadastroProfessores />
             </RouteByRole>
           }
         />
@@ -103,6 +125,33 @@ export default function AppRoutes() {
           element={
             <RouteByRole perfisPermitidos={["secretaria"]}>
               <EditFormCadastroAluno />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/avaliacoes/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+              <Avaliacoes />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/cursos/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+              <BuildingPage />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/disciplinas/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+              <BuildingPage />
             </RouteByRole>
           }
         />

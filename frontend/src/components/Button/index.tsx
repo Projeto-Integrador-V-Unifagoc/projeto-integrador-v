@@ -6,8 +6,6 @@ import {
     type ButtonProps as MuiButtonProps 
 } from "@mui/material";
 
-import { theme } from "../../theme";
-
 
 interface ButtonProps extends MuiButtonProps {
     children: ReactNode,
