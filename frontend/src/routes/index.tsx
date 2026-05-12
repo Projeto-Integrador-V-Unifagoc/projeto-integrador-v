@@ -7,8 +7,9 @@ import NotFound from "../Pages/NotFound/NotFound";
 import Alunos from "../Pages/Alunos/Alunos";
 import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
-
-
+import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
+import Professores from "../Pages/Professores/Professores";
+import CadastroProfessores from "../Pages/Professores/Cadastro";
 
 export function AppRoutes() {
     return (
@@ -18,12 +19,14 @@ export function AppRoutes() {
                 <Route path="/" element={<Home />}/>
                 <Route path="/home" element={<Home />}/>
                 <Route path="/tarefas/lista" element={<BuildingPage />} />
-                <Route path="/professores/lista" element={<BuildingPage />} />
+                <Route path="/professores/lista" element={<Professores />} />
+                <Route path="/professores/cadastro" element={<CadastroProfessores />} />
                 <Route path="/alunos/lista" element={<Alunos />} />
+                <Route path="/alunos/cadastro" element={<CadastroAlunos />} />
+                <Route path="/alunos/:matricula" element={<EditFormCadastroAluno />} />
+                <Route path="/avaliacoes/lista" element={<Avaliacoes />} />
                 <Route path="/cursos/lista" element={<BuildingPage />} />
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />
-                <Route path="/alunos/cadastro" element={<CadastroAlunos />}/>
-                <Route path="alunos/:matricula" element={<EditFormCadastroAluno />} />
             </Route>
         </Routes>
     )
