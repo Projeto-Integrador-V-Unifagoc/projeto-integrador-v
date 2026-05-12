@@ -164,7 +164,7 @@ export default function Usuarios() {
     <Container>
       <Box
         sx={{
-          height: "80vh",
+          height: "620px",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",

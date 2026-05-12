@@ -25,7 +25,6 @@ interface SidebarProps {
 
 export default function Sidebar({ abrirSidebar }: SidebarProps) {
   const [abrirCadastros, setAbrirCadastros] = useState(true);
-  const [abrirAcademico, setAbrirAcademico] = useState(true);
   const [tipoUsuario, setTipoUsuario] = useState<string>("");
 
   useEffect(() => {
@@ -136,44 +135,7 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                     primaryTypographyProps={{ fontSize: 14 }}
                   />
                 </ListItemButton>
-              </List>
-            </Collapse>
-          </>
-        )}
 
-        {(ehSecretaria || ehProfessor || ehAluno) && (
-          <>
-            <ListItemButton
-              onClick={() => setAbrirAcademico(!abrirAcademico)}
-              sx={(theme) => ({
-                borderRadius: "3px",
-                justifyContent: abrirSidebar ? "initial" : "center",
-                "&:focus": {
-                  border: `1px solid ${theme.palette.primary.main}`,
-                  backgroundColor: theme.palette.primary.light,
-                },
-              })}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: abrirSidebar ? 2 : "auto",
-                  justifyContent: "center",
-                }}
-              >
-                <GraduationCap size={17} />
-              </ListItemIcon>
-              <ListItemText
-                primary="Acadêmico"
-                sx={{ opacity: abrirSidebar ? 1 : 0 }}
-                primaryTypographyProps={{ fontSize: 14 }}
-              />
-              {abrirSidebar &&
-                (abrirAcademico ? <ChevronUp size={15} /> : <ChevronDown size={15} />)}
-            </ListItemButton>
-
-            <Collapse in={abrirAcademico && abrirSidebar} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding>
                 <ListItemButton sx={{ pl: 4 }} href="/alunos/lista">
                   <ListItemIcon sx={{ minWidth: 28 }}>
                     <Users size={17} />
