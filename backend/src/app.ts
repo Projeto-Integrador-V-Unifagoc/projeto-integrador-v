@@ -7,6 +7,7 @@ import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controll
 import CursoController from './Modules/modulo-facul-dp-curso/controller/CursoController.js';
 import { professorRouter } from './Modules/routes/professorRoutes.js';
 import { avaliacaoRouter } from './Modules/routes/avaliacaoRoutes.js';
+import { frequenciaRouter } from './Modules/routes/frequenciaRoutes.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -47,6 +48,7 @@ app.get('/cursos/:id', (req, res) => cursoController.buscarCursoPorId(req, res))
 
 app.use('/professores', professorRouter);
 app.use('/avaliacoes', avaliacaoRouter);
+app.use('/frequencias', frequenciaRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
