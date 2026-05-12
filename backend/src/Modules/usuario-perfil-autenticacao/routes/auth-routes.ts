@@ -1,18 +1,38 @@
 import { Router } from 'express';
 import AutenticacaoController from '../controller/autenticacao-controller';
 import { autenticar } from '../../../middlewares/autenticacao';
+import { soSecretaria, secretariaOuProfessor } from '../../../middlewares/autorizacao';
+
 const router = Router();
 
-router.post('/login', (req, res) => AutenticacaoController.login(req, res));
+// LOGIN
+router.post('/login', (req, res) => {
+  return AutenticacaoController.login(req, res);
+});
 
-router.post('/cadastro', (req, res) => AutenticacaoController.cadastrar(req, res));
+// CADASTRO
+router.post('/cadastro', (req, res) => {
+  return AutenticacaoController.cadastrar(req, res);
+});
 
-router.get('/me', autenticar, (req, res) => AutenticacaoController.me(req, res));
+// USUÁRIO LOGADO
+router.get('/me', autenticar, (req, res) => {
+  return AutenticacaoController.me(req, res);
+});
 
-router.get('/usuarios', autenticar, (req, res) => AutenticacaoController.listar(req, res));
+// LISTAR USUÁRIOS
+router.get('/usuarios', autenticar, (req, res) => {
+  return AutenticacaoController.listar(req, res);
+});
 
-router.delete('/usuarios/:id', autenticar, (req, res) => AutenticacaoController.excluir(req, res));
+// DELETAR USUÁRIO (SÓ SECRETARIA)
+router.delete('/usuarios/:id', autenticar, soSecretaria, (req, res) => {
+  return AutenticacaoController.excluir(req, res);
+});
 
-router.put('/usuarios/:id', autenticar, (req, res) => AutenticacaoController.atualizar(req, res));
+// ATUALIZAR USUÁRIO (SECRETARIA OU PROFESSOR)
+router.put('/usuarios/:id', autenticar, secretariaOuProfessor, (req, res) => {
+  return AutenticacaoController.atualizar(req, res);
+});
 
 export default router;
