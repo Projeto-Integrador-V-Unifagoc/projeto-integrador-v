@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Stack, Paper } from "@mui/material";
-import Container from "../../components/Container"; 
+import Container from "../../components/Container";
 import FavIcon from '../../../public/assets/favIcon.svg';
-import { authService } from '../../services/auth-services'; 
+import { authService } from '../../services/auth-services';
 
 export const Login = () => {
     const [email, setEmail] = useState('');
@@ -12,38 +12,37 @@ export const Login = () => {
 
     const handleLogin = async (event: React.FormEvent) => {
         event.preventDefault();
-        
+
         try {
-            // Usando o serviço original para garantir que a lógica de rede esteja certa
             const data = await authService.login({
                 email: email,
                 senha: senha,
             });
 
-            // CRÍTICO: Salvando o Token e os Dados do Usuário
             localStorage.setItem('@UniEduca:token', data.token);
             localStorage.setItem('@UniEduca:user', JSON.stringify(data.user));
 
-            console.log("Login realizado com sucesso!", data);
-            navigate('/home');
-        } catch (error) {
+            console.log("Login realizado com sucesso!");
+
+            navigate('/usuarios/lista');
+        } catch (error: any) {
             console.error('Erro no login:', error);
-            alert('E-mail ou senha incorretos.');
+            alert(error.response?.data?.message || 'E-mail ou senha incorretos.');
         }
     }
 
     return (
         <Container
             maxWidth={false}
-            sx={(theme) => ({
+            sx={{
                 height: '100vh',
-                backgroundColor: '#F4F4F4', // Cinza da Home
+                backgroundColor: '#F4F4F4',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-            })}
+            }}
         >
-            <Paper 
+            <Paper
                 elevation={0}
                 sx={{
                     padding: 4,
@@ -86,12 +85,12 @@ export const Login = () => {
                             onChange={e => setSenha(e.target.value)}
                             required
                         />
-                        <Button 
-                            type="submit" 
-                            variant="contained" 
+                        <Button
+                            type="submit"
+                            variant="contained"
                             size="large"
                             fullWidth
-                            sx={{ py: 1.5, fontWeight: 'bold', width: '100%' }}
+                            sx={{ py: 1.5, fontWeight: 'bold', backgroundColor: '#00B4D8' }}
                         >
                             Acessar
                         </Button>
