@@ -5,38 +5,46 @@ import AutenticacaoService from '../services/autenticacao-services';
 
 class AutenticacaoController {
   async cadastrar(req: Request, res: Response) {
-    try {
-      const { nome, email, senha, tipo_usuario } = req.body;
+  try {
+    const { nome, email, senha, tipo_usuario } = req.body;
 
-      if (!nome || !email || !senha || !tipo_usuario) {
-        return res.status(400).json({
-          error: 'Nome, Email, senha e tipo_usuario são obrigatórios',
-        });
-      }
-
-      const usuario = await AutenticacaoService.cadastrarUsuario({
-        nome,
-        email,
-        senha,
-        tipo_usuario,
-      });
-
-      return res.status(201).json({
-        message: 'Usuário cadastrado com sucesso',
-        usuario: {
-          id: usuario.id,
-          nome: usuario.nome,
-          email: usuario.email,
-          tipo_usuario: usuario.tipo_usuario,
-        },
-      });
-    } catch (error: any) {
-      console.error('Erro no cadastro:', error);
+    if (!nome || !email || !senha || !tipo_usuario) {
       return res.status(400).json({
-        error: error?.message || 'Erro ao cadastrar usuário',
+        error: 'Nome, email, senha e tipo_usuario são obrigatórios',
       });
     }
+
+    const tiposPermitidos = ['aluno', 'professor', 'secretaria'];
+
+    if (!tiposPermitidos.includes(tipo_usuario)) {
+      return res.status(400).json({
+        error: 'tipo_usuario inválido. Use aluno, professor ou secretaria.',
+      });
+    }
+
+    const usuario = await AutenticacaoService.cadastrarUsuario({
+      nome,
+      email,
+      senha,
+      tipo_usuario,
+    });
+
+    return res.status(201).json({
+      message: 'Usuário cadastrado com sucesso',
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        tipo_usuario: usuario.tipo_usuario,
+      },
+    });
+  } catch (error: any) {
+    console.error('Erro no cadastro:', error);
+    return res.status(400).json({
+      error: error?.message || 'Erro ao cadastrar usuário',
+    });
   }
+}
 
   async login(req: Request, res: Response) {
     try {

@@ -9,41 +9,115 @@ import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import Perfil from "../Pages/Perfil/Perfil";
 
-
 import Cadastro from "../Pages/Usuario/Usuario";
 import { Login } from "../Pages/Login/Login";
 import { PrivateRoute } from "../components/PrivateRoute";
 
-export function AppRoutes() {
-    return (
-        <Routes>
-            {/* ROTAS PÚBLICAS */}
-            <Route path="/login" element={<Login />} />
+function RouteByRole({
+  children,
+  perfisPermitidos,
+}: {
+  children: any;
+  perfisPermitidos: string[];
+}) {
+  const usuarioStorage = localStorage.getItem("@UniEduca:user");
 
-            {/* ROTAS PRIVADAS (Protegidas pelo PrivateRoute) */}
-            {/* Se não tiver token, nada aqui dentro carrega */}
-            <Route 
-                element={
-                    <PrivateRoute>
-                        <MainLayout />
-                    </PrivateRoute>
-                }
-            >
-                <Route path="/" element={<Home />}/>
-                <Route path="/home" element={<Home />}/>
-                <Route path="/tarefas/lista" element={<BuildingPage />} />
-                <Route path="/professores/lista" element={<BuildingPage />} />
-                <Route path="/usuarios/lista" element={<Cadastro />} />
-                <Route path="/alunos/lista" element={<Alunos />} />
-                <Route path="/perfil" element={<Perfil />} />
-                <Route path="/cursos/lista" element={<BuildingPage />} />
-                <Route path="/disciplinas/lista" element={<BuildingPage />} />                
-                <Route path="*" element={<NotFound />} />
-                <Route path="/alunos/cadastro" element={<CadastroAlunos />}/>
-                <Route path="alunos/:matricula" element={<EditFormCadastroAluno />} />
-            </Route>
+  if (!usuarioStorage) {
+    return <Navigate to="/login" replace />;
+  }
 
-            <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-    );
+  let usuario;
+
+  try {
+    usuario = JSON.parse(usuarioStorage);
+  } catch (error) {
+    localStorage.removeItem("@UniEduca:user");
+    localStorage.removeItem("@UniEduca:token");
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!usuario?.tipo_usuario) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!perfisPermitidos.includes(usuario.tipo_usuario)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+
+      <Route
+        element={
+          <PrivateRoute>
+            <MainLayout />
+          </PrivateRoute>
+        }
+      >
+        <Route path="/" element={<Home />} />
+        <Route path="/perfil" element={<Perfil />} />
+
+        <Route
+          path="/usuarios/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <Cadastro />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/cadastro"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <Cadastro />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/alunos/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+              <Alunos />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/alunos/cadastro"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <CadastroAlunos />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/alunos/editar/:id"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <EditFormCadastroAluno />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/building"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+              <BuildingPage />
+            </RouteByRole>
+          }
+        />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 }

@@ -40,7 +40,7 @@ export default function Header({ clicarMenu }: HeaderProps) {
     }, []);
 
     function navegarParaHome(){
-        navegar("/home");
+        navegar("/");
     }
 
     // 3. Lógica de Logout

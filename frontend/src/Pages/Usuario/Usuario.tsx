@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import {
   Dialog,
   DialogTitle,
@@ -35,6 +36,9 @@ export default function Usuarios() {
     tipo_usuario: Perfil.ALUNO,
   });
 
+  const storedUser = localStorage.getItem("@UniEduca:user");
+  const usuarioLogado = storedUser ? JSON.parse(storedUser) : null;
+
   const carregarUsuarios = async () => {
     try {
       setLoading(true);
@@ -49,7 +53,11 @@ export default function Usuarios() {
   };
 
   useEffect(() => {
-    carregarUsuarios();
+    if (usuarioLogado?.tipo_usuario === Perfil.SECRETARIA) {
+      carregarUsuarios();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const handleOpenCadastro = () => {
@@ -99,13 +107,14 @@ export default function Usuarios() {
         await usuarioApi.put(`/usuarios/${id}`, payload);
         alert("Usuário atualizado!");
       } else {
-        await usuarioApi.post("/usuarios", usuarioForm);
+        await usuarioApi.post("/cadastro", usuarioForm);
         alert("Usuário cadastrado com sucesso!");
       }
 
       setOpen(false);
       carregarUsuarios();
     } catch (error) {
+      console.error("Erro ao realizar a operação:", error);
       alert("Erro ao realizar a operação.");
     }
   };
@@ -142,6 +151,14 @@ export default function Usuarios() {
       ),
     },
   ];
+
+  if (!usuarioLogado) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (usuarioLogado.tipo_usuario !== Perfil.SECRETARIA) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <Container>
