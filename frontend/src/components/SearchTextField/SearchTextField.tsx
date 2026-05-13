@@ -1,8 +1,4 @@
-import {
-  useState,
-  type ReactNode
-} from "react";
-
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -14,137 +10,186 @@ import {
   useTheme,
 } from "@mui/material";
 
-import type { Periodos } from "../../enums/periodos";
-import type { Cursos } from "../../enums/cursos";
-
-import DropDownPeriodos from "../DropDownPeriodos/DropDownsPeriodos";
 import DropDownCursos from "../DropDownCursos/DropDownCursos";
+import DropDownPeriodos from "../DropDownPeriodos/DropDownsPeriodos";
 import { FilterMenu } from "../FilterMenu/FilterMenu";
+import type { Cursos } from "../../enums/cursos";
 import TextField from "../TextField";
 import Button from "../Button";
+import type { Periodos } from "../../enums/periodos";
 
 import { ListFilter, Search } from "lucide-react";
 
+type SearchFilters = {
+    codigo?: string;
+    matricula?: string;
+    curso?: Cursos | '';
+    periodo?: string;
+};
+
 interface SearchTextFieldProps {
-  children: ReactNode
-  addPath?: string
-  placeholder?: string
-  showFilters?: boolean
+    children: ReactNode;
+    buttonOnClick?: () => void;
+    searchValue?: string;
+    onSearchChange?: (value: string) => void;
+    filterValues?: SearchFilters;
+    onFilterChange?: (filters: SearchFilters) => void;
+    searchPlaceholder?: string;
+    firstFilterLabel?: string;
+    secondFilterLabel?: string;
+    fourthFilterLabel?: string;
+    usePeriodFilter?: boolean;
+    defaultAddPath?: string;
+    addPath?: string;
+    placeholder?: string;
+    showFilters?: boolean;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
-  const {
-    children,
-    addPath = "/alunos/cadastro",
-    placeholder = "Pesquisar Alunos",
-    showFilters = true
-  } = props
+    const {
+        children,
+        buttonOnClick,
+        searchValue = '',
+        onSearchChange,
+        filterValues = {},
+        onFilterChange,
+        searchPlaceholder = "Pesquisar Alunos",
+        firstFilterLabel = "Código",
+        secondFilterLabel = "Matrícula",
+        fourthFilterLabel = "Período",
+        usePeriodFilter = true,
+        defaultAddPath = "/alunos/cadastro",
+        addPath,
+        placeholder,
+        showFilters = true,
+    } = props;
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [localFilters, setLocalFilters] = useState(filterValues);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+    const navigate = useNavigate();
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [curso, setCurso] = useState<Cursos | ''>('')
-  const [periodo, setPeiodo] = useState<Periodos | ''>('')
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+    useEffect(() => {
+        setLocalFilters(filterValues);
+    }, [filterValues]);
 
-  const navigate = useNavigate()
+    const open = Boolean(anchorEl);
 
-  function navegarPaginaCadastro() {
-    navigate(addPath)
-  }
+    const handleOpen = (event: MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
 
-  const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+    const handleClose = () => {
+        setAnchorEl(null);
+        // Aplicar filtros ao fechar
+        onFilterChange?.(localFilters);
+    };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+    const handleFilterChange = (key: keyof typeof localFilters, value: string) => {
+        const newFilters = { ...localFilters, [key]: value };
+        setLocalFilters(newFilters);
+    };
 
-  const open = Boolean(anchorEl);
+    function handleAddClick() {
+        if (buttonOnClick) {
+            buttonOnClick();
+            return;
+        }
 
-  return (
-    <>
-      <Stack
-        display='flex'
-        alignItems={isMobile ? "flex-start" : "center"}
-        flexDirection={isMobile ? "column" : "row"}
-        gap={1}
-        pt={1}
-      >
-        <Typography
-          fontWeight='bold'
-          variant="subtitle2"
-        >
-          {children}
-        </Typography>
-        <TextField
-          variant="outlined"
-          placeholder={placeholder}
-          fullWidth
-          InputProps={{
-            endAdornment: showFilters ? (
-              <InputAdornment position="end">
-                <IconButton onClick={handleOpen}>
-                  <ListFilter size={18} />
-                </IconButton>
-              </InputAdornment>
-            ) : undefined,
-            startAdornment: (
-              <InputAdornment position="start">
-                <IconButton>
-                  <Search size={18} />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              borderRadius: '17px',
-            },
-            width: '100%',
-          }}
-        />
-        <Button
-          variant="contained"
-          onClick={navegarPaginaCadastro}
-          sx={{
-            width: isMobile ? "100%" : "80px"
-          }}
-        >
-          Adicionar
-        </Button>
-      </Stack>
-      {showFilters && (
-        <FilterMenu.Root
-          open={open}
-          anchorEl={anchorEl}
-          onClose={handleClose}
-        >
-          <FilterMenu.Content>
-            <TextField
-              label="Código"
-              InputLabelProps={{
-                shrink: true
-              }}
-            />
-            <TextField
-              label="Matrícula"
-              InputLabelProps={{
-                shrink: true
-              }}
-            />
-            <DropDownCursos
-              value={curso}
-              onChange={(value) => setCurso(value as Cursos | '')}
-            />
-            <DropDownPeriodos
-              value={periodo}
-              onChange={(value) => setPeiodo(value)}
-            />
-          </FilterMenu.Content>
-          <FilterMenu.Footer />
-        </FilterMenu.Root>
-      )}
-    </>
-  )
+        navigate(addPath || defaultAddPath);
+    }
+
+    return (
+        <>
+            <Stack
+                display='flex'
+                alignItems={isMobile ? "flex-start" : "center"}
+                flexDirection={isMobile ? "column" : "row"}
+                gap={1}
+                pt={1}
+            >
+                <Typography fontWeight='bold' variant="subtitle2">{children}</Typography>
+                <TextField
+                    variant="outlined"
+                    placeholder={placeholder || searchPlaceholder}
+                    fullWidth
+                    value={searchValue}
+                    onChange={(e) => onSearchChange?.(e.target.value)}
+                    InputProps={{
+                        endAdornment: showFilters ? (
+                            <InputAdornment position="end">
+                                <IconButton onClick={handleOpen}>
+                                    <ListFilter size={18} />
+                                </IconButton>
+                            </InputAdornment>
+                        ) : undefined,
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <IconButton>
+                                    <Search size={18} />
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
+                    sx={{
+                        "& .MuiOutlinedInput-root": {
+                            borderRadius: '17px',
+                        },
+                        width: '100%',
+                    }}
+                />
+                <Button
+                    variant="contained"
+                    onClick={handleAddClick}
+                    sx={{ width: isMobile ? '100%' : '80px' }}
+                >
+                    Adicionar
+                </Button>
+            </Stack>
+            <FilterMenu.Root
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handleClose}
+            >
+                <FilterMenu.Content>
+                    <TextField
+                        label={firstFilterLabel}
+                        value={localFilters.codigo || ''}
+                        onChange={(e) => handleFilterChange('codigo', e.target.value)}
+                        InputLabelProps={{
+                            shrink: true
+                        }}
+                    />
+                    <TextField
+                        label={secondFilterLabel}
+                        value={localFilters.matricula || ''}
+                        onChange={(e) => handleFilterChange('matricula', e.target.value)}
+                        InputLabelProps={{
+                            shrink: true
+                        }}
+                    />
+                    <DropDownCursos
+                        value={localFilters.curso || ''}
+                        onChange={(value) => handleFilterChange('curso', value)}
+                    />
+                    {usePeriodFilter ? (
+                        <DropDownPeriodos
+                            value={(localFilters.periodo as Periodos | '') || ''}
+                            onChange={(value) => handleFilterChange('periodo', value)}
+                        />
+                    ) : (
+                        <TextField
+                            label={fourthFilterLabel}
+                            value={localFilters.periodo || ''}
+                            onChange={(e) => handleFilterChange('periodo', e.target.value)}
+                            InputLabelProps={{
+                                shrink: true
+                            }}
+                        />
+                    )}
+                </FilterMenu.Content>
+                <FilterMenu.Footer />
+            </FilterMenu.Root>
+        </>
+    )
 }

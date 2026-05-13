@@ -17,10 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 
-app.use(cors({
-    origin: '*',
-}))
-
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 const alunoController = new AlunoController();
@@ -45,18 +42,19 @@ app.post('/curso-disciplina', (req, res) => cursoDisciplinaController.criarCurso
 app.post('/turmas', (req, res) => turmaController.criarTurma(req, res))
 app.post('/turmas/:id/disciplinas', (req, res) => turmaDisciplinaController.criarTurmaDisciplina(req, res))
 
-app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res))
-app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, res))
-app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res))
+app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res));
+app.get('/alunos/buscar', (req, res) => alunoController.buscarAluno(req, res));
+app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, res));
+app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res));
 
-app.get('/cidades', (req, res) => cidadeController.listarCidades(req, res))
-app.get('/cidades/:ibge', (req, res) => cidadeController.buscarCidadePorIbge(req, res))
+app.get('/cidades', (req, res) => cidadeController.listarCidades(req, res));
+app.get('/cidades/:ibge', (req, res) => cidadeController.buscarCidadePorIbge(req, res));
 
-app.get('/faculdades', (req, res) => faculdadeController.listarFaculdades(req, res))
-app.get('/faculdades/:id', (req, res) => faculdadeController.buscarFaculdadePorId(req, res))
+app.get('/faculdades', (req, res) => faculdadeController.listarFaculdades(req, res));
+app.get('/faculdades/:id', (req, res) => faculdadeController.buscarFaculdadePorId(req, res));
 
-app.get('/departamentos', (req, res) => departamentoController.listarDepartamentos(req, res))
-app.get('/departamentos/:id', (req, res) => departamentoController.buscarDepartamentoPorId(req, res))
+app.get('/departamentos', (req, res) => departamentoController.listarDepartamentos(req, res));
+app.get('/departamentos/:id', (req, res) => departamentoController.buscarDepartamentoPorId(req, res));
 
 app.get('/cursos', (req, res) => cursoController.listarCursos(req, res))
 app.get('/cursos/:id', (req, res) => cursoController.buscarCursoPorId(req, res))
@@ -84,7 +82,13 @@ app.put('/turmas/:id/disciplinas/:turmaDisciplinaId', (req, res) => turmaDiscipl
 app.delete('/turmas/:id/disciplinas/:turmaDisciplinaId', (req, res) => turmaDisciplinaController.removerTurmaDisciplina(req, res))
 app.get('/professores', (req, res) => professorController.listarProfessores(req, res))
 
+app.use('/professores', professorRouter);
+app.use('/avaliacoes', avaliacaoRouter);
+app.use('/frequencias', frequenciaRouter);
+app.use('/notas', notasRouter);
+app.use(matriculaRouter);
+app.use(documentoRouter);
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
