@@ -12,7 +12,8 @@ import { frequenciaRouter } from './Modules/routes/frequenciaRoutes';
 import { notasRouter } from './Modules/routes/notasRoutes';
 import { matriculaRouter } from './Modules/routes/matriculaRoutes';
 import { documentoRouter } from './Modules/routes/documentoRoutes';
-
+import {StatusDisciplinaController} from './Modules/modulo-status-matricula-disciplina/controller/DisciplinaController';
+import {MatriculaController} from './Modules/modulo-status-matricula-disciplina/controller/MatriculaController';
 
 const PORT = process.env.PORT || 3000;
 
@@ -27,8 +28,13 @@ const faculdadeController = new FaculdadeController()
 const departamentoController = new DepartamentoController()
 const cursoController = new CursoController()
 const disciplinaController = new DisciplinaController()
+const statusDisciplinaController = new StatusDisciplinaController()
+const statusMatriculaController = new MatriculaController()
 
 app.post('/alunos', (req, res) => alunoController.criarAluno(req, res))
+app.put('/alunos/editar-aluno/:matricula', (req, res) => alunoController.atualizarAluno(req, res))
+app.post('/statusDisciplina', (req, res) => statusDisciplinaController.criarStatusMatriculaDisciplina(req, res))
+app.post('/statusCurso', (req, res) => statusMatriculaController.criarStatusMatriculaCurso(req, res))
 app.post('/faculdades', (req, res) => faculdadeController.criarFaculdade(req, res))
 app.post('/departamentos', (req, res) => departamentoController.criarDepartamento(req, res))
 app.post('/cursos', (req, res) => cursoController.criarCurso(req, res))

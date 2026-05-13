@@ -1,6 +1,6 @@
 import { DisciplinaService } from "../services/DisciplinaServices";
 
-export class DisciplinaController {
+export class StatusDisciplinaController {
     disciplinaService = new DisciplinaService();
 
     async criarStatusMatriculaDisciplina(req: any, res: any) {
