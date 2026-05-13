@@ -4,26 +4,22 @@ export interface DisciplinaResponse {
   nome: string
   carga_horaria: number
   pre_requisito?: string
-  curso: {
-    id: string
-    codigo: string
-    nome: string
-  }
+  ativo: boolean
 }
 
 export interface CriarDisciplinaRequest {
   codigo: string
   nome: string
-  cursoId: string
   cargaHoraria: number
   preRequisito?: string
+  ativo?: boolean
 }
 
 export interface DisciplinaView {
   id: string
   codigo: string
   nome: string
-  curso: string
   cargaHoraria: number
   preRequisito?: string
+  ativo: boolean
 }

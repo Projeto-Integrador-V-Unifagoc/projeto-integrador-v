@@ -62,6 +62,18 @@ export class CursoRepository {
         return row ? CursoMapper.toDomain(row) : null;
     }
 
+    async buscarCursoRegistroPorId(id: string) {
+        return await db("curso")
+            .where({ id })
+            .first();
+    }
+
+    async buscarCursoPorCodigo(codigo: string) {
+        return await db("curso")
+            .where({ codigo })
+            .first();
+    }
+
     async atualizarCurso(id: string, data: Partial<CursoCommand>) {
         const [curso] = await db("curso")
             .where({ id })

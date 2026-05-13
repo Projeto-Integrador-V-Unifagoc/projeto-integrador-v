@@ -14,6 +14,7 @@ import {
     ChevronUp, 
     ClipboardList, 
     GraduationCap, 
+    Layers,
     NotebookPen, 
     Users, 
     UserStar 
@@ -116,7 +117,7 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                             <ListItemButton 
                                 sx={{ 
                                     pl: abrirSidebar ? 4 : 2,
-                                    justifyContent: abrirSidebar ? 'initial' : 'center',
+                                    justifyContent: abrirSidebar ? 'initial' : 'center', 
                                 }} 
                                 href="/professores/lista"
                             >
@@ -215,6 +216,62 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                                 </ListItemIcon>
                                 <ListItemText
                                     primary='Disciplinas'
+                                    sx={{
+                                        opacity: abrirSidebar ? 1 : 0,
+                                        transition: 'opacity 0.2s',
+                                    }}
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+
+                            <ListItemButton 
+                                sx={{ 
+                                    pl: abrirSidebar ? 4 : 2,
+                                    justifyContent: abrirSidebar ? 'initial' : 'center', 
+                                }} 
+                                href="/periodos-letivos/lista"
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: abrirSidebar ? 2 : 'auto',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    <Layers size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Periodos Letivos'
+                                    sx={{
+                                        opacity: abrirSidebar ? 1 : 0,
+                                        transition: 'opacity 0.2s',
+                                    }}
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+
+                            <ListItemButton 
+                                sx={{ 
+                                    pl: abrirSidebar ? 4 : 2,
+                                    justifyContent: abrirSidebar ? 'initial' : 'center', 
+                                }} 
+                                href="/turmas/lista"
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: abrirSidebar ? 2 : 'auto',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    <Users size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Turmas'
                                     sx={{
                                         opacity: abrirSidebar ? 1 : 0,
                                         transition: 'opacity 0.2s',

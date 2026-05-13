@@ -12,38 +12,25 @@ export class DisciplinaRepository {
 
     async listarDisciplinas() {
         const rows = await db("disciplinas")
-            .join("curso", "disciplinas.curso_id", "=", "curso.id")
-            .select(
-                "disciplinas.id",
-                "disciplinas.codigo",
-                "disciplinas.nome",
-                "disciplinas.pre_requisito",
-                "disciplinas.carga_horaria",
-                "curso.id as curso_id",
-                "curso.codigo as curso_codigo",
-                "curso.nome as curso_nome"
-            );
+            .select("*")
+            .orderBy("nome", "asc");
 
         return rows.map(DisciplinaMapper.toDomain);
     }
 
     async buscarDisciplinaPorId(id: string) {
         const row = await db("disciplinas")
-            .join("curso", "disciplinas.curso_id", "=", "curso.id")
-            .where("disciplinas.id", id)
-            .select(
-                "disciplinas.id",
-                "disciplinas.codigo",
-                "disciplinas.nome",
-                "disciplinas.pre_requisito",
-                "disciplinas.carga_horaria",
-                "curso.id as curso_id",
-                "curso.codigo as curso_codigo",
-                "curso.nome as curso_nome"
-            )
+            .where("id", id)
+            .select("*")
             .first();
 
         return row ? DisciplinaMapper.toDomain(row) : null;
+    }
+
+    async buscarDisciplinaPorCodigo(codigo: string) {
+        return await db("disciplinas")
+            .where({ codigo })
+            .first();
     }
 
     async atualizarDisciplina(id: string, data: Partial<DisciplinaCommand>) {

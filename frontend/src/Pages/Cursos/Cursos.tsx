@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, IconButton, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Container from "../../components/Container";
 import SearchTextField from "../../components/SearchTextField/SearchTextField";
@@ -34,7 +34,9 @@ export default function Cursos() {
   }
 
   useEffect(() => {
-    carregarCursos()
+    void (async () => {
+      await carregarCursos()
+    })()
   }, [])
 
   async function confirmarExclusao() {
@@ -67,6 +69,9 @@ export default function Cursos() {
           <IconButton onClick={() => navigate(`/cursos/${params.row.id}`)} color="primary">
             <Pencil size={18} />
           </IconButton>
+          <IconButton onClick={() => navigate(`/cursos/${params.row.id}/matriz-curricular`)} color="secondary">
+            <Eye size={18} />
+          </IconButton>
           <IconButton onClick={() => setCursoParaExcluir(params.row)} color="error">
             <Trash2 size={18} />
           </IconButton>
@@ -97,6 +102,9 @@ export default function Cursos() {
                     <Typography variant="body2"><strong>Departamento:</strong> {curso.departamento}</Typography>
                     <Typography variant="body2"><strong>Faculdade:</strong> {curso.faculdade}</Typography>
                     <Stack direction="row" justifyContent="flex-end" gap={1}>
+                      <Button variant="outlined" onClick={() => navigate(`/cursos/${curso.id}/matriz-curricular`)}>
+                        Matriz
+                      </Button>
                       <Button variant="outlined" onClick={() => navigate(`/cursos/${curso.id}`)}>
                         Editar
                       </Button>
