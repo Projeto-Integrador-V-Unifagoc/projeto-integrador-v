@@ -6,6 +6,8 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES6",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "rootDir": "./src",
+    "outDir": "./dist"
   }
 }

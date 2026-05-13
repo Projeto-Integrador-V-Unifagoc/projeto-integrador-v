@@ -51,4 +51,11 @@ export class AlunoService {
         const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula);
         return aluno;
     }
+
+    async buscarAlunoPorCpfOuMatricula(query: string) {
+        if (!query || query.trim().length < 3) {
+            throw new Error("Informe ao menos 3 caracteres.");
+        }
+        return this.alunoRepository.buscarAlunoPorCpfOuMatricula(query.trim());
+    }
 }
