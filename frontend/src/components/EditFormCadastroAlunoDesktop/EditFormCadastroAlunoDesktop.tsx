@@ -84,7 +84,7 @@ export default function EditFormCadastroAlunoDesktop() {
 
   function salvarAlunoEditado(aluno: FormType) {
     try {
-      fetch(`http://localhost:3000/alunos/${matricula}`, {
+      fetch(`http://localhost:3000/alunos/editar-aluno/${matricula}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
