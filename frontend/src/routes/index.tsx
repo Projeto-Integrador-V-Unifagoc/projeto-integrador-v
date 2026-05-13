@@ -1,12 +1,13 @@
 import { Route, Routes } from "react-router-dom";
 
-import MainLayout from "../Layout/MainLayout/MainLayout";
-import Home from "../Pages/Home/Home";
+import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import BuildingPage from "../Pages/BuildingPage/BuildingPage";
-import NotFound from "../Pages/NotFound/NotFound";
-import Alunos from "../Pages/Alunos/Alunos";
 import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
+import MainLayout from "../Layout/MainLayout/MainLayout";
 import FichaAluno from "../Pages/Alunos/FichaAluno";
+import NotFound from "../Pages/NotFound/NotFound";
+import Home from "../Pages/Home/Home";
+import Alunos from "../Pages/Alunos/Alunos";
 
 
 
@@ -24,6 +25,7 @@ export function AppRoutes() {
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />
                 <Route path="/alunos/cadastro" element={<CadastroAlunos />}/>
                 <Route path="alunos/ficha-do-aluno/:id" element={<FichaAluno />} />
+                <Route path="alunos/editar-aluno/:matricula" element={<EditFormCadastroAluno />} />
             </Route>
         </Routes>
     )

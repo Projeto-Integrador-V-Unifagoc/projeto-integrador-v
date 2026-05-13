@@ -75,7 +75,7 @@ export default function Alunos() {
       renderCell: (params) => (
         <Stack direction="row" spacing={1}>
           <IconButton
-            onClick={() => navigate(`/alunos/${params.row.matricula}`)}
+            onClick={() => navigate(`/alunos/editar-aluno/${params.row.matricula}`)}
             color="primary"
           >
             <Pencil size={20} />
