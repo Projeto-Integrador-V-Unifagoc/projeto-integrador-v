@@ -1,21 +1,48 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   Box,
   Card,
   CardContent,
+  Chip,
+  Divider,
   InputAdornment,
   MenuItem,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { FileText, Search } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  GraduationCap,
+  Search,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
 
 import Button from "../../components/Button";
 import Container from "../../components/Container";
 import TextField from "../../components/TextField";
 
-type TipoRelatorio = "Academico" | "Consulta";
+type PerfilRelatorio = "Professor" | "Aluno";
+type TipoRelatorio = "Notas" | "Frequencia" | "Consulta" | "Historico";
+type SituacaoAcademica = "Aprovado" | "Recuperacao" | "Pendente" | "Regular" | "Atencao";
+
+interface DisciplinaRelatorio {
+  nome: string;
+  aluno?: string;
+  cargaHoraria: string;
+  nota?: string;
+  frequencia?: string;
+  situacao: SituacaoAcademica;
+}
+
+interface PeriodoRelatorio {
+  nome: string;
+  disciplinas: DisciplinaRelatorio[];
+}
 
 interface RelatorioLinha {
   [key: string]: string;
@@ -33,87 +60,365 @@ interface RelatorioPdf {
 interface RelatorioItem {
   id: number;
   nome: string;
+  descricao: string;
   tipo: TipoRelatorio;
   ano: string;
+  perfis: PerfilRelatorio[];
+  curso: string;
+  matrizCurricular: string;
+  periodos: PeriodoRelatorio[];
   pdf: RelatorioPdf;
+}
+
+interface FiltrosRelatorios {
+  perfil: PerfilRelatorio;
+  busca: string;
+  ano: string;
+  tipo: string;
+}
+
+const periodosProfessor: PeriodoRelatorio[] = [
+  {
+    nome: "1o semestre",
+    disciplinas: [
+      {
+        aluno: "Joao Silva",
+        nome: "Fundamentos de Programacao",
+        cargaHoraria: "80h",
+        nota: "8,5",
+        frequencia: "94%",
+        situacao: "Aprovado",
+      },
+      {
+        aluno: "Maria Oliveira",
+        nome: "Modelagem de Dados",
+        cargaHoraria: "80h",
+        nota: "6,2",
+        frequencia: "89%",
+        situacao: "Recuperacao",
+      },
+      {
+        aluno: "Lucas Ferreira",
+        nome: "Matematica Aplicada",
+        cargaHoraria: "60h",
+        nota: "5,8",
+        frequencia: "76%",
+        situacao: "Pendente",
+      },
+    ],
+  },
+  {
+    nome: "2o semestre",
+    disciplinas: [
+      {
+        aluno: "Ana Costa",
+        nome: "Desenvolvimento Web",
+        cargaHoraria: "80h",
+        nota: "9,0",
+        frequencia: "96%",
+        situacao: "Aprovado",
+      },
+      {
+        aluno: "Pedro Santos",
+        nome: "Banco de Dados",
+        cargaHoraria: "80h",
+        nota: "7,1",
+        frequencia: "91%",
+        situacao: "Aprovado",
+      },
+      {
+        aluno: "Beatriz Lima",
+        nome: "Engenharia de Software",
+        cargaHoraria: "60h",
+        nota: "6,0",
+        frequencia: "82%",
+        situacao: "Recuperacao",
+      },
+    ],
+  },
+];
+
+const periodosAluno: PeriodoRelatorio[] = [
+  {
+    nome: "1o semestre",
+    disciplinas: [
+      {
+        nome: "Fundamentos de Programacao",
+        cargaHoraria: "80h",
+        nota: "8,5",
+        frequencia: "94%",
+        situacao: "Aprovado",
+      },
+      {
+        nome: "Modelagem de Dados",
+        cargaHoraria: "80h",
+        nota: "7,8",
+        frequencia: "92%",
+        situacao: "Aprovado",
+      },
+      {
+        nome: "Matematica Aplicada",
+        cargaHoraria: "60h",
+        nota: "6,4",
+        frequencia: "86%",
+        situacao: "Recuperacao",
+      },
+    ],
+  },
+  {
+    nome: "2o semestre",
+    disciplinas: [
+      {
+        nome: "Desenvolvimento Web",
+        cargaHoraria: "80h",
+        nota: "9,1",
+        frequencia: "97%",
+        situacao: "Aprovado",
+      },
+      {
+        nome: "Banco de Dados",
+        cargaHoraria: "80h",
+        nota: "7,3",
+        frequencia: "90%",
+        situacao: "Aprovado",
+      },
+      {
+        nome: "Engenharia de Software",
+        cargaHoraria: "60h",
+        nota: "Aguardando",
+        frequencia: "88%",
+        situacao: "Pendente",
+      },
+    ],
+  },
+];
+
+function linhasPorPeriodo(periodos: PeriodoRelatorio[], incluirAluno = false): RelatorioLinha[] {
+  return periodos.flatMap((periodo) =>
+    periodo.disciplinas.map((disciplina) => ({
+      ...(incluirAluno ? { Aluno: disciplina.aluno ?? "Aluno demonstrativo" } : {}),
+      Periodo: periodo.nome,
+      Disciplina: disciplina.nome,
+      "Carga Horaria": disciplina.cargaHoraria,
+      Nota: disciplina.nota ?? "-",
+      Frequencia: disciplina.frequencia ?? "-",
+      Situacao: labelSituacao(disciplina.situacao),
+    }))
+  );
 }
 
 const relatoriosMockados: RelatorioItem[] = [
   {
     id: 1,
     nome: "Relat\u00f3rio de Notas",
-    tipo: "Academico",
+    descricao: "Vis\u00e3o do professor com notas dos alunos por per\u00edodo letivo.",
+    tipo: "Notas",
     ano: "2026",
+    perfis: ["Professor"],
+    curso: "Analise e Desenvolvimento de Sistemas",
+    matrizCurricular: "Matriz ADS 2026",
+    periodos: periodosProfessor,
     pdf: {
-      titulo: "RELAT\u00d3RIO DE NOTAS",
-      universidade: "Universidade: Exemplo de Academico",
-      rodape: "Relat\u00f3rio gerado automaticamente para fins de teste.",
-      colunas: ["Aluno", "Disciplina", "Nota", "Situa\u00e7\u00e3o"],
-      larguras: [180, 150, 80, 170],
-      linhas: [
-        { Aluno: "Jo\u00e3o Silva", Disciplina: "Matem\u00e1tica", Nota: "8,5", Situa\u00e7\u00e3o: "Aprovado" },
-        { Aluno: "Maria Oliveira", Disciplina: "Portugu\u00eas", Nota: "9,0", Situa\u00e7\u00e3o: "Aprovado" },
-        { Aluno: "Pedro Santos", Disciplina: "Hist\u00f3ria", Nota: "7,0", Situa\u00e7\u00e3o: "Aprovado" },
-        { Aluno: "Ana Costa", Disciplina: "Geografia", Nota: "8,0", Situa\u00e7\u00e3o: "Aprovado" },
-        { Aluno: "Lucas Ferreira", Disciplina: "Ci\u00eancias", Nota: "6,5", Situa\u00e7\u00e3o: "Recupera\u00e7\u00e3o" },
-      ],
+      titulo: "RELATORIO DE NOTAS",
+      universidade: "UniEduca - Dados demonstrativos",
+      rodape: "Relatorio mockado gerado no frontend para fins de teste.",
+      colunas: ["Aluno", "Periodo", "Disciplina", "Nota", "Situacao"],
+      larguras: [130, 95, 175, 70, 110],
+      linhas: linhasPorPeriodo(periodosProfessor, true).map((linha) => ({
+        Aluno: linha.Aluno,
+        Periodo: linha.Periodo,
+        Disciplina: linha.Disciplina,
+        Nota: linha.Nota,
+        Situacao: linha.Situacao,
+      })),
     },
   },
   {
     id: 2,
     nome: "Relat\u00f3rio de Frequ\u00eancia",
-    tipo: "Academico",
+    descricao: "Acompanhamento de frequ\u00eancia por aluno, disciplina e semestre.",
+    tipo: "Frequencia",
     ano: "2026",
+    perfis: ["Professor"],
+    curso: "Analise e Desenvolvimento de Sistemas",
+    matrizCurricular: "Matriz ADS 2026",
+    periodos: periodosProfessor,
     pdf: {
-      titulo: "RELAT\u00d3RIO DE FREQU\u00caNCIA",
-      universidade: "Universidade: Exemplo de Academico",
-      rodape: "Relat\u00f3rio gerado automaticamente para fins de teste.",
-      colunas: ["Aluno", "Turma", "Frequ\u00eancia", "Situa\u00e7\u00e3o"],
-      larguras: [200, 120, 120, 140],
-      linhas: [
-        { Aluno: "Jo\u00e3o Silva", Turma: "1A", Frequ\u00eancia: "92%", Situa\u00e7\u00e3o: "Regular" },
-        { Aluno: "Maria Oliveira", Turma: "1A", Frequ\u00eancia: "95%", Situa\u00e7\u00e3o: "Regular" },
-        { Aluno: "Pedro Santos", Turma: "2B", Frequ\u00eancia: "88%", Situa\u00e7\u00e3o: "Aten\u00e7\u00e3o" },
-        { Aluno: "Ana Costa", Turma: "2B", Frequ\u00eancia: "97%", Situa\u00e7\u00e3o: "Regular" },
-      ],
+      titulo: "RELATORIO DE FREQUENCIA",
+      universidade: "UniEduca - Dados demonstrativos",
+      rodape: "Relatorio mockado gerado no frontend para fins de teste.",
+      colunas: ["Aluno", "Periodo", "Disciplina", "Frequencia", "Situacao"],
+      larguras: [130, 95, 170, 95, 105],
+      linhas: linhasPorPeriodo(periodosProfessor, true).map((linha) => ({
+        Aluno: linha.Aluno,
+        Periodo: linha.Periodo,
+        Disciplina: linha.Disciplina,
+        Frequencia: linha.Frequencia,
+        Situacao: linha.Situacao,
+      })),
     },
   },
   {
     id: 3,
     nome: "Consulta de Alunos",
+    descricao: "Consulta acad\u00eamica simples dos alunos vinculados ao curso.",
     tipo: "Consulta",
-    ano: "2025",
+    ano: "2026",
+    perfis: ["Professor"],
+    curso: "Analise e Desenvolvimento de Sistemas",
+    matrizCurricular: "Matriz ADS 2026",
+    periodos: [
+      {
+        nome: "Alunos ativos",
+        disciplinas: [
+          {
+            aluno: "Joao Silva",
+            nome: "1o semestre - Turma ADS1",
+            cargaHoraria: "-",
+            frequencia: "94%",
+            situacao: "Regular",
+          },
+          {
+            aluno: "Maria Oliveira",
+            nome: "1o semestre - Turma ADS1",
+            cargaHoraria: "-",
+            frequencia: "89%",
+            situacao: "Atencao",
+          },
+          {
+            aluno: "Ana Costa",
+            nome: "2o semestre - Turma ADS2",
+            cargaHoraria: "-",
+            frequencia: "96%",
+            situacao: "Regular",
+          },
+        ],
+      },
+    ],
     pdf: {
       titulo: "CONSULTA DE ALUNOS",
-      universidade: "Universidade: Exemplo de Academico",
-      rodape: "Relat\u00f3rio gerado automaticamente para fins de teste.",
-      colunas: ["Aluno", "Matr\u00edcula", "Curso", "Situa\u00e7\u00e3o"],
-      larguras: [190, 120, 150, 140],
+      universidade: "UniEduca - Dados demonstrativos",
+      rodape: "Relatorio mockado gerado no frontend para fins de teste.",
+      colunas: ["Aluno", "Curso", "Periodo", "Situacao"],
+      larguras: [160, 205, 110, 95],
       linhas: [
-        { Aluno: "Jo\u00e3o Silva", Matr\u00edcula: "2025001", Curso: "Administra\u00e7\u00e3o", Situa\u00e7\u00e3o: "Ativo" },
-        { Aluno: "Maria Oliveira", Matr\u00edcula: "2025002", Curso: "Pedagogia", Situa\u00e7\u00e3o: "Ativo" },
-        { Aluno: "Pedro Santos", Matr\u00edcula: "2025003", Curso: "Hist\u00f3ria", Situa\u00e7\u00e3o: "Ativo" },
-        { Aluno: "Ana Costa", Matr\u00edcula: "2025004", Curso: "Geografia", Situa\u00e7\u00e3o: "Ativo" },
+        {
+          Aluno: "Joao Silva",
+          Curso: "ADS",
+          Periodo: "1o semestre",
+          Situacao: "Regular",
+        },
+        {
+          Aluno: "Maria Oliveira",
+          Curso: "ADS",
+          Periodo: "1o semestre",
+          Situacao: "Atencao",
+        },
+        {
+          Aluno: "Ana Costa",
+          Curso: "ADS",
+          Periodo: "2o semestre",
+          Situacao: "Regular",
+        },
       ],
     },
   },
   {
     id: 4,
     nome: "Hist\u00f3rico Escolar",
-    tipo: "Academico",
+    descricao: "Hist\u00f3rico acad\u00eamico completo dispon\u00edvel para acompanhamento docente.",
+    tipo: "Historico",
     ano: "2025",
+    perfis: ["Professor"],
+    curso: "Analise e Desenvolvimento de Sistemas",
+    matrizCurricular: "Matriz ADS 2026",
+    periodos: periodosProfessor,
     pdf: {
-      titulo: "HIST\u00d3RICO ESCOLAR",
-      universidade: "Universidade: Exemplo de Academico",
-      rodape: "Relat\u00f3rio gerado automaticamente para fins de teste.",
-      colunas: ["Disciplina", "Carga Hor\u00e1ria", "Nota", "Situa\u00e7\u00e3o"],
-      larguras: [210, 140, 80, 140],
-      linhas: [
-        { Disciplina: "Matem\u00e1tica", "Carga Hor\u00e1ria": "80h", Nota: "8,5", Situa\u00e7\u00e3o: "Aprovado" },
-        { Disciplina: "Portugu\u00eas", "Carga Hor\u00e1ria": "80h", Nota: "9,0", Situa\u00e7\u00e3o: "Aprovado" },
-        { Disciplina: "Hist\u00f3ria", "Carga Hor\u00e1ria": "60h", Nota: "7,5", Situa\u00e7\u00e3o: "Aprovado" },
-        { Disciplina: "Geografia", "Carga Hor\u00e1ria": "60h", Nota: "8,0", Situa\u00e7\u00e3o: "Aprovado" },
-      ],
+      titulo: "HISTORICO ESCOLAR",
+      universidade: "UniEduca - Dados demonstrativos",
+      rodape: "Relatorio mockado gerado no frontend para fins de teste.",
+      colunas: ["Aluno", "Periodo", "Disciplina", "Carga Horaria", "Situacao"],
+      larguras: [125, 90, 165, 105, 95],
+      linhas: linhasPorPeriodo(periodosProfessor, true).map((linha) => ({
+        Aluno: linha.Aluno,
+        Periodo: linha.Periodo,
+        Disciplina: linha.Disciplina,
+        "Carga Horaria": linha["Carga Horaria"],
+        Situacao: linha.Situacao,
+      })),
+    },
+  },
+  {
+    id: 5,
+    nome: "Minhas Notas",
+    descricao: "Notas do aluno organizadas por semestre e disciplina.",
+    tipo: "Notas",
+    ano: "2026",
+    perfis: ["Aluno"],
+    curso: "Analise e Desenvolvimento de Sistemas",
+    matrizCurricular: "Matriz ADS 2026",
+    periodos: periodosAluno,
+    pdf: {
+      titulo: "MINHAS NOTAS",
+      universidade: "UniEduca - Dados demonstrativos",
+      rodape: "Relatorio mockado gerado no frontend para fins de teste.",
+      colunas: ["Periodo", "Disciplina", "Nota", "Situacao"],
+      larguras: [110, 245, 80, 125],
+      linhas: linhasPorPeriodo(periodosAluno).map((linha) => ({
+        Periodo: linha.Periodo,
+        Disciplina: linha.Disciplina,
+        Nota: linha.Nota,
+        Situacao: linha.Situacao,
+      })),
+    },
+  },
+  {
+    id: 6,
+    nome: "Minha Frequ\u00eancia",
+    descricao: "Frequ\u00eancia do aluno nas disciplinas da matriz curricular.",
+    tipo: "Frequencia",
+    ano: "2026",
+    perfis: ["Aluno"],
+    curso: "Analise e Desenvolvimento de Sistemas",
+    matrizCurricular: "Matriz ADS 2026",
+    periodos: periodosAluno,
+    pdf: {
+      titulo: "MINHA FREQUENCIA",
+      universidade: "UniEduca - Dados demonstrativos",
+      rodape: "Relatorio mockado gerado no frontend para fins de teste.",
+      colunas: ["Periodo", "Disciplina", "Frequencia", "Situacao"],
+      larguras: [110, 235, 95, 120],
+      linhas: linhasPorPeriodo(periodosAluno).map((linha) => ({
+        Periodo: linha.Periodo,
+        Disciplina: linha.Disciplina,
+        Frequencia: linha.Frequencia,
+        Situacao: linha.Situacao,
+      })),
+    },
+  },
+  {
+    id: 7,
+    nome: "Meu Hist\u00f3rico Escolar",
+    descricao: "Hist\u00f3rico escolar individual do aluno com situa\u00e7\u00e3o acad\u00eamica simulada.",
+    tipo: "Historico",
+    ano: "2025",
+    perfis: ["Aluno"],
+    curso: "Analise e Desenvolvimento de Sistemas",
+    matrizCurricular: "Matriz ADS 2026",
+    periodos: periodosAluno,
+    pdf: {
+      titulo: "MEU HISTORICO ESCOLAR",
+      universidade: "UniEduca - Dados demonstrativos",
+      rodape: "Relatorio mockado gerado no frontend para fins de teste.",
+      colunas: ["Periodo", "Disciplina", "Carga Horaria", "Nota", "Situacao"],
+      larguras: [95, 190, 105, 70, 110],
+      linhas: linhasPorPeriodo(periodosAluno).map((linha) => ({
+        Periodo: linha.Periodo,
+        Disciplina: linha.Disciplina,
+        "Carga Horaria": linha["Carga Horaria"],
+        Nota: linha.Nota,
+        Situacao: linha.Situacao,
+      })),
     },
   },
 ];
@@ -147,6 +452,64 @@ const winAnsiMap: Record<string, number> = {
   "\u017e": 0x9e,
   "\u0178": 0x9f,
 };
+
+function labelSituacao(situacao: SituacaoAcademica) {
+  const labels: Record<SituacaoAcademica, string> = {
+    Aprovado: "Aprovado",
+    Recuperacao: "Recupera\u00e7\u00e3o",
+    Pendente: "Pendente",
+    Regular: "Regular",
+    Atencao: "Aten\u00e7\u00e3o",
+  };
+
+  return labels[situacao];
+}
+
+function labelTipo(tipo: TipoRelatorio) {
+  const labels: Record<TipoRelatorio, string> = {
+    Notas: "Notas",
+    Frequencia: "Frequ\u00eancia",
+    Consulta: "Consulta",
+    Historico: "Hist\u00f3rico",
+  };
+
+  return labels[tipo];
+}
+
+function corSituacao(situacao: SituacaoAcademica) {
+  const cores: Record<
+    SituacaoAcademica,
+    { color: string; backgroundColor: string; borderColor: string }
+  > = {
+    Aprovado: {
+      color: "#0E6F3F",
+      backgroundColor: "#E6F4EA",
+      borderColor: "#A9D9BB",
+    },
+    Recuperacao: {
+      color: "#8A5A00",
+      backgroundColor: "#FFF4D6",
+      borderColor: "#E8C66A",
+    },
+    Pendente: {
+      color: "#9A1B1B",
+      backgroundColor: "#FDECEC",
+      borderColor: "#E9B0B0",
+    },
+    Regular: {
+      color: "#0E6F3F",
+      backgroundColor: "#E6F4EA",
+      borderColor: "#A9D9BB",
+    },
+    Atencao: {
+      color: "#8A5A00",
+      backgroundColor: "#FFF4D6",
+      borderColor: "#E8C66A",
+    },
+  };
+
+  return cores[situacao];
+}
 
 function toAsciiBytes(value: string) {
   return Uint8Array.from(Array.from(value, (char) => char.charCodeAt(0)));
@@ -250,7 +613,9 @@ function buildMockPdf(relatorio: RelatorioItem) {
   const commands: string[] = [
     pdfText(titleX, 780, relatorio.pdf.titulo, 21),
     pdfText(tableLeft + 16, 720, relatorio.pdf.universidade, 14),
-    pdfText(tableLeft + 16, 680, `Data de Emiss\u00e3o: ${emissionDate}`, 14),
+    pdfText(tableLeft + 16, 695, `Curso: ${relatorio.curso}`, 12),
+    pdfText(tableLeft + 16, 672, `Matriz Curricular: ${relatorio.matrizCurricular}`, 12),
+    pdfText(tableLeft + 16, 648, `Data de Emissao: ${emissionDate}`, 12),
     pdfRect(tableLeft, tableTop - headerHeight, tableWidth, headerHeight, "0.10 0.49 0.93"),
     pdfLine(tableLeft, tableTop, tableLeft + tableWidth, tableTop),
     pdfLine(tableLeft, tableBottom, tableLeft + tableWidth, tableBottom),
@@ -269,7 +634,7 @@ function buildMockPdf(relatorio: RelatorioItem) {
     let x = tableLeft;
 
     relatorio.pdf.colunas.forEach((coluna, columnIndex) => {
-      commands.push(pdfText(x + 8, baseline, linha[coluna] ?? "", 12, "0.15 0.15 0.15"));
+      commands.push(pdfText(x + 8, baseline, linha[coluna] ?? "", 11, "0.15 0.15 0.15"));
       x += colWidths[columnIndex];
     });
 
@@ -327,23 +692,100 @@ endobj
   return new Blob([Uint8Array.from(chunks.flat())], { type: "application/pdf" });
 }
 
+function relatorioContemTermo(relatorio: RelatorioItem, termo: string) {
+  if (!termo) {
+    return true;
+  }
+
+  const campos = [
+    relatorio.nome,
+    labelTipo(relatorio.tipo),
+    relatorio.ano,
+    relatorio.curso,
+    relatorio.matrizCurricular,
+    ...relatorio.periodos.flatMap((periodo) => [
+      periodo.nome,
+      ...periodo.disciplinas.flatMap((disciplina) => [
+        disciplina.nome,
+        disciplina.aluno ?? "",
+        labelSituacao(disciplina.situacao),
+      ]),
+    ]),
+  ];
+
+  return campos.some((campo) => campo.toLowerCase().includes(termo));
+}
+
+async function buscarRelatoriosMockados(filtros: FiltrosRelatorios) {
+  const termo = filtros.busca.trim().toLowerCase();
+
+  const relatorios = relatoriosMockados.filter((relatorio) => {
+    const perfilValido = relatorio.perfis.includes(filtros.perfil);
+    const buscaValida = relatorioContemTermo(relatorio, termo);
+    const anoValido = filtros.ano === "Todos" || relatorio.ano === filtros.ano;
+    const tipoValido = filtros.tipo === "Todos" || relatorio.tipo === filtros.tipo;
+
+    return perfilValido && buscaValida && anoValido && tipoValido;
+  });
+
+  return Promise.resolve(relatorios);
+}
+
 export default function Relatorios() {
   const [busca, setBusca] = useState("");
   const [ano, setAno] = useState("Todos");
   const [tipo, setTipo] = useState("Todos");
+  const [perfil, setPerfil] = useState<PerfilRelatorio>("Professor");
+  const [carregando, setCarregando] = useState(false);
+  const [relatoriosFiltrados, setRelatoriosFiltrados] = useState<RelatorioItem[]>([]);
 
-  const anosDisponiveis = ["Todos", ...new Set(relatoriosMockados.map((item) => item.ano))];
-  const tiposDisponiveis = ["Todos", ...new Set(relatoriosMockados.map((item) => item.tipo))];
-  const termo = busca.trim().toLowerCase();
+  const relatoriosDoPerfil = useMemo(
+    () => relatoriosMockados.filter((item) => item.perfis.includes(perfil)),
+    [perfil]
+  );
 
-  const relatoriosFiltrados = relatoriosMockados.filter((relatorio) => {
-    const buscaValida =
-      termo.length === 0 || relatorio.nome.toLowerCase().includes(termo);
-    const anoValido = ano === "Todos" || relatorio.ano === ano;
-    const tipoValido = tipo === "Todos" || relatorio.tipo === tipo;
+  const anosDisponiveis = useMemo(
+    () => ["Todos", ...new Set(relatoriosDoPerfil.map((item) => item.ano))],
+    [relatoriosDoPerfil]
+  );
 
-    return buscaValida && anoValido && tipoValido;
-  });
+  const tiposDisponiveis = useMemo(
+    () => ["Todos", ...new Set(relatoriosDoPerfil.map((item) => item.tipo))],
+    [relatoriosDoPerfil]
+  );
+
+  useEffect(() => {
+    let consultaAtiva = true;
+
+    setCarregando(true);
+    buscarRelatoriosMockados({ perfil, busca, ano, tipo })
+      .then((relatorios) => {
+        if (consultaAtiva) {
+          setRelatoriosFiltrados(relatorios);
+        }
+      })
+      .finally(() => {
+        if (consultaAtiva) {
+          setCarregando(false);
+        }
+      });
+
+    return () => {
+      consultaAtiva = false;
+    };
+  }, [perfil, busca, ano, tipo]);
+
+  const totalRelatoriosPerfil = relatoriosDoPerfil.length;
+
+  function alterarPerfil(_: React.MouseEvent<HTMLElement>, novoPerfil: PerfilRelatorio | null) {
+    if (!novoPerfil) {
+      return;
+    }
+
+    setPerfil(novoPerfil);
+    setAno("Todos");
+    setTipo("Todos");
+  }
 
   function emitirRelatorio(relatorio: RelatorioItem) {
     const pdfBlob = buildMockPdf(relatorio);
@@ -366,135 +808,380 @@ export default function Relatorios() {
       })}
     >
       <Stack spacing={3}>
-        <Typography variant="h6" fontWeight="bold">
-          Relatórios
-        </Typography>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "flex-start", md: "center" }}
+          spacing={2}
+        >
+          <Box>
+            <Typography variant="h6" fontWeight="bold">
+              {"Relat\u00f3rios"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {"Visualiza\u00e7\u00e3o demonstrativa por perfil usando dados mockados."}
+            </Typography>
+          </Box>
 
-        <TextField
-          placeholder="Buscar relatório (ex: Notas, Aluno)..."
-          value={busca}
-          onChange={(event) => setBusca(event.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search size={18} />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            "& .MuiOutlinedInput-root": {
+          <ToggleButtonGroup
+            exclusive
+            value={perfil}
+            onChange={alterarPerfil}
+            size="small"
+            sx={{
               backgroundColor: "#FFF",
-            },
-          }}
-        />
-
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-          <TextField
-            select
-            label="Ano"
-            value={ano}
-            onChange={(event) => setAno(event.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{
-              minWidth: { xs: "100%", md: 150 },
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "#FFF",
+              borderRadius: "8px",
+              width: { xs: "100%", sm: "auto" },
+              "& .MuiToggleButton-root": {
+                borderColor: "transparent",
+                gap: 1,
+                px: 2,
+                width: { xs: "50%", sm: "auto" },
+                textTransform: "none",
+              },
+              "& .Mui-selected": {
+                backgroundColor: "primary.main",
+                color: "#FFF",
+                "&:hover": {
+                  backgroundColor: "primary.dark",
+                },
               },
             }}
           >
-            {anosDisponiveis.map((item) => (
-              <MenuItem key={item} value={item}>
-                {item}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            select
-            label="Tipo"
-            value={tipo}
-            onChange={(event) => setTipo(event.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{
-              minWidth: { xs: "100%", md: 200 },
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "#FFF",
-              },
-            }}
-          >
-            {tiposDisponiveis.map((item) => (
-              <MenuItem key={item} value={item}>
-                {item}
-              </MenuItem>
-            ))}
-          </TextField>
+            <ToggleButton value="Professor">
+              <UsersRound size={16} />
+              Professor
+            </ToggleButton>
+            <ToggleButton value="Aluno">
+              <UserRound size={16} />
+              Aluno
+            </ToggleButton>
+          </ToggleButtonGroup>
         </Stack>
 
+        <Card
+          elevation={0}
+          sx={(theme) => ({
+            border: `1px solid ${theme.palette.grey[100]}`,
+            borderRadius: "8px",
+          })}
+        >
+          <CardContent sx={{ padding: "16px !important" }}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={(theme) => ({
+                    width: 38,
+                    height: 38,
+                    borderRadius: "8px",
+                    backgroundColor: theme.palette.primary.light,
+                    color: theme.palette.primary.contrastText,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  })}
+                >
+                  <GraduationCap size={19} />
+                </Box>
+                <Box>
+                  <Typography fontWeight="bold">
+                    {perfil === "Professor"
+                      ? "Acesso simulado do Professor"
+                      : "Acesso simulado do Aluno"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {perfil === "Professor"
+                      ? "Inclui notas, frequ\u00eancia, consulta de alunos e hist\u00f3rico escolar."
+                      : "Exibe apenas minhas notas, minha frequ\u00eancia e meu hist\u00f3rico escolar."}
+                  </Typography>
+                </Box>
+              </Stack>
+
+              <Divider />
+
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <TextField
+                  placeholder={"Buscar por relat\u00f3rio, aluno, disciplina ou situa\u00e7\u00e3o..."}
+                  value={busca}
+                  onChange={(event) => setBusca(event.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search size={18} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                />
+
+                <TextField
+                  select
+                  label="Ano"
+                  value={ano}
+                  onChange={(event) => setAno(event.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    minWidth: { xs: "100%", md: 150 },
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                >
+                  {anosDisponiveis.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  select
+                  label="Tipo"
+                  value={tipo}
+                  onChange={(event) => setTipo(event.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    minWidth: { xs: "100%", md: 190 },
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                >
+                  {tiposDisponiveis.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item === "Todos" ? item : labelTipo(item as TipoRelatorio)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+
         <Stack spacing={2}>
+          {carregando ? (
+            <Box
+              sx={(theme) => ({
+                border: `1px dashed ${theme.palette.grey[200]}`,
+                borderRadius: "8px",
+                backgroundColor: "#FFF",
+                py: 4,
+                textAlign: "center",
+              })}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Carregando relat\u00f3rios mockados...
+              </Typography>
+            </Box>
+          ) : null}
+
           {relatoriosFiltrados.map((relatorio) => (
             <Card
               key={relatorio.id}
               elevation={0}
               sx={(theme) => ({
                 border: `1px solid ${theme.palette.grey[100]}`,
-                borderRadius: "10px",
+                borderRadius: "8px",
+                overflow: "hidden",
               })}
             >
               <CardContent sx={{ padding: "16px !important" }}>
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  justifyContent="space-between"
-                  alignItems={{ xs: "flex-start", sm: "center" }}
-                  spacing={2}
-                >
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Box
-                      sx={(theme) => ({
-                        width: 42,
-                        height: 42,
-                        borderRadius: "10px",
-                        backgroundColor: theme.palette.primary.light,
-                        color: theme.palette.primary.contrastText,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      })}
-                    >
-                      <FileText size={18} />
-                    </Box>
+                <Stack spacing={2}>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    justifyContent="space-between"
+                    alignItems={{ xs: "flex-start", sm: "center" }}
+                    spacing={2}
+                  >
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Box
+                        sx={(theme) => ({
+                          width: 42,
+                          height: 42,
+                          borderRadius: "8px",
+                          backgroundColor: theme.palette.primary.light,
+                          color: theme.palette.primary.contrastText,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        })}
+                      >
+                        <FileText size={18} />
+                      </Box>
 
-                    <Box>
-                      <Typography fontWeight="bold">{relatorio.nome}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {relatorio.tipo} - {relatorio.ano}
-                      </Typography>
-                    </Box>
+                      <Box>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          <Typography fontWeight="bold">{relatorio.nome}</Typography>
+                          <Chip
+                            size="small"
+                            label={labelTipo(relatorio.tipo)}
+                            sx={{
+                              height: 22,
+                              fontSize: 12,
+                              backgroundColor: "#EDF8FB",
+                              color: "primary.main",
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            label={relatorio.ano}
+                            sx={{ height: 22, fontSize: 12 }}
+                          />
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          {relatorio.descricao}
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    <Button
+                      variant="contained"
+                      onClick={() => emitirRelatorio(relatorio)}
+                      sx={{ width: { xs: "100%", sm: 96 } }}
+                    >
+                      Emitir
+                    </Button>
                   </Stack>
 
-                  <Button
-                    variant="contained"
-                    onClick={() => emitirRelatorio(relatorio)}
-                    sx={{ width: { xs: "100%", sm: 90 } }}
+                  <Box
+                    sx={(theme) => ({
+                      border: `1px solid ${theme.palette.grey[100]}`,
+                      borderRadius: "8px",
+                      backgroundColor: "#FAFAFA",
+                      p: 2,
+                    })}
                   >
-                    Emitir
-                  </Button>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" fontWeight="bold">
+                        Curso
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {relatorio.curso}
+                      </Typography>
+                      <Typography variant="body2" fontWeight="bold" mt={1}>
+                        Matriz Curricular
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {relatorio.matrizCurricular}
+                      </Typography>
+                    </Stack>
+                  </Box>
+
+                  <Stack spacing={1.5}>
+                    {relatorio.periodos.map((periodo) => (
+                      <Box
+                        key={`${relatorio.id}-${periodo.nome}`}
+                        sx={(theme) => ({
+                          border: `1px solid ${theme.palette.grey[100]}`,
+                          borderRadius: "8px",
+                          backgroundColor: "#FFF",
+                          overflow: "hidden",
+                        })}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          sx={(theme) => ({
+                            px: 2,
+                            py: 1.25,
+                            backgroundColor: theme.palette.grey[50],
+                          })}
+                        >
+                          <BookOpen size={16} />
+                          <Typography variant="body2" fontWeight="bold">
+                            {"Per\u00edodo"}: {periodo.nome}
+                          </Typography>
+                        </Stack>
+
+                        <Stack divider={<Divider />}>
+                          {periodo.disciplinas.map((disciplina) => (
+                            <Stack
+                              key={`${periodo.nome}-${disciplina.aluno ?? "aluno"}-${disciplina.nome}`}
+                              direction={{ xs: "column", md: "row" }}
+                              justifyContent="space-between"
+                              alignItems={{ xs: "flex-start", md: "center" }}
+                              spacing={1.5}
+                              sx={{ px: 2, py: 1.5 }}
+                            >
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="body2" fontWeight="bold">
+                                  {disciplina.nome}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {disciplina.aluno ? `${disciplina.aluno} - ` : ""}
+                                  {"Carga hor\u00e1ria"}: {disciplina.cargaHoraria}
+                                </Typography>
+                              </Box>
+
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
+                                {disciplina.nota ? (
+                                  <Chip
+                                    size="small"
+                                    label={`Nota: ${disciplina.nota}`}
+                                    variant="outlined"
+                                  />
+                                ) : null}
+                                {disciplina.frequencia ? (
+                                  <Chip
+                                    size="small"
+                                    label={`Frequ\u00eancia: ${disciplina.frequencia}`}
+                                    variant="outlined"
+                                  />
+                                ) : null}
+                                <Chip
+                                  size="small"
+                                  label={labelSituacao(disciplina.situacao)}
+                                  sx={{
+                                    ...corSituacao(disciplina.situacao),
+                                    border: "1px solid",
+                                    fontWeight: 700,
+                                  }}
+                                />
+                              </Stack>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
                 </Stack>
               </CardContent>
             </Card>
           ))}
 
-          {relatoriosFiltrados.length === 0 ? (
+          {!carregando && relatoriosFiltrados.length === 0 ? (
             <Box
               sx={(theme) => ({
                 border: `1px dashed ${theme.palette.grey[200]}`,
-                borderRadius: "10px",
+                borderRadius: "8px",
                 backgroundColor: "#FFF",
                 py: 5,
                 textAlign: "center",
               })}
             >
               <Typography variant="body2" color="text.secondary">
-                Nenhum relat\u00f3rio encontrado.
+                {totalRelatoriosPerfil === 0
+                  ? "Nenhum relat\u00f3rio configurado para este perfil."
+                  : "Nenhum relat\u00f3rio encontrado para os filtros selecionados."}
               </Typography>
             </Box>
           ) : null}
