@@ -5,6 +5,7 @@ import { CidadeController } from './Modules/cidades/controller/CidadeController.
 import { FaculdadeController } from './Modules/modulo-facul-dp-curso/controller/FaculdadeController.js';
 import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controller/DepartamentoController.js';
 import CursoController from './Modules/modulo-facul-dp-curso/controller/CursoController.js';
+import { DisciplinaController } from './Modules/modulo-disciplinas/controller/DisciplinaController.js';
 import { professorRouter } from './Modules/routes/professorRoutes.js';
 import { avaliacaoRouter } from './Modules/routes/avaliacaoRoutes.js';
 import { frequenciaRouter } from './Modules/routes/frequenciaRoutes.js';

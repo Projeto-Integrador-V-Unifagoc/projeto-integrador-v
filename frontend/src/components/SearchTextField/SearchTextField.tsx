@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -40,6 +40,9 @@ interface SearchTextFieldProps {
     fourthFilterLabel?: string;
     usePeriodFilter?: boolean;
     defaultAddPath?: string;
+    addPath?: string;
+    placeholder?: string;
+    showFilters?: boolean;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
@@ -56,6 +59,9 @@ export default function SearchTextField(props: SearchTextFieldProps) {
         fourthFilterLabel = "Período",
         usePeriodFilter = true,
         defaultAddPath = "/alunos/cadastro",
+        addPath,
+        placeholder,
+        showFilters = true,
     } = props;
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [localFilters, setLocalFilters] = useState(filterValues);
@@ -67,19 +73,17 @@ export default function SearchTextField(props: SearchTextFieldProps) {
         setLocalFilters(filterValues);
     }, [filterValues]);
 
-  function navegarPaginaCadastro() {
-    navigate(addPath)
-  }
+    const open = Boolean(anchorEl);
+
+    const handleOpen = (event: MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
 
     const handleClose = () => {
         setAnchorEl(null);
         // Aplicar filtros ao fechar
         onFilterChange?.(localFilters);
     };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
     const handleFilterChange = (key: keyof typeof localFilters, value: string) => {
         const newFilters = { ...localFilters, [key]: value };
@@ -92,7 +96,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
             return;
         }
 
-        navigate(defaultAddPath);
+        navigate(addPath || defaultAddPath);
     }
 
     return (
@@ -107,18 +111,18 @@ export default function SearchTextField(props: SearchTextFieldProps) {
                 <Typography fontWeight='bold' variant="subtitle2">{children}</Typography>
                 <TextField
                     variant="outlined"
-                    placeholder={searchPlaceholder}
+                    placeholder={placeholder || searchPlaceholder}
                     fullWidth
                     value={searchValue}
                     onChange={(e) => onSearchChange?.(e.target.value)}
                     InputProps={{
-                        endAdornment: (
+                        endAdornment: showFilters ? (
                             <InputAdornment position="end">
                                 <IconButton onClick={handleOpen}>
                                     <ListFilter size={18} />
                                 </IconButton>
                             </InputAdornment>
-                        ),
+                        ) : undefined,
                         startAdornment: (
                             <InputAdornment position="start">
                                 <IconButton>
