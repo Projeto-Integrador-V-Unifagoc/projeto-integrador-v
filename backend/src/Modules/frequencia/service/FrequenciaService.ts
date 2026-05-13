@@ -88,6 +88,7 @@ export class FrequenciaService {
   }
 
   async consultarAluno(alunoId: string, req?: any) {
+    this.validarUuid(alunoId, "Aluno invalido. Selecione um aluno da lista de chamada.");
     const contexto = await this.authGateway.obterContexto(req);
     if (contexto.perfil === "ALUNO" && contexto.alunoId && contexto.alunoId !== alunoId) throw new Error("Aluno pode consultar apenas a propria frequencia.");
     const historico = await this.repository.listarHistoricoAluno(alunoId);
@@ -140,6 +141,11 @@ export class FrequenciaService {
 
   private validarStatus(status: StatusFrequencia) {
     if (!["PRESENTE", "AUSENTE"].includes(status)) throw new Error("Status de frequencia invalido. Use PRESENTE ou AUSENTE.");
+  }
+
+  private validarUuid(valor: string, mensagem: string) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(valor)) throw new Error(mensagem);
   }
 
   private validarDataLancamento(data: Date) {

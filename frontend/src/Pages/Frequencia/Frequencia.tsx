@@ -142,10 +142,13 @@ export default function Frequencia() {
   async function carregarChamada() {
     try {
       const response = await frequencia.obterChamada({ turmaId, data: dataAula });
-      setAlunos(response.alunos);
+      const alunosChamada = response.alunos || [];
+      setAlunos(alunosChamada);
+      setAlunoConsultaId((atual) => atual || alunosChamada[0]?.id || "");
       setAlerta(response.jaRegistrada ? { tipo: "info", mensagem: "Esta aula já possui lançamento. As alterações serão salvas como edição." } : null);
     } catch (error: any) {
       setAlunos(alunosMock);
+      setAlunoConsultaId((atual) => atual || alunosMock[0].id);
       setRelatorio(relatorioMock);
       setAlerta({ tipo: "info", mensagem: "Não foi possível carregar a chamada real. Exibindo chamada mock para teste visual." });
     }
@@ -172,10 +175,22 @@ export default function Frequencia() {
   }
 
   async function consultarAluno() {
+    if (!alunoConsultaId) {
+      setAlerta({ tipo: "error", mensagem: "Selecione um aluno para consultar." });
+      return;
+    }
+
     try {
       const response = await frequencia.consultarAluno(alunoConsultaId);
-      setConsolidadoAluno(response.consolidado);
-      setHistoricoAluno(response.historico);
+      const consolidado = response.consolidado || [];
+      const historico = response.historico || [];
+      setConsolidadoAluno(consolidado);
+      setHistoricoAluno(historico);
+      setAlerta(
+        consolidado.length || historico.length
+          ? { tipo: "success", mensagem: "Consulta do aluno carregada com sucesso." }
+          : { tipo: "info", mensagem: "Este aluno ainda nao possui lancamentos de frequencia." }
+      );
     } catch (error: any) {
       setAlerta({ tipo: "error", mensagem: error?.response?.data?.error || "Não foi possível consultar o aluno." });
     }
@@ -284,7 +299,13 @@ export default function Frequencia() {
               <Card.Content>
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, md: 8 }}>
-                    <TextField label="ID do aluno" value={alunoConsultaId} onChange={(event) => setAlunoConsultaId(event.target.value)} />
+                    <TextField select label="Aluno" value={alunoConsultaId} onChange={(event) => {
+                      setAlunoConsultaId(event.target.value);
+                      setConsolidadoAluno([]);
+                      setHistoricoAluno([]);
+                    }}>
+                      {alunos.map((aluno) => <MenuItem key={aluno.id} value={aluno.id}>{aluno.nome} - Matricula {aluno.matricula}</MenuItem>)}
+                    </TextField>
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
                     <Button variant="contained" sx={{ width: "100%", height: 36 }} onClick={consultarAluno}>Consultar aluno</Button>
