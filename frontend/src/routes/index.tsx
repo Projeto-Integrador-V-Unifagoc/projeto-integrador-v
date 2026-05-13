@@ -26,8 +26,7 @@ export function AppRoutes() {
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />
                 <Route path="/alunos/cadastro" element={<CadastroAlunos />}/>
                 <Route path="alunos/ficha-do-aluno/:id" element={<FichaAluno />} />
-                <Route path="alunos/editar-aluno/:matricula" element={<EditFormCadastroAluno />} />
-                <Route path="alunos/:matricula" element={<EditFormCadastroAluno />} />
+                <Route path="alunos/editar-aluno/:matricula" element={<EditFormCadastroAluno />} />                
                 <Route path="/status" element={<StatusMatricula />} />
             </Route>
         </Routes>

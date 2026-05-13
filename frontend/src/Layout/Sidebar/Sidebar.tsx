@@ -14,6 +14,7 @@ import {
     ChevronUp, 
     ClipboardList, 
     GraduationCap, 
+    Info, 
     NotebookPen, 
     Users, 
     UserStar 
@@ -217,6 +218,33 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                                 </ListItemIcon>
                                 <ListItemText
                                     primary='Disciplinas'
+                                    sx={{
+                                        opacity: abrirSidebar ? 1 : 0,
+                                        transition: 'opacity 0.2s',
+                                    }}
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+                            <ListItemButton 
+                                sx={{ 
+                                    pl: abrirSidebar ? 4 : 2,
+                                    justifyContent: abrirSidebar ? 'initial' : 'center', 
+                                }} 
+                                href="/status"
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: abrirSidebar ? 2 : 'auto',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    <Info size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Status'
                                     sx={{
                                         opacity: abrirSidebar ? 1 : 0,
                                         transition: 'opacity 0.2s',
