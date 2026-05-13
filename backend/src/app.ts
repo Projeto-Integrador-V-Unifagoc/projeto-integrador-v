@@ -22,11 +22,13 @@ const cidadeController = new CidadeController();
 const faculdadeController = new FaculdadeController();
 const departamentoController = new DepartamentoController();
 const cursoController = new CursoController();
+const disciplinaController = new DisciplinaController();
 
 app.post('/alunos', (req, res) => alunoController.criarAluno(req, res));
 app.post('/faculdades', (req, res) => faculdadeController.criarFaculdade(req, res));
 app.post('/departamentos', (req, res) => departamentoController.criarDepartamento(req, res));
 app.post('/cursos', (req, res) => cursoController.criarCurso(req, res));
+app.post('/disciplinas', (req, res) => disciplinaController.criarDisciplina(req, res));
 
 app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res));
 app.get('/alunos/buscar', (req, res) => alunoController.buscarAluno(req, res));
@@ -44,6 +46,13 @@ app.get('/departamentos/:id', (req, res) => departamentoController.buscarDeparta
 
 app.get('/cursos', (req, res) => cursoController.listarCursos(req, res));
 app.get('/cursos/:id', (req, res) => cursoController.buscarCursoPorId(req, res));
+app.put('/cursos/:id', (req, res) => cursoController.atualizarCurso(req, res));
+app.delete('/cursos/:id', (req, res) => cursoController.removerCurso(req, res));
+
+app.get('/disciplinas', (req, res) => disciplinaController.listarDisciplinas(req, res));
+app.get('/disciplinas/:id', (req, res) => disciplinaController.buscarDisciplinaPorId(req, res));
+app.put('/disciplinas/:id', (req, res) => disciplinaController.atualizarDisciplina(req, res));
+app.delete('/disciplinas/:id', (req, res) => disciplinaController.removerDisciplina(req, res));
 
 app.use('/professores', professorRouter);
 app.use('/avaliacoes', avaliacaoRouter);

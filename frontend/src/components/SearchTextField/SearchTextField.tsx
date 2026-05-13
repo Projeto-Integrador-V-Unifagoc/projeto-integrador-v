@@ -2,12 +2,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
-    IconButton,
-    InputAdornment,
-    Stack,
-    Typography,
-    useMediaQuery,
-    useTheme,
+  IconButton,
+  InputAdornment,
+  Stack,
+  Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 
 import DropDownCursos from "../DropDownCursos/DropDownCursos";
@@ -67,9 +67,9 @@ export default function SearchTextField(props: SearchTextFieldProps) {
         setLocalFilters(filterValues);
     }, [filterValues]);
 
-    const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
+  function navegarPaginaCadastro() {
+    navigate(addPath)
+  }
 
     const handleClose = () => {
         setAnchorEl(null);
@@ -77,7 +77,9 @@ export default function SearchTextField(props: SearchTextFieldProps) {
         onFilterChange?.(localFilters);
     };
 
-    const open = Boolean(anchorEl);
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
     const handleFilterChange = (key: keyof typeof localFilters, value: string) => {
         const newFilters = { ...localFilters, [key]: value };
