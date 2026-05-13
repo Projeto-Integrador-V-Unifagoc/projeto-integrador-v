@@ -20,7 +20,7 @@ export class CursoMapper {
             id: raw.id,
             codigo: raw.codigo,
             nome: raw.nome,
-            departamento: DepartamentoMapper.toDomain(raw.departamento)
+            departamento: DepartamentoMapper.toDomain(raw)
         }
     }
 }

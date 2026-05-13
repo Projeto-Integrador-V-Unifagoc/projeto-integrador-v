@@ -1,11 +1,13 @@
 import { db } from "../../../database/connection"
+import { CursoCommand, CursoMapper } from "../models/Curso";
 
 export class CursoRepository {
-    async criarCurso(data: any ){
-        const curso = await db("curso")
+    async criarCurso(data: CursoCommand) {
+        const [curso] = await db("curso")
             .insert(data)
-            .returning("*")
-        return curso[0]
+            .returning("*");
+
+        return curso;
     }
 
     async listarCursos() {
@@ -15,45 +17,22 @@ export class CursoRepository {
             .join("cidade", "faculdade.cidade_id", "=", "cidade.ibge")
             .select(
                 "curso.*",
-                "departamento.id as dep_id",
-                "departamento.nome as dep_nome",
-                "departamento.codigo as dep_codigo",
-                "faculdade.id as fac_id",
-                "faculdade.nome as fac_nome",
-                "faculdade.logradouro as fac_logradouro",
-                "faculdade.numero as fac_numero",
-                "faculdade.bairro as fac_bairro",
-                "faculdade.cep as fac_cep",
-                "cidade.id as cid_id",
-                "cidade.nome as cid_nome",
-                "cidade.uf as cid_uf",
-                "cidade.ibge as cid_ibge"
+                "departamento.id as departamento_id",
+                "departamento.nome as departamento_nome",
+                "departamento.codigo as departamento_codigo",
+                "faculdade.id as faculdade_id",
+                "faculdade.nome as faculdade_nome",
+                "faculdade.logradouro as logradouro",
+                "faculdade.numero as numero",
+                "faculdade.bairro as bairro",
+                "faculdade.cep as cep",
+                "cidade.id as cidade_id",
+                "cidade.nome as cidade_nome",
+                "cidade.uf as cidade_uf",
+                "cidade.ibge as cidade_ibge"
             );
 
-        return rows.map(row => ({
-            id: row.id,
-            nome: row.nome,
-            codigo: row.codigo,
-            departamento: {
-                id: row.dep_id,
-                nome: row.dep_nome,
-                codigo: row.dep_codigo,
-                faculdade: {
-                    id: row.fac_id,
-                    nome: row.fac_nome,
-                    logradouro: row.fac_logradouro,
-                    numero: row.fac_numero,
-                    bairro: row.fac_bairro,
-                    cep: row.fac_cep,
-                    cidade: {
-                        id: row.cid_id,
-                        nome: row.cid_nome,
-                        uf: row.cid_uf,
-                        ibge: row.cid_ibge
-                    }
-                }
-            }
-        }));
+        return rows.map(CursoMapper.toDomain);
     }
 
     async buscarCursoPorId(id: string) {
@@ -64,47 +43,37 @@ export class CursoRepository {
             .where("curso.id", id)
             .select(
                 "curso.*",
-                "departamento.id as dep_id",
-                "departamento.nome as dep_nome",
-                "departamento.codigo as dep_codigo",
-                "faculdade.id as fac_id",
-                "faculdade.nome as fac_nome",
-                "faculdade.logradouro as fac_logradouro",
-                "faculdade.numero as fac_numero",
-                "faculdade.bairro as fac_bairro",
-                "faculdade.cep as fac_cep",
-                "cidade.id as cid_id",
-                "cidade.nome as cid_nome",
-                "cidade.uf as cid_uf",
-                "cidade.ibge as cid_ibge"
+                "departamento.id as departamento_id",
+                "departamento.nome as departamento_nome",
+                "departamento.codigo as departamento_codigo",
+                "faculdade.id as faculdade_id",
+                "faculdade.nome as faculdade_nome",
+                "faculdade.logradouro as logradouro",
+                "faculdade.numero as numero",
+                "faculdade.bairro as bairro",
+                "faculdade.cep as cep",
+                "cidade.id as cidade_id",
+                "cidade.nome as cidade_nome",
+                "cidade.uf as cidade_uf",
+                "cidade.ibge as cidade_ibge"
             )
             .first();
 
-        if (!row) return null;
+        return row ? CursoMapper.toDomain(row) : null;
+    }
 
-        return {
-            id: row.id,
-            nome: row.nome,
-            codigo: row.codigo,
-            departamento: {
-                id: row.dep_id,
-                nome: row.dep_nome,
-                codigo: row.dep_codigo, 
-                faculdade: {
-                    id: row.fac_id,
-                    nome: row.fac_nome,
-                    logradouro: row.fac_logradouro,
-                    numero: row.fac_numero,
-                    bairro: row.fac_bairro,
-                    cep: row.fac_cep,
-                    cidade: {
-                        id: row.cid_id,
-                        nome: row.cid_nome,
-                        uf: row.cid_uf,
-                        ibge: row.cid_ibge
-                    }
-                }
-            }
-        };
+    async atualizarCurso(id: string, data: Partial<CursoCommand>) {
+        const [curso] = await db("curso")
+            .where({ id })
+            .update(data)
+            .returning("*");
+
+        return curso ?? null;
+    }
+
+    async removerCurso(id: string) {
+        return await db("curso")
+            .where({ id })
+            .del();
     }
 }
