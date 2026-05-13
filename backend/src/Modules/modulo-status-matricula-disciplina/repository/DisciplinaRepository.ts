@@ -13,7 +13,7 @@ export class DisciplinaRepository {
     async listarStatusMatriculaDisciplina() {
         const rows = await db("status_disciplina")
             .select("*")
-            .orderBy("nome", "asc");
+            .orderBy("descricao", "asc");
 
         return rows.map(DisciplinaMapper.toDomain);
     }

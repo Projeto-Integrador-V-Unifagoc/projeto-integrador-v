@@ -5,7 +5,6 @@ export class DisciplinaController {
 
     async criarStatusMatriculaDisciplina(req: any, res: any) {
         try {
-            console.log("Requisição recebida para criar status de matrícula da disciplina:", req.body);
             const status = await this.disciplinaService.criarStatusMatriculaDisciplina(req.body);
             res.status(201).json(status);
         } catch (error) {

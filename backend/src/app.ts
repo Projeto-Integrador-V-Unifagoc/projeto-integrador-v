@@ -39,10 +39,10 @@ app.post('/statusCurso', (req, res) => matriculaController.criarStatusMatriculaC
 
 
 app.get('/statusDisciplina', (req, res) => disciplinaController.listarStatusMatriculaDisciplina(req, res))
-app.get('/statusDisciplina/:ibge', (req, res) => disciplinaController.buscarStatusMatriculaDisciplinaPorId(req, res))
+app.get('/statusDisciplina/:id', (req, res) => disciplinaController.buscarStatusMatriculaDisciplinaPorId(req, res))
 
 app.get('/statusCurso', (req, res) => matriculaController.listarStatusMatriculaCurso(req, res))
-app.get('/statusCurso/:ibge', (req, res) => matriculaController.buscarStatusMatriculaCursoPorId(req, res))
+app.get('/statusCurso/:id', (req, res) => matriculaController.buscarStatusMatriculaCursoPorId(req, res))
 
 
 

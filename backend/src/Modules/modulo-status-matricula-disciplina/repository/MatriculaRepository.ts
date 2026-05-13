@@ -13,7 +13,7 @@ export class MatriculaRepository {
     async listarStatusMatriculaCurso() {
         const rows = await db("status_matricula")
             .select("*")
-            .orderBy("nome", "asc");
+            .orderBy("descricao", "asc");
 
         return rows.map(MatriculaMapper.toDomain);
     }
