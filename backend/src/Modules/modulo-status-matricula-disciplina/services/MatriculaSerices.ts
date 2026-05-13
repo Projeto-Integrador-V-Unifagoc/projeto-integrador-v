@@ -8,10 +8,7 @@ export class MatriculaService {
     async criarStatusMatriculaCurso(data: any) {
         const status: StatusMatriculaCursoCommand = {
             id: uuidv4(),
-            codigo: data.codigo,
-            nome: data.nome,
-            descricao: data.descricao,
-            ativo: data.ativo ?? true
+            descricao: data.descricao
         };
 
         return await this.matriculaRepository.criarStatusMatriculaCurso(status);

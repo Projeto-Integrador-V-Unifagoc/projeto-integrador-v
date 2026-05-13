@@ -8,10 +8,7 @@ export class DisciplinaService {
     async criarStatusMatriculaDisciplina(data: any) {
         const status: StatusMatriculaDisciplinaCommand = {
             id: uuidv4(),
-            codigo: data.codigo,
-            nome: data.nome,
             descricao: data.descricao,
-            ativo: data.ativo ?? true
         };
 
         return await this.disciplinaRepository.criarStatusMatriculaDisciplina(status);
