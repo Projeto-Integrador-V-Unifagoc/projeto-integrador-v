@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { GridColDef } from "@mui/x-data-grid";
 import { Alert, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, Stack, Tab, Tabs, Typography } from "@mui/material";
 
@@ -119,6 +119,7 @@ export default function Frequencia() {
   const [dataFim, setDataFim] = useState("");
   const [alerta, setAlerta] = useState<{ tipo: "success" | "error" | "info"; mensagem: string } | null>(null);
   const [justificativaAberta, setJustificativaAberta] = useState<{ frequenciaId: string; texto: string } | null>(null);
+  const justificativaInputRef = useRef<HTMLTextAreaElement | null>(null);
   const frequencia = useFrequencia();
 
   useEffect(() => {
@@ -194,7 +195,8 @@ export default function Frequencia() {
   async function salvarJustificativa() {
     if (!justificativaAberta) return;
     try {
-      await frequencia.registrarJustificativa(justificativaAberta.frequenciaId, justificativaAberta.texto);
+      const justificativa = justificativaInputRef.current?.value || "";
+      await frequencia.registrarJustificativa(justificativaAberta.frequenciaId, justificativa);
       setJustificativaAberta(null);
       setAlerta({ tipo: "success", mensagem: "Justificativa registrada com sucesso!" });
       await carregarChamada();
@@ -316,7 +318,26 @@ export default function Frequencia() {
       <Dialog open={Boolean(justificativaAberta)} onClose={() => setJustificativaAberta(null)} fullWidth maxWidth="sm">
         <DialogTitle>Registrar justificativa de falta</DialogTitle>
         <DialogContent>
-          <TextField multiline minRows={4} label="Justificativa" value={justificativaAberta?.texto || ""} onChange={(event) => setJustificativaAberta((prev) => prev ? { ...prev, texto: event.target.value } : prev)} />
+          <textarea
+            key={justificativaAberta?.frequenciaId}
+            ref={justificativaInputRef}
+            autoFocus
+            aria-label="Justificativa"
+            placeholder="Justificativa"
+            defaultValue={justificativaAberta?.texto || ""}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            style={{
+              width: "100%",
+              minHeight: 110,
+              padding: "12px 14px",
+              border: "1px solid #c4c4c4",
+              borderRadius: 4,
+              font: "inherit",
+              resize: "vertical",
+              outlineColor: "#00a9ce",
+            }}
+          />
         </DialogContent>
         <DialogActions>
           <Button variant="outlined" sx={{ width: 100 }} onClick={() => setJustificativaAberta(null)}>Cancelar</Button>
