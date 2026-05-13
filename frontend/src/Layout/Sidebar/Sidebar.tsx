@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import {
     Archive,
+    CalendarCheck,
     ChevronDown,
     ChevronUp,
     ClipboardCheck,
@@ -75,6 +76,32 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                         />
                     </ListItemButton>
 
+                    <ListItemButton
+                        href="/frequencias/lista"
+                        sx={{
+                            justifyContent: abrirSidebar ? 'initial' : 'center'
+                        }}
+                    >
+                        <ListItemIcon
+                            sx={{
+                                minWidth: 0,
+                                mr: abrirSidebar ? 2 : 'auto',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <CalendarCheck size={17} />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary='Frequencia'
+                            sx={{
+                                opacity: abrirSidebar ? 1 : 0,
+                                transition: 'opacity 0.2s',
+                            }}
+                            primaryTypographyProps={{
+                                fontSize: 14
+                            }}
+                        />
+                    </ListItemButton>
 
                     <ListItemButton
                         onClick={clicarMenu}
