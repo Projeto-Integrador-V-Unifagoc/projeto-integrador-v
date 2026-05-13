@@ -14,6 +14,7 @@ import {
     ChevronUp,
     ClipboardCheck,
     ClipboardList,
+    FileText,
     GraduationCap,
     NotebookPen,
     Users,
@@ -167,6 +168,26 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                                         fontSize: 14
                                     }}
                                 />
+                            </ListItemButton>
+
+                            <ListItemButton
+                                href="/matricula/nova"
+                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
+                            >
+                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
+                                    <ClipboardCheck size={17} />
+                                </ListItemIcon>
+                                <ListItemText primary='Matrícula' sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }} primaryTypographyProps={{ fontSize: 14 }} />
+                            </ListItemButton>
+
+                            <ListItemButton
+                                href="/documentos/envio"
+                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
+                            >
+                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
+                                    <FileText size={17} />
+                                </ListItemIcon>
+                                <ListItemText primary='Documentos' sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }} primaryTypographyProps={{ fontSize: 14 }} />
                             </ListItemButton>
 
                             <ListItemButton

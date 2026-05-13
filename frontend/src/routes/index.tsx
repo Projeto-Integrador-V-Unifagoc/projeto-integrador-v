@@ -18,10 +18,14 @@ import EditDisciplina from "../Pages/Disciplinas/EditDisciplina";
 import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
 import Professores from "../Pages/Professores/Professores";
 import CadastroProfessores from "../Pages/Professores/Cadastro";
+import NovaMatricula from "../Pages/Matricula/NovaMatricula";
+import Documentos from "../Pages/Documentos/Documentos";
+import Inscricao from "../Pages/Inscricao/Inscricao";
 
 export function AppRoutes() {
     return (
         <Routes>
+            <Route path="/inscricao" element={<Inscricao />} />
             <Route element={<MainLayout />}>
                 <Route path="*" element={<NotFound />} />
                 <Route path="/" element={<Home />}/>
@@ -39,6 +43,10 @@ export function AppRoutes() {
                 <Route path="cursos/:id" element={<EditCurso />} />
                 <Route path="disciplinas/:id" element={<EditDisciplina />} />
                 <Route path="/avaliacoes/lista" element={<Avaliacoes />} />
+                <Route path="/matricula/nova" element={<NovaMatricula />} />
+                <Route path="/documentos/envio" element={<Documentos />} />
+                <Route path="/cursos/lista" element={<BuildingPage />} />
+                <Route path="/disciplinas/lista" element={<BuildingPage />} />
 
             </Route>
         </Routes>

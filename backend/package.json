@@ -15,8 +15,8 @@
     "type": "commonjs",
     "main": "app.ts",
     "scripts": {
-        "test": "test",
-        "start": "ts-node src/app.ts",
+        "dev": "tsx watch src/app.ts",
+        "start": "tsx src/app.ts",
         "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts"
     },
     "dependencies": {
@@ -27,6 +27,7 @@
         "dotenv": "^17.3.1",
         "express": "^5.2.1",
         "knex": "^3.1.0",
+        "multer": "^1.4.5-lts.2",
         "pg": "^8.20.0",
         "typescript": "^5.9.3",
         "uuid": "^13.0.0"
@@ -36,6 +37,8 @@
         "@types/bcrypt": "^6.0.0",
         "@types/uuid": "^10.0.0",
         "bcrypt": "^6.0.0",
-        "ts-node": "^10.9.2"
+        "@types/multer": "^1.4.12",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.19.2"
     }
 }

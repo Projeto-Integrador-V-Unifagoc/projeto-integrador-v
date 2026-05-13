@@ -7,15 +7,14 @@ import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controll
 import CursoController from './Modules/modulo-facul-dp-curso/controller/CursoController.js';
 import { professorRouter } from './Modules/routes/professorRoutes.js';
 import { avaliacaoRouter } from './Modules/routes/avaliacaoRoutes.js';
+import { matriculaRouter } from './Modules/routes/matriculaRoutes.js';
+import { documentoRouter } from './Modules/routes/documentoRoutes.js';
 
 const PORT = process.env.PORT || 3000;
 
 const app = express();
 
-app.use(cors({
-  origin: '*',
-}));
-
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 const alunoController = new AlunoController();
@@ -32,6 +31,7 @@ app.post('/cursos', (req, res) => cursoController.criarCurso(req, res));
 app.post('/disciplinas', (req, res) => disciplinaController.criarDisciplina(req, res));
 
 app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res));
+app.get('/alunos/buscar', (req, res) => alunoController.buscarAluno(req, res));
 app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, res));
 app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res));
 
@@ -56,6 +56,8 @@ app.delete('/disciplinas/:id', (req, res) => disciplinaController.removerDiscipl
 
 app.use('/professores', professorRouter);
 app.use('/avaliacoes', avaliacaoRouter);
+app.use(matriculaRouter);
+app.use(documentoRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
