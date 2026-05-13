@@ -23,7 +23,7 @@ export function AppRoutes() {
                 <Route path="/cursos/lista" element={<BuildingPage />} />
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />
                 <Route path="/alunos/cadastro" element={<CadastroAlunos />}/>
-                <Route path="alunos/:matricula" element={<FichaAluno />} />
+                <Route path="alunos/ficha-do-aluno/:id" element={<FichaAluno />} />
             </Route>
         </Routes>
     )

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-import { IconButton, useMediaQuery, useTheme } from "@mui/material";
+import { IconButton, Stack, useMediaQuery, useTheme } from "@mui/material";
 
 import SearchTextField from "../../components/SearchTextField/SearchTextField";
 import DataTable from "../../components/DataTable/DataTable";
@@ -12,7 +12,7 @@ import type { AlunoRequest, AlunoView } from "../../models/aluno-model";
 import { useAluno } from "../../hooks/use-aluno";
 import { useNavigate } from "react-router-dom";
 import type { GridColDef } from "@mui/x-data-grid";
-import { Pencil } from "lucide-react";
+import { ClipboardList, Pencil } from "lucide-react";
 
 export default function Alunos() {
   const theme = useTheme()
@@ -73,14 +73,22 @@ export default function Alunos() {
       headerName: "Ações",
       flex: 1,
       renderCell: (params) => (
-        <IconButton
-          onClick={() => navigate(`/alunos/${params.row.matricula}`)}
-          color="primary"
-        >
-          <Pencil size={20} />
-        </IconButton>
+        <Stack direction="row" spacing={1}>
+          <IconButton
+            onClick={() => navigate(`/alunos/${params.row.matricula}`)}
+            color="primary"
+          >
+            <Pencil size={20} />
+          </IconButton>
+          <IconButton
+            onClick={() => navigate(`/alunos/ficha-do-aluno/${params.row.id}`)}
+            color="primary"
+          >
+            <ClipboardList size={20} />
+          </IconButton>
+        </Stack>
       )
-    }
+    },
   ];
 
   useEffect(() => {
