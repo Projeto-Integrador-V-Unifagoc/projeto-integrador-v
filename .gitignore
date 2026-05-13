@@ -4,4 +4,5 @@ node_modules/
 *.log
 backend/build/
 backend/dist/
+frontend/dist/
 .DS_Store
