@@ -104,20 +104,20 @@ export class AlunoRepository {
         await db("pessoa")
             .where("id", aluno.pessoa_id)
             .update({
-                nome: dados.pessoa.nome,
-                cpf: dados.pessoa.cpf,
-                data_nascimento: dados.pessoa.dataNascimento,
-                logradouro: dados.pessoa.logradouro,
-                numero: dados.pessoa.numero,
-                bairro: dados.pessoa.bairro,
-                cidade_id: dados.pessoa.cidadeIbge,
-                estado: dados.pessoa.estado,
-                cep: dados.pessoa.cep
+                nome: dados.nome,
+                cpf: dados.cpf,
+                data_nascimento: dados.dataNascimento,
+                logradouro: dados.logradouro,
+                numero: dados.numero,
+                bairro: dados.bairro,
+                cidade_id: dados.cidade.ibge,
+                estado: dados.estado,
+                cep: dados.cep
             });
         await db("aluno")
             .where("matricula", matricula)
             .update({
-                curso_id: dados.curso,
+                curso_id: null,
                 periodo: dados.periodo
             });
 
