@@ -66,6 +66,25 @@ export class FrequenciaRepository {
       .orderBy("pessoa.nome");
   }
 
+  async listarTurmasDoAluno(alunoId: string) {
+    return db("aluno_turma")
+      .join("aluno", "aluno_turma.aluno_id", "aluno.id")
+      .join("pessoa", "aluno.pessoa_id", "pessoa.id")
+      .join("turma", "aluno_turma.turma_id", "turma.id")
+      .join("disciplinas", "turma.disciplina_id", "disciplinas.id")
+      .where("aluno_turma.aluno_id", alunoId)
+      .whereIn("aluno_turma.status", ["ATIVO", "MATRICULADO", "REGULAR"])
+      .select(
+        "aluno.id as aluno_id",
+        "pessoa.nome as aluno_nome",
+        "turma.id as turma_id",
+        "turma.semestre",
+        "disciplinas.id as disciplina_id",
+        "disciplinas.nome as disciplina_nome",
+      )
+      .orderBy("disciplinas.nome");
+  }
+
   async buscarTurma(turmaId: string) {
     return db("turma")
       .join("disciplinas", "turma.disciplina_id", "disciplinas.id")
@@ -119,7 +138,19 @@ export class FrequenciaRepository {
   }
 
   async criarRegistros(registros: any[]) {
-    const rows = await db("frequencia").insert(registros).returning("*");
+    if (!registros.length) return [];
+
+    const rows = await db("frequencia")
+      .insert(registros)
+      .onConflict(["aula_id", "aluno_id"])
+      .merge({
+        status: db.raw("excluded.status"),
+        turma_id: db.raw("excluded.turma_id"),
+        data: db.raw("excluded.data"),
+        responsavel_lancamento_id: db.raw("excluded.responsavel_lancamento_id"),
+        atualizado_em: db.fn.now(),
+      })
+      .returning("*");
     return rows.map(FrequenciaMapper.registro);
   }
 
@@ -162,23 +193,34 @@ export class FrequenciaRepository {
     turmaId: string,
     filtros?: { dataInicio?: string; dataFim?: string },
   ) {
-    const totalAulasQuery = db("frequencia")
+    const totalAulasQuery = db("aula")
       .where("turma_id", turmaId)
-      .countDistinct("aula_id as total");
-    const registrosQuery = db("frequencia")
-      .join("aluno", "frequencia.aluno_id", "aluno.id")
+      .countDistinct("id as total");
+
+    const registrosQuery = db("aluno_turma")
+      .join("aluno", "aluno_turma.aluno_id", "aluno.id")
       .join("pessoa", "aluno.pessoa_id", "pessoa.id")
-      .join("turma", "frequencia.turma_id", "turma.id")
+      .join("turma", "aluno_turma.turma_id", "turma.id")
       .join("disciplinas", "turma.disciplina_id", "disciplinas.id")
-      .where("frequencia.turma_id", turmaId);
+      .leftJoin("frequencia", function () {
+        this.on("frequencia.aluno_id", "=", "aluno_turma.aluno_id")
+          .andOn("frequencia.turma_id", "=", "aluno_turma.turma_id");
+
+        if (filtros?.dataInicio) {
+          this.andOn("frequencia.data", ">=", db.raw("?", [filtros.dataInicio]));
+        }
+        if (filtros?.dataFim) {
+          this.andOn("frequencia.data", "<=", db.raw("?", [filtros.dataFim]));
+        }
+      })
+      .where("aluno_turma.turma_id", turmaId)
+      .whereIn("aluno_turma.status", ["ATIVO", "MATRICULADO", "REGULAR"]);
 
     if (filtros?.dataInicio) {
-      totalAulasQuery.where("data", ">=", filtros.dataInicio);
-      registrosQuery.where("frequencia.data", ">=", filtros.dataInicio);
+      totalAulasQuery.whereRaw("DATE(data) >= ?", [filtros.dataInicio]);
     }
     if (filtros?.dataFim) {
-      totalAulasQuery.where("data", "<=", filtros.dataFim);
-      registrosQuery.where("frequencia.data", "<=", filtros.dataFim);
+      totalAulasQuery.whereRaw("DATE(data) <= ?", [filtros.dataFim]);
     }
 
     const [{ total }] = await totalAulasQuery;
@@ -210,10 +252,13 @@ export class FrequenciaRepository {
       .join("aula", "frequencia.aula_id", "aula.id")
       .join("turma", "frequencia.turma_id", "turma.id")
       .join("disciplinas", "turma.disciplina_id", "disciplinas.id")
+      .join("aluno", "frequencia.aluno_id", "aluno.id")
+      .join("pessoa", "aluno.pessoa_id", "pessoa.id")
       .where("frequencia.aluno_id", alunoId)
       .select(
         "frequencia.*",
         "aula.data as aula_data",
+        "pessoa.nome as aluno_nome",
         "disciplinas.id as disciplina_id",
         "disciplinas.nome as disciplina_nome",
         "turma.id as turma_id",

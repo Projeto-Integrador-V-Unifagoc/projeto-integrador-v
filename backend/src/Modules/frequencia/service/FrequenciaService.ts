@@ -6,7 +6,7 @@ import { AlunoTurmaGateway } from "../gateways/AlunoTurmaGateway";
 import { FrequenciaRepository } from "../repository/FrequenciaRepository";
 
 export class FrequenciaService {
-  constructor(private repository = new FrequenciaRepository(), private authGateway = new AuthContextGateway(), private periodoGateway = new PeriodoLetivoGateway(), private professorTurmaGateway = new ProfessorTurmaGateway(repository), private alunoTurmaGateway = new AlunoTurmaGateway(repository)) {}
+  constructor(private repository = new FrequenciaRepository(), private authGateway = new AuthContextGateway(repository), private periodoGateway = new PeriodoLetivoGateway(), private professorTurmaGateway = new ProfessorTurmaGateway(repository), private alunoTurmaGateway = new AlunoTurmaGateway(repository)) {}
 
   async listarOpcoes(req?: any) {
     const contexto = await this.authGateway.obterContexto(req);
@@ -36,17 +36,35 @@ export class FrequenciaService {
     if (!aula) throw new Error("Aula nao encontrada para registro de frequencia.");
     const alunosAtivos = await this.alunoTurmaGateway.listarAlunosAtivos(data.turmaId);
     const idsAlunosAtivos = new Set(alunosAtivos.map((aluno: any) => aluno.aluno_id));
+    const registrosNovos = [];
+    const registrosAtualizados = [];
+
     for (const registro of data.registros) {
       if (!idsAlunosAtivos.has(registro.alunoId)) throw new Error("Aluno sem matricula ativa nao pode receber frequencia nesta turma.");
-      if (await this.repository.buscarRegistroPorAulaEAluno(aula.id, registro.alunoId)) throw new Error("Frequencia ja registrada para esta aula. Utilize a edicao para alterar.");
+      const existente = await this.repository.buscarRegistroPorAulaEAluno(aula.id, registro.alunoId);
+      if (existente) {
+        const atualizado = await this.repository.atualizarRegistro(existente.id, registro.status);
+        if (atualizado) registrosAtualizados.push(atualizado);
+        continue;
+      }
+
+      registrosNovos.push({
+        aula_id: aula.id,
+        aluno_id: registro.alunoId,
+        turma_id: data.turmaId,
+        status: registro.status,
+        data: data.data,
+        responsavel_lancamento_id: contexto.professorId,
+      });
     }
-    const registrosCriados = await this.repository.criarRegistros(data.registros.map((registro) => ({ aula_id: aula.id, aluno_id: registro.alunoId, turma_id: data.turmaId, status: registro.status, data: data.data, responsavel_lancamento_id: contexto.professorId })));
+    const registrosCriados = registrosNovos.length ? await this.repository.criarRegistros(registrosNovos) : [];
+    const registrosSalvos = [...registrosCriados, ...registrosAtualizados];
     const consolidados = [];
-    for (const registro of registrosCriados) {
+    for (const registro of registrosSalvos) {
       const percentual = await this.repository.recalcularPercentualAlunoTurma(registro.alunoId, registro.turmaId);
       consolidados.push({ alunoId: registro.alunoId, percentual, situacao: this.classificarSituacao(percentual) });
     }
-    return { mensagem: "Frequencia registrada com sucesso!", aulaId: aula.id, registros: registrosCriados, consolidados };
+    return { mensagem: "Frequencia registrada com sucesso!", aulaId: aula.id, registros: registrosSalvos, consolidados };
   }
 
   async editarFrequencia(id: string, data: EditarFrequenciaRequest, req?: any) {
@@ -91,10 +109,26 @@ export class FrequenciaService {
     this.validarUuid(alunoId, "Aluno invalido. Selecione um aluno da lista de chamada.");
     const contexto = await this.authGateway.obterContexto(req);
     if (contexto.perfil === "ALUNO" && contexto.alunoId && contexto.alunoId !== alunoId) throw new Error("Aluno pode consultar apenas a propria frequencia.");
+    const turmas = await this.repository.listarTurmasDoAluno(alunoId);
     const historico = await this.repository.listarHistoricoAluno(alunoId);
     const agrupado = new Map<string, any>();
+
+    for (const turma of turmas) {
+      agrupado.set(turma.turma_id, {
+        alunoId: turma.aluno_id,
+        alunoNome: turma.aluno_nome,
+        turmaId: turma.turma_id,
+        disciplinaId: turma.disciplina_id,
+        disciplinaNome: turma.disciplina_nome,
+        semestre: turma.semestre,
+        totalAulas: 0,
+        presencas: 0,
+        faltas: 0,
+      });
+    }
+
     for (const item of historico) {
-      const atual = agrupado.get(item.turma_id) || { turmaId: item.turma_id, disciplinaId: item.disciplina_id, disciplinaNome: item.disciplina_nome, semestre: item.semestre, totalAulas: 0, presencas: 0, faltas: 0 };
+      const atual = agrupado.get(item.turma_id) || { alunoId, alunoNome: item.aluno_nome, turmaId: item.turma_id, disciplinaId: item.disciplina_id, disciplinaNome: item.disciplina_nome, semestre: item.semestre, totalAulas: 0, presencas: 0, faltas: 0 };
       atual.totalAulas += 1;
       atual.presencas += item.status === "PRESENTE" ? 1 : 0;
       atual.faltas += item.status === "AUSENTE" ? 1 : 0;
