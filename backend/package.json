@@ -15,10 +15,11 @@
     "type": "commonjs",
     "main": "app.ts",
     "scripts": {
-        "dev": "tsx watch src/app.ts",
-        "start": "tsx src/app.ts",
-        "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts"
-    },
+    "test": "test",
+    "start": "ts-node src/app.ts",
+    "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
+    "seed": "node -r ts-node/register node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts"
+  },
     "dependencies": {
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",

@@ -4,20 +4,18 @@ export interface Disciplina {
     nome: string
     carga_horaria: number
     pre_requisito?: string
-    curso: {
-        id: string
-        codigo: string
-        nome: string
-    }
+    ativo: boolean
+    created_at?: string
+    updated_at?: string
 }
 
 export interface DisciplinaCommand {
     id: string
     codigo: string
     nome: string
-    curso_id: string
     pre_requisito?: string
     carga_horaria: number
+    ativo?: boolean
 }
 
 export class DisciplinaMapper {
@@ -28,11 +26,9 @@ export class DisciplinaMapper {
             nome: raw.nome,
             carga_horaria: raw.carga_horaria,
             pre_requisito: raw.pre_requisito ?? undefined,
-            curso: {
-                id: raw.curso_id,
-                codigo: raw.curso_codigo,
-                nome: raw.curso_nome
-            }
+            ativo: raw.ativo,
+            created_at: raw.created_at,
+            updated_at: raw.updated_at
         }
     }
 }

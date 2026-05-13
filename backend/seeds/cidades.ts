@@ -4,9 +4,6 @@ import axios from "axios"
 const SCHEMA = "piv"
 
 export async function seed(knex: Knex): Promise<void> {
-
-    await knex(`${SCHEMA}.cidade`).del()
-
     const { data } = await axios.get(
         "https://servicodados.ibge.gov.br/api/v1/localidades/municipios"
     )
@@ -29,5 +26,5 @@ export async function seed(knex: Knex): Promise<void> {
     await knex(`${SCHEMA}.cidade`)
         .insert(cidades)
         .onConflict("ibge")
-        .ignore()
+        .merge(["nome", "uf"])
 }

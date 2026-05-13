@@ -27,15 +27,17 @@ export default function Disciplinas() {
       id: disciplina.id,
       codigo: disciplina.codigo,
       nome: disciplina.nome,
-      curso: disciplina.curso.nome,
       cargaHoraria: disciplina.carga_horaria,
       preRequisito: disciplina.pre_requisito,
+      ativo: disciplina.ativo,
     }))
     setDisciplinas(disciplinasMapeadas)
   }
 
   useEffect(() => {
-    carregarDisciplinas()
+    void (async () => {
+      await carregarDisciplinas()
+    })()
   }, [])
 
   async function confirmarExclusao() {
@@ -47,21 +49,26 @@ export default function Disciplinas() {
       await removerDisciplina(disciplinaParaExcluir.id)
       setAlerta({ tipo: "success", mensagem: "Disciplina removida com sucesso!" })
       setDisciplinaParaExcluir(null)
-      carregarDisciplinas()
+      void carregarDisciplinas()
     } catch {
-      setAlerta({ tipo: "error", mensagem: "Não foi possível remover a disciplina." })
+      setAlerta({ tipo: "error", mensagem: "Nao foi possivel remover a disciplina." })
     }
   }
 
   const columns: GridColDef<DisciplinaView>[] = [
-    { field: "codigo", headerName: "Código", width: 140 },
+    { field: "codigo", headerName: "Codigo", width: 140 },
     { field: "nome", headerName: "Nome", flex: 1 },
-    { field: "curso", headerName: "Curso", flex: 1 },
-    { field: "cargaHoraria", headerName: "Carga Horária", width: 150 },
-    { field: "preRequisito", headerName: "Pré-requisito", flex: 1 },
+    { field: "cargaHoraria", headerName: "Carga Horaria", width: 150 },
+    { field: "preRequisito", headerName: "Pre-requisito", flex: 1 },
+    {
+      field: "ativo",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => (params.row.ativo ? "Ativa" : "Inativa"),
+    },
     {
       field: "id",
-      headerName: "Ações",
+      headerName: "Acoes",
       width: 120,
       sortable: false,
       renderCell: (params) => (
@@ -95,10 +102,10 @@ export default function Disciplinas() {
                 </Card.Header>
                 <Card.Content>
                   <Stack gap={1}>
-                    <Typography variant="body2"><strong>Código:</strong> {disciplina.codigo}</Typography>
-                    <Typography variant="body2"><strong>Curso:</strong> {disciplina.curso}</Typography>
-                    <Typography variant="body2"><strong>Carga Horária:</strong> {disciplina.cargaHoraria}</Typography>
-                    <Typography variant="body2"><strong>Pré-requisito:</strong> {disciplina.preRequisito || "-"}</Typography>
+                    <Typography variant="body2"><strong>Codigo:</strong> {disciplina.codigo}</Typography>
+                    <Typography variant="body2"><strong>Carga Horaria:</strong> {disciplina.cargaHoraria}</Typography>
+                    <Typography variant="body2"><strong>Pre-requisito:</strong> {disciplina.preRequisito || "-"}</Typography>
+                    <Typography variant="body2"><strong>Status:</strong> {disciplina.ativo ? "Ativa" : "Inativa"}</Typography>
                     <Stack direction="row" justifyContent="flex-end" gap={1}>
                       <Button variant="outlined" onClick={() => navigate(`/disciplinas/${disciplina.id}`)}>
                         Editar

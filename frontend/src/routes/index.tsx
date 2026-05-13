@@ -15,9 +15,16 @@ import StatusMatricula from "../Pages/Status/Status";
 import Cursos from "../Pages/Cursos/Cursos";
 import CadastroCursos from "../Pages/Cursos/CadastroCursos";
 import EditCurso from "../Pages/Cursos/EditCurso";
+import MatrizCurricularCurso from "../Pages/Cursos/MatrizCurricularCurso";
 import Disciplinas from "../Pages/Disciplinas/Disciplinas";
 import CadastroDisciplinas from "../Pages/Disciplinas/CadastroDisciplinas";
 import EditDisciplina from "../Pages/Disciplinas/EditDisciplina";
+import PeriodosLetivos from "../Pages/PeriodosLetivos/PeriodosLetivos";
+import CadastroPeriodosLetivos from "../Pages/PeriodosLetivos/CadastroPeriodosLetivos";
+import EditPeriodoLetivo from "../Pages/PeriodosLetivos/EditPeriodoLetivo";
+import Turmas from "../Pages/Turmas/Turmas";
+import CadastroTurmas from "../Pages/Turmas/CadastroTurmas";
+import DetalheTurma from "../Pages/Turmas/DetalheTurma";
 
 
 import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
@@ -42,11 +49,16 @@ export function AppRoutes() {
                 <Route path="/alunos/lista" element={<Alunos />} />
                 <Route path="/cursos/lista" element={<Cursos />} />
                 <Route path="/disciplinas/lista" element={<Disciplinas />} />
+                <Route path="/periodos-letivos/lista" element={<PeriodosLetivos />} />
+                <Route path="/turmas/lista" element={<Turmas />} />
                 <Route path="/alunos/cadastro" element={<CadastroAlunos />}/>
                 <Route path="/cursos/cadastro" element={<CadastroCursos />}/>
                 <Route path="/disciplinas/cadastro" element={<CadastroDisciplinas />}/>
+                <Route path="/periodos-letivos/cadastro" element={<CadastroPeriodosLetivos />}/>
+                <Route path="/turmas/cadastro" element={<CadastroTurmas />}/>
                 <Route path="alunos/:matricula" element={<EditFormCadastroAluno />} />
                 <Route path="cursos/:id" element={<EditCurso />} />
+                <Route path="cursos/:id/matriz-curricular" element={<MatrizCurricularCurso />} />
                 <Route path="disciplinas/:id" element={<EditDisciplina />} />
                 <Route path="/avaliacoes/lista" element={<Avaliacoes />} />
                 <Route path="/frequencias/lista" element={<Frequencia />} />
@@ -58,6 +70,8 @@ export function AppRoutes() {
                 <Route path="alunos/ficha-do-aluno/:id" element={<FichaAluno />} />
                 <Route path="alunos/editar-aluno/:matricula" element={<EditFormCadastroAluno />} />                
                 <Route path="/status" element={<StatusMatricula />} />
+                <Route path="periodos-letivos/:id" element={<EditPeriodoLetivo />} />
+                <Route path="turmas/:id" element={<DetalheTurma />} />
             </Route>
         </Routes>
     )
