@@ -10,6 +10,7 @@ import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
 import Professores from "../Pages/Professores/Professores";
 import CadastroProfessores from "../Pages/Professores/Cadastro";
+import Frequencia from "../Pages/Frequencia/Frequencia";
 
 export function AppRoutes() {
     return (
@@ -25,6 +26,7 @@ export function AppRoutes() {
                 <Route path="/alunos/cadastro" element={<CadastroAlunos />} />
                 <Route path="/alunos/:matricula" element={<EditFormCadastroAluno />} />
                 <Route path="/avaliacoes/lista" element={<Avaliacoes />} />
+                <Route path="/frequencias/lista" element={<Frequencia />} />
                 <Route path="/cursos/lista" element={<BuildingPage />} />
                 <Route path="/disciplinas/lista" element={<BuildingPage />} />
             </Route>
