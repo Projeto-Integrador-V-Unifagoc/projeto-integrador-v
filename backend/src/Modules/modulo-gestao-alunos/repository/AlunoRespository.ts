@@ -96,4 +96,31 @@ export class AlunoRepository {
 
         return row ? AlunoMapper.toDomain(row) : null;
     }
+
+    async atualizarAluno(matricula: string, dados: any) {
+        const aluno = await db("aluno")
+            .where("matricula", matricula)
+            .first();
+        await db("pessoa")
+            .where("id", aluno.pessoa_id)
+            .update({
+                nome: dados.nome,
+                cpf: dados.cpf,
+                data_nascimento: dados.dataNascimento,
+                logradouro: dados.logradouro,
+                numero: dados.numero,
+                bairro: dados.bairro,
+                cidade_id: dados.cidade.ibge,
+                estado: dados.estado,
+                cep: dados.cep
+            });
+        await db("aluno")
+            .where("matricula", matricula)
+            .update({
+                curso_id: null,
+                periodo: dados.periodo
+            });
+
+        return this.buscarAlunoPorMatricula(matricula);
+    }
 }

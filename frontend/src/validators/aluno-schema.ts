@@ -17,7 +17,7 @@ export const alunoSchema = yup.object({
         .string()
         .required("Número é obrigatório"),
     bairro: yup.string().required("Bairro é obrigatório"),
-    cidadeIbge: yup.string().required("Cidade é obrigatória"),
+    cidade: yup.object().nullable().required("Cidade é obrigatória"),
     estado: yup.string().required("Estado é obrigatório"),
     cep: yup   
         .string()

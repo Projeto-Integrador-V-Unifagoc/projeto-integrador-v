@@ -51,4 +51,18 @@ export class AlunoService {
         const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula);
         return aluno;
     }
+
+    async atualizarAluno(matricula: string, data: any) {
+        try {
+            const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula)
+            if (!aluno) {
+                throw new Error("Aluno não encontrado");
+            }
+            return await this.alunoRepository.atualizarAluno(matricula, data);
+        }
+        catch (error) {
+            console.error("Erro ao atualizar aluno:", error);
+            throw new Error("Não foi possível atualizar o aluno");
+        }
+    }
 }
