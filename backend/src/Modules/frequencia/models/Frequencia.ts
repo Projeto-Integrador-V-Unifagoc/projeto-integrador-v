@@ -64,3 +64,17 @@ export class FrequenciaMapper {
     };
   }
 }
+
+/*
+Responsabilidade:
+Implementar a modelagem complementar de banco, seed de demonstracao e model do dominio de Frequencia.
+
+Arquivos:
+backend/migrations/20260511000100_complementa_schema_frequencia.ts
+backend/seeds/frequencia_demo.ts
+backend/src/Modules/frequencia/models/Frequencia.ts
+
+Tarefas relacionadas no documento:
+#03 - Modelagem e criacao do banco de dados
+#04 - Implementacao do Model
+*/
