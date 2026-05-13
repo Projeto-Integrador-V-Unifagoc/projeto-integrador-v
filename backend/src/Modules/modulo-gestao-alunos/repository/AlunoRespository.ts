@@ -68,6 +68,29 @@ export class AlunoRepository {
         return row ? AlunoMapper.toDomain(row) : null;
     }
 
+    async buscarAlunoPorCpfOuMatricula(query: string) {
+        const rows = await db("aluno")
+            .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
+            .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
+            .where(function () {
+                this.where("pessoa.cpf", query)
+                    .orWhereRaw("CAST(aluno.matricula AS TEXT) = ?", [query]);
+            })
+            .select(
+                "aluno.id",
+                "aluno.matricula",
+                "aluno.periodo",
+                "aluno.curso_id",
+                "pessoa.nome",
+                "pessoa.cpf",
+                "usuario.email",
+                "curso.nome as curso_nome"
+            )
+            .limit(5);
+        return rows;
+    }
+
     async buscarAlunoPorMatricula(matricula: string) {
         const row = await db("aluno")
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")

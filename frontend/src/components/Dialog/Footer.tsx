@@ -1,7 +1,7 @@
 import { Stack, type StackProps } from "@mui/material"
 import { theme } from "../../theme"
 
-export function Footer({ children, ...rest }: StackProps) {
+export function Footer({ children }: StackProps) {
     return (
         <Stack
             component="footer"

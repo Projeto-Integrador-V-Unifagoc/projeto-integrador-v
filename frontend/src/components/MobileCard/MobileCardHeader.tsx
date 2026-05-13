@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
 
-import { 
+import {
     CardHeader as MuiCardHeader, 
     Typography, 
     type CardProps as MuiCardProps 
 } from "@mui/material";
-import { theme } from "../../theme";
 
 interface CardProps extends MuiCardProps {
     children?: ReactNode

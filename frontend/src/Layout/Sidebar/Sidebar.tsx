@@ -1,31 +1,31 @@
 import { useState } from "react";
 
-import { 
-    Box, 
-    Collapse, 
-    List, 
-    ListItemButton, 
-    ListItemIcon, 
-    ListItemText 
+import {
+    Box,
+    Collapse,
+    List,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText
 } from "@mui/material";
-import { 
-    Archive, 
-    ChevronDown, 
-    ChevronUp, 
-    ClipboardList, 
-    GraduationCap, 
+import {
+    Archive,
+    CalendarCheck,
+    ChevronDown,
+    ChevronUp,
+    ClipboardCheck,
+    ClipboardList,
+    FileText,
+    GraduationCap,
     Info, 
-    NotebookPen, 
-    Users, 
-    UserStar 
+    NotebookPen,
+    Users,
+    UserStar
 } from "lucide-react";
 
-import { theme } from "../../theme";
-
 interface SidebarProps {
-    abrirSidebar: boolean
+    abrirSidebar: boolean;
 }
-
 
 export default function Sidebar({ abrirSidebar }: SidebarProps) {
     const [abrirMenu, setAbrirMenu] = useState(true)
@@ -45,12 +45,12 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                     overflow: 'hidden',
                 })}
                 paddingTop={7}
-                paddingLeft={1}            
+                paddingLeft={1}
                 position='fixed'
             >
                 <List component='nav'>
 
-                    <ListItemButton 
+                    <ListItemButton
                         href="/tarefas/lista"
                         sx={{
                             justifyContent: abrirSidebar ? 'initial' : 'center'
@@ -77,9 +77,35 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                         />
                     </ListItemButton>
 
+                    <ListItemButton
+                        href="/frequencias/lista"
+                        sx={{
+                            justifyContent: abrirSidebar ? 'initial' : 'center'
+                        }}
+                    >
+                        <ListItemIcon
+                            sx={{
+                                minWidth: 0,
+                                mr: abrirSidebar ? 2 : 'auto',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <CalendarCheck size={17} />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary='Frequencia'
+                            sx={{
+                                opacity: abrirSidebar ? 1 : 0,
+                                transition: 'opacity 0.2s',
+                            }}
+                            primaryTypographyProps={{
+                                fontSize: 14
+                            }}
+                        />
+                    </ListItemButton>
 
-                    <ListItemButton 
-                        onClick={clicarMenu} 
+                    <ListItemButton
+                        onClick={clicarMenu}
                         sx={(theme) => ({
                             borderRadius: '3px',
                             justifyContent: abrirSidebar ? 'initial' : 'center',
@@ -116,11 +142,11 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                     <Collapse in={abrirMenu} timeout='auto' unmountOnExit >
                         <List component='div' disablePadding >
 
-                            <ListItemButton 
-                                sx={{ 
+                            <ListItemButton
+                                sx={{
                                     pl: abrirSidebar ? 4 : 2,
                                     justifyContent: abrirSidebar ? 'initial' : 'center',
-                                }} 
+                                }}
                                 href="/professores/lista"
                             >
                                 <ListItemIcon
@@ -144,12 +170,12 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                                 />
                             </ListItemButton>
 
-                            <ListItemButton 
+                            <ListItemButton
                                 href="/alunos/lista"
-                                sx={{ 
+                                sx={{
                                     pl: abrirSidebar ? 4 : 2,
-                                    justifyContent: abrirSidebar ? 'initial' : 'center', 
-                                }} 
+                                    justifyContent: abrirSidebar ? 'initial' : 'center',
+                                }}
                             >
                                 <ListItemIcon
                                     sx={{
@@ -172,11 +198,59 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                                 />
                             </ListItemButton>
 
-                            <ListItemButton 
-                                sx={{ 
+                            <ListItemButton
+                                href="/matricula/nova"
+                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
+                            >
+                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
+                                    <ClipboardCheck size={17} />
+                                </ListItemIcon>
+                                <ListItemText primary='Matrícula' sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }} primaryTypographyProps={{ fontSize: 14 }} />
+                            </ListItemButton>
+
+                            <ListItemButton
+                                href="/documentos/envio"
+                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
+                            >
+                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
+                                    <FileText size={17} />
+                                </ListItemIcon>
+                                <ListItemText primary='Documentos' sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }} primaryTypographyProps={{ fontSize: 14 }} />
+                            </ListItemButton>
+
+                            <ListItemButton
+                                href="/avaliacoes/lista"
+                                sx={{
                                     pl: abrirSidebar ? 4 : 2,
-                                    justifyContent: abrirSidebar ? 'initial' : 'center', 
-                                }} 
+                                    justifyContent: abrirSidebar ? 'initial' : 'center',
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: abrirSidebar ? 2 : 'auto',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    <ClipboardCheck size={17} />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary='Avaliacoes'
+                                    sx={{
+                                        opacity: abrirSidebar ? 1 : 0,
+                                        transition: 'opacity 0.2s',
+                                    }}
+                                    primaryTypographyProps={{
+                                        fontSize: 14
+                                    }}
+                                />
+                            </ListItemButton>
+
+                            <ListItemButton
+                                sx={{
+                                    pl: abrirSidebar ? 4 : 2,
+                                    justifyContent: abrirSidebar ? 'initial' : 'center',
+                                }}
                                 href="/cursos/lista"
                             >
                                 <ListItemIcon
@@ -200,11 +274,11 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                                 />
                             </ListItemButton>
 
-                            <ListItemButton 
-                                sx={{ 
+                            <ListItemButton
+                                sx={{
                                     pl: abrirSidebar ? 4 : 2,
-                                    justifyContent: abrirSidebar ? 'initial' : 'center', 
-                                }} 
+                                    justifyContent: abrirSidebar ? 'initial' : 'center',
+                                }}
                                 href="/disciplinas/lista"
                             >
                                 <ListItemIcon

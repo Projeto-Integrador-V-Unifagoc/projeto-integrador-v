@@ -65,4 +65,11 @@ export class AlunoService {
             throw new Error("Não foi possível atualizar o aluno");
         }
     }
+
+    async buscarAlunoPorCpfOuMatricula(query: string) {
+        if (!query || query.trim().length < 3) {
+            throw new Error("Informe ao menos 3 caracteres.");
+        }
+        return this.alunoRepository.buscarAlunoPorCpfOuMatricula(query.trim());
+    }
 }

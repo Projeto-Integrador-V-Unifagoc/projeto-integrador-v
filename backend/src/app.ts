@@ -5,18 +5,20 @@ import { CidadeController } from './Modules/cidades/controller/CidadeController'
 import { FaculdadeController } from './Modules/modulo-facul-dp-curso/controller/FaculdadeController';
 import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controller/DepartamentoController';
 import CursoController from './Modules/modulo-facul-dp-curso/controller/CursoController';
-import {DisciplinaController} from './Modules/modulo-status-matricula-disciplina/controller/DisciplinaController';
-import {MatriculaController} from './Modules/modulo-status-matricula-disciplina/controller/MatriculaController';
+import { DisciplinaController } from './Modules/modulo-disciplinas/controller/DisciplinaController';
+import { professorRouter } from './Modules/routes/professorRoutes';
+import { avaliacaoRouter } from './Modules/routes/avaliacaoRoutes';
+import { frequenciaRouter } from './Modules/routes/frequenciaRoutes';
+import { notasRouter } from './Modules/routes/notasRoutes';
+import { matriculaRouter } from './Modules/routes/matriculaRoutes';
+import { documentoRouter } from './Modules/routes/documentoRoutes';
 
 
 const PORT = process.env.PORT || 3000;
 
 const app = express();
 
-app.use(cors({
-    origin: '*',
-}))
-
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 const alunoController = new AlunoController();
@@ -25,46 +27,42 @@ const faculdadeController = new FaculdadeController()
 const departamentoController = new DepartamentoController()
 const cursoController = new CursoController()
 const disciplinaController = new DisciplinaController()
-const matriculaController = new MatriculaController()
 
 app.post('/alunos', (req, res) => alunoController.criarAluno(req, res))
 app.post('/faculdades', (req, res) => faculdadeController.criarFaculdade(req, res))
 app.post('/departamentos', (req, res) => departamentoController.criarDepartamento(req, res))
 app.post('/cursos', (req, res) => cursoController.criarCurso(req, res))
 
-app.post('/statusDisciplina', (req, res) => disciplinaController.criarStatusMatriculaDisciplina(req, res))
-app.post('/statusCurso', (req, res) => matriculaController.criarStatusMatriculaCurso(req, res))
-
-
-
-
-app.get('/statusDisciplina', (req, res) => disciplinaController.listarStatusMatriculaDisciplina(req, res))
-app.get('/statusDisciplina/:id', (req, res) => disciplinaController.buscarStatusMatriculaDisciplinaPorId(req, res))
-
-app.get('/statusCurso', (req, res) => matriculaController.listarStatusMatriculaCurso(req, res))
-app.get('/statusCurso/:id', (req, res) => matriculaController.buscarStatusMatriculaCursoPorId(req, res))
-
-
-
-
 app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res))
 app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, res))
 app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res))
-app.put('/alunos/:matricula', (req, res) => alunoController.atualizarAluno(req, res))
 
-app.get('/cidades', (req, res) => cidadeController.listarCidades(req, res))
-app.get('/cidades/:ibge', (req, res) => cidadeController.buscarCidadePorIbge(req, res))
+app.get('/cidades', (req, res) => cidadeController.listarCidades(req, res));
+app.get('/cidades/:ibge', (req, res) => cidadeController.buscarCidadePorIbge(req, res));
 
-app.get('/faculdades', (req, res) => faculdadeController.listarFaculdades(req, res))
-app.get('/faculdades/:id', (req, res) => faculdadeController.buscarFaculdadePorId(req, res))
+app.get('/faculdades', (req, res) => faculdadeController.listarFaculdades(req, res));
+app.get('/faculdades/:id', (req, res) => faculdadeController.buscarFaculdadePorId(req, res));
 
-app.get('/departamentos', (req, res) => departamentoController.listarDepartamentos(req, res))
-app.get('/departamentos/:id', (req, res) => departamentoController.buscarDepartamentoPorId(req, res))
+app.get('/departamentos', (req, res) => departamentoController.listarDepartamentos(req, res));
+app.get('/departamentos/:id', (req, res) => departamentoController.buscarDepartamentoPorId(req, res));
 
-app.get('/cursos', (req, res) => cursoController.listarCursos(req, res))
-app.get('/cursos/:id', (req, res) => cursoController.buscarCursoPorId(req, res))
+app.get('/cursos', (req, res) => cursoController.listarCursos(req, res));
+app.get('/cursos/:id', (req, res) => cursoController.buscarCursoPorId(req, res));
+app.put('/cursos/:id', (req, res) => cursoController.atualizarCurso(req, res));
+app.delete('/cursos/:id', (req, res) => cursoController.removerCurso(req, res));
 
+app.get('/disciplinas', (req, res) => disciplinaController.listarDisciplinas(req, res));
+app.get('/disciplinas/:id', (req, res) => disciplinaController.buscarDisciplinaPorId(req, res));
+app.put('/disciplinas/:id', (req, res) => disciplinaController.atualizarDisciplina(req, res));
+app.delete('/disciplinas/:id', (req, res) => disciplinaController.removerDisciplina(req, res));
+
+app.use('/professores', professorRouter);
+app.use('/avaliacoes', avaliacaoRouter);
+app.use('/frequencias', frequenciaRouter);
+app.use('/notas', notasRouter);
+app.use(matriculaRouter);
+app.use(documentoRouter);
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

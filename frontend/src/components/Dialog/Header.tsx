@@ -1,7 +1,7 @@
 import { Stack, type StackProps } from "@mui/material"
 
 export function Header(props: StackProps) {
-    const { children, ...rest } = props
+    const { children } = props
 
     return (
         <Stack
