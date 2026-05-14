@@ -66,7 +66,17 @@ const createPivTables = async (db: Knex) => {
     uuidPrimary(table, db);
     table.string("codigo").notNullable().unique();
   });
+  
+  await db.schema.withSchema(SCHEMA).createTable("status_disciplina", (table) => {
+    uuidPrimary(table, db);
+    table.text("descricao").notNullable();
+  });
 
+  await db.schema.withSchema(SCHEMA).createTable("status_matricula", (table) => {
+    uuidPrimary(table, db);
+    table.text("descricao").notNullable();
+  });
+  
   await db.schema.withSchema(SCHEMA).createTable("frequencia", (table) => {
     uuidPrimary(table, db);
     table.string("status").notNullable();

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { 
+import {
     Card as MuiCard, 
     type CardProps as MuiCardProps 
 } from "@mui/material";

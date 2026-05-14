@@ -12,7 +12,7 @@ import { useCursoDisciplina } from "../../hooks/use-curso-disciplina";
 import { useProfessor } from "../../hooks/use-professor";
 import { turmaDisciplinaSchema } from "../../validators/turma-disciplina-schema";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
-import type { ProfessorResponse } from "../../models/professor-model";
+import type { Professor } from "../../models/professor-model";
 import type { TurmaDisciplinaResponse } from "../../models/turma-model";
 import type { GridColDef } from "@mui/x-data-grid";
 
@@ -36,7 +36,7 @@ const initialForm: FormType = {
 export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   const [disciplinasTurma, setDisciplinasTurma] = useState<TurmaDisciplinaResponse[]>([]);
   const [disciplinasMatriz, setDisciplinasMatriz] = useState<CursoDisciplinaResponse[]>([]);
-  const [professores, setProfessores] = useState<ProfessorResponse[]>([]);
+  const [professores, setProfessores] = useState<Professor[]>([]);
   const [alerta, setAlerta] = useState<{ tipo: "success" | "error"; mensagem: string } | null>(null);
   const [dialogoAberto, setDialogoAberto] = useState(false);
   const [registroEdicao, setRegistroEdicao] = useState<TurmaDisciplinaResponse | null>(null);

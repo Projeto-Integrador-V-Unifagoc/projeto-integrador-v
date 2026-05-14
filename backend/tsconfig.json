@@ -6,6 +6,15 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES6",
-    "esModuleInterop": true
-  }
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "rootDir": ".",
+    "outDir": "./dist"
+  },
+  "include": [
+    "src/**/*.ts",
+    "knexfile.ts",
+    "migrations/**/*.ts",
+    "seeds/**/*.ts"
+  ]
 }

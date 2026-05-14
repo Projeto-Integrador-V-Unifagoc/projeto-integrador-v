@@ -34,4 +34,19 @@ export class PessoaRepository {
             .where("pessoa.id", id);
         return row[0];
     }
+    async atualizarPessoa(id: string, dados: any) {
+        await db("pessoa")
+            .where("id", id)
+            .update({
+                nome: dados.nome,
+                cpf: dados.cpf,
+                data_nascimento: dados.dataNascimento,
+                logradouro: dados.logradouro,
+                numero: dados.numero,
+                bairro: dados.bairro,
+                cidade_id: dados.cidadeIbge,
+                estado: dados.estado,
+                cep: dados.cep
+            });
+    }
 }

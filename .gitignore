@@ -3,4 +3,6 @@ node_modules/
 .env.*
 *.log
 backend/build/
+backend/dist/
+frontend/dist/
 .DS_Store

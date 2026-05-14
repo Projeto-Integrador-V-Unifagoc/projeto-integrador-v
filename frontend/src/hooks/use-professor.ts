@@ -8,7 +8,7 @@ export function useProfessor() {
     setCarregando(true);
 
     try {
-      return await professorApi.listarProfessores();
+      return await professorApi.listar();
     } finally {
       setCarregando(false);
     }
