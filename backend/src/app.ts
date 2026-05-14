@@ -62,6 +62,8 @@ app.get('/disciplinas/:id', (req, res) => disciplinaController.buscarDisciplinaP
 app.put('/disciplinas/:id', (req, res) => disciplinaController.atualizarDisciplina(req, res));
 app.delete('/disciplinas/:id', (req, res) => disciplinaController.removerDisciplina(req, res));
 
+app.post('/disciplinas', (req, res) => disciplinaController.criarDisciplina(req, res));
+
 app.use('/professores', professorRouter);
 app.use('/avaliacoes', avaliacaoRouter);
 app.use('/frequencias', frequenciaRouter);
