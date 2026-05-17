@@ -14,6 +14,7 @@ import { matriculaRouter } from './Modules/routes/matriculaRoutes';
 import { documentoRouter } from './Modules/routes/documentoRoutes';
 import {StatusDisciplinaController} from './Modules/modulo-status-matricula-disciplina/controller/DisciplinaController';
 import {MatriculaController} from './Modules/modulo-status-matricula-disciplina/controller/MatriculaController';
+import authRoutes from './Modules/usuario-perfil-autenticacao/routes/auth-routes';
 
 const PORT = process.env.PORT || 3000;
 
@@ -21,6 +22,8 @@ const app = express();
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
+
+app.use(authRoutes);
 
 const alunoController = new AlunoController();
 const cidadeController = new CidadeController()

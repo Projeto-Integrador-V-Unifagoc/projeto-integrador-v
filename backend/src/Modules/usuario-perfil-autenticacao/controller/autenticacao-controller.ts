@@ -114,36 +114,48 @@ async atualizar(req: Request, res: Response) {
 
     try {
         const { id } = req.params;
-        const { nome, email, senha } = req.body || {}; 
-        
-        if (!nome && !email && !senha) {
+        const { nome, email, senha, tipo_usuario } = req.body || {};
+
+        if (!nome && !email && !senha && !tipo_usuario) {
             return res.status(400).json({ error: "Nenhum dado enviado para atualização." });
         }
 
-        const dadosParaAtualizar: any = { nome, email };
+        const dadosParaAtualizar: any = {};
+
+        if (nome !== undefined) {
+            dadosParaAtualizar.nome = nome;
+        }
+
+        if (email !== undefined) {
+            dadosParaAtualizar.email = email;
+        }
+
+        if (tipo_usuario !== undefined) {
+            dadosParaAtualizar.tipo_usuario = tipo_usuario;
+        }
 
         if (senha && senha.trim() !== "") {
             const salt = await bcrypt.genSalt(10);
             dadosParaAtualizar.senha = await bcrypt.hash(senha, salt);
         }
 
-        const atualizou = await db('usuario')
-            .withSchema('piv')
+        const atualizou = await db("usuario")
+            .withSchema("piv")
             .where({ id })
             .update(dadosParaAtualizar);
 
         if (!atualizou) {
-            return res.status(404).json({ error: 'Usuário não encontrado no banco.' });
+            return res.status(404).json({ error: "Usuário não encontrado no banco." });
         }
 
-        return res.status(200).json({ message: 'Dados atualizados com sucesso!' });
+        return res.status(200).json({ message: "Dados atualizados com sucesso!" });
     } catch (error: any) {
-    console.error(error);
-    return res.status(500).json({ 
-        error: 'Erro interno ao atualizar.',
-        detalhe: error.message
-    });
-}
+        console.error(error);
+        return res.status(500).json({
+            error: "Erro interno ao atualizar.",
+            detalhe: error.message
+        });
+    }
 }
 }
 
