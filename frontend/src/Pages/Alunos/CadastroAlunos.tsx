@@ -24,30 +24,31 @@ import { useViaCep } from "../../hooks/use-cep";
 
 import { alunoSchema } from "../../validators/aluno-schema";
 import DropDownCursos from "../../components/DropDownCursos/DropDownCursos";
+import type { CidadeModel } from "../../models/cidade-model";
+import { useCidade } from "../../hooks/use-cidade";
 
 export default function CadastroAlunos() {
   type FormType = {
-    nome: string;
-    cpf: string;
-    dataNascimento: string;
-    logradouro: string;
-    numero: string;
-    bairro: string;
-    cidadeIbge: string;
-    estado: string;
-    cep: string;
-    curso: string;
-    periodo: string;
-  };
-
-  const initialForm: FormType = {
+    nome: string
+    cpf: string
+    dataNascimento: string
+    logradouro: string
+    numero: string
+    bairro: string
+    cidade: CidadeModel | null
+    estado: string
+    cep: string
+    curso: string
+    periodo: string
+  }
+  const initialForm = {
     nome: "",
     cpf: "",
     dataNascimento: "",
     logradouro: "",
     numero: "",
     bairro: "",
-    cidadeIbge: "",
+    cidade: null,
     estado: "",
     cep: "",
     curso: "",
@@ -61,8 +62,9 @@ export default function CadastroAlunos() {
   } | null>(null);
   const [erros, setErros] = useState<Record<string, string>>({});
 
-  const { carregando, criarAluno } = useAluno();
-  const { buscarCep } = useViaCep();
+  const { buscarCep } = useViaCep()
+  const { buscarCidadePorIbge } = useCidade()
+  const { carregando, criarAluno } = useAluno()
   const navigate = useNavigate();
 
   const theme = useTheme();
@@ -83,18 +85,24 @@ export default function CadastroAlunos() {
   const ehSecretaria = tipoUsuario === "secretaria";
 
   async function buscarEnderecoPeloCep() {
-    const data = await buscarCep(form.cep);
 
-    if (!data) return;
+    const data = await buscarCep(form.cep)
+
+    if (!data) {
+        return
+    }
+
+    const cidade = await buscarCidadePorIbge(String(data.ibge))
 
     setForm((prev) => ({
-      ...prev,
-      logradouro: data.logradouro,
-      bairro: data.bairro,
-      estado: data.uf,
-      cidadeIbge: String(data.ibge),
-    }));
-  }
+        ...prev,
+        logradouro: data.logradouro,
+        bairro: data.bairro,
+        estado: data.uf,
+        cep: data.cep,
+        cidade
+    }))
+}
 
   function handleChange<K extends keyof FormType>(name: K, value: FormType[K]) {
     setForm((prev) => ({
@@ -130,7 +138,7 @@ export default function CadastroAlunos() {
           logradouro: form.logradouro,
           numero: Number(form.numero),
           bairro: form.bairro,
-          cidadeIbge: form.cidadeIbge,
+          cidadeIbge: String(form.cidade?.ibge || ""),
           estado: form.estado,
           cep: form.cep,
         },
@@ -251,8 +259,8 @@ export default function CadastroAlunos() {
 
                   <Grid size={4}>
                     <DropDownCidades
-                      value={form.cidadeIbge}
-                      onChange={(value) => handleChange("cidadeIbge", value)}
+                      value={form.cidade}
+                      onChange={(cidade) => handleChange("cidade", cidade)}
                     />
                   </Grid>
 
@@ -301,6 +309,8 @@ export default function CadastroAlunos() {
                   <Grid size={4}>
                     <DropDownCursos
                       value={form.curso}
+                      error={!!erros.cidade}
+                      helperText={erros.cidade}
                       onChange={(value) => handleChange("curso", value)}
                     />
                   </Grid>

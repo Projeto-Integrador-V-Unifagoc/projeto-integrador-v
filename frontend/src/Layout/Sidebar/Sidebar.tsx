@@ -9,11 +9,14 @@ import {
 } from "@mui/material";
 import {
   Archive,
+  CalendarCheck,
   ChevronDown,
   ChevronUp,
   ClipboardCheck,
   ClipboardList,
+  FileText,
   GraduationCap,
+  Info,
   NotebookPen,
   Users,
   UserStar,
@@ -48,6 +51,8 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
   const ehProfessor = tipoUsuario === "professor";
   const ehAluno = tipoUsuario === "aluno";
 
+  const podeVerCadastros = ehSecretaria || ehProfessor || ehAluno;
+
   return (
     <Box
       sx={(theme) => ({
@@ -76,14 +81,18 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
           >
             <ClipboardList size={17} />
           </ListItemIcon>
+
           <ListItemText
             primary="Tarefas"
-            sx={{ opacity: abrirSidebar ? 1 : 0 }}
+            sx={{
+              opacity: abrirSidebar ? 1 : 0,
+              transition: "opacity 0.2s",
+            }}
             primaryTypographyProps={{ fontSize: 14 }}
           />
         </ListItemButton>
 
-        {ehSecretaria && (
+        {podeVerCadastros && (
           <>
             <ListItemButton
               onClick={() => setAbrirCadastros(!abrirCadastros)}
@@ -105,76 +114,145 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
               >
                 <Archive size={17} />
               </ListItemIcon>
+
               <ListItemText
                 primary="Cadastros"
-                sx={{ opacity: abrirSidebar ? 1 : 0 }}
+                sx={{
+                  opacity: abrirSidebar ? 1 : 0,
+                  transition: "opacity 0.2s",
+                }}
                 primaryTypographyProps={{ fontSize: 14 }}
               />
+
               {abrirSidebar &&
-                (abrirCadastros ? <ChevronUp size={15} /> : <ChevronDown size={15} />)}
+                (abrirCadastros ? (
+                  <ChevronUp size={15} />
+                ) : (
+                  <ChevronDown size={15} />
+                ))}
             </ListItemButton>
 
             <Collapse in={abrirCadastros && abrirSidebar} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
-                <ListItemButton sx={{ pl: 4 }} href="/usuarios/lista">
-                  <ListItemIcon sx={{ minWidth: 28 }}>
-                    <Users size={17} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Usuários"
-                    primaryTypographyProps={{ fontSize: 14 }}
-                  />
-                </ListItemButton>
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/usuarios/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Users size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Usuários"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                <ListItemButton sx={{ pl: 4 }} href="/professores/lista">
-                  <ListItemIcon sx={{ minWidth: 28 }}>
-                    <UserStar size={17} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Professores"
-                    primaryTypographyProps={{ fontSize: 14 }}
-                  />
-                </ListItemButton>
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/professores/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <UserStar size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Professores"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                <ListItemButton sx={{ pl: 4 }} href="/alunos/lista">
-                  <ListItemIcon sx={{ minWidth: 28 }}>
-                    <Users size={17} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Alunos"
-                    primaryTypographyProps={{ fontSize: 14 }}
-                  />
-                </ListItemButton>
+                {(ehSecretaria || ehProfessor) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/alunos/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Users size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Alunos"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                <ListItemButton sx={{ pl: 4 }} href="/avaliacoes/lista">
-                  <ListItemIcon sx={{ minWidth: 28 }}>
-                    <ClipboardCheck size={17} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Avaliações"
-                    primaryTypographyProps={{ fontSize: 14 }}
-                  />
-                </ListItemButton>
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/matricula/nova">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <ClipboardCheck size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Matrícula"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                <ListItemButton sx={{ pl: 4 }} href="/cursos/lista">
-                  <ListItemIcon sx={{ minWidth: 28 }}>
-                    <GraduationCap size={17} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Cursos"
-                    primaryTypographyProps={{ fontSize: 14 }}
-                  />
-                </ListItemButton>
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/documentos/envio">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <FileText size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Documentos"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                <ListItemButton sx={{ pl: 4 }} href="/disciplinas/lista">
-                  <ListItemIcon sx={{ minWidth: 28 }}>
-                    <NotebookPen size={17} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Disciplinas"
-                    primaryTypographyProps={{ fontSize: 14 }}
-                  />
-                </ListItemButton>
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/avaliacoes/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <ClipboardCheck size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Avaliações"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/cursos/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <GraduationCap size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Cursos"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/disciplinas/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <NotebookPen size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Disciplinas"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+
+                {(ehSecretaria || ehProfessor) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/frequencias/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <CalendarCheck size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Frequência"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/status">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Info size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Status"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
               </List>
             </Collapse>
           </>

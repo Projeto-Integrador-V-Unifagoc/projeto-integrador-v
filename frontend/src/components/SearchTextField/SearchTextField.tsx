@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -40,6 +40,9 @@ interface SearchTextFieldProps {
   fourthFilterLabel?: string;
   usePeriodFilter?: boolean;
   defaultAddPath?: string;
+  addPath?: string;
+  placeholder?: string;
+  showFilters?: boolean;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
@@ -56,10 +59,14 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     fourthFilterLabel = "Período",
     usePeriodFilter = true,
     defaultAddPath = "/alunos/cadastro",
+    addPath,
+    placeholder,
+    showFilters = true,
   } = props;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [localFilters, setLocalFilters] = useState<SearchFilters>(filterValues);
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
@@ -83,7 +90,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
   const ehSecretaria = tipoUsuario === "secretaria";
   const open = Boolean(anchorEl);
 
-  const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+  const handleOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
@@ -105,7 +112,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
       return;
     }
 
-    navigate(defaultAddPath);
+    navigate(addPath || defaultAddPath);
   }
 
   return (
@@ -123,18 +130,18 @@ export default function SearchTextField(props: SearchTextFieldProps) {
 
         <TextField
           variant="outlined"
-          placeholder={searchPlaceholder}
+          placeholder={placeholder || searchPlaceholder}
           fullWidth
           value={searchValue}
           onChange={(e) => onSearchChange?.(e.target.value)}
           InputProps={{
-            endAdornment: (
+            endAdornment: showFilters ? (
               <InputAdornment position="end">
                 <IconButton onClick={handleOpen}>
                   <ListFilter size={18} />
                 </IconButton>
               </InputAdornment>
-            ),
+            ) : undefined,
             startAdornment: (
               <InputAdornment position="start">
                 <IconButton>
@@ -162,46 +169,52 @@ export default function SearchTextField(props: SearchTextFieldProps) {
         )}
       </Stack>
 
-      <FilterMenu.Root open={open} anchorEl={anchorEl} onClose={handleClose}>
-        <FilterMenu.Content>
-          <TextField
-            label={firstFilterLabel}
-            value={localFilters.codigo || ""}
-            onChange={(e) => handleFilterChange("codigo", e.target.value)}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <TextField
-            label={secondFilterLabel}
-            value={localFilters.matricula || ""}
-            onChange={(e) => handleFilterChange("matricula", e.target.value)}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <DropDownCursos
-            value={localFilters.curso || ""}
-            onChange={(value) => handleFilterChange("curso", value)}
-          />
-          {usePeriodFilter ? (
-            <DropDownPeriodos
-              value={(localFilters.periodo as Periodos | "") || ""}
-              onChange={(value) => handleFilterChange("periodo", value)}
-            />
-          ) : (
+      {showFilters && (
+        <FilterMenu.Root open={open} anchorEl={anchorEl} onClose={handleClose}>
+          <FilterMenu.Content>
             <TextField
-              label={fourthFilterLabel}
-              value={localFilters.periodo || ""}
-              onChange={(e) => handleFilterChange("periodo", e.target.value)}
+              label={firstFilterLabel}
+              value={localFilters.codigo || ""}
+              onChange={(e) => handleFilterChange("codigo", e.target.value)}
               InputLabelProps={{
                 shrink: true,
               }}
             />
-          )}
-        </FilterMenu.Content>
-        <FilterMenu.Footer />
-      </FilterMenu.Root>
+
+            <TextField
+              label={secondFilterLabel}
+              value={localFilters.matricula || ""}
+              onChange={(e) => handleFilterChange("matricula", e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+
+            <DropDownCursos
+              value={localFilters.curso || ""}
+              onChange={(value) => handleFilterChange("curso", value)}
+            />
+
+            {usePeriodFilter ? (
+              <DropDownPeriodos
+                value={(localFilters.periodo as Periodos | "") || ""}
+                onChange={(value) => handleFilterChange("periodo", value)}
+              />
+            ) : (
+              <TextField
+                label={fourthFilterLabel}
+                value={localFilters.periodo || ""}
+                onChange={(e) => handleFilterChange("periodo", e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            )}
+          </FilterMenu.Content>
+
+          <FilterMenu.Footer />
+        </FilterMenu.Root>
+      )}
     </>
   );
 }

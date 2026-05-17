@@ -1,19 +1,35 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import MainLayout from "../Layout/MainLayout/MainLayout";
-import Home from "../Pages/Home/Home";
-import BuildingPage from "../Pages/BuildingPage/BuildingPage";
-import NotFound from "../Pages/NotFound/NotFound";
-import Alunos from "../Pages/Alunos/Alunos";
-import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import Perfil from "../Pages/Perfil/Perfil";
 import Cadastro from "../Pages/Usuario/Usuario";
 import { Login } from "../Pages/Login/Login";
 import { PrivateRoute } from "../components/PrivateRoute";
+
+import BuildingPage from "../Pages/BuildingPage/BuildingPage";
+import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
+import MainLayout from "../Layout/MainLayout/MainLayout";
+import FichaAluno from "../Pages/Alunos/FichaAluno";
+import NotFound from "../Pages/NotFound/NotFound";
+import Home from "../Pages/Home/Home";
+import Alunos from "../Pages/Alunos/Alunos";
+import StatusMatricula from "../Pages/Status/Status";
+
+import Cursos from "../Pages/Cursos/Cursos";
+import CadastroCursos from "../Pages/Cursos/CadastroCursos";
+import EditCurso from "../Pages/Cursos/EditCurso";
+
+import Disciplinas from "../Pages/Disciplinas/Disciplinas";
+import CadastroDisciplinas from "../Pages/Disciplinas/CadastroDisciplinas";
+import EditDisciplina from "../Pages/Disciplinas/EditDisciplina";
+
 import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
 import Professores from "../Pages/Professores/Professores";
 import CadastroProfessores from "../Pages/Professores/Cadastro";
+import Frequencia from "../Pages/Frequencia/Frequencia";
+import NovaMatricula from "../Pages/Matricula/NovaMatricula";
+import Documentos from "../Pages/Documentos/Documentos";
+import Inscricao from "../Pages/Inscricao/Inscricao";
 
 function RouteByRole({
   children,
@@ -38,11 +54,15 @@ function RouteByRole({
     return <Navigate to="/login" replace />;
   }
 
-  if (!usuario?.tipo_usuario) {
+  const tipoUsuario = String(usuario?.tipo_usuario || "")
+    .trim()
+    .toLowerCase();
+
+  if (!tipoUsuario) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!perfisPermitidos.includes(usuario.tipo_usuario)) {
+  if (!perfisPermitidos.includes(tipoUsuario)) {
     return <Navigate to="/" replace />;
   }
 
@@ -53,6 +73,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/inscricao" element={<Inscricao />} />
 
       <Route
         element={
@@ -121,10 +142,37 @@ export default function AppRoutes() {
         />
 
         <Route
+          path="/alunos/:matricula"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+              <EditFormCadastroAluno />
+            </RouteByRole>
+          }
+        />
+
+        <Route
           path="/alunos/editar/:id"
           element={
             <RouteByRole perfisPermitidos={["secretaria"]}>
               <EditFormCadastroAluno />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/alunos/editar-aluno/:matricula"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <EditFormCadastroAluno />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/alunos/ficha-do-aluno/:id"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+              <FichaAluno />
             </RouteByRole>
           }
         />
@@ -142,7 +190,25 @@ export default function AppRoutes() {
           path="/cursos/lista"
           element={
             <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
-              <BuildingPage />
+              <Cursos />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/cursos/cadastro"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <CadastroCursos />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/cursos/:id"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <EditCurso />
             </RouteByRole>
           }
         />
@@ -151,7 +217,61 @@ export default function AppRoutes() {
           path="/disciplinas/lista"
           element={
             <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
-              <BuildingPage />
+              <Disciplinas />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/disciplinas/cadastro"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <CadastroDisciplinas />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/disciplinas/:id"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <EditDisciplina />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/frequencias/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+              <Frequencia />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/matricula/nova"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <NovaMatricula />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/documentos/envio"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+              <Documentos />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/status"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+              <StatusMatricula />
             </RouteByRole>
           }
         />

@@ -32,4 +32,28 @@ export default class CursoController {
             res.status(500).json({ error: "Erro ao buscar curso" });
         }
     }
+
+    async atualizarCurso(req: any, res: any) {
+        try {
+            const curso = await this.cursoService.atualizarCurso(req.params.id, req.body);
+            if (!curso) {
+                return res.status(404).json({ error: "Curso não encontrado" });
+            }
+            res.status(200).json(curso);
+        } catch (error) {
+            res.status(500).json({ error: "Erro ao atualizar curso" });
+        }
+    }
+
+    async removerCurso(req: any, res: any) {
+        try {
+            const removidos = await this.cursoService.removerCurso(req.params.id);
+            if (!removidos) {
+                return res.status(404).json({ error: "Curso não encontrado" });
+            }
+            res.status(204).send();
+        } catch (error) {
+            res.status(500).json({ error: "Erro ao remover curso" });
+        }
+    }
 }

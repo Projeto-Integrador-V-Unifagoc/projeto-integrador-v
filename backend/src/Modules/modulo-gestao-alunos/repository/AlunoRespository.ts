@@ -68,6 +68,29 @@ export class AlunoRepository {
         return row ? AlunoMapper.toDomain(row) : null;
     }
 
+    async buscarAlunoPorCpfOuMatricula(query: string) {
+        const rows = await db("aluno")
+            .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
+            .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
+            .where(function () {
+                this.where("pessoa.cpf", query)
+                    .orWhereRaw("CAST(aluno.matricula AS TEXT) = ?", [query]);
+            })
+            .select(
+                "aluno.id",
+                "aluno.matricula",
+                "aluno.periodo",
+                "aluno.curso_id",
+                "pessoa.nome",
+                "pessoa.cpf",
+                "usuario.email",
+                "curso.nome as curso_nome"
+            )
+            .limit(5);
+        return rows;
+    }
+
     async buscarAlunoPorMatricula(matricula: string) {
         const row = await db("aluno")
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
@@ -95,5 +118,32 @@ export class AlunoRepository {
             .first();
 
         return row ? AlunoMapper.toDomain(row) : null;
+    }
+
+    async atualizarAluno(matricula: string, dados: any) {
+        const aluno = await db("aluno")
+            .where("matricula", matricula)
+            .first();
+        await db("pessoa")
+            .where("id", aluno.pessoa_id)
+            .update({
+                nome: dados.nome,
+                cpf: dados.cpf,
+                data_nascimento: dados.dataNascimento,
+                logradouro: dados.logradouro,
+                numero: dados.numero,
+                bairro: dados.bairro,
+                cidade_id: dados.cidade.ibge,
+                estado: dados.estado,
+                cep: dados.cep
+            });
+        await db("aluno")
+            .where("matricula", matricula)
+            .update({
+                curso_id: null,
+                periodo: dados.periodo
+            });
+
+        return this.buscarAlunoPorMatricula(matricula);
     }
 }
