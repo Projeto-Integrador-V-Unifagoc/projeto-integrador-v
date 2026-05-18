@@ -7,16 +7,17 @@ import {
 import { useEffect, useState } from "react"
 import { useCidade } from "../../hooks/use-cidade"
 import type { CidadeModel } from "../../models/cidade-model"
-import { theme } from "../../theme"
 
 type Props = {
     value: CidadeModel | null
     onChange: (cidade: CidadeModel | null) => void
+    disabled?: boolean
 }
 
 export default function DropDownCidades({
     value,
-    onChange
+    onChange,
+    disabled = false
 }: Props) {
 
     const { listarCidades, carregando } = useCidade()
@@ -48,6 +49,7 @@ export default function DropDownCidades({
         <Autocomplete
             options={cidades}
             value={value}
+            disabled={disabled}
             inputValue={value ? `${value.nome} - ${value.uf}` : inputValue}
             loading={carregando}
             getOptionLabel={(option) =>

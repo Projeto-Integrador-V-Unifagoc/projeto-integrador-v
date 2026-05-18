@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Alert, Grid, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { ValidationError } from "yup";
 import Container from "../Container";
 import { Card } from "../Card";
 import TextField from "../TextField";
 import Button from "../Button";
-import DropDownCursos from "../DropDownCursos/DropDownCursos";
 import { useDisciplina } from "../../hooks/use-disciplina";
 import { disciplinaSchema } from "../../validators/disciplina-schema";
 
@@ -16,7 +16,6 @@ type FormDisciplinaProps = {
 type FormType = {
   codigo: string
   nome: string
-  cursoId: string
   cargaHoraria: string
   preRequisito: string
 }
@@ -24,7 +23,6 @@ type FormType = {
 const initialForm: FormType = {
   codigo: "",
   nome: "",
-  cursoId: "",
   cargaHoraria: "",
   preRequisito: "",
 }
@@ -56,20 +54,19 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
         setForm({
           codigo: disciplina.codigo,
           nome: disciplina.nome,
-          cursoId: disciplina.curso.id,
           cargaHoraria: String(disciplina.carga_horaria),
           preRequisito: disciplina.pre_requisito ?? "",
         })
       } catch {
         setAlerta({
           tipo: "error",
-          mensagem: "Não foi possível carregar a disciplina.",
+          mensagem: "Nao foi possivel carregar a disciplina.",
         })
       }
     }
 
     carregarDisciplina()
-  }, [disciplinaId])
+  }, [buscarDisciplinaPorId, disciplinaId])
 
   function handleChange<K extends keyof FormType>(name: K, value: FormType[K]) {
     setForm((prev) => ({
@@ -87,10 +84,15 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
     try {
       await disciplinaSchema.validate(payload, { abortEarly: false })
       setErros({})
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errosFormatados: Record<string, string> = {}
-      error.inner.forEach((err: any) => {
-        errosFormatados[err.path] = err.message
+      if (!(error instanceof ValidationError)) {
+        return
+      }
+      error.inner.forEach((err) => {
+        if (err.path) {
+          errosFormatados[err.path] = err.message
+        }
       })
       setErros(errosFormatados)
       return
@@ -119,8 +121,8 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
       setAlerta({
         tipo: "error",
         mensagem: disciplinaId
-          ? "Não foi possível atualizar a disciplina."
-          : "Não foi possível cadastrar a disciplina.",
+          ? "Nao foi possivel atualizar a disciplina."
+          : "Nao foi possivel cadastrar a disciplina.",
       })
     }
   }
@@ -137,7 +139,7 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
               <Grid size={3}>
                 <TextField
                   required
-                  label="Código"
+                  label="Codigo"
                   value={form.codigo}
                   error={!!erros.codigo}
                   helperText={erros.codigo}
@@ -155,28 +157,18 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
                 />
               </Grid>
               <Grid size={4}>
-                <DropDownCursos
-                  required
-                  value={form.cursoId}
-                  optionValue="id"
-                  error={!!erros.cursoId}
-                  helperText={erros.cursoId}
-                  onChange={(value) => handleChange("cursoId", value)}
-                />
-              </Grid>
-              <Grid size={4}>
                 <TextField
                   required
-                  label="Carga Horária"
+                  label="Carga Horaria"
                   value={form.cargaHoraria}
                   error={!!erros.cargaHoraria}
                   helperText={erros.cargaHoraria}
                   onChange={(e) => handleChange("cargaHoraria", e.target.value)}
                 />
               </Grid>
-              <Grid size={8}>
+              <Grid size={12}>
                 <TextField
-                  label="Pré-requisito"
+                  label="Pre-requisito"
                   value={form.preRequisito}
                   error={!!erros.preRequisito}
                   helperText={erros.preRequisito}

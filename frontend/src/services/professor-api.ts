@@ -1,8 +1,8 @@
-import axios from "axios"
-import type { Professor, CriarProfessorDTO, AtualizarProfessorDTO } from "../models/professor-model"
+import axios from "axios";
+import type { Professor, CriarProfessorDTO, AtualizarProfessorDTO } from "../models/professor-model";
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',    
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
 });
 
 const STORAGE_KEY = "clean-professores";
@@ -54,7 +54,6 @@ function buildProfessorRecord(data: CriarProfessorDTO): ProfessorStorageItem {
 }
 
 export const professorApi = {
-
     async listar(): Promise<Professor[]> {
         try {
             const response = await api.get<Professor[]>('/professores');
@@ -65,7 +64,7 @@ export const professorApi = {
         }
     },
 
-    async buscarPorId(id: string): Promise<Professor>{
+    async buscarPorId(id: string): Promise<Professor> {
         try {
             const response = await api.get<Professor>(`/professores/${id}`);
             return response.data;
@@ -80,7 +79,7 @@ export const professorApi = {
         }
     },
 
-    async criar(data: CriarProfessorDTO): Promise<Professor>{
+    async criar(data: CriarProfessorDTO): Promise<Professor> {
         try {
             const response = await api.post<Professor>('/professores', data);
             return response.data;
@@ -104,39 +103,39 @@ export const professorApi = {
         }
     },
 
-    async atualizar(id: string, data: AtualizarProfessorDTO): Promise<Professor>{
-       try {
-           const response = await api.put<Professor>(`/professores/${id}`, data);
-           return response.data;
-       } catch (error) {
-           if (!isRecoverableError(error)) throw error;
+    async atualizar(id: string, data: AtualizarProfessorDTO): Promise<Professor> {
+        try {
+            const response = await api.put<Professor>(`/professores/${id}`, data);
+            return response.data;
+        } catch (error) {
+            if (!isRecoverableError(error)) throw error;
 
-           const professores = getStorage();
-           const index = professores.findIndex((item) => item.id === id);
+            const professores = getStorage();
+            const index = professores.findIndex((item) => item.id === id);
 
-           if (index === -1) {
-               throw new Error("Professor nao encontrado.");
-           }
+            if (index === -1) {
+                throw new Error("Professor nao encontrado.");
+            }
 
-           const atual = professores[index];
-           const atualizado: ProfessorStorageItem = {
-               ...atual,
-               ...data,
-               data_nascimento:
-                   data.data_nascimento !== undefined
-                       ? String(data.data_nascimento)
-                       : atual.data_nascimento,
-               curso: data.curso_nome || atual.curso,
-               faculdade: data.faculdade_nome || atual.faculdade,
-           };
+            const atual = professores[index];
+            const atualizado: ProfessorStorageItem = {
+                ...atual,
+                ...data,
+                data_nascimento:
+                    data.data_nascimento !== undefined
+                        ? String(data.data_nascimento)
+                        : atual.data_nascimento,
+                curso: data.curso_nome || atual.curso,
+                faculdade: data.faculdade_nome || atual.faculdade,
+            };
 
-           professores[index] = atualizado;
-           saveStorage(professores);
-           return atualizado;
-       }
+            professores[index] = atualizado;
+            saveStorage(professores);
+            return atualizado;
+        }
     },
 
-    async deletar(id: string): Promise<void>{
+    async deletar(id: string): Promise<void> {
         try {
             await api.delete(`/professores/${id}`);
         } catch (error) {
@@ -146,5 +145,4 @@ export const professorApi = {
             saveStorage(professores.filter((item) => item.id !== id));
         }
     },
-
 };

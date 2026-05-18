@@ -36,7 +36,7 @@ export default function StatusMatricula() {
                     ? await statusApi.criarStatusMatriculaDisciplina({ descricao })
                     : await statusApi.criarStatusMatriculaCurso({ descricao })
 
-            setMensagem(`Status cadastrado com sucesso. ID: ${response.id}`)
+            setMensagem("Status cadastrado com sucesso.")
             setDescricao("")
         } catch (error: any) {
             const serverMessage = error?.response?.data?.error
@@ -115,7 +115,7 @@ export default function StatusMatricula() {
                                                             setTipo("matricula")
                                                         }
                                                     }}
-                                                    label="Matrícula"
+                                                    label="Curso"
                                                     name="tipo"
                                                 />
                                             </Stack>

@@ -1,4 +1,3 @@
-
 export interface Professor {
     id: string
     nome: string
@@ -17,7 +16,7 @@ export interface Professor {
     cep?: string
 }
 
-export interface CriarProfessorDTO{
+export interface CriarProfessorDTO {
     nome: string
     email: string
     senha: string
@@ -37,7 +36,7 @@ export interface CriarProfessorDTO{
     uf_nome?: string
 }
 
-export interface AtualizarProfessorDTO{
+export interface AtualizarProfessorDTO {
     nome?: string
     email?: string
     senha?: string
