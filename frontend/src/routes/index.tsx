@@ -18,10 +18,19 @@ import StatusMatricula from "../Pages/Status/Status";
 import Cursos from "../Pages/Cursos/Cursos";
 import CadastroCursos from "../Pages/Cursos/CadastroCursos";
 import EditCurso from "../Pages/Cursos/EditCurso";
+import MatrizCurricularCurso from "../Pages/Cursos/MatrizCurricularCurso";
 
 import Disciplinas from "../Pages/Disciplinas/Disciplinas";
 import CadastroDisciplinas from "../Pages/Disciplinas/CadastroDisciplinas";
 import EditDisciplina from "../Pages/Disciplinas/EditDisciplina";
+
+import PeriodosLetivos from "../Pages/PeriodosLetivos/PeriodosLetivos";
+import CadastroPeriodosLetivos from "../Pages/PeriodosLetivos/CadastroPeriodosLetivos";
+import EditPeriodoLetivo from "../Pages/PeriodosLetivos/EditPeriodoLetivo";
+
+import Turmas from "../Pages/Turmas/Turmas";
+import CadastroTurmas from "../Pages/Turmas/CadastroTurmas";
+import DetalheTurma from "../Pages/Turmas/DetalheTurma";
 
 import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
 import Professores from "../Pages/Professores/Professores";
@@ -214,6 +223,15 @@ export default function AppRoutes() {
         />
 
         <Route
+          path="/cursos/:id/matriz-curricular"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+              <MatrizCurricularCurso />
+            </RouteByRole>
+          }
+        />
+
+        <Route
           path="/disciplinas/lista"
           element={
             <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
@@ -236,6 +254,60 @@ export default function AppRoutes() {
           element={
             <RouteByRole perfisPermitidos={["secretaria"]}>
               <EditDisciplina />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/periodos-letivos/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <PeriodosLetivos />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/periodos-letivos/cadastro"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <CadastroPeriodosLetivos />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/periodos-letivos/:id"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <EditPeriodoLetivo />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/turmas/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <Turmas />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/turmas/cadastro"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria"]}>
+              <CadastroTurmas />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/turmas/:id"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+              <DetalheTurma />
             </RouteByRole>
           }
         />

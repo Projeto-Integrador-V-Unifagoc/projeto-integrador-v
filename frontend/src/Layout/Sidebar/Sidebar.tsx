@@ -17,6 +17,7 @@ import {
   FileText,
   GraduationCap,
   Info,
+  Layers,
   NotebookPen,
   Users,
   UserStar,
@@ -92,6 +93,32 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
           />
         </ListItemButton>
 
+        {(ehSecretaria || ehProfessor) && (
+          <ListItemButton
+            href="/frequencias/lista"
+            sx={{ justifyContent: abrirSidebar ? "initial" : "center" }}
+          >
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: abrirSidebar ? 2 : "auto",
+                justifyContent: "center",
+              }}
+            >
+              <CalendarCheck size={17} />
+            </ListItemIcon>
+
+            <ListItemText
+              primary="Frequência"
+              sx={{
+                opacity: abrirSidebar ? 1 : 0,
+                transition: "opacity 0.2s",
+              }}
+              primaryTypographyProps={{ fontSize: 14 }}
+            />
+          </ListItemButton>
+        )}
+
         {podeVerCadastros && (
           <>
             <ListItemButton
@@ -132,7 +159,11 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                 ))}
             </ListItemButton>
 
-            <Collapse in={abrirCadastros && abrirSidebar} timeout="auto" unmountOnExit>
+            <Collapse
+              in={abrirCadastros && abrirSidebar}
+              timeout="auto"
+              unmountOnExit
+            >
               <List component="div" disablePadding>
                 {ehSecretaria && (
                   <ListItemButton sx={{ pl: 4 }} href="/usuarios/lista">
@@ -230,18 +261,6 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                   </ListItemButton>
                 )}
 
-                {(ehSecretaria || ehProfessor) && (
-                  <ListItemButton sx={{ pl: 4 }} href="/frequencias/lista">
-                    <ListItemIcon sx={{ minWidth: 28 }}>
-                      <CalendarCheck size={17} />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Frequência"
-                      primaryTypographyProps={{ fontSize: 14 }}
-                    />
-                  </ListItemButton>
-                )}
-
                 {(ehSecretaria || ehProfessor || ehAluno) && (
                   <ListItemButton sx={{ pl: 4 }} href="/status">
                     <ListItemIcon sx={{ minWidth: 28 }}>
@@ -249,6 +268,30 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                     </ListItemIcon>
                     <ListItemText
                       primary="Status"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/periodos-letivos/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Layers size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Períodos Letivos"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/turmas/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Users size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Turmas"
                       primaryTypographyProps={{ fontSize: 14 }}
                     />
                   </ListItemButton>

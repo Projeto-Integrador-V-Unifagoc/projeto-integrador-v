@@ -11,6 +11,7 @@ import Button from "../Button"
 import { useAluno } from "../../hooks/use-aluno"
 import { useParams } from "react-router-dom"
 import { useEffect, useState } from "react"
+import type { CidadeModel } from "../../models/cidade-model"
 
 export default function EditFormCadastroAlunoMobile() {
 
@@ -21,7 +22,7 @@ export default function EditFormCadastroAlunoMobile() {
         logradouro: string
         numero: string
         bairro: string
-        cidadeIbge: string | number
+        cidade: CidadeModel | null
         estado: string
         cep: string
         curso: string
@@ -34,7 +35,7 @@ export default function EditFormCadastroAlunoMobile() {
         logradouro: "",
         numero: "",
         bairro: "",
-        cidadeIbge: "",
+        cidade: null,
         estado: "",
         cep: "",
         curso: "",
@@ -59,7 +60,7 @@ export default function EditFormCadastroAlunoMobile() {
                 logradouro: data.pessoa?.logradouro || "",
                 numero: data.pessoa?.numero || "",
                 bairro: data.pessoa?.bairro || "",
-                cidadeIbge: data.pessoa?.cidade?.ibge || "",
+                cidade: data.pessoa?.cidade || null,
                 estado: data.pessoa?.estado || "",
                 cep: data.pessoa?.cep || "",
                 curso: data.curso || "",
@@ -160,8 +161,8 @@ export default function EditFormCadastroAlunoMobile() {
                     </Stack>
                     <DropDownCidades
                         disabled
-                        value={form.cidadeIbge}
-                        onChange={(value) => handleChange("cidadeIbge", value)}
+                        value={form.cidade}
+                        onChange={(value) => handleChange("cidade", value)}
                     />
                     <TextField
                         disabled

@@ -6,13 +6,19 @@ export class DisciplinaService {
     disciplinaRepository = new DisciplinaRepository();
 
     async criarDisciplina(data: any) {
+        const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(data.codigo);
+
+        if (disciplinaExistente) {
+            throw new Error("Ja existe disciplina com este codigo");
+        }
+
         const disciplina: DisciplinaCommand = {
             id: uuidv4(),
             codigo: data.codigo,
             nome: data.nome,
-            curso_id: data.cursoId,
             pre_requisito: data.preRequisito,
-            carga_horaria: Number(data.cargaHoraria)
+            carga_horaria: Number(data.cargaHoraria),
+            ativo: data.ativo ?? true
         };
 
         return await this.disciplinaRepository.criarDisciplina(disciplina);
@@ -27,12 +33,26 @@ export class DisciplinaService {
     }
 
     async atualizarDisciplina(id: string, data: any) {
+        const disciplinaAtual = await this.disciplinaRepository.buscarDisciplinaPorId(id);
+
+        if (!disciplinaAtual) {
+            return null;
+        }
+
+        if (data.codigo && data.codigo !== disciplinaAtual.codigo) {
+            const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(data.codigo);
+
+            if (disciplinaExistente) {
+                throw new Error("Ja existe disciplina com este codigo");
+            }
+        }
+
         const disciplina: Partial<DisciplinaCommand> = {
             codigo: data.codigo,
             nome: data.nome,
-            curso_id: data.cursoId,
             pre_requisito: data.preRequisito,
-            carga_horaria: data.cargaHoraria !== undefined ? Number(data.cargaHoraria) : undefined
+            carga_horaria: data.cargaHoraria !== undefined ? Number(data.cargaHoraria) : undefined,
+            ativo: data.ativo
         };
 
         return await this.disciplinaRepository.atualizarDisciplina(id, disciplina);
