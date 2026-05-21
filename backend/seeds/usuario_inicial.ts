@@ -7,7 +7,6 @@ export async function seed(knex: any): Promise<void> {
   await knex("usuario")
     .withSchema("piv")
     .whereIn("email", [
-      "secretaria@unieduca.com",
       "suporte@unieduca.com.br",
     ])
     .del();

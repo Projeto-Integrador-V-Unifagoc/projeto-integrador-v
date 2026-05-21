@@ -19,7 +19,7 @@ const CURSOS = [
   },
 ];
 
-const USUARIOS = [
+/*const USUARIOS = [
   {
     id: "55555555-5555-5555-5555-555555555551",
     email: "marina.mock@unieduca.local",
@@ -38,7 +38,7 @@ const USUARIOS = [
     senha: "123456",
     tipo_usuario: "professor",
   },
-];
+];*/
 
 const PESSOAS = [
   {
@@ -79,7 +79,7 @@ const PESSOAS = [
   },
 ];
 
-const PROFESSORES = [
+/*const PROFESSORES = [
   {
     id: "77777777-7777-7777-7777-777777777771",
     usuario_id: "55555555-5555-5555-5555-555555555551",
@@ -101,7 +101,7 @@ const PROFESSORES = [
     curso_id: "44444444-4444-4444-4444-444444444442",
     faculdade_id: FACULDADE_ID,
   },
-];
+];*/
 
 export async function seed(knex: Knex): Promise<void> {
   await knex(`${SCHEMA}.curso`)
@@ -109,18 +109,18 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict("codigo")
     .ignore();
 
-  await knex(`${SCHEMA}.usuario`)
+  /*await knex(`${SCHEMA}.usuario`)
     .insert(USUARIOS)
     .onConflict("email")
-    .ignore();
+    .ignore();*/
 
   await knex(`${SCHEMA}.pessoa`)
     .insert(PESSOAS)
     .onConflict("cpf")
     .ignore();
 
-  await knex(`${SCHEMA}.professor`)
+  /*await knex(`${SCHEMA}.professor`)
     .insert(PROFESSORES)
     .onConflict("id")
-    .ignore();
+    .ignore();*/
 }
