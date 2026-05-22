@@ -55,6 +55,7 @@ const createPivTables = async (db: Knex) => {
 
   await db.schema.withSchema(SCHEMA).createTable("usuario", (table) => {
     uuidPrimary(table, db);
+    table.string("nome").notNullable();
     table.string("email").notNullable().unique();
     table.string("senha").notNullable();
     table.timestamp("created_at", { useTz: true }).notNullable().defaultTo(db.fn.now());

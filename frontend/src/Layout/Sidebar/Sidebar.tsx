@@ -1,256 +1,306 @@
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
 import {
-    Box,
-    Collapse,
-    List,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText
+  Box,
+  Collapse,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import {
-    Archive,
-    CalendarCheck,
-    ChevronDown,
-    ChevronUp,
-    ClipboardCheck,
-    ClipboardList,
-    FileText,
-    GraduationCap,
-    Info,
-    Layers,
-    NotebookPen,
-    Users,
-    UserStar
+  Archive,
+  CalendarCheck,
+  ChevronDown,
+  ChevronUp,
+  ClipboardCheck,
+  ClipboardList,
+  FileText,
+  GraduationCap,
+  Info,
+  Layers,
+  NotebookPen,
+  Users,
+  UserStar,
 } from "lucide-react";
 
 interface SidebarProps {
-    abrirSidebar: boolean;
+  abrirSidebar: boolean;
 }
 
 export default function Sidebar({ abrirSidebar }: SidebarProps) {
-    const [abrirMenu, setAbrirMenu] = useState(true);
+  const [abrirCadastros, setAbrirCadastros] = useState(true);
+  const [tipoUsuario, setTipoUsuario] = useState<string>("");
 
-    const clicarMenu = () => {
-        setAbrirMenu(!abrirMenu);
-    };
+  useEffect(() => {
+    const usuarioStorage = localStorage.getItem("@UniEduca:user");
 
-    return (
-        <>
-            <Box
-                sx={(theme) => ({
-                    borderRight: `1px solid ${theme.palette.grey[200]}`,
-                    width: abrirSidebar ? '260px' : '70px',
-                    height: '100vh',
-                    transition: 'all 0.3s ease',
-                    overflow: 'hidden',
-                })}
-                paddingTop={7}
-                paddingLeft={1}
-                position='fixed'
+    if (usuarioStorage) {
+      try {
+        const usuario = JSON.parse(usuarioStorage);
+        const tipoNormalizado = String(usuario?.tipo_usuario || "")
+          .trim()
+          .toLowerCase();
+
+        setTipoUsuario(tipoNormalizado);
+      } catch (error) {
+        setTipoUsuario("");
+      }
+    }
+  }, []);
+
+  const ehSecretaria = tipoUsuario === "secretaria";
+  const ehProfessor = tipoUsuario === "professor";
+  const ehAluno = tipoUsuario === "aluno";
+
+  const podeVerCadastros = ehSecretaria || ehProfessor || ehAluno;
+
+  return (
+    <Box
+      sx={(theme) => ({
+        borderRight: `1px solid ${theme.palette.grey[200]}`,
+        width: abrirSidebar ? "260px" : "70px",
+        height: "100vh",
+        backgroundColor: "white",
+        transition: "all 0.3s ease",
+        overflowX: "hidden",
+        position: "fixed",
+        paddingTop: 7,
+        paddingLeft: 1,
+      })}
+    >
+      <List component="nav">
+        <ListItemButton
+          href="/tarefas/lista"
+          sx={{ justifyContent: abrirSidebar ? "initial" : "center" }}
+        >
+          <ListItemIcon
+            sx={{
+              minWidth: 0,
+              mr: abrirSidebar ? 2 : "auto",
+              justifyContent: "center",
+            }}
+          >
+            <ClipboardList size={17} />
+          </ListItemIcon>
+
+          <ListItemText
+            primary="Tarefas"
+            sx={{
+              opacity: abrirSidebar ? 1 : 0,
+              transition: "opacity 0.2s",
+            }}
+            primaryTypographyProps={{ fontSize: 14 }}
+          />
+        </ListItemButton>
+
+        {(ehSecretaria || ehProfessor) && (
+          <ListItemButton
+            href="/frequencias/lista"
+            sx={{ justifyContent: abrirSidebar ? "initial" : "center" }}
+          >
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: abrirSidebar ? 2 : "auto",
+                justifyContent: "center",
+              }}
             >
-                <List component='nav'>
-                    <ListItemButton
-                        href="/tarefas/lista"
-                        sx={{
-                            justifyContent: abrirSidebar ? 'initial' : 'center'
-                        }}
-                    >
-                        <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                            <ClipboardList size={17} />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary='Tarefas'
-                            sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                            primaryTypographyProps={{ fontSize: 14 }}
-                        />
-                    </ListItemButton>
+              <CalendarCheck size={17} />
+            </ListItemIcon>
 
-                    <ListItemButton
-                        href="/frequencias/lista"
-                        sx={{
-                            justifyContent: abrirSidebar ? 'initial' : 'center'
-                        }}
-                    >
-                        <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                            <CalendarCheck size={17} />
-                        </ListItemIcon>
-                        <ListItemText
-                            primary='Frequencia'
-                            sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                            primaryTypographyProps={{ fontSize: 14 }}
-                        />
-                    </ListItemButton>
+            <ListItemText
+              primary="Frequência"
+              sx={{
+                opacity: abrirSidebar ? 1 : 0,
+                transition: "opacity 0.2s",
+              }}
+              primaryTypographyProps={{ fontSize: 14 }}
+            />
+          </ListItemButton>
+        )}
 
-                    <ListItemButton
-                        onClick={clicarMenu}
-                        sx={(theme) => ({
-                            borderRadius: '3px',
-                            justifyContent: abrirSidebar ? 'initial' : 'center',
-                            "&:focus": {
-                                border: `1px solid ${theme.palette.primary.main}`,
-                                backgroundColor: theme.palette.primary.light
-                            }
-                        })}
-                    >
-                        <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                            <Archive size={17} />
-                        </ListItemIcon>
+        {podeVerCadastros && (
+          <>
+            <ListItemButton
+              onClick={() => setAbrirCadastros(!abrirCadastros)}
+              sx={(theme) => ({
+                borderRadius: "3px",
+                justifyContent: abrirSidebar ? "initial" : "center",
+                "&:focus": {
+                  border: `1px solid ${theme.palette.primary.main}`,
+                  backgroundColor: theme.palette.primary.light,
+                },
+              })}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: abrirSidebar ? 2 : "auto",
+                  justifyContent: "center",
+                }}
+              >
+                <Archive size={17} />
+              </ListItemIcon>
 
-                        <ListItemText
-                            primary='Cadastros'
-                            sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                            primaryTypographyProps={{ fontSize: 14 }}
-                        />
+              <ListItemText
+                primary="Cadastros"
+                sx={{
+                  opacity: abrirSidebar ? 1 : 0,
+                  transition: "opacity 0.2s",
+                }}
+                primaryTypographyProps={{ fontSize: 14 }}
+              />
 
-                        {abrirMenu ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                    </ListItemButton>
+              {abrirSidebar &&
+                (abrirCadastros ? (
+                  <ChevronUp size={15} />
+                ) : (
+                  <ChevronDown size={15} />
+                ))}
+            </ListItemButton>
 
-                    <Collapse in={abrirMenu} timeout='auto' unmountOnExit>
-                        <List component='div' disablePadding>
-                            <ListItemButton
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                                href="/professores/lista"
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <UserStar size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Professores'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+            <Collapse
+              in={abrirCadastros && abrirSidebar}
+              timeout="auto"
+              unmountOnExit
+            >
+              <List component="div" disablePadding>
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/usuarios/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Users size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Usuários"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                href="/alunos/lista"
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <Users size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Alunos'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/professores/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <UserStar size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Professores"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                href="/matricula/nova"
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <ClipboardCheck size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Matricula'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+                {(ehSecretaria || ehProfessor) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/alunos/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Users size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Alunos"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                href="/documentos/envio"
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <FileText size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Documentos'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/matricula/nova">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <ClipboardCheck size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Matrícula"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                href="/avaliacoes/lista"
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <ClipboardCheck size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Avaliacoes'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/documentos/envio">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <FileText size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Documentos"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                                href="/cursos/lista"
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <GraduationCap size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Cursos'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/avaliacoes/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <ClipboardCheck size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Avaliações"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                                href="/disciplinas/lista"
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <NotebookPen size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Disciplinas'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/cursos/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <GraduationCap size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Cursos"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                                href="/status"
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <Info size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Status'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/disciplinas/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <NotebookPen size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Disciplinas"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                                href="/periodos-letivos/lista"
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <Layers size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Periodos Letivos'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
+                {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/status">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Info size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Status"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
 
-                            <ListItemButton
-                                sx={{ pl: abrirSidebar ? 4 : 2, justifyContent: abrirSidebar ? 'initial' : 'center' }}
-                                href="/turmas/lista"
-                            >
-                                <ListItemIcon sx={{ minWidth: 0, mr: abrirSidebar ? 2 : 'auto', justifyContent: 'center' }}>
-                                    <Users size={17} />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary='Turmas'
-                                    sx={{ opacity: abrirSidebar ? 1 : 0, transition: 'opacity 0.2s' }}
-                                    primaryTypographyProps={{ fontSize: 14 }}
-                                />
-                            </ListItemButton>
-                        </List>
-                    </Collapse>
-                </List>
-            </Box>
-        </>
-    );
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/periodos-letivos/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Layers size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Períodos Letivos"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+
+                {ehSecretaria && (
+                  <ListItemButton sx={{ pl: 4 }} href="/turmas/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Users size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Turmas"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+              </List>
+            </Collapse>
+          </>
+        )}
+      </List>
+    </Box>
+  );
 }

@@ -45,7 +45,7 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict("ibge")
     .ignore();
 
-  await knex(`${SCHEMA}.usuario`)
+  /*await knex(`${SCHEMA}.usuario`)
     .insert([
       { id: ids.usuarioProfessor, email: "professor.frequencia@unifagoc.edu.br", senha: "mock", tipo_usuario: "PROFESSOR" },
       { id: ids.usuarioAluno1, email: "ana.frequencia@aluno.edu.br", senha: "mock", tipo_usuario: "ALUNO" },
@@ -223,5 +223,5 @@ export async function seed(knex: Knex): Promise<void> {
       { aula_id: ids.aula, matricula_turma_disciplina_id: ids.matriculaTurmaDisciplina3, status: "AUSENTE", data: "2026-02-10" },
     ])
     .onConflict(["aula_id", "matricula_turma_disciplina_id"])
-    .ignore();
+    .ignore();*/
 }

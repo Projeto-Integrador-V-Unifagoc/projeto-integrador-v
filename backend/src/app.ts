@@ -12,6 +12,7 @@ import { frequenciaRouter } from './Modules/routes/frequenciaRoutes';
 import { notasRouter } from './Modules/routes/notasRoutes';
 import { matriculaRouter } from './Modules/routes/matriculaRoutes';
 import { documentoRouter } from './Modules/routes/documentoRoutes';
+import authRoutes from './Modules/usuario-perfil-autenticacao/routes/auth-routes';
 import { StatusDisciplinaController } from './Modules/modulo-status-matricula-disciplina/controller/DisciplinaController';
 import { MatriculaController } from './Modules/modulo-status-matricula-disciplina/controller/MatriculaController';
 import { PeriodoLetivoController } from './Modules/modulo-estrutura-academica/controller/PeriodoLetivoController';
@@ -25,6 +26,8 @@ const app = express();
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
+
+app.use(authRoutes);
 
 const alunoController = new AlunoController();
 const cidadeController = new CidadeController();
