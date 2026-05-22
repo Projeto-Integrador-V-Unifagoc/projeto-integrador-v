@@ -26,4 +26,11 @@ export const cursoApi = {
     const response = await api.delete(`/cursos/${id}`)
     return response.data
   },
+
+  async listarMatrizCurricular(id: string, periodo?: number) {
+    const params: Record<string, number> = {};
+    if (periodo !== undefined) params.periodo = periodo;
+    const response = await api.get(`/cursos/${id}/matriz-curricular`, { params });
+    return response.data;
+  },
 }

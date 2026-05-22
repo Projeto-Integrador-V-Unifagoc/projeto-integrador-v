@@ -6,11 +6,11 @@ dotenv.config({ path: ".env.development" });
 const db = knex({
   client: "pg",
   connection: process.env.DATABASE_URL || process.env.DATABASE || {    
-    host: "db",
+    host: "postgres",
     port: 5432,
-    user: "grupo_4",
-    password: "grupo_41235",
-    database: "projeto_integrador",
+    user: "postgres",
+    password: "postgres",
+    database: "postgres",
   },
   searchPath: ['piv', 'public'],
 });

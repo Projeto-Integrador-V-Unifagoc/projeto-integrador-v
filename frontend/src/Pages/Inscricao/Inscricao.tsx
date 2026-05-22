@@ -27,26 +27,38 @@ import {
 import { CheckCircle, GraduationCap, Upload } from "lucide-react";
 import { useViaCep } from "../../hooks/use-cep";
 import { useCurso } from "../../hooks/use-curso";
+import { cursoApi } from "../../services/curso-api";
 import { api } from "../../lib/axios";
-import { Periodos } from "../../enums/periodos";
 import TextField from "../../components/TextField";
 import Button from "../../components/Button";
 
 const TIPOS_DOCUMENTO = [
-    { tipo: "RG", label: "RG (Registro Geral)" },
-    { tipo: "CPF", label: "CPF (Cadastro de Pessoa Física)" },
-    { tipo: "HISTORICO", label: "Histórico Escolar" },
-    { tipo: "COMPROVANTE_RESIDENCIA", label: "Comprovante de Residência" },
-    { tipo: "NOTAS_ENEM", label: "Notas do ENEM" },
-    { tipo: "OUTROS", label: "Outros Documentos" },
+    { tipo: "RG", label: "RG (Registro Geral)", obrigatorio: true },
+    { tipo: "CPF", label: "CPF (Cadastro de Pessoa Física)", obrigatorio: true },
+    { tipo: "HISTORICO", label: "Histórico Escolar do Ensino Médio", obrigatorio: true },
+    { tipo: "COMPROVANTE_RESIDENCIA", label: "Comprovante de Residência", obrigatorio: true },
+    { tipo: "NOTAS_ENEM", label: "Boletim de Desempenho do ENEM", obrigatorio: true },
+    { tipo: "COMPROVANTE_INSCRICAO_ENEM", label: "Comprovante de Inscrição no ENEM", obrigatorio: false },
 ];
 
-const STEPS = ["Dados pessoais", "Endereço", "Curso e período", "Documentos", "Confirmar", "Concluído"];
+const STEPS = ["Dados pessoais", "Endereço", "Curso e ingresso", "Documentos", "Confirmar", "Concluído"];
 
 interface Curso {
     id: string;
     nome: string;
     codigo: string;
+}
+
+interface DisciplinaMatriz {
+    id: string;
+    periodo_ideal?: number;
+    obrigatoria: boolean;
+    carga_horaria: number;
+    disciplina: {
+        id: string;
+        codigo: string;
+        nome: string;
+    };
 }
 
 interface FormDados {
@@ -63,11 +75,6 @@ interface FormEndereco {
     cidadeIbge: string;
     cidadeNome: string;
     estado: string;
-}
-
-interface FormCurso {
-    cursoId: string;
-    periodo: string;
 }
 
 interface DocumentoUpload {
@@ -105,8 +112,10 @@ export default function Inscricao() {
     const [endereco, setEndereco] = useState<FormEndereco>({
         cep: "", logradouro: "", numero: "", bairro: "", cidadeIbge: "", cidadeNome: "", estado: "",
     });
-    const [formCurso, setFormCurso] = useState<FormCurso>({ cursoId: "", periodo: Periodos.PRIMEIRO });
+    const [cursoId, setCursoId] = useState("");
     const [cursos, setCursos] = useState<Curso[]>([]);
+    const [matrizPeriodo1, setMatrizPeriodo1] = useState<DisciplinaMatriz[]>([]);
+    const [carregandoMatriz, setCarregandoMatriz] = useState(false);
     const [documentos, setDocumentos] = useState<DocumentoUpload[]>([]);
     const [enviando, setEnviando] = useState(false);
     const [erros, setErros] = useState<Record<string, string>>({});
@@ -121,6 +130,18 @@ export default function Inscricao() {
             .then((data: Curso[]) => setCursos(Array.isArray(data) ? data : []))
             .catch(() => setCursos([]));
     }, []);
+
+    useEffect(() => {
+        if (!cursoId) {
+            setMatrizPeriodo1([]);
+            return;
+        }
+        setCarregandoMatriz(true);
+        cursoApi.listarMatrizCurricular(cursoId, 1)
+            .then((data) => setMatrizPeriodo1(Array.isArray(data) ? data : []))
+            .catch(() => setMatrizPeriodo1([]))
+            .finally(() => setCarregandoMatriz(false));
+    }, [cursoId]);
 
     function docDeTipo(tipo: string): File | undefined {
         return documentos.find((d) => d.tipo === tipo)?.arquivo;
@@ -145,7 +166,7 @@ export default function Inscricao() {
             if (!endereco.cidadeIbge) e.cidadeIbge = "Busque um CEP válido para preencher a cidade.";
         }
         if (step === 2) {
-            if (!formCurso.cursoId) e.cursoId = "Selecione um curso.";
+            if (!cursoId) e.cursoId = "Selecione um curso.";
         }
         return e;
     }
@@ -183,8 +204,8 @@ export default function Inscricao() {
         setEnviando(true);
         try {
             const payload = {
-                periodo: formCurso.periodo,
-                curso: formCurso.cursoId,
+                periodo: 1,
+                curso: cursoId,
                 pessoa: {
                     cpf: dados.cpf.replace(/\D/g, ""),
                     nome: dados.nome.trim(),
@@ -221,13 +242,15 @@ export default function Inscricao() {
         setActiveStep(0);
         setDados({ nome: "", cpf: "", dataNascimento: "" });
         setEndereco({ cep: "", logradouro: "", numero: "", bairro: "", cidadeIbge: "", cidadeNome: "", estado: "" });
-        setFormCurso({ cursoId: "", periodo: Periodos.PRIMEIRO });
+        setCursoId("");
+        setMatrizPeriodo1([]);
         setDocumentos([]);
         setMatriculaGerada(null);
         setErros({});
     }
 
-    const cursoSelecionado = cursos.find((c) => c.id === formCurso.cursoId);
+    const cursoSelecionado = cursos.find((c) => c.id === cursoId);
+    const totalCH = matrizPeriodo1.reduce((acc, d) => acc + d.carga_horaria, 0);
 
     // ── Step content ─────────────────────────────────────────────────────────────
 
@@ -339,7 +362,8 @@ export default function Inscricao() {
 
     const step2 = (
         <Stack spacing={2.5}>
-            <Typography variant="h6" fontWeight={700}>Curso e período</Typography>
+            <Typography variant="h6" fontWeight={700}>Curso e forma de ingresso</Typography>
+
             <FormControl fullWidth error={!!erros.cursoId}>
                 <InputLabel shrink>Curso *</InputLabel>
                 {carregandoCursos ? (
@@ -349,11 +373,11 @@ export default function Inscricao() {
                     </Stack>
                 ) : (
                     <Select
-                        value={formCurso.cursoId}
+                        value={cursoId}
                         label="Curso *"
                         notched
                         displayEmpty
-                        onChange={(e) => setFormCurso((c) => ({ ...c, cursoId: e.target.value }))}
+                        onChange={(e) => setCursoId(e.target.value)}
                     >
                         <MenuItem value="" disabled>
                             <Typography color="text.secondary">Selecione um curso</Typography>
@@ -367,24 +391,115 @@ export default function Inscricao() {
                     <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{erros.cursoId}</Typography>
                 )}
             </FormControl>
-            <Box sx={(t) => ({ border: `1px solid ${t.palette.grey[300]}`, borderRadius: 1, px: 2, py: 1.5, backgroundColor: t.palette.grey[50] })}>
-                <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>Período</Typography>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                    <Chip label={Periodos.PRIMEIRO} color="primary" size="small" />
-                    <Typography variant="body2" color="text.secondary">
-                        Definido automaticamente para alunos novos.
+
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <Box
+                    flex={1}
+                    sx={(t) => ({
+                        border: `1px solid ${t.palette.grey[300]}`,
+                        borderRadius: 1,
+                        px: 2,
+                        py: 1.5,
+                        backgroundColor: t.palette.grey[50],
+                    })}
+                >
+                    <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                        Período de ingresso
                     </Typography>
-                </Stack>
-            </Box>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                        <Chip label="1º Período" color="primary" size="small" />
+                        <Typography variant="body2" color="text.secondary">
+                            Definido automaticamente para candidatos novos.
+                        </Typography>
+                    </Stack>
+                </Box>
+
+                <Box
+                    flex={1}
+                    sx={(t) => ({
+                        border: `1px solid ${t.palette.grey[300]}`,
+                        borderRadius: 1,
+                        px: 2,
+                        py: 1.5,
+                        backgroundColor: t.palette.grey[50],
+                    })}
+                >
+                    <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                        Forma de ingresso
+                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                        <Chip label="ENEM" color="success" size="small" />
+                        <Typography variant="body2" color="text.secondary">
+                            Única modalidade aceita neste processo seletivo.
+                        </Typography>
+                    </Stack>
+                </Box>
+            </Stack>
+
+            {cursoId && (
+                <Box>
+                    <Typography variant="subtitle2" fontWeight={700} mb={1}>
+                        Disciplinas do 1º Período
+                    </Typography>
+
+                    {carregandoMatriz ? (
+                        <Stack direction="row" alignItems="center" spacing={1} py={1}>
+                            <CircularProgress size={18} />
+                            <Typography variant="body2" color="text.secondary">Carregando matriz curricular...</Typography>
+                        </Stack>
+                    ) : matrizPeriodo1.length === 0 ? (
+                        <Alert severity="warning">
+                            Nenhuma disciplina cadastrada para o 1º período deste curso. Entre em contato com a secretaria.
+                        </Alert>
+                    ) : (
+                        <Box sx={{ overflowX: "auto" }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Disciplina</TableCell>
+                                        <TableCell>Código</TableCell>
+                                        <TableCell align="right">C.H.</TableCell>
+                                        <TableCell align="center">Obrigatória</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {matrizPeriodo1.map((d) => (
+                                        <TableRow key={d.id}>
+                                            <TableCell>{d.disciplina.nome}</TableCell>
+                                            <TableCell>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {d.disciplina.codigo}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell align="right">{d.carga_horaria}h</TableCell>
+                                            <TableCell align="center">
+                                                <Chip
+                                                    label={d.obrigatoria ? "Sim" : "Não"}
+                                                    size="small"
+                                                    color={d.obrigatoria ? "primary" : "default"}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            <Typography variant="caption" color="text.secondary" display="block" mt={1}>
+                                Total de carga horária no período: <strong>{totalCH}h</strong>
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
+            )}
         </Stack>
     );
 
     const step3 = (
         <Stack spacing={2.5}>
             <Typography variant="h6" fontWeight={700}>Documentos</Typography>
-            <Typography variant="body2" color="text.secondary">
-                Faça o upload dos documentos necessários (PDF, JPG ou PNG). Você pode enviá-los agora ou após a confirmação.
-            </Typography>
+            <Alert severity="info">
+                Para ingresso via ENEM, envie os documentos abaixo. Os marcados com <strong>*</strong> são obrigatórios.
+                Formatos aceitos: PDF, JPG ou PNG (máx. 10 MB cada).
+            </Alert>
             <Box sx={{ overflowX: "auto" }}>
                 <Table size="small">
                     <TableHead>
@@ -395,11 +510,16 @@ export default function Inscricao() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {TIPOS_DOCUMENTO.map(({ tipo, label }) => {
+                        {TIPOS_DOCUMENTO.map(({ tipo, label, obrigatorio }) => {
                             const arquivo = docDeTipo(tipo);
                             return (
                                 <TableRow key={tipo}>
-                                    <TableCell>{label}</TableCell>
+                                    <TableCell>
+                                        {label}
+                                        {obrigatorio && (
+                                            <Typography component="span" color="error" ml={0.5}>*</Typography>
+                                        )}
+                                    </TableCell>
                                     <TableCell>
                                         {arquivo ? (
                                             <Chip
@@ -448,6 +568,7 @@ export default function Inscricao() {
         <Stack spacing={2.5}>
             <Typography variant="h6" fontWeight={700}>Confirmar inscrição</Typography>
             <Divider />
+
             <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
                 <Box flex={1}>
                     <Typography variant="caption" color="text.secondary" display="block">Nome</Typography>
@@ -462,6 +583,7 @@ export default function Inscricao() {
                     <Typography variant="body2">{dados.dataNascimento}</Typography>
                 </Box>
             </Stack>
+
             <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
                 <Box flex={2}>
                     <Typography variant="caption" color="text.secondary" display="block">Endereço</Typography>
@@ -475,18 +597,45 @@ export default function Inscricao() {
                     <Typography variant="body2">{endereco.cep}</Typography>
                 </Box>
             </Stack>
+
             <Divider />
+
             <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
                 <Box flex={1}>
                     <Typography variant="caption" color="text.secondary" display="block">Curso</Typography>
                     <Typography variant="body2" fontWeight={600}>{cursoSelecionado?.nome ?? "—"}</Typography>
                 </Box>
                 <Box flex={1}>
-                    <Typography variant="caption" color="text.secondary" display="block">Período</Typography>
-                    <Typography variant="body2">{formCurso.periodo}</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">Período de ingresso</Typography>
+                    <Chip label="1º Período" color="primary" size="small" sx={{ mt: 0.5 }} />
+                </Box>
+                <Box flex={1}>
+                    <Typography variant="caption" color="text.secondary" display="block">Forma de ingresso</Typography>
+                    <Chip label="ENEM" color="success" size="small" sx={{ mt: 0.5 }} />
                 </Box>
             </Stack>
+
+            {matrizPeriodo1.length > 0 && (
+                <Box>
+                    <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                        Disciplinas do 1º Período ({matrizPeriodo1.length} disciplinas · {totalCH}h)
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {matrizPeriodo1.map((d) => (
+                            <Chip
+                                key={d.id}
+                                label={d.disciplina.nome}
+                                size="small"
+                                variant="outlined"
+                                color={d.obrigatoria ? "primary" : "default"}
+                            />
+                        ))}
+                    </Stack>
+                </Box>
+            )}
+
             <Divider />
+
             <Box>
                 <Typography variant="caption" color="text.secondary" display="block" mb={1}>
                     Documentos selecionados ({documentos.length})

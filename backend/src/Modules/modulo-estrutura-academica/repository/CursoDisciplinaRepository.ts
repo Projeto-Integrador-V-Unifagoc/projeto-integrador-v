@@ -36,12 +36,17 @@ export class CursoDisciplinaRepository {
         return rows.map(CursoDisciplinaMapper.toDomain);
     }
 
-    async listarMatrizCurricularPorCursoId(cursoId: string) {
-        const rows = await this.baseQuery()
+    async listarMatrizCurricularPorCursoId(cursoId: string, periodo?: number) {
+        let query = this.baseQuery()
             .where("curso_disciplina.curso_id", cursoId)
             .orderBy("curso_disciplina.periodo_ideal", "asc")
             .orderBy("disciplinas.nome", "asc");
 
+        if (periodo !== undefined) {
+            query = query.where("curso_disciplina.periodo_ideal", periodo);
+        }
+
+        const rows = await query;
         return rows.map(CursoDisciplinaMapper.toDomain);
     }
 

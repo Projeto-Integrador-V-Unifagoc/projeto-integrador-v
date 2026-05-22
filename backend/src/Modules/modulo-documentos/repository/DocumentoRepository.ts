@@ -6,6 +6,7 @@ export const TIPOS_DOCUMENTO = [
     "HISTORICO",
     "COMPROVANTE_RESIDENCIA",
     "NOTAS_ENEM",
+    "COMPROVANTE_INSCRICAO_ENEM",
     "OUTROS",
 ] as const;
 

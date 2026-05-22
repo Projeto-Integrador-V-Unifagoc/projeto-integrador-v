@@ -48,14 +48,14 @@ export class CursoDisciplinaService {
         return await this.cursoDisciplinaRepository.listarCursoDisciplinas();
     }
 
-    async listarMatrizCurricularPorCursoId(cursoId: string) {
+    async listarMatrizCurricularPorCursoId(cursoId: string, periodo?: number) {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(cursoId);
 
         if (!curso) {
             throw new Error("Curso nao encontrado");
         }
 
-        return await this.cursoDisciplinaRepository.listarMatrizCurricularPorCursoId(cursoId);
+        return await this.cursoDisciplinaRepository.listarMatrizCurricularPorCursoId(cursoId, periodo);
     }
 
     async atualizarCursoDisciplina(id: string, data: any) {
