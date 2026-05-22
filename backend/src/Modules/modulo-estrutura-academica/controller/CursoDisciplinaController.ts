@@ -23,7 +23,8 @@ export class CursoDisciplinaController {
 
     async listarMatrizCurricularPorCursoId(req: any, res: any) {
         try {
-            const matrizCurricular = await this.cursoDisciplinaService.listarMatrizCurricularPorCursoId(req.params.id);
+            const periodo = req.query.periodo !== undefined ? Number(req.query.periodo) : undefined;
+            const matrizCurricular = await this.cursoDisciplinaService.listarMatrizCurricularPorCursoId(req.params.id, periodo);
             res.status(200).json(matrizCurricular);
         } catch (error) {
             res.status(400).json({ error: (error as Error).message });
