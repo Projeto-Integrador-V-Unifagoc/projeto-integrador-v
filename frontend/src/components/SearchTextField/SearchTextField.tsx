@@ -27,6 +27,8 @@ type SearchFilters = {
   periodo?: string;
 };
 
+const EMPTY_FILTERS: SearchFilters = {};
+
 interface SearchTextFieldProps {
   children: ReactNode;
   buttonOnClick?: () => void;
@@ -51,7 +53,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     buttonOnClick,
     searchValue = "",
     onSearchChange,
-    filterValues = {},
+    filterValues = EMPTY_FILTERS,
     onFilterChange,
     searchPlaceholder = "Pesquisar Alunos",
     firstFilterLabel = "Código",
