@@ -6,7 +6,7 @@ export const frequenciaApi = {
     const response = await api.get("/frequencias/opcoes");
     return response.data;
   },
-  async obterChamada(params: { turmaId: string; data: string }) {
+  async obterChamada(params: { turmaDisciplinaId: string; data: string }) {
     const response = await api.get("/frequencias/chamada", { params });
     return response.data;
   },
@@ -30,7 +30,7 @@ export const frequenciaApi = {
     const response = await api.post(`/frequencias/${id}/justificativa`, { justificativa });
     return response.data;
   },
-  async gerarRelatorio(params: { turmaId: string; dataInicio?: string; dataFim?: string }) {
+  async gerarRelatorio(params: { turmaDisciplinaId: string; dataInicio?: string; dataFim?: string }) {
     const response = await api.get("/frequencias/relatorio", { params });
     return response.data;
   },

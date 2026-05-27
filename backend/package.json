@@ -18,7 +18,8 @@
         "dev": "tsx watch src/app.ts",
         "start": "tsx src/app.ts",
         "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
-        "seed": "node -r ts-node/register node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts"
+        "seed": "node -r ts-node/register node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
+        "test": "tsx --test \"src/**/*.test.ts\""
     },
     "dependencies": {
         "@types/cors": "^2.8.19",

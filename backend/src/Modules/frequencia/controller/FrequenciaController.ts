@@ -13,9 +13,10 @@ export class FrequenciaController {
 
   async obterChamada(req: any, res: any) {
     try {
+      const turmaDisciplinaId = req.query.turmaDisciplinaId || req.query.turmaId;
       res
         .status(200)
-        .json(await this.frequenciaService.obterChamada(req.query.turmaId, req.query.data, req));
+        .json(await this.frequenciaService.obterChamada(turmaDisciplinaId, req.query.data, req));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }

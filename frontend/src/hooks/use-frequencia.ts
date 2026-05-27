@@ -17,12 +17,12 @@ export function useFrequencia() {
   return {
     carregando,
     listarOpcoes: () => executar(() => frequenciaApi.listarOpcoes()),
-    obterChamada: (params: { turmaId: string; data: string }) => executar(() => frequenciaApi.obterChamada(params)),
+    obterChamada: (params: { turmaDisciplinaId: string; data: string }) => executar(() => frequenciaApi.obterChamada(params)),
     registrarFrequencia: (data: RegistrarFrequenciaPayload) => executar(() => frequenciaApi.registrarFrequencia(data)),
     editarFrequencia: (id: string, status: StatusFrequencia) => executar(() => frequenciaApi.editarFrequencia(id, status)),
     removerFrequencia: (id: string) => executar(() => frequenciaApi.removerFrequencia(id)),
     consultarAluno: (alunoId: string) => executar(() => frequenciaApi.consultarAluno(alunoId)),
     registrarJustificativa: (id: string, justificativa: string) => executar(() => frequenciaApi.registrarJustificativa(id, justificativa)),
-    gerarRelatorio: (params: { turmaId: string; dataInicio?: string; dataFim?: string }) => executar(() => frequenciaApi.gerarRelatorio(params)),
+    gerarRelatorio: (params: { turmaDisciplinaId: string; dataInicio?: string; dataFim?: string }) => executar(() => frequenciaApi.gerarRelatorio(params)),
   };
 }
