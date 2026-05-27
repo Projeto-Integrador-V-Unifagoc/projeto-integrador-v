@@ -27,14 +27,13 @@ import {
   type TipoAvaliacao,
 } from "../../models/avaliacao-model";
 import { avaliacaoApi } from "../../services/avaliacao-api";
+import { turmaApi } from "../../services/turma-api";
+import type { TurmaDisciplinaResponse, TurmaResponse } from "../../models/turma-model";
 
 const tipoOptions: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
-const MOCK_TURMAS = [
-  { id: "550e8400-e29b-41d4-a716-446655449001", nome: "Turma ES-2026/1 - Engenharia de Software" },
-];
 
 interface AvaliacaoFormState {
-  turma_id: string;
+  turma_disciplina_id: string;
   tipo_avaliacao: TipoAvaliacao;
   descricao_avaliacao: string;
   valor: number | "";
@@ -43,7 +42,7 @@ interface AvaliacaoFormState {
 }
 
 const initialForm: AvaliacaoFormState = {
-  turma_id: MOCK_TURMAS[0].id,
+  turma_disciplina_id: "",
   tipo_avaliacao: "PROVA",
   descricao_avaliacao: "",
   valor: REGRAS_AVALIACAO.valorProva,
@@ -71,8 +70,9 @@ function normalizarTexto(value: string) {
     .trim();
 }
 
-function getNomeTurma(turmaId: string) {
-  return MOCK_TURMAS.find((turma) => turma.id === turmaId)?.nome || turmaId;
+function getNomeTurmaDisciplina(avaliacao: Pick<Avaliacao, "turma_disciplina_id" | "turma_sigla" | "turma_descricao" | "disciplina_nome">) {
+  const turma = avaliacao.turma_sigla || avaliacao.turma_descricao || avaliacao.turma_disciplina_id;
+  return avaliacao.disciplina_nome ? `${turma} - ${avaliacao.disciplina_nome}` : turma;
 }
 
 function getMensagemErro(error: unknown, fallback: string) {
@@ -98,8 +98,22 @@ export default function Avaliacoes() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [avaliacaoParaExcluir, setAvaliacaoParaExcluir] = useState<Avaliacao | null>(null);
   const [form, setForm] = useState<AvaliacaoFormState>(initialForm);
+  const [turmaDisciplinaOptions, setTurmaDisciplinaOptions] = useState<TurmaDisciplinaResponse[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  async function carregarTurmaDisciplinas() {
+    const turmas = (await turmaApi.listarTurmas()) as TurmaResponse[];
+    const disciplinasPorTurma = await Promise.all(
+      turmas.map((turma) => turmaApi.listarDisciplinasDaTurma(turma.id) as Promise<TurmaDisciplinaResponse[]>),
+    );
+    const options = disciplinasPorTurma.flat();
+    setTurmaDisciplinaOptions(options);
+    setForm((current) => ({
+      ...current,
+      turma_disciplina_id: current.turma_disciplina_id || options[0]?.id || "",
+    }));
+  }
 
   async function carregarAvaliacoes() {
     setErrorMessage(null);
@@ -113,7 +127,8 @@ export default function Avaliacoes() {
   }
 
   useEffect(() => {
-    carregarAvaliacoes();
+    void carregarTurmaDisciplinas();
+    void carregarAvaliacoes();
   }, []);
 
   const provas = useMemo(
@@ -143,7 +158,7 @@ export default function Avaliacoes() {
     return avaliacoes.filter((av) => {
       const camposPesquisaveis = [
         av.id,
-        getNomeTurma(av.turma_id),
+        getNomeTurmaDisciplina(av),
         av.tipo_avaliacao,
         formatarTipo(av.tipo_avaliacao),
         av.descricao_avaliacao ?? "",
@@ -190,7 +205,7 @@ export default function Avaliacoes() {
   function abrirEdicao(avaliacao: Avaliacao) {
     setEditingId(avaliacao.id);
     setForm({
-      turma_id: avaliacao.turma_id,
+      turma_disciplina_id: avaliacao.turma_disciplina_id,
       tipo_avaliacao: avaliacao.tipo_avaliacao,
       descricao_avaliacao: avaliacao.descricao_avaliacao ?? "",
       valor: Number(avaliacao.valor),
@@ -250,8 +265,8 @@ export default function Avaliacoes() {
   }
 
   function validarFormulario(payload: CriarAvaliacaoDTO) {
-    if (!payload.turma_id) {
-      throw new Error("Informe a turma para a avaliacao.");
+    if (!payload.turma_disciplina_id) {
+      throw new Error("Informe a turma/disciplina para a avaliacao.");
     }
 
     if (!payload.data_lancamento) {
@@ -259,7 +274,7 @@ export default function Avaliacoes() {
     }
 
     const outrasAvaliacoes = avaliacoes.filter(
-      (av) => av.id !== editingId && av.turma_id === payload.turma_id,
+      (av) => av.id !== editingId && av.turma_disciplina_id === payload.turma_disciplina_id,
     );
     const provasExistentes = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === "PROVA");
     const tpisExistentes = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === "TPI");
@@ -298,7 +313,7 @@ export default function Avaliacoes() {
 
     try {
       const payload: CriarAvaliacaoDTO = {
-        turma_id: form.turma_id,
+        turma_disciplina_id: form.turma_disciplina_id,
         tipo_avaliacao: form.tipo_avaliacao,
         descricao_avaliacao: form.descricao_avaliacao?.trim() || undefined,
         valor: Number(form.valor),
@@ -376,11 +391,11 @@ export default function Avaliacoes() {
       valueGetter: (_, row) => row.descricao_avaliacao || "Sem descricao",
     },
     {
-      field: "turma_id",
+      field: "turma_disciplina_id",
       headerName: "Turma",
       minWidth: 220,
       flex: 1,
-      valueGetter: (_, row) => getNomeTurma(row.turma_id),
+      valueGetter: (_, row) => getNomeTurmaDisciplina(row),
     },
     {
       field: "valor",
@@ -548,15 +563,15 @@ export default function Avaliacoes() {
               <Grid size={12}>
                 <TextField
                   label="Turma"
-                  name="turma_id"
+                  name="turma_disciplina_id"
                   select
-                  value={form.turma_id}
+                  value={form.turma_disciplina_id}
                   onChange={handleChange}
                   InputLabelProps={{ shrink: true }}
                 >
-                  {MOCK_TURMAS.map((turma) => (
-                    <MenuItem key={turma.id} value={turma.id}>
-                      {turma.nome}
+                  {turmaDisciplinaOptions.map((turmaDisciplina) => (
+                    <MenuItem key={turmaDisciplina.id} value={turmaDisciplina.id}>
+                      {turmaDisciplina.turma.sigla} - {turmaDisciplina.curso_disciplina.disciplina.nome}
                     </MenuItem>
                   ))}
                 </TextField>

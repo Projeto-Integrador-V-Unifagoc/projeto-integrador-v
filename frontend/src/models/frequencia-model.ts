@@ -3,13 +3,18 @@ export type SituacaoFrequencia = "REGULAR" | "ALERTA" | "RISCO_REPROVACAO";
 
 export interface TurmaFrequencia {
   id: string;
+  turmaDisciplinaId: string;
+  turmaId: string;
   semestre: string;
+  sigla: string;
+  descricao: string;
   disciplina: { id: string; codigo: string; nome: string };
   curso: { id: string; nome: string };
 }
 
 export interface AlunoChamada {
   id: string;
+  matriculaTurmaDisciplinaId: string;
   matricula: number;
   nome: string;
   statusMatricula: string;
@@ -20,7 +25,7 @@ export interface AlunoChamada {
 }
 
 export interface RegistrarFrequenciaPayload {
-  turmaId: string;
+  turmaDisciplinaId: string;
   data: string;
   registros: Array<{ alunoId: string; status: StatusFrequencia }>;
 }
@@ -28,7 +33,7 @@ export interface RegistrarFrequenciaPayload {
 export interface ConsolidadoFrequencia {
   alunoId: string;
   alunoNome: string;
-  turmaId: string;
+  turmaDisciplinaId: string;
   disciplinaId: string;
   disciplinaNome: string;
   totalAulas: number;
@@ -41,7 +46,7 @@ export interface ConsolidadoFrequencia {
 export interface HistoricoFrequenciaAluno {
   id: string;
   aulaId: string;
-  turmaId: string;
+  turmaDisciplinaId: string;
   disciplinaId: string;
   disciplinaNome: string;
   data: string;

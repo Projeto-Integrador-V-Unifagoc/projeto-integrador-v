@@ -69,6 +69,7 @@ export const professorRepository = {
     return await db.transaction(async (trx) => {
       try {
         const usuarioResult = await trx('piv.usuario').insert({
+          nome: dados.nome,
           email: dados.email,
           senha: dados.senha,
           tipo_usuario: 'professor'
@@ -105,7 +106,6 @@ export const professorRepository = {
           faculdade_id: professor.faculdade_id
         };
       } catch (erro) {
-        console.error('❌ ERRO na transação:', erro);
         throw erro;
       }
     });

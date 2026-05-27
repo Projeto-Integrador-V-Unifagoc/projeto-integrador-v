@@ -14,7 +14,7 @@ export interface RegistroFrequenciaRequest {
 }
 
 export interface RegistrarFrequenciaRequest {
-  turmaId: string;
+  turmaDisciplinaId: string;
   aulaId?: string;
   data: string;
   registros: RegistroFrequenciaRequest[];
@@ -27,8 +27,9 @@ export interface EditarFrequenciaRequest {
 export interface FrequenciaRegistro {
   id: string;
   aulaId: string;
+  matriculaTurmaDisciplinaId: string;
   alunoId: string;
-  turmaId: string;
+  turmaDisciplinaId: string;
   status: StatusFrequencia;
   data: string;
   justificativa?: string | null;
@@ -39,7 +40,7 @@ export interface FrequenciaRegistro {
 export interface ConsolidadoFrequencia {
   alunoId: string;
   alunoNome: string;
-  turmaId: string;
+  turmaDisciplinaId: string;
   disciplinaId: string;
   disciplinaNome: string;
   totalAulas: number;
@@ -49,32 +50,24 @@ export interface ConsolidadoFrequencia {
   situacao: "REGULAR" | "ALERTA" | "RISCO_REPROVACAO";
 }
 
+function formatDate(value: unknown) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value);
+}
+
 export class FrequenciaMapper {
   static registro(row: any): FrequenciaRegistro {
     return {
       id: row.id,
       aulaId: row.aula_id,
+      matriculaTurmaDisciplinaId: row.matricula_turma_disciplina_id,
       alunoId: row.aluno_id,
-      turmaId: row.turma_id,
+      turmaDisciplinaId: row.turma_disciplina_id,
       status: row.status,
-      data: row.data,
+      data: formatDate(row.data),
       justificativa: row.justificativa,
-      criadoEm: row.criado_em,
-      atualizadoEm: row.atualizado_em,
+      criadoEm: row.created_at || row.criado_em,
+      atualizadoEm: row.updated_at || row.atualizado_em,
     };
   }
 }
-
-/*
-Responsabilidade:
-Implementar a modelagem complementar de banco, seed de demonstracao e model do dominio de Frequencia.
-
-Arquivos:
-backend/migrations/20260511000100_complementa_schema_frequencia.ts
-backend/seeds/frequencia_demo.ts
-backend/src/Modules/frequencia/models/Frequencia.ts
-
-Tarefas relacionadas no documento:
-#03 - Modelagem e criacao do banco de dados
-#04 - Implementacao do Model
-*/
