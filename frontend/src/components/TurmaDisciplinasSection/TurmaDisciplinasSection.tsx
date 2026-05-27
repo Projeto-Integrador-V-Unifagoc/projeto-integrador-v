@@ -9,10 +9,10 @@ import TextField from "../TextField";
 import { Card } from "../Card";
 import { useTurma } from "../../hooks/use-turma";
 import { useCursoDisciplina } from "../../hooks/use-curso-disciplina";
-import { useProfessor } from "../../hooks/use-professor";
+import { useProfessorAcademico } from "../../hooks/use-professor-academico";
 import { turmaDisciplinaSchema } from "../../validators/turma-disciplina-schema";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
-import type { Professor } from "../../models/professor-model";
+import type { ProfessorAcademico } from "../../models/professor-academico-model";
 import type { TurmaDisciplinaResponse } from "../../models/turma-model";
 import type { GridColDef } from "@mui/x-data-grid";
 
@@ -36,7 +36,7 @@ const initialForm: FormType = {
 export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   const [disciplinasTurma, setDisciplinasTurma] = useState<TurmaDisciplinaResponse[]>([]);
   const [disciplinasMatriz, setDisciplinasMatriz] = useState<CursoDisciplinaResponse[]>([]);
-  const [professores, setProfessores] = useState<Professor[]>([]);
+  const [professores, setProfessores] = useState<ProfessorAcademico[]>([]);
   const [alerta, setAlerta] = useState<{ tipo: "success" | "error"; mensagem: string } | null>(null);
   const [dialogoAberto, setDialogoAberto] = useState(false);
   const [registroEdicao, setRegistroEdicao] = useState<TurmaDisciplinaResponse | null>(null);
@@ -45,7 +45,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   const [erros, setErros] = useState<Record<string, string>>({});
   const { carregando, listarDisciplinasDaTurma, criarDisciplinaDaTurma, atualizarDisciplinaDaTurma, removerDisciplinaDaTurma } = useTurma();
   const { listarMatrizCurricularPorCursoId } = useCursoDisciplina();
-  const { listarProfessores } = useProfessor();
+  const { listarProfessores } = useProfessorAcademico();
 
   async function carregarDados() {
     if (!cursoId) {
