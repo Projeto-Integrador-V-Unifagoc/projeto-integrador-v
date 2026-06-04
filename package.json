@@ -9,6 +9,7 @@
     "build": "npm run build --prefix frontend"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "concurrently": "^9.1.2"
   }
 }

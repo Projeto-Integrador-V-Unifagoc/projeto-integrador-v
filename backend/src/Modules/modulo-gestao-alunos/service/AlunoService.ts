@@ -60,8 +60,11 @@ export class AlunoService {
             }
             return await this.alunoRepository.atualizarAluno(matricula, data);
         }
-        catch (error) {
-            console.error("Erro ao atualizar aluno:", error);
+        catch (error:any) {
+            //console.error("Erro ao atualizar aluno:", error);
+            if (error.message === "Aluno não encontrado") {
+                throw error;
+            }
             throw new Error("Não foi possível atualizar o aluno");
         }
     }
