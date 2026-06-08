@@ -15,6 +15,6 @@ const db = knex({
   searchPath: ['piv', 'public'],
 });
 
-console.log('DATABASE_URL:', process.env.DATABASE_URL)
+// console.log('DATABASE_URL:', process.env.DATABASE_URL)
 
 export default db;

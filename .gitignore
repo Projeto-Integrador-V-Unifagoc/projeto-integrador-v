@@ -6,3 +6,4 @@ backend/build/
 backend/dist/
 frontend/dist/
 .DS_Store
+.tools/

@@ -19,7 +19,8 @@
         "start": "tsx src/app.ts",
         "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
         "seed": "node -r ts-node/register node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
-        "test": "tsx --test \"src/**/*.test.ts\""
+        "test": "tsx --test \"src/**/*.test.ts\"",
+        "test:coverage:atividade": "node --import tsx --test --experimental-test-coverage --test-coverage-include=src/Modules/professor/services/professorServices.ts --test-coverage-include=src/Modules/avaliacao/services/avaliacaoServices.ts --test-name-pattern=\"criacao|criar|PROVA|prova|TPI|TRABALHO|trabalho|turma_disciplina\" src/Modules/professor/services/professorServices.test.ts src/Modules/avaliacao/services/avaliacaoServices.test.ts"
     },
     "dependencies": {
         "@types/cors": "^2.8.19",
