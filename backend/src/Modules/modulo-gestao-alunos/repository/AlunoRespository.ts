@@ -27,6 +27,10 @@ export class AlunoRepository {
                 query.where("aluno.periodo", filtros.periodo)
             }
 
+            if(filtros?.nome) {
+                query.whereLike("pessoa.nome", `%${filtros.nome}%`)
+            }
+
             const rows = await query.select(
                 "aluno.*",
                 "pessoa.id as p_id", 

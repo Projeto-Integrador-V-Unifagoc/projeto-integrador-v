@@ -21,6 +21,12 @@ export default function Alunos() {
   const { listarAlunos, carregando } = useAluno()
   const navigate = useNavigate()
 
+  const [filters, setFilters] = useState({
+    cursoId: "",
+    periodo: "",
+  })
+
+  const [pesquisa, setPesquisa] = useState("")
 
   const columns: GridColDef<AlunoView>[] = [
     {
@@ -93,7 +99,11 @@ export default function Alunos() {
 
   useEffect(() => {
     async function buscarAlunos() {
-      const data = await listarAlunos()
+      const data = await listarAlunos({
+        cursoId: filters.cursoId,
+        periodo: filters.periodo,
+        nome: pesquisa
+      })
       const alunosMapeados = data.map((aluno: AlunoRequest) => ({
         id: aluno.id,
         matricula: aluno.matricula,
@@ -111,13 +121,20 @@ export default function Alunos() {
       setAlunos(alunosMapeados)
     }
     buscarAlunos()
-  }, [])
+  }, [filters, pesquisa])
 
 
 
   return (
     <Container>
-      <SearchTextField>Alunos</SearchTextField>
+      <SearchTextField
+        filterValues={filters}
+        onFilterChange={setFilters}
+        searchValue={pesquisa}
+        onSearchChange={setPesquisa}
+      >
+        Alunos
+      </SearchTextField>
 
       {isMobile ? (
         alunos.map((aluno) => (
