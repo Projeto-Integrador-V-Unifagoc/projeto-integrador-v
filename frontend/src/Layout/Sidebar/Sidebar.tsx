@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Box,
   Collapse,
   List,
   ListItemButton,
@@ -24,10 +23,10 @@ import {
 } from "lucide-react";
 
 interface SidebarProps {
-  abrirSidebar: boolean;
+  expandido: boolean;
 }
 
-export default function Sidebar({ abrirSidebar }: SidebarProps) {
+export default function Sidebar({ expandido }: SidebarProps) {
   const [abrirCadastros, setAbrirCadastros] = useState(true);
   const [tipoUsuario, setTipoUsuario] = useState<string>("");
 
@@ -55,28 +54,15 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
   const podeVerCadastros = ehSecretaria || ehProfessor || ehAluno;
 
   return (
-    <Box
-      sx={(theme) => ({
-        borderRight: `1px solid ${theme.palette.grey[200]}`,
-        width: abrirSidebar ? "260px" : "70px",
-        height: "100vh",
-        backgroundColor: "white",
-        transition: "all 0.3s ease",
-        overflowX: "hidden",
-        position: "fixed",
-        paddingTop: 7,
-        paddingLeft: 1,
-      })}
-    >
       <List component="nav">
         <ListItemButton
           href="/tarefas/lista"
-          sx={{ justifyContent: abrirSidebar ? "initial" : "center" }}
+          sx={{ justifyContent: expandido ? "initial" : "center" }}
         >
           <ListItemIcon
             sx={{
               minWidth: 0,
-              mr: abrirSidebar ? 2 : "auto",
+              mr: expandido ? 2 : "auto",
               justifyContent: "center",
             }}
           >
@@ -86,7 +72,7 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
           <ListItemText
             primary="Tarefas"
             sx={{
-              opacity: abrirSidebar ? 1 : 0,
+              opacity: expandido ? 1 : 0,
               transition: "opacity 0.2s",
             }}
             primaryTypographyProps={{ fontSize: 14 }}
@@ -96,12 +82,12 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
         {(ehSecretaria || ehProfessor) && (
           <ListItemButton
             href="/frequencias/lista"
-            sx={{ justifyContent: abrirSidebar ? "initial" : "center" }}
+            sx={{ justifyContent: expandido ? "initial" : "center" }}
           >
             <ListItemIcon
               sx={{
                 minWidth: 0,
-                mr: abrirSidebar ? 2 : "auto",
+                mr: expandido ? 2 : "auto",
                 justifyContent: "center",
               }}
             >
@@ -111,7 +97,7 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
             <ListItemText
               primary="Frequência"
               sx={{
-                opacity: abrirSidebar ? 1 : 0,
+                opacity: expandido ? 1 : 0,
                 transition: "opacity 0.2s",
               }}
               primaryTypographyProps={{ fontSize: 14 }}
@@ -125,7 +111,7 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
               onClick={() => setAbrirCadastros(!abrirCadastros)}
               sx={(theme) => ({
                 borderRadius: "3px",
-                justifyContent: abrirSidebar ? "initial" : "center",
+                justifyContent: expandido ? "initial" : "center",
                 "&:focus": {
                   border: `1px solid ${theme.palette.primary.main}`,
                   backgroundColor: theme.palette.primary.light,
@@ -135,7 +121,7 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
               <ListItemIcon
                 sx={{
                   minWidth: 0,
-                  mr: abrirSidebar ? 2 : "auto",
+                  mr: expandido ? 2 : "auto",
                   justifyContent: "center",
                 }}
               >
@@ -145,13 +131,13 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
               <ListItemText
                 primary="Cadastros"
                 sx={{
-                  opacity: abrirSidebar ? 1 : 0,
+                  opacity: expandido ? 1 : 0,
                   transition: "opacity 0.2s",
                 }}
                 primaryTypographyProps={{ fontSize: 14 }}
               />
 
-              {abrirSidebar &&
+              {expandido &&
                 (abrirCadastros ? (
                   <ChevronUp size={15} />
                 ) : (
@@ -160,7 +146,7 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
             </ListItemButton>
 
             <Collapse
-              in={abrirCadastros && abrirSidebar}
+              in={abrirCadastros && expandido}
               timeout="auto"
               unmountOnExit
             >
@@ -301,6 +287,5 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
           </>
         )}
       </List>
-    </Box>
   );
 }

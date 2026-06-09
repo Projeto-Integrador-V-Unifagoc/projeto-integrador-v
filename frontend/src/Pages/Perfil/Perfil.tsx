@@ -3,35 +3,68 @@ import { useEffect, useState } from "react";
 import {
   Avatar,
   Box,
-  Button,
   Chip,
   CircularProgress,
   Divider,
   Paper,
   Stack,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
- TableRow,
-  Tabs,
   Typography,
 } from "@mui/material";
 
-import { Edit, Save, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
+import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
 
-interface Usuario {
+interface Pessoa {
+  nome: string | null;
+  cpf: string | null;
+  data_nascimento: string | null;
+  logradouro: string | null;
+  numero: string | null;
+  bairro: string | null;
+  estado: string | null;
+  cep: string | null;
+}
+
+interface Academico {
+  curso?: string | null;
+  curso_codigo?: string | null;
+  periodo?: string | null;
+  faculdade?: string | null;
+}
+
+interface PerfilData {
   id: string;
   nome: string;
   email: string;
   tipo_usuario: string;
+  pessoa: Pessoa | null;
+  academico: Academico | null;
+}
+
+const ROTULO_PERFIL: Record<string, string> = {
+  aluno: "Aluno",
+  professor: "Professor",
+  secretaria: "Secretaria",
+};
+
+function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+}
+
+function formatarData(data: string | null): string {
+  if (!data) return "—";
+  const d = new Date(data);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR");
 }
 
 export default function Perfil() {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [perfil, setPerfil] = useState<PerfilData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [aba, setAba] = useState(0);
+  const { notificar } = useNotificacao();
 
   useEffect(() => {
     async function carregarPerfil() {
@@ -44,54 +77,45 @@ export default function Perfil() {
           },
         });
 
+        if (!resposta.ok) {
+          throw new Error("Não foi possível carregar os dados do perfil.");
+        }
+
         const dados = await resposta.json();
-        setUsuario(dados.data);
+        setPerfil(dados.data);
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
+        notificar("Erro ao carregar os dados do perfil.", "error");
       } finally {
         setLoading(false);
       }
     }
 
     carregarPerfil();
-  }, []);
+  }, [notificar]);
 
-  const Campo = ({ label, valor }: { label: string; valor: string }) => (
+  // Campo de exibição (somente leitura) com rótulo e valor.
+  const Campo = ({ label, valor }: { label: string; valor?: string | null }) => (
     <Box>
       <Typography color="text.secondary" fontSize={14} mb={0.5}>
         {label}
       </Typography>
-
-      <Box sx={{ display: "flex" }}>
-        <Box
-          sx={{
-            height: 42,
-            flex: 1,
-            bgcolor: "#eeeeee",
-            border: "1px solid #d0d0d0",
-            display: "flex",
-            alignItems: "center",
-            px: 2,
-            fontSize: 16,
-            color: "#555",
-          }}
-        >
-          {valor}
-        </Box>
-
-        <Box
-          sx={{
-            width: 48,
-            height: 42,
-            bgcolor: "#8ab5ab",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-          }}
-        >
-          <Edit size={18} />
-        </Box>
+      <Box
+        sx={{
+          minHeight: 42,
+          bgcolor: "#f5f5f5",
+          border: "1px solid #e0e0e0",
+          borderRadius: 1,
+          display: "flex",
+          alignItems: "center",
+          px: 2,
+          py: 1,
+          fontSize: 16,
+          color: "#555",
+          wordBreak: "break-word",
+        }}
+      >
+        {valor || "—"}
       </Box>
     </Box>
   );
@@ -104,29 +128,49 @@ export default function Perfil() {
     );
   }
 
-  return (
-    <Box sx={{ p: 4 }}>
-      <Typography
-        sx={{
-          fontSize: "3rem",
-          fontWeight: 300,
-          color: "#5f6670",
-          letterSpacing: 1,
-          mb: 4,
-          textTransform: "uppercase",
-        }}
-      >
-        LUIZ
-      </Typography>
+  if (!perfil) {
+    return (
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        <Typography color="text.secondary">
+          Não foi possível carregar o perfil.
+        </Typography>
+      </Box>
+    );
+  }
 
-      <Stack direction="row" justifyContent="flex-end" mb={4}>
+  const { pessoa, academico } = perfil;
+  const nomeExibicao = pessoa?.nome || perfil.nome;
+  const rotuloPerfil = ROTULO_PERFIL[perfil.tipo_usuario] ?? perfil.tipo_usuario;
+  const temEndereco = !!pessoa && !!(pessoa.logradouro || pessoa.bairro || pessoa.cep);
+
+  return (
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        gap={2}
+        mb={4}
+      >
+        <Typography
+          sx={{
+            fontSize: { xs: "1.8rem", sm: "2.3rem", md: "2.8rem" },
+            fontWeight: 300,
+            color: "#5f6670",
+            letterSpacing: 1,
+            textTransform: "uppercase",
+          }}
+        >
+          {nomeExibicao}
+        </Typography>
+
         <Chip
-          label="Matriculado"
+          label={rotuloPerfil}
           sx={{
             px: 3,
             py: 2,
             fontWeight: "bold",
-            color: "#0b7285",
+            color: "primary.main",
             bgcolor: "#e9ecef",
             borderRadius: 10,
           }}
@@ -137,120 +181,81 @@ export default function Perfil() {
         elevation={0}
         sx={{
           bgcolor: "#eeeeee",
-          p: 4,
+          p: { xs: 2, sm: 3, md: 4 },
           mb: 4,
-          borderRadius: 0,
-          minHeight: 260,
+          borderRadius: 2,
+          minHeight: 200,
           display: "flex",
           alignItems: "center",
         }}
       >
-        <Stack direction="row" spacing={3} alignItems="center">
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={3}
+          alignItems="center"
+          textAlign={{ xs: "center", sm: "left" }}
+        >
           <Avatar
             sx={{
-              width: 200,
-              height: 200,
-              fontSize: 80,
+              width: { xs: 110, sm: 150 },
+              height: { xs: 110, sm: 150 },
+              fontSize: { xs: 44, sm: 60 },
               bgcolor: "#8a8a96",
               border: "4px solid white",
             }}
           >
-            LZ
+            {pessoa?.nome ? iniciais(pessoa.nome) : <UserRound size={60} />}
           </Avatar>
 
           <Box>
-            <Typography color="#2c7a7b" fontSize={18}>
-              Registro acadêmico
+            <Typography color="primary.main" fontSize={16}>
+              E-mail
+            </Typography>
+            <Typography mb={2} fontSize={18}>
+              {perfil.email}
             </Typography>
 
-            <Typography mb={3} fontSize={18}>
-              202601847
-            </Typography>
+            {academico?.curso && (
+              <>
+                <Typography color="primary.main" fontSize={16}>
+                  Curso
+                </Typography>
+                <Typography mb={2} fontSize={18}>
+                  {academico.curso}
+                </Typography>
+              </>
+            )}
 
-            <Typography color="#2c7a7b" fontSize={18}>
-              Curso
-            </Typography>
+            {perfil.tipo_usuario === "aluno" && academico?.periodo && (
+              <>
+                <Typography color="primary.main" fontSize={16}>
+                  Período
+                </Typography>
+                <Typography fontSize={18}>{academico.periodo}º período</Typography>
+              </>
+            )}
 
-            <Typography mb={3} fontSize={18}>
-              CIÊNCIA DA COMPUTAÇÃO
-            </Typography>
-
-            <Typography color="#2c7a7b" fontSize={18}>
-              Habilitação
-            </Typography>
-
-            <Typography mb={3} fontSize={18}>
-              CIÊNCIA DA COMPUTAÇÃO
-            </Typography>
-
-            <Typography color="#2c7a7b" fontSize={18}>
-              Turno
-            </Typography>
-
-            <Typography fontSize={18}>NOTURNO</Typography>
+            {perfil.tipo_usuario === "professor" && academico?.faculdade && (
+              <>
+                <Typography color="primary.main" fontSize={16}>
+                  Faculdade
+                </Typography>
+                <Typography fontSize={18}>{academico.faculdade}</Typography>
+              </>
+            )}
           </Box>
         </Stack>
       </Paper>
 
-      <Tabs
-        value={aba}
-        onChange={(_, novoValor) => setAba(novoValor)}
-        sx={{
-          borderBottom: "1px solid #ddd",
-          mb: 3,
-          "& .MuiTab-root": {
-            textTransform: "none",
-            fontWeight: "bold",
-            color: "#216869",
-          },
-          "& .Mui-selected": {
-            color: "#216869 !important",
-          },
-          "& .MuiTabs-indicator": {
-            bgcolor: "#216869",
-          },
-        }}
-      >
-        <Tab label="Dados pessoais" />
-        <Tab label="Responsáveis" />
-      </Tabs>
-
-      {aba === 0 && (
-        <Box>
-          <Typography variant="h6" color="#216869" fontWeight="bold" mb={1}>
-            Filiação
-          </Typography>
-
-          <Divider sx={{ mb: 2 }} />
-
-          <Table size="small" sx={{ mb: 3 }}>
-            <TableHead>
-              <TableRow sx={{ bgcolor: "#6f7f80" }}>
-                <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>
-                  Nome
-                </TableCell>
-
-                <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>
-                  Tipo de relacionamento
-                </TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              <TableRow>
-                <TableCell>ANA CLARA </TableCell>
-                <TableCell>MÃE</TableCell>
-              </TableRow>
-
-              <TableRow sx={{ bgcolor: "#f2f2f2" }}>
-                <TableCell>ROBERTO HENRIQUE </TableCell>
-                <TableCell>PAI</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-
-          <Typography variant="h6" color="#216869" fontWeight="bold" mb={1}>
-            Contato
+      {/* Secretaria (ou aluno/professor sem vínculo) não possui registro de pessoa. */}
+      {!pessoa ? (
+        <Typography color="text.secondary">
+          Este perfil não possui dados pessoais ou acadêmicos vinculados.
+        </Typography>
+      ) : (
+        <>
+          <Typography variant="h6" color="primary.main" fontWeight="bold" mb={1}>
+            Dados pessoais
           </Typography>
 
           <Divider sx={{ mb: 3 }} />
@@ -258,119 +263,41 @@ export default function Perfil() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
               gap: 2,
-              mb: 3,
+              mb: 4,
             }}
           >
-            <Campo label="E-mail" valor="aluno.teste@email.com" />
-            <Campo label="Celular" valor="" />
-            <Campo label="Telefone Fixo" valor="(32) 3333-4455" />
-
-            <Campo label="Outro Telefone" valor="" />
-            <Campo label="Fax" valor="" />
-            <Campo label="Telefone corporativo" valor="" />
+            <Campo label="Nome" valor={pessoa.nome} />
+            <Campo label="E-mail" valor={perfil.email} />
+            <Campo label="CPF" valor={pessoa.cpf} />
+            <Campo label="Data de nascimento" valor={formatarData(pessoa.data_nascimento)} />
           </Box>
 
-          <Typography variant="h6" color="#216869" fontWeight="bold" mb={1}>
-            Endereço
-          </Typography>
+          {temEndereco && (
+            <>
+              <Typography variant="h6" color="primary.main" fontWeight="bold" mb={1}>
+                Endereço
+              </Typography>
 
-          <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: 3 }} />
 
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 2fr 1fr",
-              gap: 2,
-            }}
-          >
-            <Campo label="CEP" valor="36500-000" />
-            <Campo label="Logradouro" valor="RUA DAS FLORES" />
-            <Campo label="Número" valor="123" />
-
-            <Campo label="Complemento" valor="CASA" />
-            <Campo label="Bairro" valor="CENTRO" />
-            <Campo label="Cidade" valor="Ubá" />
-
-            <Campo label="Estado" valor="Minas Gerais" />
-            <Campo label="País" valor="Brasil" />
-          </Box>
-        </Box>
-      )}
-
-      {aba === 1 && (
-        <Box>
-          <Typography variant="h6" color="#216869" fontWeight="bold" mb={1}>
-            Responsável Financeiro
-          </Typography>
-
-          <Divider sx={{ mb: 3 }} />
-
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1.1fr",
-              gap: 8,
-            }}
-          >
-            <Stack direction="row" spacing={2}>
-              <Paper
+              <Box
                 sx={{
-                  width: 125,
-                  height: 125,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 2fr 1fr" },
+                  gap: 2,
                 }}
               >
-                <UserRound size={90} color="#334a5f" />
-              </Paper>
-
-              <Box>
-                <Typography color="text.secondary">Nome</Typography>
-                <Typography mb={4}>LUIZ</Typography>
-
-                <Typography color="text.secondary">Parentesco</Typography>
-                <Typography mb={4}>Outros</Typography>
-
-                <Typography color="text.secondary">Responsável</Typography>
-                <Typography mb={4}>Financeiro</Typography>
-
-                <Typography color="text.secondary">Status</Typography>
-                <Typography>Ativo</Typography>
+                <Campo label="CEP" valor={pessoa.cep} />
+                <Campo label="Logradouro" valor={pessoa.logradouro} />
+                <Campo label="Número" valor={pessoa.numero} />
+                <Campo label="Bairro" valor={pessoa.bairro} />
+                <Campo label="Estado" valor={pessoa.estado} />
               </Box>
-            </Stack>
-
-            <Box sx={{ display: "grid", gap: 2 }}>
-              <Campo label="E-mail" valor="responsavel.teste@email.com" />
-              <Campo label="Telefone" valor="" />
-              <Campo label="Celular" valor="(32) 98888-7777" />
-              <Campo label="Telefone comercial" valor="" />
-            </Box>
-          </Box>
-
-          <Button
-            variant="contained"
-            startIcon={<Save size={18} />}
-            sx={{
-              mt: 6,
-              px: 3,
-              py: 1.2,
-              bgcolor: "#4b8f80",
-              textTransform: "none",
-              fontWeight: "bold",
-              borderRadius: 1,
-              minWidth: 220,
-              whiteSpace: "nowrap",
-              "&:hover": {
-                bgcolor: "#3f7d70",
-              },
-            }}
-          >
-            Atualizar informações
-          </Button>
-        </Box>
+            </>
+          )}
+        </>
       )}
     </Box>
   );

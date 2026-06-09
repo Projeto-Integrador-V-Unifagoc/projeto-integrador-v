@@ -6,7 +6,7 @@ import AutenticacaoService from '../services/autenticacao-services';
 class AutenticacaoController {
   async cadastrar(req: Request, res: Response) {
   try {
-    const { nome, email, senha, tipo_usuario } = req.body;
+    const { nome, email, senha, tipo_usuario, aluno_id, professor_id } = req.body;
 
     if (!nome || !email || !senha || !tipo_usuario) {
       return res.status(400).json({
@@ -27,6 +27,8 @@ class AutenticacaoController {
       email,
       senha,
       tipo_usuario,
+      aluno_id, // vincula o novo login a um aluno existente
+      professor_id, // vincula o novo login a um professor existente
     });
 
     return res.status(201).json({
@@ -88,6 +90,32 @@ class AutenticacaoController {
       console.error('Erro ao listar usuários:', error);
       return res.status(500).json({
         error: 'Erro interno ao buscar a lista de usuários.'
+      });
+    }
+  }
+
+  // Lista alunos sem login, para o seletor de vínculo no cadastro de usuário.
+  async listarAlunosDisponiveis(req: Request, res: Response) {
+    try {
+      const alunos = await AutenticacaoService.listarAlunosSemUsuario();
+      return res.status(200).json(alunos);
+    } catch (error: any) {
+      console.error('Erro ao listar alunos disponíveis:', error);
+      return res.status(500).json({
+        error: 'Erro interno ao buscar alunos disponíveis.'
+      });
+    }
+  }
+
+  // Lista professores sem login, para o seletor de vínculo no cadastro de usuário.
+  async listarProfessoresDisponiveis(req: Request, res: Response) {
+    try {
+      const professores = await AutenticacaoService.listarProfessoresSemUsuario();
+      return res.status(200).json(professores);
+    } catch (error: any) {
+      console.error('Erro ao listar professores disponíveis:', error);
+      return res.status(500).json({
+        error: 'Erro interno ao buscar professores disponíveis.'
       });
     }
   }

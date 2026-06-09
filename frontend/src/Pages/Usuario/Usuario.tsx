@@ -8,18 +8,21 @@ import {
   Button,
   TextField,
   Stack,
-  Typography,
   Box,
   MenuItem,
   IconButton,
   Tooltip,
-  CircularProgress,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import { Search, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
+import SearchTextField from "../../components/SearchTextField/SearchTextField";
 import usuarioApi from "../../services/usuario-api";
 import { Perfil } from "../../enums/perfil";
+import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
+import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 
 export default function Usuarios() {
   const [open, setOpen] = useState(false);
@@ -27,6 +30,11 @@ export default function Usuarios() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [idParaExcluir, setIdParaExcluir] = useState<string | null>(null);
+
+  const { notificar } = useNotificacao();
+  const theme = useTheme();
+  const telaPequena = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [usuarioForm, setUsuarioForm] = useState({
     id: "",
@@ -34,7 +42,13 @@ export default function Usuarios() {
     email: "",
     senha: "",
     tipo_usuario: Perfil.ALUNO,
+    aluno_id: "",
+    professor_id: "",
   });
+
+  // Alunos/professores sem login, para os seletores de vínculo no cadastro de usuário.
+  const [alunosDisponiveis, setAlunosDisponiveis] = useState<any[]>([]);
+  const [professoresDisponiveis, setProfessoresDisponiveis] = useState<any[]>([]);
 
   const storedUser = localStorage.getItem("@UniEduca:user");
   const usuarioLogado = storedUser ? JSON.parse(storedUser) : null;
@@ -52,9 +66,35 @@ export default function Usuarios() {
     }
   };
 
+  const carregarAlunosDisponiveis = async () => {
+    try {
+      const response = await usuarioApi.get("/alunos-disponiveis");
+      setAlunosDisponiveis(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Erro ao carregar alunos disponíveis:", error);
+      setAlunosDisponiveis([]);
+    }
+  };
+
+  const carregarProfessoresDisponiveis = async () => {
+    try {
+      const response = await usuarioApi.get("/professores-disponiveis");
+      setProfessoresDisponiveis(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Erro ao carregar professores disponíveis:", error);
+      setProfessoresDisponiveis([]);
+    }
+  };
+
+  const carregarVinculos = () => {
+    carregarAlunosDisponiveis();
+    carregarProfessoresDisponiveis();
+  };
+
   useEffect(() => {
     if (usuarioLogado?.tipo_usuario === Perfil.SECRETARIA) {
       carregarUsuarios();
+      carregarVinculos();
     } else {
       setLoading(false);
     }
@@ -67,32 +107,44 @@ export default function Usuarios() {
       email: "",
       senha: "Mudar@123",
       tipo_usuario: Perfil.ALUNO,
+      aluno_id: "",
+      professor_id: "",
     });
+    carregarVinculos();
     setIsEditing(false);
     setOpen(true);
   };
 
   const handleEditar = (usuario: any) => {
-    setUsuarioForm({ ...usuario, senha: "" });
+    setUsuarioForm({ ...usuario, senha: "", aluno_id: "", professor_id: "" });
     setIsEditing(true);
     setOpen(true);
   };
 
-  const handleExcluir = async (id: string) => {
-    if (window.confirm("Deseja realmente excluir este usuário?")) {
-      try {
-        await usuarioApi.delete(`/usuarios/${id}`);
-        alert("Usuário removido com sucesso!");
-        carregarUsuarios();
-      } catch (error) {
-        alert("Erro ao excluir usuário.");
-      }
+  const handleExcluir = (id: string) => {
+    setIdParaExcluir(id);
+  };
+
+  const confirmarExclusao = async () => {
+    if (!idParaExcluir) return;
+    try {
+      await usuarioApi.delete(`/usuarios/${idParaExcluir}`);
+      notificar("Usuário removido com sucesso!", "success");
+      carregarUsuarios();
+    } catch (error: any) {
+      console.error("Erro ao excluir usuário:", error);
+      notificar(
+        error.response?.data?.error || "Erro ao excluir usuário.",
+        "error"
+      );
+    } finally {
+      setIdParaExcluir(null);
     }
   };
 
   const handleSalvar = async () => {
     if (!usuarioForm.nome || !usuarioForm.email) {
-      alert("Preencha os campos obrigatórios.");
+      notificar("Preencha os campos obrigatórios.", "warning");
       return;
     }
 
@@ -105,17 +157,23 @@ export default function Usuarios() {
           : { nome, email, tipo_usuario };
 
         await usuarioApi.put(`/usuarios/${id}`, payload);
-        alert("Usuário atualizado!");
+        notificar("Usuário atualizado com sucesso!", "success");
       } else {
         await usuarioApi.post("/cadastro", usuarioForm);
-        alert("Usuário cadastrado com sucesso!");
+        notificar("Usuário cadastrado com sucesso!", "success");
       }
 
       setOpen(false);
       carregarUsuarios();
-    } catch (error) {
+      carregarVinculos();
+    } catch (error: any) {
       console.error("Erro ao realizar a operação:", error);
-      alert("Erro ao realizar a operação.");
+      notificar(
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Erro ao realizar a operação.",
+        "error"
+      );
     }
   };
 
@@ -126,8 +184,8 @@ export default function Usuarios() {
   );
 
   const columns: any[] = [
-    { field: "nome", headerName: "Nome", flex: 1 },
-    { field: "email", headerName: "E-mail", flex: 1 },
+    { field: "nome", headerName: "Nome", flex: 1, minWidth: 160 },
+    { field: "email", headerName: "E-mail", flex: 1, minWidth: 200 },
     { field: "tipo_usuario", headerName: "Perfil", width: 150 },
     {
       field: "acoes",
@@ -162,94 +220,27 @@ export default function Usuarios() {
 
   return (
     <Container>
-      <Box
-        sx={{
-          height: "620px",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
+      <SearchTextField
+        buttonOnClick={handleOpenCadastro}
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Pesquisar por nome ou e-mail..."
+        showFilters={false}
       >
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          gap={3}
-          sx={{
-            mb: 4,
-            mt: 2,
-            width: "100%",
-            flexShrink: 0,
-          }}
+        Usuários
+      </SearchTextField>
+
+      <DataTable columns={columns} rows={rowsFiltradas} loading={loading} />
+
+      <Dialog
+          open={open}
+          onClose={() => setOpen(false)}
+          fullWidth
+          maxWidth="sm"
+          fullScreen={telaPequena}
+          slotProps={{ paper: { sx: { backgroundColor: "background.default" } } }}
         >
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            sx={{ whiteSpace: "nowrap" }}
-          >
-            Usuários
-          </Typography>
-
-          <TextField
-            size="small"
-            placeholder="Pesquisar por nome ou e-mail..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <Box sx={{ mr: 1, color: "text.secondary", display: "flex" }}>
-                  <Search size={18} />
-                </Box>
-              ),
-            }}
-            sx={{
-              flex: 1,
-              backgroundColor: "white",
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "20px",
-              },
-            }}
-          />
-
-          <Button
-            variant="contained"
-            onClick={handleOpenCadastro}
-            sx={{
-              backgroundColor: "#00B4D8",
-              fontWeight: "bold",
-              minWidth: "130px",
-              borderRadius: "20px",
-              height: "40px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Adicionar
-          </Button>
-        </Box>
-
-        {loading ? (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            sx={{ flex: 1 }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              overflow: "hidden",
-            }}
-          >
-            <DataTable columns={columns} rows={rowsFiltradas} />
-          </Box>
-        )}
-
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-          <DialogTitle sx={{ fontWeight: "bold" }}>
+          <DialogTitle sx={{ fontWeight: "bold", color: "primary.main" }}>
             {isEditing ? "Editar Usuário" : "Novo Usuário"}
           </DialogTitle>
 
@@ -285,6 +276,8 @@ export default function Usuarios() {
                   setUsuarioForm({
                     ...usuarioForm,
                     tipo_usuario: e.target.value as Perfil,
+                    aluno_id: "",
+                    professor_id: "",
                   })
                 }
               >
@@ -292,6 +285,60 @@ export default function Usuarios() {
                 <MenuItem value={Perfil.PROFESSOR}>Professor</MenuItem>
                 <MenuItem value={Perfil.SECRETARIA}>Secretaria</MenuItem>
               </TextField>
+
+              {!isEditing && usuarioForm.tipo_usuario === Perfil.ALUNO && (
+                <TextField
+                  select
+                  label="Vincular ao aluno (opcional)"
+                  fullWidth
+                  value={usuarioForm.aluno_id}
+                  onChange={(e) =>
+                    setUsuarioForm({ ...usuarioForm, aluno_id: e.target.value })
+                  }
+                  helperText={
+                    alunosDisponiveis.length === 0
+                      ? "Nenhum aluno sem login disponível no momento."
+                      : "O login será ligado a este aluno, e o perfil mostrará os dados dele."
+                  }
+                >
+                  <MenuItem value="">
+                    <em>Não vincular</em>
+                  </MenuItem>
+                  {alunosDisponiveis.map((aluno) => (
+                    <MenuItem key={aluno.id} value={aluno.id}>
+                      {aluno.nome}
+                      {aluno.cpf ? ` — ${aluno.cpf}` : ""}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+
+              {!isEditing && usuarioForm.tipo_usuario === Perfil.PROFESSOR && (
+                <TextField
+                  select
+                  label="Vincular ao professor (opcional)"
+                  fullWidth
+                  value={usuarioForm.professor_id}
+                  onChange={(e) =>
+                    setUsuarioForm({ ...usuarioForm, professor_id: e.target.value })
+                  }
+                  helperText={
+                    professoresDisponiveis.length === 0
+                      ? "Nenhum professor sem login disponível no momento."
+                      : "O login será ligado a este professor, e o perfil mostrará os dados dele."
+                  }
+                >
+                  <MenuItem value="">
+                    <em>Não vincular</em>
+                  </MenuItem>
+                  {professoresDisponiveis.map((professor) => (
+                    <MenuItem key={professor.id} value={professor.id}>
+                      {professor.nome}
+                      {professor.cpf ? ` — ${professor.cpf}` : ""}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
 
               <TextField
                 label={isEditing ? "Nova Senha (opcional)" : "Senha"}
@@ -311,17 +358,28 @@ export default function Usuarios() {
           </DialogContent>
 
           <DialogActions sx={{ p: 3 }}>
-            <Button onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button onClick={() => setOpen(false)} sx={{ color: "text.secondary" }}>
+              Cancelar
+            </Button>
             <Button
               onClick={handleSalvar}
               variant="contained"
-              sx={{ backgroundColor: "#00B4D8", width: "30%" }}
+              color="primary"
+              sx={{ width: { xs: "auto", sm: "30%" }, whiteSpace: "nowrap" }}
             >
               {isEditing ? "Salvar Alterações" : "Cadastrar"}
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
+
+        <ConfirmDialog
+          open={idParaExcluir !== null}
+          titulo="Excluir usuário"
+          mensagem="Deseja realmente excluir este usuário? Esta ação não pode ser desfeita."
+          textoConfirmar="Excluir"
+          onConfirmar={confirmarExclusao}
+          onCancelar={() => setIdParaExcluir(null)}
+        />
     </Container>
   );
 }
