@@ -16,10 +16,11 @@ import {
   CardHeader,
   CardContent,
   CircularProgress,
+  InputAdornment,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Eye, EyeOff, Copy, KeyRound } from "lucide-react";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import { MobileCard } from "../../components/MobileCard";
@@ -37,6 +38,7 @@ export default function Usuarios() {
   const [search, setSearch] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [idParaExcluir, setIdParaExcluir] = useState<string | null>(null);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const { notificar } = useNotificacao();
   const theme = useTheme();
@@ -121,11 +123,12 @@ export default function Usuarios() {
       id: "",
       nome: "",
       email: "",
-      senha: "Mudar@123",
+      senha: "",
       tipo_usuario: Perfil.ALUNO,
       aluno_id: "",
       professor_id: "",
     });
+    setMostrarSenha(false);
     carregarVinculos();
     setIsEditing(false);
     setOpen(true);
@@ -149,6 +152,7 @@ export default function Usuarios() {
       professor_nome: usuario.professor_nome || "",
       professor_cpf: usuario.professor_cpf || "",
     });
+    setMostrarSenha(false);
     carregarVinculos();
     setIsEditing(true);
     setOpen(true);
@@ -175,9 +179,51 @@ export default function Usuarios() {
     }
   };
 
+  // Gera uma senha forte aleatória com ao menos uma letra maiúscula,
+  // minúscula, número e símbolo. Evita caracteres ambíguos (O/0, l/1).
+  const gerarSenha = () => {
+    const maiusculas = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const minusculas = "abcdefghijkmnpqrstuvwxyz";
+    const numeros = "23456789";
+    const simbolos = "!@#$%&*?";
+    const todos = maiusculas + minusculas + numeros + simbolos;
+
+    const sortear = (conjunto: string) =>
+      conjunto[Math.floor(Math.random() * conjunto.length)];
+
+    const caracteres = [
+      sortear(maiusculas),
+      sortear(minusculas),
+      sortear(numeros),
+      sortear(simbolos),
+    ];
+    for (let i = caracteres.length; i < 12; i++) {
+      caracteres.push(sortear(todos));
+    }
+    const novaSenha = caracteres.sort(() => Math.random() - 0.5).join("");
+
+    setUsuarioForm((prev) => ({ ...prev, senha: novaSenha }));
+    setMostrarSenha(true);
+  };
+
+  const copiarSenha = async () => {
+    if (!usuarioForm.senha) return;
+    try {
+      await navigator.clipboard.writeText(usuarioForm.senha);
+      notificar("Senha copiada para a área de transferência.", "success");
+    } catch {
+      notificar("Não foi possível copiar a senha.", "error");
+    }
+  };
+
   const handleSalvar = async () => {
     if (!usuarioForm.nome || !usuarioForm.email) {
       notificar("Preencha os campos obrigatórios.", "warning");
+      return;
+    }
+
+    if (!isEditing && !usuarioForm.senha) {
+      notificar('Defina uma senha ou clique em "Gerar senha".', "warning");
       return;
     }
 
@@ -464,18 +510,59 @@ export default function Usuarios() {
 
               <TextField
                 label={isEditing ? "Nova Senha (opcional)" : "Senha"}
-                type="password"
+                required={!isEditing}
+                type={mostrarSenha ? "text" : "password"}
                 fullWidth
                 helperText={
                   isEditing
                     ? "Deixe em branco para não alterar"
-                    : "Senha inicial do usuário"
+                    : 'Defina uma senha ou clique em "Gerar senha".'
                 }
                 value={usuarioForm.senha}
                 onChange={(e) =>
                   setUsuarioForm({ ...usuarioForm, senha: e.target.value })
                 }
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title={mostrarSenha ? "Ocultar" : "Mostrar"}>
+                          <IconButton
+                            edge="end"
+                            onClick={() => setMostrarSenha((v) => !v)}
+                          >
+                            {mostrarSenha ? (
+                              <EyeOff size={18} />
+                            ) : (
+                              <Eye size={18} />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Copiar senha">
+                          <span>
+                            <IconButton
+                              edge="end"
+                              onClick={copiarSenha}
+                              disabled={!usuarioForm.senha}
+                            >
+                              <Copy size={18} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
               />
+
+              <Button
+                variant="outlined"
+                startIcon={<KeyRound size={18} />}
+                onClick={gerarSenha}
+                sx={{ width: "100%", height: "auto", py: 1, whiteSpace: "nowrap" }}
+              >
+                Gerar senha
+              </Button>
             </Stack>
           </DialogContent>
 
