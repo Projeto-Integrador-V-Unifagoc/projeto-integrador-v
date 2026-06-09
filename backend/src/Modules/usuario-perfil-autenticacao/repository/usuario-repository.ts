@@ -1,4 +1,4 @@
-import db from '../../../database/conexao';
+import { db } from '../../../database/connection';
 import knex from 'knex';
 
 export interface Usuario {
