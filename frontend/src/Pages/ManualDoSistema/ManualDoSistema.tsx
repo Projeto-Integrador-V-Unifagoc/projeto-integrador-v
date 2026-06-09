@@ -161,7 +161,9 @@ export default function ManualDoSistema() {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <ManualCard.Root>
+                            <ManualCard.Root
+                                onClick={() => navigate("/manual-do-sistema/status")}
+                            >
                                 <ManualCard.Header>
                                     <ManualCard.Content
                                         icon={<Info size={27} />}
