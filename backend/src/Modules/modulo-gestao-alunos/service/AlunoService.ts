@@ -37,8 +37,8 @@ export class AlunoService {
         });
     }
 
-    async listarAlunos() {
-        const alunos = await this.alunoRepository.listarAlunos();
+    async listarAlunos(filtros: any) {
+        const alunos = await this.alunoRepository.listarAlunos(filtros);
         return alunos;
     }
 

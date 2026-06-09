@@ -14,7 +14,9 @@ export class AlunoController {
 
     async listarAlunos(req: any, res: any) {
         try {
-            const alunos = await this.alunoService.listarAlunos();
+            const { cursoId, periodo } = req.query;
+
+            const alunos = await this.alunoService.listarAlunos({ cursoId, periodo });
             res.status(200).json(alunos);
         } catch (error) {
             res.status(400).json({ error: (error as Error).message });
