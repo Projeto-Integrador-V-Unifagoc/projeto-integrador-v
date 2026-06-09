@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Box, Button, TextField, Typography, Stack, Paper } from "@mui/material";
+import { Box, Button, TextField, Typography, Stack, Paper, useTheme } from "@mui/material";
 import Container from "../../components/Container";
 import FavIcon from '../../../public/assets/favIcon.svg';
 import { authService } from '../../services/auth-services';
+import { useNotificacao } from '../../components/Notificacao/NotificationProvider';
 
 export const Login = () => {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const navigate = useNavigate();
+    const { notificar } = useNotificacao();
+    const theme = useTheme();
 
     const handleLogin = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -22,12 +25,13 @@ export const Login = () => {
             localStorage.setItem('@UniEduca:token', data.token);
             localStorage.setItem('@UniEduca:user', JSON.stringify(data.user));
 
-            console.log("Login realizado com sucesso!");
+            notificar('Login realizado com sucesso!', 'success');
 
-            navigate('/usuarios/lista');
+            // Todos os perfis (aluno, professor, secretaria) caem na página principal.
+            navigate('/');
         } catch (error: any) {
             console.error('Erro no login:', error);
-            alert(error.response?.data?.message || 'E-mail ou senha incorretos.');
+            notificar(error.response?.data?.message || 'E-mail ou senha incorretos.', 'error');
         }
     }
 
@@ -35,17 +39,19 @@ export const Login = () => {
         <Container
             maxWidth={false}
             sx={{
-                height: '100vh',
+                minHeight: '100vh',
                 backgroundColor: '#F4F4F4',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
+                px: { xs: 2, sm: 3 },
+                py: { xs: 4, sm: 0 },
             }}
         >
             <Paper
                 elevation={0}
                 sx={{
-                    padding: 4,
+                    padding: { xs: 3, sm: 4 },
                     width: '100%',
                     maxWidth: 400,
                     borderRadius: '12px',
@@ -88,9 +94,10 @@ export const Login = () => {
                         <Button
                             type="submit"
                             variant="contained"
+                            color="primary"
                             size="large"
                             fullWidth
-                            sx={{ py: 1.5, fontWeight: 'bold', backgroundColor: '#00B4D8' }}
+                            sx={{ py: 1.5, fontWeight: 'bold' }}
                         >
                             Acessar
                         </Button>
@@ -98,7 +105,7 @@ export const Login = () => {
                 </Box>
 
                 <Typography variant="body2" mt={3}>
-                    <Link to="/esqueceu-senha" style={{ color: '#008eb7', fontWeight: 'bold', textDecoration: 'none', fontSize: '15px' }}>
+                    <Link to="/esqueceu-senha" style={{ color: theme.palette.primary.main, fontWeight: 'bold', textDecoration: 'none', fontSize: '15px' }}>
                         Esqueceu a senha?
                     </Link>
                 </Typography>

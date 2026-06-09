@@ -1,12 +1,10 @@
-import bcrypt from 'bcrypt';
-import db from '../../../database/conexao';
 import { Request, Response } from 'express';
 import AutenticacaoService from '../services/autenticacao-services';
 
 class AutenticacaoController {
   async cadastrar(req: Request, res: Response) {
   try {
-    const { nome, email, senha, tipo_usuario } = req.body;
+    const { nome, email, senha, tipo_usuario, aluno_id, professor_id } = req.body;
 
     if (!nome || !email || !senha || !tipo_usuario) {
       return res.status(400).json({
@@ -27,6 +25,8 @@ class AutenticacaoController {
       email,
       senha,
       tipo_usuario,
+      aluno_id, // vincula o novo login a um aluno existente
+      professor_id, // vincula o novo login a um professor existente
     });
 
     return res.status(201).json({
@@ -92,6 +92,32 @@ class AutenticacaoController {
     }
   }
 
+  // Lista alunos sem login, para o seletor de vínculo no cadastro de usuário.
+  async listarAlunosDisponiveis(req: Request, res: Response) {
+    try {
+      const alunos = await AutenticacaoService.listarAlunosSemUsuario();
+      return res.status(200).json(alunos);
+    } catch (error: any) {
+      console.error('Erro ao listar alunos disponíveis:', error);
+      return res.status(500).json({
+        error: 'Erro interno ao buscar alunos disponíveis.'
+      });
+    }
+  }
+
+  // Lista professores sem login, para o seletor de vínculo no cadastro de usuário.
+  async listarProfessoresDisponiveis(req: Request, res: Response) {
+    try {
+      const professores = await AutenticacaoService.listarProfessoresSemUsuario();
+      return res.status(200).json(professores);
+    } catch (error: any) {
+      console.error('Erro ao listar professores disponíveis:', error);
+      return res.status(500).json({
+        error: 'Erro interno ao buscar professores disponíveis.'
+      });
+    }
+  }
+
   async excluir(req: Request, res: Response) {
     try {
       const id = req.params.id as string;
@@ -110,50 +136,35 @@ class AutenticacaoController {
   }
 
 async atualizar(req: Request, res: Response) {
-    console.log("🚀 Body recebido:", req.body);
-
     try {
         const { id } = req.params;
-        const { nome, email, senha, tipo_usuario } = req.body || {};
+        const { nome, email, senha, tipo_usuario, aluno_id, professor_id } = req.body || {};
 
-        if (!nome && !email && !senha && !tipo_usuario) {
+        if (
+            nome === undefined &&
+            email === undefined &&
+            senha === undefined &&
+            tipo_usuario === undefined &&
+            aluno_id === undefined &&
+            professor_id === undefined
+        ) {
             return res.status(400).json({ error: "Nenhum dado enviado para atualização." });
         }
 
-        const dadosParaAtualizar: any = {};
-
-        if (nome !== undefined) {
-            dadosParaAtualizar.nome = nome;
-        }
-
-        if (email !== undefined) {
-            dadosParaAtualizar.email = email;
-        }
-
-        if (tipo_usuario !== undefined) {
-            dadosParaAtualizar.tipo_usuario = tipo_usuario;
-        }
-
-        if (senha && senha.trim() !== "") {
-            const salt = await bcrypt.genSalt(10);
-            dadosParaAtualizar.senha = await bcrypt.hash(senha, salt);
-        }
-
-        const atualizou = await db("usuario")
-            .withSchema("piv")
-            .where({ id })
-            .update(dadosParaAtualizar);
-
-        if (!atualizou) {
-            return res.status(404).json({ error: "Usuário não encontrado no banco." });
-        }
+        await AutenticacaoService.atualizarUsuario(String(id), {
+            nome,
+            email,
+            senha,
+            tipo_usuario,
+            aluno_id,
+            professor_id,
+        });
 
         return res.status(200).json({ message: "Dados atualizados com sucesso!" });
     } catch (error: any) {
-        console.error(error);
-        return res.status(500).json({
-            error: "Erro interno ao atualizar.",
-            detalhe: error.message
+        console.error('Erro ao atualizar usuário:', error);
+        return res.status(400).json({
+            error: error?.message || "Erro interno ao atualizar.",
         });
     }
 }
