@@ -8,6 +8,7 @@
     "target": "ES6",
     "esModuleInterop": true,
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "rootDir": ".",
     "outDir": "./dist"
   },
