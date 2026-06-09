@@ -144,15 +144,46 @@ export class UsuarioRepository {
       .update({ usuario_id: usuarioId });
   }
 
+  // Remove o vínculo de qualquer aluno apontando para este usuário (usuario_id -> null).
+  async desvincularAlunosDoUsuario(usuarioId: string) {
+    return await db('piv.aluno')
+      .where({ usuario_id: usuarioId })
+      .update({ usuario_id: null });
+  }
+
+  // Remove o vínculo de qualquer professor apontando para este usuário (usuario_id -> null).
+  async desvincularProfessoresDoUsuario(usuarioId: string) {
+    return await db('piv.professor')
+      .where({ usuario_id: usuarioId })
+      .update({ usuario_id: null });
+  }
+
+  // Atualiza os dados básicos do usuário (nome, email, senha, tipo_usuario).
+  async update(id: string, dados: Partial<Usuario>) {
+    return await db('piv.usuario')
+      .where({ id })
+      .update(dados);
+  }
+
   async findAll(): Promise<any[]> {
-    return await db
-      .withSchema('piv')
-      .table('usuario')
+    // Traz, junto de cada usuário, o aluno/professor vinculado (id + nome),
+    // para que a edição já saiba qual vínculo está ativo.
+    return await db('piv.usuario')
+      .leftJoin('piv.aluno', 'aluno.usuario_id', 'usuario.id')
+      .leftJoin('piv.professor', 'professor.usuario_id', 'usuario.id')
+      .leftJoin('piv.pessoa as pessoa_aluno', 'aluno.pessoa_id', 'pessoa_aluno.id')
+      .leftJoin('piv.pessoa as pessoa_professor', 'professor.pessoa_id', 'pessoa_professor.id')
       .select(
         'usuario.id',
         'usuario.nome',
         'usuario.email',
-        'usuario.tipo_usuario'
+        'usuario.tipo_usuario',
+        'aluno.id as aluno_id',
+        'pessoa_aluno.nome as aluno_nome',
+        'pessoa_aluno.cpf as aluno_cpf',
+        'professor.id as professor_id',
+        'pessoa_professor.nome as professor_nome',
+        'pessoa_professor.cpf as professor_cpf'
       );
   }
   

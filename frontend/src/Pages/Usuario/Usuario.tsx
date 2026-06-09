@@ -50,6 +50,16 @@ export default function Usuarios() {
   const [alunosDisponiveis, setAlunosDisponiveis] = useState<any[]>([]);
   const [professoresDisponiveis, setProfessoresDisponiveis] = useState<any[]>([]);
 
+  // Vínculo atual ao editar (não vem na lista de "disponíveis", pois já tem login).
+  const [vinculoAtual, setVinculoAtual] = useState({
+    aluno_id: "",
+    aluno_nome: "",
+    aluno_cpf: "",
+    professor_id: "",
+    professor_nome: "",
+    professor_cpf: "",
+  });
+
   const storedUser = localStorage.getItem("@UniEduca:user");
   const usuarioLogado = storedUser ? JSON.parse(storedUser) : null;
 
@@ -116,7 +126,24 @@ export default function Usuarios() {
   };
 
   const handleEditar = (usuario: any) => {
-    setUsuarioForm({ ...usuario, senha: "", aluno_id: "", professor_id: "" });
+    setUsuarioForm({
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      senha: "",
+      tipo_usuario: usuario.tipo_usuario,
+      aluno_id: usuario.aluno_id || "",
+      professor_id: usuario.professor_id || "",
+    });
+    setVinculoAtual({
+      aluno_id: usuario.aluno_id || "",
+      aluno_nome: usuario.aluno_nome || "",
+      aluno_cpf: usuario.aluno_cpf || "",
+      professor_id: usuario.professor_id || "",
+      professor_nome: usuario.professor_nome || "",
+      professor_cpf: usuario.professor_cpf || "",
+    });
+    carregarVinculos();
     setIsEditing(true);
     setOpen(true);
   };
@@ -150,11 +177,19 @@ export default function Usuarios() {
 
     try {
       if (isEditing) {
-        const { id, nome, email, senha, tipo_usuario } = usuarioForm;
+        const { id, nome, email, senha, tipo_usuario, aluno_id, professor_id } =
+          usuarioForm;
 
-        const payload = senha
-          ? { nome, email, senha, tipo_usuario }
-          : { nome, email, tipo_usuario };
+        const payload: any = {
+          nome,
+          email,
+          tipo_usuario,
+          // Envia o vínculo conforme o tipo; vazio significa "desvincular".
+          aluno_id: tipo_usuario === Perfil.ALUNO ? aluno_id : "",
+          professor_id: tipo_usuario === Perfil.PROFESSOR ? professor_id : "",
+        };
+
+        if (senha) payload.senha = senha;
 
         await usuarioApi.put(`/usuarios/${id}`, payload);
         notificar("Usuário atualizado com sucesso!", "success");
@@ -176,6 +211,31 @@ export default function Usuarios() {
       );
     }
   };
+
+  // Inclui o vínculo atual nas opções.
+  const opcoesAlunos = [...alunosDisponiveis];
+  if (
+    vinculoAtual.aluno_id &&
+    !opcoesAlunos.some((a) => a.id === vinculoAtual.aluno_id)
+  ) {
+    opcoesAlunos.unshift({
+      id: vinculoAtual.aluno_id,
+      nome: vinculoAtual.aluno_nome,
+      cpf: vinculoAtual.aluno_cpf,
+    });
+  }
+
+  const opcoesProfessores = [...professoresDisponiveis];
+  if (
+    vinculoAtual.professor_id &&
+    !opcoesProfessores.some((p) => p.id === vinculoAtual.professor_id)
+  ) {
+    opcoesProfessores.unshift({
+      id: vinculoAtual.professor_id,
+      nome: vinculoAtual.professor_nome,
+      cpf: vinculoAtual.professor_cpf,
+    });
+  }
 
   const rowsFiltradas = rows.filter(
     (row) =>
@@ -286,7 +346,7 @@ export default function Usuarios() {
                 <MenuItem value={Perfil.SECRETARIA}>Secretaria</MenuItem>
               </TextField>
 
-              {!isEditing && usuarioForm.tipo_usuario === Perfil.ALUNO && (
+              {usuarioForm.tipo_usuario === Perfil.ALUNO && (
                 <TextField
                   select
                   label="Vincular ao aluno (opcional)"
@@ -296,7 +356,7 @@ export default function Usuarios() {
                     setUsuarioForm({ ...usuarioForm, aluno_id: e.target.value })
                   }
                   helperText={
-                    alunosDisponiveis.length === 0
+                    opcoesAlunos.length === 0
                       ? "Nenhum aluno sem login disponível no momento."
                       : "O login será ligado a este aluno, e o perfil mostrará os dados dele."
                   }
@@ -304,7 +364,7 @@ export default function Usuarios() {
                   <MenuItem value="">
                     <em>Não vincular</em>
                   </MenuItem>
-                  {alunosDisponiveis.map((aluno) => (
+                  {opcoesAlunos.map((aluno) => (
                     <MenuItem key={aluno.id} value={aluno.id}>
                       {aluno.nome}
                       {aluno.cpf ? ` — ${aluno.cpf}` : ""}
@@ -313,7 +373,7 @@ export default function Usuarios() {
                 </TextField>
               )}
 
-              {!isEditing && usuarioForm.tipo_usuario === Perfil.PROFESSOR && (
+              {usuarioForm.tipo_usuario === Perfil.PROFESSOR && (
                 <TextField
                   select
                   label="Vincular ao professor (opcional)"
@@ -323,7 +383,7 @@ export default function Usuarios() {
                     setUsuarioForm({ ...usuarioForm, professor_id: e.target.value })
                   }
                   helperText={
-                    professoresDisponiveis.length === 0
+                    opcoesProfessores.length === 0
                       ? "Nenhum professor sem login disponível no momento."
                       : "O login será ligado a este professor, e o perfil mostrará os dados dele."
                   }
@@ -331,7 +391,7 @@ export default function Usuarios() {
                   <MenuItem value="">
                     <em>Não vincular</em>
                   </MenuItem>
-                  {professoresDisponiveis.map((professor) => (
+                  {opcoesProfessores.map((professor) => (
                     <MenuItem key={professor.id} value={professor.id}>
                       {professor.nome}
                       {professor.cpf ? ` — ${professor.cpf}` : ""}

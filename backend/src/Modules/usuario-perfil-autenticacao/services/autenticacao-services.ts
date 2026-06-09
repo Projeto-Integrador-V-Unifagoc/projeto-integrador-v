@@ -164,6 +164,76 @@ class AutenticacaoService {
     return await this.usuarioRepository.findAll();
   }
 
+  async atualizarUsuario(id: string, dados: any) {
+    const { nome, email, senha, tipo_usuario, aluno_id, professor_id } = dados;
+
+    const usuario = await this.usuarioRepository.buscarPorId(id);
+    if (!usuario) {
+      throw new Error('Usuário não encontrado.');
+    }
+
+    const dadosParaAtualizar: any = {};
+    if (nome !== undefined) dadosParaAtualizar.nome = nome;
+    if (email !== undefined) dadosParaAtualizar.email = email;
+    if (tipo_usuario !== undefined) {
+      dadosParaAtualizar.tipo_usuario = tipo_usuario.toLowerCase();
+    }
+    if (senha && senha.trim() !== '') {
+      dadosParaAtualizar.senha = await bcrypt.hash(senha, 10);
+    }
+
+    if (Object.keys(dadosParaAtualizar).length > 0) {
+      await this.usuarioRepository.update(id, dadosParaAtualizar);
+    }
+
+    const tipoEfetivo = (tipo_usuario ?? usuario.tipo_usuario).toLowerCase();
+
+    if (aluno_id !== undefined || professor_id !== undefined) {
+      await this.atualizarVinculo(id, tipoEfetivo, aluno_id, professor_id);
+    }
+
+    return { id };
+  }
+
+  // Sincroniza o vínculo aluno/professor de um usuário com o tipo escolhido.
+  private async atualizarVinculo(
+    usuarioId: string,
+    tipo: string,
+    aluno_id?: string,
+    professor_id?: string
+  ) {
+    // Valida o novo vínculo ANTES de remover o antigo.
+    if (tipo === 'aluno' && aluno_id) {
+      const aluno = await this.usuarioRepository.buscarAlunoSimples(aluno_id);
+      if (!aluno) {
+        throw new Error('Aluno selecionado não encontrado.');
+      }
+      if (aluno.usuario_id && String(aluno.usuario_id) !== String(usuarioId)) {
+        throw new Error('Este aluno já possui um login vinculado.');
+      }
+    }
+
+    if (tipo === 'professor' && professor_id) {
+      const professor = await this.usuarioRepository.buscarProfessorSimples(professor_id);
+      if (!professor) {
+        throw new Error('Professor selecionado não encontrado.');
+      }
+      if (professor.usuario_id && String(professor.usuario_id) !== String(usuarioId)) {
+        throw new Error('Este professor já possui um login vinculado.');
+      }
+    }
+
+    // Limpa qualquer vínculo anterior deste usuário e aplica o novo conforme o tipo.
+    await this.usuarioRepository.desvincularAlunosDoUsuario(usuarioId);
+    await this.usuarioRepository.desvincularProfessoresDoUsuario(usuarioId);
+
+    if (tipo === 'aluno' && aluno_id) {
+      await this.usuarioRepository.vincularUsuarioAoAluno(aluno_id, String(usuarioId));
+    } else if (tipo === 'professor' && professor_id) {
+      await this.usuarioRepository.vincularUsuarioAoProfessor(professor_id, String(usuarioId));
+    }
+  }
+
   
  async excluirUsuario(id: string) {
     
