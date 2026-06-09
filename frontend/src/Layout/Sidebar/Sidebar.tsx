@@ -238,6 +238,18 @@ export default function Sidebar({ abrirSidebar }: SidebarProps) {
                 )}
 
                 {(ehSecretaria || ehProfessor || ehAluno) && (
+                  <ListItemButton sx={{ pl: 4 }} href="/notas/lista">
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <ClipboardList size={17} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Notas"
+                      primaryTypographyProps={{ fontSize: 14 }}
+                    />
+                  </ListItemButton>
+                )}
+
+                {(ehSecretaria || ehProfessor || ehAluno) && (
                   <ListItemButton sx={{ pl: 4 }} href="/cursos/lista">
                     <ListItemIcon sx={{ minWidth: 28 }}>
                       <GraduationCap size={17} />

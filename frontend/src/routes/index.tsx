@@ -33,6 +33,7 @@ import CadastroTurmas from "../Pages/Turmas/CadastroTurmas";
 import DetalheTurma from "../Pages/Turmas/DetalheTurma";
 
 import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
+import Notas from "../Pages/Notas/Notas";
 import Professores from "../Pages/Professores/Professores";
 import CadastroProfessores from "../Pages/Professores/Cadastro";
 import Frequencia from "../Pages/Frequencia/Frequencia";
@@ -191,6 +192,15 @@ export default function AppRoutes() {
           element={
             <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
               <Avaliacoes />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/notas/lista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+              <Notas />
             </RouteByRole>
           }
         />
