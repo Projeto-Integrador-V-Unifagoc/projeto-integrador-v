@@ -38,6 +38,11 @@ export default function UserMenu({ anchorEl, onClose }: UserMenuProps) {
     navigate("/perfil");
   }
 
+  function handleManualDoSistema() {
+    onClose()
+    navigate("/manual-do-sistema")
+  }
+
   function handleLogout() {
     localStorage.removeItem("@UniEduca:token");
     localStorage.removeItem("@UniEduca:user");
@@ -129,7 +134,7 @@ export default function UserMenu({ anchorEl, onClose }: UserMenuProps) {
         </MenuItem>
 
         <MenuItem
-          onClick={onClose}
+          onClick={handleManualDoSistema}
           sx={{
             borderTop: `1px solid ${theme.palette.grey[200]}`,
           }}

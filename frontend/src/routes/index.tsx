@@ -39,6 +39,7 @@ import Frequencia from "../Pages/Frequencia/Frequencia";
 import NovaMatricula from "../Pages/Matricula/NovaMatricula";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
+import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
 
 function RouteByRole({
   children,
@@ -91,6 +92,7 @@ export default function AppRoutes() {
           </PrivateRoute>
         }
       >
+        <Route path="/manual-do-sistema" element={<ManualDoSistema />}/>
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
