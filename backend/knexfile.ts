@@ -14,7 +14,7 @@ const config: { [key: string]: Knex.Config } = {
       user: String(process.env.DATABASE_USERNAME),
       password: String(process.env.DATABASE_PASSWORD)
     },
-    searchPath: ['piv'],
+    searchPath: ['piv', 'public'],
     seeds: {
       directory: "./seeds"
     },
@@ -24,7 +24,8 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: "knex_migrations",
-      directory: "./migrations"
+      directory: "./migrations",
+      schemaName: "piv"
     }
   },
 

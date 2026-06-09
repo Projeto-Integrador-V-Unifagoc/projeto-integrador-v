@@ -80,17 +80,19 @@ interface NotaForm {
 
 const tipoOptions: TipoAvaliacaoNota[] = ["PROVA", "TPI", "TRABALHO"];
 
-const initialForm: NotaForm = {
-  turma_disciplina_id: "",
-  matricula_turma_disciplina_id: "",
-  aluno_id: "",
-  tipo_avaliacao: "PROVA",
-  descricao_avaliacao: "",
-  valor: 20,
-  nota: "",
-  data_lancamento: new Date().toISOString().slice(0, 10),
-  data_devolucao: "",
-};
+function criarFormularioInicial(): NotaForm {
+  return {
+    turma_disciplina_id: "",
+    matricula_turma_disciplina_id: "",
+    aluno_id: "",
+    tipo_avaliacao: "PROVA",
+    descricao_avaliacao: "",
+    valor: 20,
+    nota: "",
+    data_lancamento: new Date().toISOString().slice(0, 10),
+    data_devolucao: "",
+  };
+}
 
 function normalizarTexto(value: string) {
   return value
@@ -145,7 +147,7 @@ export default function Notas() {
   const [dialogDeleteOpen, setDialogDeleteOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notaParaExcluir, setNotaParaExcluir] = useState<NotaDetalhada | null>(null);
-  const [form, setForm] = useState<NotaForm>(initialForm);
+  const [form, setForm] = useState<NotaForm>(criarFormularioInicial());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -229,7 +231,7 @@ export default function Notas() {
   function abrirCadastro(boletim?: BoletimAluno) {
     setEditingId(null);
     setForm({
-      ...initialForm,
+      ...criarFormularioInicial(),
       turma_disciplina_id: boletim?.turmaDisciplinaId || "",
       matricula_turma_disciplina_id: boletim?.matriculaTurmaDisciplinaId || "",
       aluno_id: boletim?.alunoId || "",
@@ -418,9 +420,15 @@ export default function Notas() {
     {
       field: "descricao_avaliacao",
       headerName: "Descricao",
-      flex: 1,
-      minWidth: 200,
-      valueGetter: (_, row) => row.descricao_avaliacao || "Sem descricao",
+      flex: 1.5,
+      minWidth: 260,
+      headerAlign: "left",
+      align: "left",
+      renderCell: ({ value }) => (
+        <span style={{ whiteSpace: "normal", wordBreak: "break-word" }}>
+          {String(value ?? "Sem descricao")}
+        </span>
+      ),
     },
     {
       field: "nota",
@@ -487,7 +495,7 @@ export default function Notas() {
                   <RefreshCw size={16} />
                   Atualizar
                 </Button>
-                <Button variant="contained" sx={{ width: 128 }} onClick={() => abrirCadastro()}>
+                <Button type="button" variant="contained" sx={{ width: 128 }} onClick={abrirCadastro}>
                   <Plus size={16} />
                   Nova nota
                 </Button>

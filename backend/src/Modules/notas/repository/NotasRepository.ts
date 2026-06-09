@@ -1,4 +1,4 @@
-import db from "../../../database/index.js";
+import { db } from "../../../database/connection.js";
 import { AtualizarNotaDTO, LancarNotaDTO, NotaDetalhada, NotaMapper } from "../models/NotasModels.js";
 
 export class NotasRepository {
