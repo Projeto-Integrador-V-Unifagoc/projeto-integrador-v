@@ -40,6 +40,7 @@ import NovaMatricula from "../Pages/Matricula/NovaMatricula";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
 import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
+import ManualUsuarioAutenticacao from "../Pages/ManualDoSistema/components/ManualUsuarioAutenticacao/ManualUsuarioAutenticacao";
 
 function RouteByRole({
   children,
@@ -93,6 +94,8 @@ export default function AppRoutes() {
         }
       >
         <Route path="/manual-do-sistema" element={<ManualDoSistema />}/>
+        <Route path="/manual-do-sistema/usuarios-e-autenticacao" element={<ManualUsuarioAutenticacao />}/>
+
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
