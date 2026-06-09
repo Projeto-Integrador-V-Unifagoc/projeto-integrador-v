@@ -1,10 +1,15 @@
+import type { ReactNode } from "react";
 import { Paper, Typography, Stack } from "@mui/material";
 
 interface FichaAlunoConteudoAbaProps {
   titulo: string;
+  children?: ReactNode;
+  descricao?: string;
 }
 
 export function FichaAlunoConteudoAba({
+  children,
+  descricao,
   titulo,
 }: FichaAlunoConteudoAbaProps) {
   return (
@@ -18,9 +23,11 @@ export function FichaAlunoConteudoAba({
       }}
     >
       <Stack spacing={1}>
-        <Typography variant="body1" color="text.secondary">
-          Conteudo mockado para a aba "{titulo}".
-        </Typography>
+        {children ?? (
+          <Typography variant="body1" color="text.secondary">
+            {descricao ?? `A aba "${titulo}" ainda nao possui endpoint disponivel.`}
+          </Typography>
+        )}
       </Stack>
     </Paper>
   );

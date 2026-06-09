@@ -79,11 +79,15 @@ export function FichaAlunoHeader(props: FichaAlunoHeaderProps) {
               },
             }}
           >
-            {opcoesSemestre.map((opcao) => (
-              <MenuItem key={opcao} value={opcao}>
-                {opcao}
-              </MenuItem>
-            ))}
+            {opcoesSemestre.length === 0 ? (
+              <MenuItem value="">Sem periodos</MenuItem>
+            ) : (
+              opcoesSemestre.map((opcao) => (
+                <MenuItem key={opcao} value={opcao}>
+                  {opcao}
+                </MenuItem>
+              ))
+            )}
           </TextField>
         </Stack>
       </Stack>

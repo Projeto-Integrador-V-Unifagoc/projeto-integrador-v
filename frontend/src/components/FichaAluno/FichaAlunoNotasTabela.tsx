@@ -47,7 +47,21 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
         </Stack>
       </Stack>
 
-      {isMobile ? (
+      {notas.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            border: `1px dashed ${theme.palette.divider}`,
+            borderRadius: 3,
+            p: 4,
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Nenhuma nota ou falta encontrada para o semestre selecionado.
+          </Typography>
+        </Paper>
+      ) : isMobile ? (
         <Stack spacing={1.5}>
           {notas.map((nota) => (
             <Paper

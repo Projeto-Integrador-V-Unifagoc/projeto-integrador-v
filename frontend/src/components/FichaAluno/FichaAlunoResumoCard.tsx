@@ -94,6 +94,12 @@ interface FichaAlunoResumoCardProps {
 export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const iniciais = aluno.nome
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join("");
 
   return (
     <Paper
@@ -159,7 +165,7 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
                 alignSelf: { xs: "center", sm: "flex-start" },
               }}
             >
-              JP
+              {iniciais || "AL"}
             </Avatar>
 
             <Stack spacing={1.1} minWidth={0}>

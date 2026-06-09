@@ -1,99 +1,647 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Stack } from "@mui/material";
+import { Alert, CircularProgress, Typography } from "@mui/material";
 
 import Container from "../../components/Container";
-import {
-  abasFicha,
-  alunoMock,
-  FichaAlunoConteudoAba,
-  FichaAlunoHeader,
-  FichaAlunoNotasReais,
-  FichaAlunoResumoCard,
-  FichaAlunoTabs,
-  opcoesSemestre,
-  type AbaFicha,
-} from "../../components/FichaAluno";
-import { useNota } from "../../hooks/use-nota";
-import type { BoletimAluno } from "../../models/nota-model";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const mensagemErro = (erro: unknown) => {
-  const e = erro as { response?: { data?: { mensagem?: string } }; message?: string };
-  return e.response?.data?.mensagem || e.message || "Não foi possível carregar as notas do aluno.";
-};
 
 export default function FichaAluno() {
-  const { id } = useParams();
-  const api = useNota();
-
-  const [busca, setBusca] = useState("");
-  const [semestre, setSemestre] = useState(alunoMock.semestre);
-  const [abaAtual, setAbaAtual] = useState<AbaFicha>("notas");
-
-  const [boletim, setBoletim] = useState<BoletimAluno | null>(null);
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string>();
+  const { id } = useParams<{ id?: string }>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id || !UUID.test(id)) {
-      setErro("Identificador do aluno inválido para consulta de notas.");
-      return;
-    }
-    let ativo = true;
-    setCarregando(true);
-    setErro(undefined);
-    api
-      .consultarAluno(id)
-      .then((r) => ativo && setBoletim(r))
-      .catch((e) => ativo && setErro(mensagemErro(e)))
-      .finally(() => ativo && setCarregando(false));
-    return () => {
-      ativo = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    // Minimal mount logic to keep file compilable during rebase.
+    const t = setTimeout(() => setLoading(false), 200);
+    return () => clearTimeout(t);
+  }, []);
 
-  const aluno = useMemo(
-    () => ({
-      ...alunoMock,
-      ra: id ?? alunoMock.ra,
-    }),
-    [id]
-  );
+  if (loading) {
+    return (
+      <Container>
+        <CircularProgress />
+      </Container>
+    );
+  }
 
-  const abaSelecionada = abasFicha.find((aba) => aba.value === abaAtual);
+  if (error) {
+    return (
+      <Container>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
 
   return (
-    <Stack spacing={{ xs: 1.5, md: 2 }}>
-      <Container sx={{ p: { xs: 2, md: 3 } }}>
-        <Stack spacing={2.5}>
-          <FichaAlunoHeader
-            busca={busca}
-            semestre={semestre}
-            opcoesSemestre={opcoesSemestre}
-            onBuscaChange={setBusca}
-            onSemestreChange={setSemestre}
-          />
-          <FichaAlunoResumoCard aluno={aluno} />
-        </Stack>
-      </Container>
-
-      <Container sx={{ p: { xs: 1.25, md: 2.5 } }}>
-        <Stack spacing={2}>
-          <FichaAlunoTabs
-            abas={abasFicha}
-            abaAtual={abaAtual}
-            onChange={setAbaAtual}
-          />
-
-          {abaAtual === "notas" ? (
-            <FichaAlunoNotasReais boletim={boletim} carregando={carregando} erro={erro} />
-          ) : (
-            <FichaAlunoConteudoAba titulo={abaSelecionada?.label ?? ""} />
-          )}
-        </Stack>
-      </Container>
-    </Stack>
+    <Container>
+      <Typography variant="h6">Ficha do aluno {id ?? "-"}</Typography>
+    </Container>
   );
 }
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import {
+  Alert,
+  Chip,
+  CircularProgress,
+  Divider,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
+
+        setErro("Nao foi possivel identificar o aluno da ficha.");
+        setCarregando(false);
+        return;
+      }
+
+      setCarregando(true);
+      setErro(null);
+
+      try {
+        const alunoResponse: AlunoFichaApi = matricula
+          ? await alunoApi.buscarAlunoPorMatricula(matricula)
+          : await alunoApi.buscarAlunoPorId(identificador);
+
+        const [
+          matriculasResponse,
+          notasResponse,
+          frequenciaResponse,
+          documentosResponse,
+          periodosResponse,
+        ] = await Promise.allSettled([
+          matriculaApi.listarPorAluno(alunoResponse.id),
+          notasApi.buscarPorAluno(alunoResponse.id),
+          frequenciaApi.consultarAluno(alunoResponse.id),
+          documentoApi.listarPorAluno(alunoResponse.id),
+          periodoLetivoApi.listarPeriodosLetivos(),
+        ]);
+
+        if (!deveAtualizarEstado) return;
+
+        const matriculasCarregadas =
+          matriculasResponse.status === "fulfilled" ? matriculasResponse.value : [];
+        const notasCarregadas = notasResponse.status === "fulfilled" ? notasResponse.value : [];
+        const frequenciaCarregada =
+          frequenciaResponse.status === "fulfilled"
+            ? (frequenciaResponse.value as FrequenciaAlunoResponse)
+            : undefined;
+        const documentosCarregados =
+          documentosResponse.status === "fulfilled" ? documentosResponse.value : [];
+        const periodosCarregados =
+          periodosResponse.status === "fulfilled" ? periodosResponse.value : [];
+        const opcoesCarregadas = getOpcoesSemestre(
+          periodosCarregados,
+          matriculasCarregadas,
+          notasCarregadas,
+        );
+
+        setAluno(alunoResponse);
+        setMatriculas(matriculasCarregadas);
+        setNotas(notasCarregadas);
+        setFrequencia(frequenciaCarregada);
+        setDocumentos(documentosCarregados);
+        setPeriodos(periodosCarregados);
+        setSemestre((semestreAtual) =>
+          semestreAtual && opcoesCarregadas.includes(semestreAtual)
+            ? semestreAtual
+            : opcoesCarregadas[0] || "",
+        );
+      } catch (error) {
+        if (!deveAtualizarEstado) return;
+        setErro(getMensagemErro(error, "Nao foi possivel carregar a ficha do aluno."));
+        setAluno(null);
+      } finally {
+        if (deveAtualizarEstado) setCarregando(false);
+      }
+    }
+
+    void carregarFicha();
+
+    return () => {
+      deveAtualizarEstado = false;
+    };
+  }, [id, matricula]);
+
+  const matriculaAtiva = useMemo(() => getMatriculaAtiva(matriculas), [matriculas]);
+  const alunoFicha = useMemo(
+    () => (aluno ? montarAlunoFicha(aluno, matriculaAtiva) : null),
+    [aluno, matriculaAtiva],
+  );
+  const opcoesSemestre = useMemo(
+    () => getOpcoesSemestre(periodos, matriculas, notas),
+    [matriculas, notas, periodos],
+  );
+  const notasFicha = useMemo(
+    () => montarNotasFicha(notas, frequencia, matriculas, semestre),
+    [frequencia, matriculas, notas, semestre],
+  );
+  const abaSelecionada = abasFicha.find((aba) => aba.value === abaAtual);
+
+  if (carregando) {
+    return (
+      <Container sx={{ p: { xs: 2, md: 3 } }}>
+        <Stack alignItems="center" spacing={2} py={6}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">
+            Carregando ficha do aluno...
+          </Typography>
+        </Stack>
+      </Container>
+    );
+  }
+
+  if (erro || !alunoFicha) {
+    return (
+      import { useEffect, useMemo, useState } from "react";
+      import { useParams } from "react-router-dom";
+      import {
+        Alert,
+        Chip,
+        CircularProgress,
+        Divider,
+        Paper,
+        Stack,
+        Typography,
+      } from "@mui/material";
+
+      import Container from "../../components/Container";
+      import {
+        abasFicha,
+        FichaAlunoConteudoAba,
+        FichaAlunoHeader,
+        FichaAlunoNotasTabela,
+        FichaAlunoResumoCard,
+        FichaAlunoTabs,
+        type AbaFicha,
+        type AlunoFicha,
+        type NotaAluno,
+      } from "../../components/FichaAluno";
+
+      import type { AlunoResponse } from "../../models/aluno-model";
+      import type { ConsolidadoFrequencia } from "../../models/frequencia-model";
+      import type { MatriculaDetalhada } from "../../models/matricula-model";
+      import type { PeriodoLetivoResponse } from "../../models/periodo-letivo-model";
+      import { alunoApi } from "../../services/aluno-api";
+      import {
+        documentoApi,
+        type DocumentoAluno,
+      } from "../../services/documento-api";
+      import { frequenciaApi } from "../../services/frequencia-api";
+      import { matriculaApi } from "../../services/matricula-api";
+      import { notasApi, type NotaMockApi } from "../../services/notas-api";
+      import { periodoLetivoApi } from "../../services/periodo-letivo-api";
+
+      const VALOR_NAO_INFORMADO = "Nao informado";
+
+      type FrequenciaAlunoResponse = {
+        alunoId: string;
+        consolidado: ConsolidadoFrequencia[];
+      };
+
+      type AlunoFichaApi = Omit<AlunoResponse, "curso" | "periodo"> & {
+        curso?: string | {
+          id?: string;
+          nome?: string;
+        };
+        periodo?: string | number;
+        usuario?: {
+          id?: string;
+          email?: string;
+        };
+      };
+
+      type NotaComSemestre = NotaAluno & {
+        semestre?: string;
+      };
+
+      function getMensagemErro(error: unknown, fallback: string) {
+        const axiosError = error as {
+          response?: { data?: { error?: string; mensagem?: string; message?: string } };
+          message?: string;
+        };
+
+        return (
+          axiosError.response?.data?.error ||
+          axiosError.response?.data?.mensagem ||
+          axiosError.response?.data?.message ||
+          axiosError.message ||
+          fallback
+        );
+      }
+
+      function normalizarSemestre(semestre?: string | number | null) {
+        if (semestre === undefined || semestre === null) return "";
+        return String(semestre).trim().replace("/", "-");
+      }
+
+      function formatarPeriodo(periodo?: string | number | null) {
+        if (periodo === undefined || periodo === null || periodo === "") {
+          return VALOR_NAO_INFORMADO;
+        }
+
+        const periodoTexto = String(periodo);
+        if (periodoTexto.toLowerCase().includes("period")) return periodoTexto;
+
+        return `${periodoTexto}o Periodo`;
+      }
+
+      function formatarData(data?: string | null) {
+        if (!data) return VALOR_NAO_INFORMADO;
+
+        const date = new Date(data);
+        if (Number.isNaN(date.getTime())) return data;
+
+        return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(date);
+      }
+
+      function calcularIdade(data?: string | null) {
+        if (!data) return VALOR_NAO_INFORMADO;
+
+        const nascimento = new Date(data);
+        if (Number.isNaN(nascimento.getTime())) return VALOR_NAO_INFORMADO;
+
+        const hoje = new Date();
+        let idade = hoje.getFullYear() - nascimento.getFullYear();
+        const aindaNaoFezAniversario =
+          hoje.getMonth() < nascimento.getMonth() ||
+          (hoje.getMonth() === nascimento.getMonth() &&
+            hoje.getDate() < nascimento.getDate());
+
+        if (aindaNaoFezAniversario) idade -= 1;
+
+        return `${idade} anos`;
+      }
+
+      function getCursoAluno(aluno: AlunoFichaApi, matriculaAtiva?: MatriculaDetalhada) {
+        if (typeof aluno.curso === "string" && aluno.curso) return aluno.curso;
+        if (typeof aluno.curso === "object" && aluno.curso?.nome) return aluno.curso.nome;
+        return matriculaAtiva?.curso_nome ?? VALOR_NAO_INFORMADO;
+      }
+
+      function getCampusPolo(aluno: AlunoFichaApi) {
+        const cidade = aluno.pessoa?.cidade;
+        const nomeCidade = cidade?.nome;
+        const uf = cidade?.uf;
+
+        if (nomeCidade && uf) return `${nomeCidade} - ${uf}`;
+        if (nomeCidade) return nomeCidade;
+
+        return VALOR_NAO_INFORMADO;
+      }
+
+      function getMatriculaAtiva(matriculas: MatriculaDetalhada[]) {
+        return (
+          matriculas.find((matricula) =>
+            ["MATRICULADO", "ATIVO", "ATIVA", "REGULAR"].includes(
+              String(matricula.status ?? "").toUpperCase(),
+            ),
+          ) ?? matriculas[0]
+        );
+      }
+
+      function getOpcoesSemestre(
+        periodos: PeriodoLetivoResponse[],
+        matriculas: MatriculaDetalhada[],
+        notas: NotaMockApi[],
+      ) {
+        const opcoes = [
+          ...periodos.map((periodo) =>
+            normalizarSemestre(periodo.codigo || `${periodo.ano}-${periodo.semestre}`),
+          ),
+          ...matriculas.map((matricula) => normalizarSemestre(matricula.semestre)),
+          ...notas.map((nota) => normalizarSemestre(nota.periodoLetivo)),
+        ].filter(Boolean);
+
+        return Array.from(new Set(opcoes));
+      }
+
+      function montarAlunoFicha(
+        aluno: AlunoFichaApi,
+        matriculaAtiva?: MatriculaDetalhada,
+      ): AlunoFicha {
+        return {
+          nome: aluno.pessoa?.nome ?? matriculaAtiva?.aluno_nome ?? VALOR_NAO_INFORMADO,
+          ra: String(aluno.matricula ?? matriculaAtiva?.aluno_matricula ?? ""),
+          unidade: VALOR_NAO_INFORMADO,
+          curso: getCursoAluno(aluno, matriculaAtiva),
+          campusPolo: getCampusPolo(aluno),
+          periodo: formatarPeriodo(aluno.periodo),
+          turno: VALOR_NAO_INFORMADO,
+          turma: matriculaAtiva?.turma_id ?? VALOR_NAO_INFORMADO,
+          status: matriculaAtiva?.status ?? "Sem matricula",
+          nascimento: formatarData(aluno.pessoa?.dataNascimento),
+          idade: calcularIdade(aluno.pessoa?.dataNascimento),
+          responsavelFinanceiro: aluno.pessoa?.nome ?? VALOR_NAO_INFORMADO,
+          email: aluno.usuario?.email ?? VALOR_NAO_INFORMADO,
+          semestre: normalizarSemestre(matriculaAtiva?.semestre),
+        };
+      }
+
+      function getNotaPorNome(nota: NotaMockApi, nome: string) {
+        return (
+          nota.avaliacoes.find((avaliacao) =>
+            avaliacao.nome.toLowerCase().includes(nome.toLowerCase()),
+          )?.nota ?? 0
+        );
+      }
+
+      function montarNotasFicha(
+        notasApiResponse: NotaMockApi[],
+        frequencia?: FrequenciaAlunoResponse,
+        matriculas: MatriculaDetalhada[] = [],
+        semestre?: string,
+      ) {
+        const semestreNormalizado = normalizarSemestre(semestre);
+        const frequenciaPorDisciplina = new Map(
+          (frequencia?.consolidado ?? []).map((item) => [item.disciplinaNome, item]),
+        );
+
+        const notasDaApi: NotaComSemestre[] = notasApiResponse.map((nota) => {
+          const frequenciaDisciplina = frequenciaPorDisciplina.get(nota.disciplinaNome);
+
+          return {
+            disciplina: nota.disciplinaNome,
+            mediaFinal: Number(nota.media ?? 0),
+            avaliacao: nota.avaliacoes.reduce(
+              (total, avaliacao) => total + Number(avaliacao.nota ?? 0),
+              0,
+            ),
+            provaFinal: getNotaPorNome(nota, "final"),
+            provaInova: getNotaPorNome(nota, "inova"),
+            provaSegundaChamada: getNotaPorNome(nota, "segunda"),
+            conhecimentosGerais: getNotaPorNome(nota, "conhecimento"),
+            faltas: Number(frequenciaDisciplina?.faltas ?? 0),
+            percentualFaltas:
+              frequenciaDisciplina && frequenciaDisciplina.totalAulas > 0
+                ? Number(
+                    ((frequenciaDisciplina.faltas / frequenciaDisciplina.totalAulas) * 100).toFixed(2),
+                  )
+                : 0,
+            semestre: normalizarSemestre(nota.periodoLetivo),
+          };
+        });
+
+        const disciplinasComNota = new Set(notasDaApi.map((nota) => nota.disciplina));
+        const notasPorFrequencia: NotaComSemestre[] = (frequencia?.consolidado ?? [])
+          .filter((item) => !disciplinasComNota.has(item.disciplinaNome))
+          .map((item) => ({
+            disciplina: item.disciplinaNome,
+            mediaFinal: 0,
+            avaliacao: 0,
+            provaFinal: 0,
+            provaInova: 0,
+            provaSegundaChamada: 0,
+            conhecimentosGerais: 0,
+            faltas: Number(item.faltas ?? 0),
+            percentualFaltas:
+              item.totalAulas > 0
+                ? Number(((item.faltas / item.totalAulas) * 100).toFixed(2))
+                : 0,
+          }));
+
+        const disciplinasConhecidas = new Set([
+          ...notasDaApi.map((nota) => nota.disciplina),
+          ...notasPorFrequencia.map((nota) => nota.disciplina),
+        ]);
+        const notasPorMatricula: NotaComSemestre[] = matriculas
+          .filter((matricula) => !disciplinasConhecidas.has(matricula.disciplina_nome))
+          .map((matricula) => ({
+            disciplina: matricula.disciplina_nome,
+            mediaFinal: 0,
+            avaliacao: 0,
+            provaFinal: 0,
+            provaInova: 0,
+            provaSegundaChamada: 0,
+            conhecimentosGerais: 0,
+            faltas: 0,
+            percentualFaltas: 0,
+            semestre: normalizarSemestre(matricula.semestre),
+          }));
+
+        return [...notasDaApi, ...notasPorFrequencia, ...notasPorMatricula]
+          .filter((nota) => !semestreNormalizado || !nota.semestre || nota.semestre === semestreNormalizado)
+          .map(({ semestre: _semestre, ...nota }) => nota);
+      }
+
+      export default function FichaAluno() {
+        const { id, matricula } = useParams<{ id?: string; matricula?: string }>();
+
+        const [busca, setBusca] = useState("");
+        const [semestre, setSemestre] = useState("");
+        const [abaAtual, setAbaAtual] = useState<AbaFicha>("notas");
+        const [aluno, setAluno] = useState<AlunoFichaApi | null>(null);
+        const [matriculas, setMatriculas] = useState<MatriculaDetalhada[]>([]);
+        const [notas, setNotas] = useState<NotaMockApi[]>([]);
+        const [frequencia, setFrequencia] = useState<FrequenciaAlunoResponse | undefined>();
+        const [documentos, setDocumentos] = useState<DocumentoAluno[]>([]);
+        const [periodos, setPeriodos] = useState<PeriodoLetivoResponse[]>([]);
+        const [carregando, setCarregando] = useState(true);
+        const [erro, setErro] = useState<string | null>(null);
+
+        useEffect(() => {
+          let deveAtualizarEstado = true;
+
+          async function carregarFicha() {
+            const identificador = matricula ?? id;
+
+            if (!identificador) {
+              setErro("Nao foi possivel identificar o aluno da ficha.");
+              setCarregando(false);
+              return;
+            }
+
+            setCarregando(true);
+            setErro(null);
+
+            try {
+              const alunoResponse: AlunoFichaApi = matricula
+                ? await alunoApi.buscarAlunoPorMatricula(matricula)
+                : await alunoApi.buscarAlunoPorId(identificador);
+
+              const [
+                matriculasResponse,
+                notasResponse,
+                frequenciaResponse,
+                documentosResponse,
+                periodosResponse,
+              ] = await Promise.allSettled([
+                matriculaApi.listarPorAluno(alunoResponse.id),
+                notasApi.buscarPorAluno(alunoResponse.id),
+                frequenciaApi.consultarAluno(alunoResponse.id),
+                documentoApi.listarPorAluno(alunoResponse.id),
+                periodoLetivoApi.listarPeriodosLetivos(),
+              ]);
+
+              if (!deveAtualizarEstado) return;
+
+              const matriculasCarregadas =
+                matriculasResponse.status === "fulfilled" ? matriculasResponse.value : [];
+              const notasCarregadas = notasResponse.status === "fulfilled" ? notasResponse.value : [];
+              const frequenciaCarregada =
+                frequenciaResponse.status === "fulfilled"
+                  ? (frequenciaResponse.value as FrequenciaAlunoResponse)
+                  : undefined;
+              const documentosCarregados =
+                documentosResponse.status === "fulfilled" ? documentosResponse.value : [];
+              const periodosCarregados =
+                periodosResponse.status === "fulfilled" ? periodosResponse.value : [];
+              const opcoesCarregadas = getOpcoesSemestre(
+                periodosCarregados,
+                matriculasCarregadas,
+                notasCarregadas,
+              );
+
+              setAluno(alunoResponse);
+              setMatriculas(matriculasCarregadas);
+              setNotas(notasCarregadas);
+              setFrequencia(frequenciaCarregada);
+              setDocumentos(documentosCarregados);
+              setPeriodos(periodosCarregados);
+              setSemestre((semestreAtual) =>
+                semestreAtual && opcoesCarregadas.includes(semestreAtual)
+                  ? semestreAtual
+                  : opcoesCarregadas[0] || "",
+              );
+            } catch (error) {
+              if (!deveAtualizarEstado) return;
+              setErro(getMensagemErro(error, "Nao foi possivel carregar a ficha do aluno."));
+              setAluno(null);
+            } finally {
+              if (deveAtualizarEstado) setCarregando(false);
+            }
+          }
+
+          void carregarFicha();
+
+          return () => {
+            deveAtualizarEstado = false;
+          };
+        }, [id, matricula]);
+
+        const matriculaAtiva = useMemo(() => getMatriculaAtiva(matriculas), [matriculas]);
+        const alunoFicha = useMemo(
+          () => (aluno ? montarAlunoFicha(aluno, matriculaAtiva) : null),
+          [aluno, matriculaAtiva],
+        );
+        const opcoesSemestre = useMemo(
+          () => getOpcoesSemestre(periodos, matriculas, notas),
+          [matriculas, notas, periodos],
+        );
+        const notasFicha = useMemo(
+          () => montarNotasFicha(notas, frequencia, matriculas, semestre),
+          [frequencia, matriculas, notas, semestre],
+        );
+        const abaSelecionada = abasFicha.find((aba) => aba.value === abaAtual);
+
+        if (carregando) {
+          return (
+            <Container sx={{ p: { xs: 2, md: 3 } }}>
+              <Stack alignItems="center" spacing={2} py={6}>
+                <CircularProgress />
+                <Typography variant="body2" color="text.secondary">
+                  Carregando ficha do aluno...
+                </Typography>
+              </Stack>
+            </Container>
+          );
+        }
+
+        if (erro || !alunoFicha) {
+          return (
+            <Container sx={{ p: { xs: 2, md: 3 } }}>
+              <Alert severity="error">{erro ?? "Aluno nao encontrado para montar a ficha."}</Alert>
+            </Container>
+          );
+        }
+
+        return (
+          <Stack spacing={{ xs: 1.5, md: 2 }}>
+            <Container sx={{ p: { xs: 2, md: 3 } }}>
+              <Stack spacing={2.5}>
+                <FichaAlunoHeader
+                  busca={busca}
+                  semestre={semestre}
+                  opcoesSemestre={opcoesSemestre}
+                  onBuscaChange={setBusca}
+                  onSemestreChange={setSemestre}
+                />
+                <FichaAlunoResumoCard aluno={{ ...alunoFicha, semestre }} />
+              </Stack>
+            </Container>
+
+            <Container sx={{ p: { xs: 1.25, md: 2.5 } }}>
+              <Stack spacing={2}>
+                <FichaAlunoTabs abas={abasFicha} abaAtual={abaAtual} onChange={setAbaAtual} />
+
+                {abaAtual === "notas" && (
+                  <FichaAlunoNotasTabela notas={notasFicha} semestre={semestre || "todos"} />
+                )}
+
+                {abaAtual === "documentos" && (
+                  <FichaAlunoConteudoAba titulo="Documentos">
+                    {documentos.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Nenhum documento encontrado para este aluno.
+                      </Typography>
+                    ) : (
+                      <Stack spacing={1.5}>
+                        {documentos.map((documento) => (
+                          <Paper
+                            key={documento.id}
+                            elevation={0}
+                            sx={{
+                              border: (theme) => `1px solid ${theme.palette.divider}`,
+                              borderRadius: 2,
+                              p: 2,
+                            }}
+                          >
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              spacing={1}
+                              justifyContent="space-between"
+                            >
+                              <Stack minWidth={0}>
+                                <Typography variant="subtitle2" fontWeight={700}>
+                                  {documento.tipo_documento}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-word" }}>
+                                  {documento.nome_arquivo}
+                                </Typography>
+                                {documento.observacao && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    {documento.observacao}
+                                  </Typography>
+                                )}
+                              </Stack>
+                              <Chip
+                                label={documento.status ?? "PENDENTE"}
+                                size="small"
+                                color={documento.status === "APROVADO" ? "success" : "default"}
+                                sx={{ alignSelf: { xs: "flex-start", sm: "center" } }}
+                              />
+                            </Stack>
+                          </Paper>
+                        ))}
+                      </Stack>
+                    )}
+                  </FichaAlunoConteudoAba>
+                )}
+
+                {abaAtual !== "notas" && abaAtual !== "documentos" && (
+                  <FichaAlunoConteudoAba
+                    titulo={abaSelecionada?.label ?? ""}
+                    descricao={`A aba "${abaSelecionada?.label ?? ""}" ainda nao possui endpoint no backend.`}
+                  />
+                )}
+
+                {matriculas.length === 0 && (
+                  <>
+                    <Divider />
+                    <Alert severity="warning">Este aluno ainda nao possui matriculas retornadas pela API.</Alert>
+                  </>
+                )}
+              </Stack>
+            </Container>
+          </Stack>
+        );
+      }
