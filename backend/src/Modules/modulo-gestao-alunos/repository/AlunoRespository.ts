@@ -28,7 +28,7 @@ export class AlunoRepository {
             }
 
             if(filtros?.nome) {
-                query.whereLike("pessoa.nome", `%${filtros.nome}%`)
+                query.whereILike("pessoa.nome", `%${filtros.nome}%`)
             }
 
             const rows = await query.select(
