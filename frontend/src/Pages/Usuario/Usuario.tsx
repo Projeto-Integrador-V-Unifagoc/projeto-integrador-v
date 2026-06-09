@@ -12,12 +12,18 @@ import {
   MenuItem,
   IconButton,
   Tooltip,
+  Typography,
+  CardHeader,
+  CardContent,
+  CircularProgress,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { Pencil, Trash2 } from "lucide-react";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
+import { MobileCard } from "../../components/MobileCard";
+import { InfoItem } from "../../components/InfoItem/InfoItem";
 import SearchTextField from "../../components/SearchTextField/SearchTextField";
 import usuarioApi from "../../services/usuario-api";
 import { Perfil } from "../../enums/perfil";
@@ -290,7 +296,63 @@ export default function Usuarios() {
         Usuários
       </SearchTextField>
 
-      <DataTable columns={columns} rows={rowsFiltradas} loading={loading} />
+      {telaPequena ? (
+        loading ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : rowsFiltradas.length === 0 ? (
+          <Typography color="text.secondary" textAlign="center" py={4}>
+            Nenhum usuário encontrado.
+          </Typography>
+        ) : (
+          rowsFiltradas.map((usuario) => (
+            <MobileCard.Root key={usuario.id}>
+              <CardHeader
+                sx={(theme) => ({
+                  backgroundColor: theme.palette.grey[50],
+                  borderBottom: `1px solid ${theme.palette.grey[200]}`,
+                  py: 1,
+                  px: 2,
+                })}
+                title={
+                  <Typography fontWeight="bold" fontSize={16}>
+                    {usuario.nome}
+                  </Typography>
+                }
+                action={
+                  <Stack direction="row" spacing={1}>
+                    <Tooltip title="Editar">
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleEditar(usuario)}
+                      >
+                        <Pencil size={18} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Excluir">
+                      <IconButton
+                        color="error"
+                        onClick={() => handleExcluir(usuario.id)}
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                }
+              />
+              <CardContent sx={{ py: 2, px: 2 }}>
+                <Stack spacing={1}>
+                  <InfoItem label="E-mail">{usuario.email}</InfoItem>
+                  <InfoItem label="Perfil">{usuario.tipo_usuario}</InfoItem>
+                </Stack>
+              </CardContent>
+            </MobileCard.Root>
+          ))
+        )
+      ) : (
+        <DataTable columns={columns} rows={rowsFiltradas} loading={loading} />
+      )}
 
       <Dialog
           open={open}

@@ -49,9 +49,8 @@ export default function Sidebar({ expandido }: SidebarProps) {
 
   const ehSecretaria = tipoUsuario === "secretaria";
   const ehProfessor = tipoUsuario === "professor";
-  const ehAluno = tipoUsuario === "aluno";
 
-  const podeVerCadastros = ehSecretaria || ehProfessor || ehAluno;
+  const podeVerCadastros = ehSecretaria || ehProfessor;
 
   return (
       <List component="nav">
@@ -199,7 +198,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
                   </ListItemButton>
                 )}
 
-                {(ehSecretaria || ehProfessor || ehAluno) && (
+                {(ehSecretaria || ehProfessor) && (
                   <ListItemButton sx={{ pl: 4 }} href="/documentos/envio">
                     <ListItemIcon sx={{ minWidth: 28 }}>
                       <FileText size={17} />
@@ -211,7 +210,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
                   </ListItemButton>
                 )}
 
-                {(ehSecretaria || ehProfessor || ehAluno) && (
+                {(ehSecretaria || ehProfessor) && (
                   <ListItemButton sx={{ pl: 4 }} href="/avaliacoes/lista">
                     <ListItemIcon sx={{ minWidth: 28 }}>
                       <ClipboardCheck size={17} />
@@ -223,7 +222,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
                   </ListItemButton>
                 )}
 
-                {(ehSecretaria || ehProfessor || ehAluno) && (
+                {(ehSecretaria || ehProfessor) && (
                   <ListItemButton sx={{ pl: 4 }} href="/cursos/lista">
                     <ListItemIcon sx={{ minWidth: 28 }}>
                       <GraduationCap size={17} />
@@ -235,7 +234,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
                   </ListItemButton>
                 )}
 
-                {(ehSecretaria || ehProfessor || ehAluno) && (
+                {(ehSecretaria || ehProfessor) && (
                   <ListItemButton sx={{ pl: 4 }} href="/disciplinas/lista">
                     <ListItemIcon sx={{ minWidth: 28 }}>
                       <NotebookPen size={17} />
@@ -247,7 +246,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
                   </ListItemButton>
                 )}
 
-                {(ehSecretaria || ehProfessor || ehAluno) && (
+                {(ehSecretaria || ehProfessor) && (
                   <ListItemButton sx={{ pl: 4 }} href="/status">
                     <ListItemIcon sx={{ minWidth: 28 }}>
                       <Info size={17} />

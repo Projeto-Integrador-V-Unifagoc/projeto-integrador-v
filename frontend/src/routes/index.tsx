@@ -180,7 +180,7 @@ export default function AppRoutes() {
         <Route
           path="/alunos/ficha-do-aluno/:id"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
               <FichaAluno />
             </RouteByRole>
           }
@@ -189,7 +189,7 @@ export default function AppRoutes() {
         <Route
           path="/avaliacoes/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
               <Avaliacoes />
             </RouteByRole>
           }
@@ -198,7 +198,7 @@ export default function AppRoutes() {
         <Route
           path="/cursos/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
               <Cursos />
             </RouteByRole>
           }
@@ -234,7 +234,7 @@ export default function AppRoutes() {
         <Route
           path="/disciplinas/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
               <Disciplinas />
             </RouteByRole>
           }
@@ -333,7 +333,7 @@ export default function AppRoutes() {
         <Route
           path="/documentos/envio"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
               <Documentos />
             </RouteByRole>
           }
@@ -342,7 +342,7 @@ export default function AppRoutes() {
         <Route
           path="/status"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
               <StatusMatricula />
             </RouteByRole>
           }
@@ -351,7 +351,7 @@ export default function AppRoutes() {
         <Route
           path="/building"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor", "aluno"]}>
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
               <BuildingPage />
             </RouteByRole>
           }
