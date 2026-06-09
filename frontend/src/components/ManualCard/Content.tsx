@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 
 
 interface ContentProps {
-  title: string;
-  description: string;
-  icon?: ReactNode;
+  title: string
+  description: string
+  icon?: ReactNode
 }
 
 export default function Content({
@@ -43,5 +43,5 @@ export default function Content({
 
       </Stack>
     </CardContent>
-  );
+  )
 }
