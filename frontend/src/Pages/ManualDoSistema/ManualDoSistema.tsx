@@ -63,7 +63,9 @@ export default function ManualDoSistema() {
 
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <ManualCard.Root>
+                            <ManualCard.Root
+                                onClick={() => navigate("/manual-do-sistema/alunos")}
+                            >
                                 <ManualCard.Header>
                                     <ManualCard.Content
                                         icon={<Users size={27} />}
