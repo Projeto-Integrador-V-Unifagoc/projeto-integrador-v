@@ -6,8 +6,8 @@ services:
     container_name: pi_postgres_db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: grupo_4
+      POSTGRES_PASSWORD: grupo_41235
       POSTGRES_DB: projeto_integrador
     ports:
       - "5432:5432"
