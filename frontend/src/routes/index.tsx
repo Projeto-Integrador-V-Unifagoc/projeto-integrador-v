@@ -39,6 +39,10 @@ import Frequencia from "../Pages/Frequencia/Frequencia";
 import NovaMatricula from "../Pages/Matricula/NovaMatricula";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
+import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
+import ManualUsuarioAutenticacao from "../Pages/ManualDoSistema/components/ManualUsuarioAutenticacao/ManualUsuarioAutenticacao";
+import ManualAlunos from "../Pages/ManualDoSistema/components/ManualAlunos/ManualAlunos";
+import ManualStatus from "../Pages/ManualDoSistema/components/ManualStatus/ManualStatus";
 
 function RouteByRole({
   children,
@@ -91,6 +95,11 @@ export default function AppRoutes() {
           </PrivateRoute>
         }
       >
+        <Route path="/manual-do-sistema" element={<ManualDoSistema />}/>
+        <Route path="/manual-do-sistema/usuarios-e-autenticacao" element={<ManualUsuarioAutenticacao />}/>
+        <Route path="/manual-do-sistema/alunos" element={<ManualAlunos />}/>
+        <Route path="/manual-do-sistema/status" element={<ManualStatus />}/>
+
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
