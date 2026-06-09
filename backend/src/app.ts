@@ -5,7 +5,7 @@ import { CidadeController } from './Modules/cidades/controller/CidadeController'
 import { FaculdadeController } from './Modules/modulo-facul-dp-curso/controller/FaculdadeController';
 import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controller/DepartamentoController';
 import CursoController from './Modules/modulo-facul-dp-curso/controller/CursoController';
-
+import { RelatorioController } from './Modules/modulo-relatorios/controllers/RelatorioController'; //novo//
 
 const PORT = process.env.PORT || 3000;
 
@@ -22,6 +22,9 @@ const cidadeController = new CidadeController()
 const faculdadeController = new FaculdadeController()
 const departamentoController = new DepartamentoController()
 const cursoController = new CursoController()
+const relatorioController = new RelatorioController();//novo//
+
+routes.get('/relatorio-alunos', relatorioController.handle);//novo//
 
 app.post('/alunos', (req, res) => alunoController.criarAluno(req, res))
 app.post('/faculdades', (req, res) => faculdadeController.criarFaculdade(req, res))
