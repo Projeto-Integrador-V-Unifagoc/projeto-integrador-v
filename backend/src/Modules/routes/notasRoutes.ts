@@ -1,12 +1,16 @@
 import { Router } from "express";
-import { NotasMockController } from "../notas/controller/NotasMockController.js";
+import { NotasController } from "../notas/controller/NotasController.js";
 
-const notasMockController = new NotasMockController();
+const notasController = new NotasController();
 export const notasRouter = Router();
 
-notasRouter.get("/mock", (req, res) => notasMockController.listarTodos(req, res));
-notasRouter.get("/mock/aluno/:alunoId", (req, res) => notasMockController.buscarPorAluno(req, res));
-notasRouter.get("/mock/turma/:turmaId", (req, res) => notasMockController.buscarPorTurma(req, res));
-notasRouter.get("/mock/disciplina/:disciplinaId", (req, res) =>
-  notasMockController.buscarPorDisciplina(req, res)
+notasRouter.get("/", (req, res) => notasController.listar(req, res));
+notasRouter.get("/aluno/:alunoId", (req, res) => notasController.listarPorAluno(req, res));
+notasRouter.get("/turma/:turmaId", (req, res) => notasController.listarPorTurma(req, res));
+notasRouter.get("/turma-disciplina/:turmaDisciplinaId", (req, res) =>
+  notasController.listarPorTurmaDisciplina(req, res),
 );
+notasRouter.get("/:id", (req, res) => notasController.buscarPorId(req, res));
+notasRouter.post("/", (req, res) => notasController.lancar(req, res));
+notasRouter.put("/:id", (req, res) => notasController.atualizar(req, res));
+notasRouter.delete("/:id", (req, res) => notasController.remover(req, res));
