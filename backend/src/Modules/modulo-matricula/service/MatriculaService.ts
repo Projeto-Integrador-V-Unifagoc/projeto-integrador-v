@@ -1,4 +1,4 @@
-import { MatriculaRepository, MatriculaVinculo, MatriculaDetalhada, TurmaDisponivel } from "../repository/MatriculaRepository";
+import { MatriculaRepository, MatriculaVinculo, MatriculaDetalhada, TurmaDisponivel, ConsultaStatusAluno } from "../repository/MatriculaRepository";
 
 const STATUS_VALIDOS = ["MATRICULADO", "CURSANDO", "TRANCADO", "CANCELADO", "CONCLUIDO"];
 
@@ -33,6 +33,13 @@ export class MatriculaService {
         if (mat.status === "CANCELADO") throw new Error("Matrícula já está cancelada.");
 
         return (await this.repository.cancelar(id))!;
+    }
+
+    async consultarStatusPorMatricula(matricula: number): Promise<ConsultaStatusAluno> {
+        if (!matricula || isNaN(matricula)) throw new Error("Número de matrícula inválido.");
+        const resultado = await this.repository.consultarStatusPorMatricula(matricula);
+        if (!resultado) throw new Error(`Aluno com matrícula ${matricula} não encontrado.`);
+        return resultado;
     }
 
     async atualizarStatus(id: string, status: string): Promise<MatriculaVinculo> {
