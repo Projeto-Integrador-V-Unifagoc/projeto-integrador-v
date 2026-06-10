@@ -2,7 +2,6 @@ import {
     Box,
     Grid,
     Stack,
-    TextField,
     Typography,
 } from "@mui/material";
 
@@ -16,7 +15,6 @@ import {
     Layers,
     NotebookPen,
     Users,
-    UserStar,
 } from "lucide-react";
 import Container from "../../components/Container";
 import { ManualCard } from "../../components/ManualCard";

@@ -12,6 +12,7 @@ import type { AlunoRequest, AlunoView } from "../../models/aluno-model";
 import { useAluno } from "../../hooks/use-aluno";
 import { useNavigate } from "react-router-dom";
 import type { GridColDef } from "@mui/x-data-grid";
+import type { SearchFilters } from "../../components/SearchTextField/SearchTextField";
 import { ClipboardList, Pencil } from "lucide-react";
 
 export default function Alunos() {
@@ -21,7 +22,7 @@ export default function Alunos() {
   const { listarAlunos, carregando } = useAluno()
   const navigate = useNavigate()
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<SearchFilters>({
     cursoId: "",
     periodo: "",
   })
@@ -129,7 +130,7 @@ export default function Alunos() {
     <Container>
       <SearchTextField
         filterValues={filters}
-        onFilterChange={setFilters}
+        onFilterChange={(filters) => setFilters(filters)}
         searchValue={pesquisa}
         onSearchChange={setPesquisa}
       >

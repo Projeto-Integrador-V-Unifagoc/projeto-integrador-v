@@ -1,4 +1,3 @@
-import { Perfil } from "../enums/perfil";
 
 export interface Usuario {
   nome: string;

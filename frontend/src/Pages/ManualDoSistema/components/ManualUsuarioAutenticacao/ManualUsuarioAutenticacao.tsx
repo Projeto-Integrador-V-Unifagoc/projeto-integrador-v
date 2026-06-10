@@ -2,7 +2,6 @@ import { Box, Divider, Stack, Typography } from "@mui/material";
 import Container from "../../../../components/Container";
 import { ManualStepCard } from "../../../../components/ManualStepCard";
 import { CircleUserRound, DoorOpen, KeyRound, LogIn, Mail, Settings, UserRoundPlus, Users } from "lucide-react";
-import { AccountCircle } from "@mui/icons-material";
 
 export default function ManualUsuarioAutenticacao() {
     return (

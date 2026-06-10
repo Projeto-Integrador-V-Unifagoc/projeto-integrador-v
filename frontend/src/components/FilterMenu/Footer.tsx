@@ -31,7 +31,8 @@ export default function Footer({ onSearch, onReset }: FooterProps) {
                 variant="outlined"
                 sx={(theme) => ({
                     backgroundColor: theme.palette.background.default
-                })}    
+                })}   
+                onClick={onReset} 
             >
                 Resetar
             </Button>
