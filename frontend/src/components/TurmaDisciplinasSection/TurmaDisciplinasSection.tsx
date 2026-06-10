@@ -177,7 +177,11 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
         <Card.Content>
           <Stack gap={2}>
             <Stack direction="row" justifyContent="flex-end">
-              <Button variant="contained" onClick={abrirDialogoCriacao}>
+              <Button
+                variant="contained"
+                onClick={abrirDialogoCriacao}
+                sx={{ width: "auto", minWidth: 170, whiteSpace: "nowrap" }}
+              >
                 Adicionar Disciplina
               </Button>
             </Stack>
