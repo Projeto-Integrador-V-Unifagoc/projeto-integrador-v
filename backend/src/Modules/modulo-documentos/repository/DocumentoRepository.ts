@@ -90,6 +90,6 @@ export class DocumentoRepository {
     }
 
     async atualizarStatusMatriculaAluno(alunoId: string, status: string): Promise<void> {
-        await db("aluno_turma").where({ aluno_id: alunoId }).update({ status });
+        await db("matricula").where({ aluno_id: alunoId }).update({ status });
     }
 }
