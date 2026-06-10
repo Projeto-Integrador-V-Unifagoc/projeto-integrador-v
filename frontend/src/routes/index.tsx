@@ -14,6 +14,7 @@ import NotFound from "../Pages/NotFound/NotFound";
 import Home from "../Pages/Home/Home";
 import Alunos from "../Pages/Alunos/Alunos";
 import StatusMatricula from "../Pages/Status/Status";
+import StatusMatriculaLista from "../Pages/Status/StatusListagem";
 
 import Cursos from "../Pages/Cursos/Cursos";
 import CadastroCursos from "../Pages/Cursos/CadastroCursos";
@@ -357,7 +358,16 @@ export default function AppRoutes() {
         />
 
         <Route
-          path="/status"
+          path="/statusLista"
+          element={
+            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+              <StatusMatriculaLista />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/statusCadastro"
           element={
             <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
               <StatusMatricula />

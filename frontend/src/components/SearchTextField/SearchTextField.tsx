@@ -16,14 +16,15 @@ import { FilterMenu } from "../FilterMenu/FilterMenu";
 import type { Cursos } from "../../enums/cursos";
 import TextField from "../TextField";
 import Button from "../Button";
-import type { Periodos } from "../../enums/periodos";
+
 
 import { ListFilter, Search } from "lucide-react";
+import type { PERIODOS } from "../../enums/periodos";
 
 type SearchFilters = {
   codigo?: string;
   matricula?: string;
-  curso?: Cursos | "";
+  cursoId?: Cursos | "";
   periodo?: string;
 };
 
@@ -45,6 +46,7 @@ interface SearchTextFieldProps {
   addPath?: string;
   placeholder?: string;
   showFilters?: boolean;
+  onSearchFilters?: (filters: SearchFilters) => void;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
@@ -64,6 +66,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     addPath,
     placeholder,
     showFilters = true,
+    onSearchFilters,
   } = props;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -115,6 +118,11 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     }
 
     navigate(addPath || defaultAddPath);
+  }
+
+  const handleSearch = () => {
+    onFilterChange?.(localFilters)
+    handleClose()
   }
 
   return (
@@ -193,13 +201,14 @@ export default function SearchTextField(props: SearchTextFieldProps) {
             />
 
             <DropDownCursos
-              value={localFilters.curso || ""}
-              onChange={(value) => handleFilterChange("curso", value)}
+              optionValue="id"
+              value={localFilters.cursoId || ""}
+              onChange={(value) => handleFilterChange("cursoId", value)}
             />
 
             {usePeriodFilter ? (
               <DropDownPeriodos
-                value={(localFilters.periodo as Periodos | "") || ""}
+                value={(localFilters.periodo as typeof PERIODOS[number]['value'] | "") || ""}
                 onChange={(value) => handleFilterChange("periodo", value)}
               />
             ) : (
@@ -214,7 +223,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
             )}
           </FilterMenu.Content>
 
-          <FilterMenu.Footer />
+          <FilterMenu.Footer onSearch={handleSearch} onReset={handleClose} />
         </FilterMenu.Root>
       )}
     </>

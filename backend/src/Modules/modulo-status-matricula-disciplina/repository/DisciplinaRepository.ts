@@ -25,4 +25,13 @@ export class DisciplinaRepository {
 
         return row ? DisciplinaMapper.toDomain(row) : null;
     }
+
+    async atualizarStatusMatriculaDisciplina(id: string, data: { descricao: string }) {
+        const rows = await db("status_disciplina")
+            .where("id", id)
+            .update({ descricao: data.descricao })
+            .returning("*");
+
+        return rows[0] ? DisciplinaMapper.toDomain(rows[0]) : null;
+    }
 }

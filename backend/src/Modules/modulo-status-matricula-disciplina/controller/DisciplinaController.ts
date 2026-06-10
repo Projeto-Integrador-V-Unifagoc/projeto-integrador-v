@@ -32,4 +32,16 @@ export class StatusDisciplinaController {
             res.status(500).json({ error: "Erro ao buscar status de matrícula da disciplina" });
         }
     }
+
+    async atualizarStatusMatriculaDisciplina(req: any, res: any) {
+        try {
+            const status = await this.disciplinaService.atualizarStatusMatriculaDisciplina(req.params.id, req.body);
+            if (!status) {
+                return res.status(404).json({ error: "Status de matrícula da disciplina não encontrado" });
+            }
+            res.status(200).json(status);
+        } catch (error) {
+            res.status(500).json({ error: "Erro ao atualizar status de matrícula da disciplina" });
+        }
+    }
 }

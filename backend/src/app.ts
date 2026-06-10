@@ -47,6 +47,10 @@ app.post('/alunos', (req, res) => alunoController.criarAluno(req, res));
 app.put('/alunos/editar-aluno/:matricula', (req, res) => alunoController.atualizarAluno(req, res));
 app.post('/statusDisciplina', (req, res) => statusDisciplinaController.criarStatusMatriculaDisciplina(req, res));
 app.post('/statusCurso', (req, res) => statusMatriculaController.criarStatusMatriculaCurso(req, res));
+app.get('/statusDisciplina/:id', (req, res) => statusDisciplinaController.buscarStatusMatriculaDisciplinaPorId(req, res));
+app.put('/statusDisciplina/:id', (req, res) => statusDisciplinaController.atualizarStatusMatriculaDisciplina(req, res));
+app.get('/statusCurso/:id', (req, res) => statusMatriculaController.buscarStatusMatriculaCursoPorId(req, res));
+app.put('/statusCurso/:id', (req, res) => statusMatriculaController.atualizarStatusMatriculaCurso(req, res));
 app.post('/faculdades', (req, res) => faculdadeController.criarFaculdade(req, res));
 app.post('/departamentos', (req, res) => departamentoController.criarDepartamento(req, res));
 app.post('/cursos', (req, res) => cursoController.criarCurso(req, res));
@@ -55,6 +59,9 @@ app.post('/periodos-letivos', (req, res) => periodoLetivoController.criarPeriodo
 app.post('/curso-disciplina', (req, res) => cursoDisciplinaController.criarCursoDisciplina(req, res));
 app.post('/turmas', (req, res) => turmaController.criarTurma(req, res));
 app.post('/turmas/:id/disciplinas', (req, res) => turmaDisciplinaController.criarTurmaDisciplina(req, res));
+
+app.get('/statusDisciplina', (req, res) => statusDisciplinaController.listarStatusMatriculaDisciplina(req, res))
+app.get('/statusCurso', (req, res) => statusMatriculaController.listarStatusMatriculaCurso(req, res))
 
 app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res));
 app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, res));

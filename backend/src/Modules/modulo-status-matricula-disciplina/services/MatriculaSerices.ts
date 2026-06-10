@@ -21,4 +21,8 @@ export class MatriculaService {
     async buscarStatusMatriculaCursoPorId(id: string) {
         return await this.matriculaRepository.buscarStatusMatriculaCursoPorId(id);
     }
+
+    async atualizarStatusMatriculaCurso(id: string, data: { descricao: string }) {
+        return await this.matriculaRepository.atualizarStatusMatriculaCurso(id, data);
+    }
 }

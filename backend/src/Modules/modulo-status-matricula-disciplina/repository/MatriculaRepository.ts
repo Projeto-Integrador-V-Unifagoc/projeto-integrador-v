@@ -25,4 +25,13 @@ export class MatriculaRepository {
 
         return row ? MatriculaMapper.toDomain(row) : null;
     }
+
+    async atualizarStatusMatriculaCurso(id: string, data: { descricao: string }) {
+        const rows = await db("status_matricula")
+            .where("id", id)
+            .update({ descricao: data.descricao })
+            .returning("*");
+
+        return rows[0] ? MatriculaMapper.toDomain(rows[0]) : null;
+    }
 }

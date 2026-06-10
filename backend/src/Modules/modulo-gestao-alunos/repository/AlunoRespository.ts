@@ -12,12 +12,26 @@ export class AlunoRepository {
     return novoAluno;
 }
 
-    async listarAlunos() {
-        const rows = await db("aluno")
+    async listarAlunos(filtros?: any) {
+
+        const query = db("aluno")
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
             .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
             .leftJoin("cidade", "pessoa.cidade_id", "=", "cidade.ibge")
-            .select(
+
+            if (filtros?.cursoId) {
+                query.where("aluno.curso_id", filtros.cursoId)
+            }
+
+            if(filtros?.periodo){
+                query.where("aluno.periodo", filtros.periodo)
+            }
+
+            if(filtros?.nome) {
+                query.whereILike("pessoa.nome", `%${filtros.nome}%`)
+            }
+
+            const rows = await query.select(
                 "aluno.*",
                 "pessoa.id as p_id", 
                 "pessoa.nome as p_nome",
@@ -34,9 +48,9 @@ export class AlunoRepository {
                 "cidade.ibge as c_ibge",      
                 "cidade.nome as c_nome",
                 "cidade.uf as c_uf"
-            );
+            )
 
-        return rows.map(AlunoMapper.toDomain);
+            return rows.map(AlunoMapper.toDomain);
     }
 
     async buscarAlunoPorId(id: string) {
