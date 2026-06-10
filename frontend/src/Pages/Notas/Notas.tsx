@@ -251,7 +251,7 @@ export default function Notas() {
       descricao_avaliacao: nota.descricao_avaliacao || "",
       valor: Number(nota.valor),
       nota: Number(nota.nota),
-      data_lancamento: nota.data_lancamento?.slice(0, 10) || initialForm.data_lancamento,
+      data_lancamento: nota.data_lancamento?.slice(0, 10) || new Date().toISOString().slice(0, 10),
       data_devolucao: nota.data_devolucao?.slice(0, 10) || "",
     });
     setErrorMessage(null);
@@ -307,6 +307,19 @@ export default function Notas() {
     if (form.nota === "" || Number(form.nota) < 0) throw new Error("Informe a nota lancada.");
     if (Number(form.nota) > Number(form.valor)) {
       throw new Error("A nota nao pode ser maior que o valor da avaliacao.");
+    }
+
+    // Validar máximo de 100 pontos por disciplina
+    const boletimAtual = boletins.find((b) => b.turmaDisciplinaId === form.turma_disciplina_id);
+    if (boletimAtual) {
+      const notasExistentes = boletimAtual.avaliacoes
+        .filter((av) => av.id !== editingId && av.aluno_id === form.aluno_id)
+        .reduce((total, av) => total + Number(av.nota), 0);
+      const totalComNova = notasExistentes + Number(form.nota);
+
+      if (totalComNova > 100) {
+        throw new Error(`Total de notas nao pode ultrapassar 100 pontos. Atual: ${notasExistentes}, Nova: ${form.nota}, Total: ${totalComNova}`);
+      }
     }
   }
 
@@ -495,7 +508,7 @@ export default function Notas() {
                   <RefreshCw size={16} />
                   Atualizar
                 </Button>
-                <Button type="button" variant="contained" sx={{ width: 128 }} onClick={abrirCadastro}>
+                <Button variant="contained" sx={{ width: 128 }} onClick={() => abrirCadastro()}>
                   <Plus size={16} />
                   Nova nota
                 </Button>

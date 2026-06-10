@@ -67,7 +67,7 @@ export const avaliacaoApi = {
         descricao_avaliacao: data.descricao_avaliacao || null,
         data_devolucao: data.data_devolucao || null,
         nota: data.nota || null,
-        aluno_turma_id: data.aluno_turma_id || null,
+        matricula_turma_disciplina_id: data.matricula_turma_disciplina_id || undefined,
       };
 
       const avaliacoes = getStorage();
