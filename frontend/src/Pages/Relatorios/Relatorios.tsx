@@ -25,57 +25,16 @@ import {
 import Button from "../../components/Button";
 import Container from "../../components/Container";
 import TextField from "../../components/TextField";
-
-type PerfilRelatorio = "Professor" | "Aluno";
-type TipoRelatorio = "Notas" | "Frequencia" | "Consulta" | "Historico";
-type SituacaoAcademica = "Aprovado" | "Recuperacao" | "Pendente" | "Regular" | "Atencao";
-
-interface DisciplinaRelatorio {
-  nome: string;
-  aluno?: string;
-  cargaHoraria: string;
-  nota?: string;
-  frequencia?: string;
-  situacao: SituacaoAcademica;
-}
-
-interface PeriodoRelatorio {
-  nome: string;
-  disciplinas: DisciplinaRelatorio[];
-}
-
-interface RelatorioLinha {
-  [key: string]: string;
-}
-
-interface RelatorioPdf {
-  titulo: string;
-  universidade: string;
-  rodape: string;
-  colunas: string[];
-  larguras: number[];
-  linhas: RelatorioLinha[];
-}
-
-interface RelatorioItem {
-  id: number;
-  nome: string;
-  descricao: string;
-  tipo: TipoRelatorio;
-  ano: string;
-  perfis: PerfilRelatorio[];
-  curso: string;
-  matrizCurricular: string;
-  periodos: PeriodoRelatorio[];
-  pdf: RelatorioPdf;
-}
-
-interface FiltrosRelatorios {
-  perfil: PerfilRelatorio;
-  busca: string;
-  ano: string;
-  tipo: string;
-}
+import { useRelatorio } from "../../hooks/use-relatorio";
+import type {
+  FiltrosRelatorios,
+  PerfilRelatorio,
+  PeriodoRelatorio,
+  RelatorioItem,
+  RelatorioLinha,
+  SituacaoAcademica,
+  TipoRelatorio,
+} from "../../models/relatorio-model";
 
 const periodosProfessor: PeriodoRelatorio[] = [
   {
@@ -732,16 +691,20 @@ async function buscarRelatoriosMockados(filtros: FiltrosRelatorios) {
 }
 
 export default function Relatorios() {
+  const { listarRelatorios, carregando } = useRelatorio();
   const [busca, setBusca] = useState("");
   const [ano, setAno] = useState("Todos");
   const [tipo, setTipo] = useState("Todos");
   const [perfil, setPerfil] = useState<PerfilRelatorio>("Professor");
-  const [carregando, setCarregando] = useState(false);
+  const [usandoDadosMockados, setUsandoDadosMockados] = useState(false);
+  const [relatoriosDisponiveis, setRelatoriosDisponiveis] = useState<RelatorioItem[]>(
+    relatoriosMockados.filter((item) => item.perfis.includes("Professor"))
+  );
   const [relatoriosFiltrados, setRelatoriosFiltrados] = useState<RelatorioItem[]>([]);
 
   const relatoriosDoPerfil = useMemo(
-    () => relatoriosMockados.filter((item) => item.perfis.includes(perfil)),
-    [perfil]
+    () => relatoriosDisponiveis.filter((item) => item.perfis.includes(perfil)),
+    [perfil, relatoriosDisponiveis]
   );
 
   const anosDisponiveis = useMemo(
@@ -757,23 +720,50 @@ export default function Relatorios() {
   useEffect(() => {
     let consultaAtiva = true;
 
-    setCarregando(true);
-    buscarRelatoriosMockados({ perfil, busca, ano, tipo })
+    listarRelatorios({ perfil, busca: "", ano: "Todos", tipo: "Todos" })
       .then((relatorios) => {
         if (consultaAtiva) {
-          setRelatoriosFiltrados(relatorios);
+          setRelatoriosDisponiveis(relatorios);
+          setUsandoDadosMockados(false);
         }
       })
-      .finally(() => {
+      .catch(() => {
         if (consultaAtiva) {
-          setCarregando(false);
+          setRelatoriosDisponiveis(relatoriosMockados.filter((item) => item.perfis.includes(perfil)));
+          setUsandoDadosMockados(true);
         }
       });
 
     return () => {
       consultaAtiva = false;
     };
-  }, [perfil, busca, ano, tipo]);
+  }, [listarRelatorios, perfil]);
+
+  useEffect(() => {
+    let consultaAtiva = true;
+
+    listarRelatorios({ perfil, busca, ano, tipo })
+      .then((relatorios) => {
+        if (consultaAtiva) {
+          setRelatoriosFiltrados(relatorios);
+          setUsandoDadosMockados(false);
+        }
+      })
+      .catch(() => {
+        if (consultaAtiva) {
+          return buscarRelatoriosMockados({ perfil, busca, ano, tipo }).then((relatorios) => {
+            if (consultaAtiva) {
+              setRelatoriosFiltrados(relatorios);
+              setUsandoDadosMockados(true);
+            }
+          });
+        }
+      });
+
+    return () => {
+      consultaAtiva = false;
+    };
+  }, [listarRelatorios, perfil, busca, ano, tipo]);
 
   const totalRelatoriosPerfil = relatoriosDoPerfil.length;
 
@@ -819,7 +809,9 @@ export default function Relatorios() {
               {"Relat\u00f3rios"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {"Visualiza\u00e7\u00e3o demonstrativa por perfil usando dados mockados."}
+              {usandoDadosMockados
+                ? "Visualizacao demonstrativa por perfil usando dados locais."
+                : "Visualizacao academica por perfil usando dados integrados."}
             </Typography>
           </Box>
 
@@ -975,7 +967,7 @@ export default function Relatorios() {
               })}
             >
               <Typography variant="body2" color="text.secondary">
-                Carregando relat\u00f3rios mockados...
+                Carregando relat\u00f3rios acad\u00eamicos...
               </Typography>
             </Box>
           ) : null}

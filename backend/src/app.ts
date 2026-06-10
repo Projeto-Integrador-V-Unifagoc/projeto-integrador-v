@@ -6,6 +6,8 @@ import { FaculdadeController } from './Modules/modulo-facul-dp-curso/controller/
 import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controller/DepartamentoController';
 import CursoController from './Modules/modulo-facul-dp-curso/controller/CursoController';
 import { RelatorioController } from './Modules/modulo-relatorios/controllers/RelatorioController'; //novo//
+import { frequenciaRouter } from './Modules/routes/frequenciaRoutes';
+import { notasRouter } from './Modules/routes/notasRoutes';
 
 const PORT = process.env.PORT || 3000;
 
@@ -24,7 +26,10 @@ const departamentoController = new DepartamentoController()
 const cursoController = new CursoController()
 const relatorioController = new RelatorioController();//novo//
 
-routes.get('/relatorio-alunos', relatorioController.handle);//novo//
+app.get('/relatorios/academicos', (req, res) => relatorioController.listarRelatoriosAcademicos(req, res))
+app.get('/relatorio-alunos', (req, res) => relatorioController.listarRelatoriosAcademicos(req, res))
+app.use('/frequencias', frequenciaRouter)
+app.use('/notas', notasRouter)
 
 app.post('/alunos', (req, res) => alunoController.criarAluno(req, res))
 app.post('/faculdades', (req, res) => faculdadeController.criarFaculdade(req, res))

@@ -2,10 +2,14 @@ import { Request, Response } from 'express';
 import { RelatorioService } from '../services/RelatorioService';
 
 export class RelatorioController {
-  async handle(req: Request, res: Response) {
-    const service = new RelatorioService();
-    const result = await service.execute();
+  private service = new RelatorioService();
 
-    return res.json(result);
+  async listarRelatoriosAcademicos(req: Request, res: Response) {
+    try {
+      const result = await this.service.listarRelatorios(req.query);
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(400).json({ error: (error as Error).message });
+    }
   }
 }
