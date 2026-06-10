@@ -43,6 +43,10 @@ import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
 import ManualUsuarioAutenticacao from "../Pages/ManualDoSistema/components/ManualUsuarioAutenticacao/ManualUsuarioAutenticacao";
 import ManualAlunos from "../Pages/ManualDoSistema/components/ManualAlunos/ManualAlunos";
 import ManualStatus from "../Pages/ManualDoSistema/components/ManualStatus/ManualStatus";
+import ManualCursos from "../Pages/ManualDoSistema/components/ManualCursos/ManualCursos";
+import ManualDisciplinas from "../Pages/ManualDoSistema/components/ManualDisciplinas/ManualDisciplinas";
+import ManualPeriodosLetivos from "../Pages/ManualDoSistema/components/ManualPeriodosLetivos/ManualPeriodosLetivos";
+import ManualTurmas from "../Pages/ManualDoSistema/components/ManualTurmas/ManualTurmas";
 
 function RouteByRole({
   children,
@@ -99,6 +103,10 @@ export default function AppRoutes() {
         <Route path="/manual-do-sistema/usuarios-e-autenticacao" element={<ManualUsuarioAutenticacao />}/>
         <Route path="/manual-do-sistema/alunos" element={<ManualAlunos />}/>
         <Route path="/manual-do-sistema/status" element={<ManualStatus />}/>
+        <Route path="/manual-do-sistema/cursos" element={<ManualCursos />}/>
+        <Route path="/manual-do-sistema/disciplinas" element={<ManualDisciplinas />}/>
+        <Route path="/manual-do-sistema/periodos-letivos" element={<ManualPeriodosLetivos />}/>
+        <Route path="/manual-do-sistema/turmas" element={<ManualTurmas />}/>
 
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />

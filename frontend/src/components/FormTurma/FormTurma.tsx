@@ -265,6 +265,37 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
           </Card.Content>
         </Card.Root>
 
+        {turmaId ? (
+          <Card.Root>
+            <Card.Header>
+              <Card.Title>Resumo da Turma</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <Typography variant="body2"><strong>Curso:</strong> {cursos.find((curso) => curso.id === form.cursoId)?.nome ?? "-"}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <Typography variant="body2"><strong>Periodo Letivo:</strong> {periodosLetivos.find((periodo) => periodo.id === form.periodoLetivoId)?.codigo ?? "-"}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 2 }}>
+                  <Typography variant="body2"><strong>Turno:</strong> {form.turno || "-"}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 2 }}>
+                  <Typography variant="body2"><strong>Status:</strong> {form.status || "-"}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 2 }}>
+                  <Typography variant="body2"><strong>Capacidade:</strong> {form.capacidadeAlunos || "-"}</Typography>
+                </Grid>
+              </Grid>
+            </Card.Content>
+          </Card.Root>
+        ) : (
+          <Alert severity="info">
+            Salve a turma para liberar a oferta de disciplinas e o vinculo com professores.
+          </Alert>
+        )}
+
         <Stack direction="row" justifyContent="space-between" gap={2}>
           {alerta && (
             <Alert severity={alerta.tipo} sx={{ width: "100%", display: "flex", alignItems: "center" }}>
