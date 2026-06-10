@@ -7,6 +7,7 @@ export interface Professor {
     curso_id?: string
     faculdade: string
     faculdade_id: string
+    cidade?: string
     data_nascimento?: string
     logradouro?: string
     numero?: string

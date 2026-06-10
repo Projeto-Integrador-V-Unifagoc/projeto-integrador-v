@@ -6,6 +6,7 @@ export const professorRepository = {
     return await db('piv.professor')
       .join('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
       .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
+      .join('piv.cidade', 'piv.pessoa.cidade_id', 'piv.cidade.ibge')
       .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
       .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
       .select(
@@ -13,6 +14,14 @@ export const professorRepository = {
         'piv.pessoa.nome as nome',
         'piv.usuario.email',
         'piv.pessoa.cpf',
+        'piv.pessoa.data_nascimento',
+        'piv.pessoa.logradouro',
+        'piv.pessoa.numero',
+        'piv.pessoa.bairro',
+        'piv.pessoa.cidade_id',
+        'piv.cidade.nome as cidade',
+        'piv.cidade.uf as estado',
+        'piv.pessoa.cep',
         'piv.curso.nome as curso',
         'piv.professor.curso_id as curso_id',
         'piv.faculdade.nome as faculdade',
@@ -24,6 +33,7 @@ export const professorRepository = {
     return await db('piv.professor')
       .join('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
       .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
+      .join('piv.cidade', 'piv.pessoa.cidade_id', 'piv.cidade.ibge')
       .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
       .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
       .select(
@@ -38,6 +48,7 @@ export const professorRepository = {
         'piv.pessoa.numero',
         'piv.pessoa.bairro',
         'piv.pessoa.cidade_id',
+        'piv.cidade.nome as cidade',
         'piv.pessoa.estado',
         'piv.pessoa.cep',
         'piv.professor.curso_id',
@@ -69,6 +80,7 @@ export const professorRepository = {
     return await db.transaction(async (trx) => {
       try {
         const usuarioResult = await trx('piv.usuario').insert({
+          nome: dados.nome,
           email: dados.email,
           senha: dados.senha,
           tipo_usuario: 'professor'
@@ -118,10 +130,11 @@ export const professorRepository = {
         return null;
       }
 
-      if (dados.email !== undefined || dados.senha !== undefined) {
+      if (dados.email !== undefined || dados.senha !== undefined || dados.nome !== undefined) {
         const updateUsuario: any = {};
         if (dados.email !== undefined) updateUsuario.email = dados.email;
         if (dados.senha !== undefined) updateUsuario.senha = dados.senha;
+        if (dados.nome !== undefined) updateUsuario.nome = dados.nome;
         await trx('piv.usuario').where({ id: professor.usuario_id }).update(updateUsuario);
       }
 
@@ -152,7 +165,27 @@ export const professorRepository = {
       return await trx('piv.professor')
         .join('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
         .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
-        .select('piv.professor.id', 'piv.pessoa.nome', 'piv.usuario.email', 'piv.pessoa.cpf', 'piv.professor.curso_id', 'piv.professor.faculdade_id')
+        .join('piv.cidade', 'piv.pessoa.cidade_id', 'piv.cidade.ibge')
+        .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
+        .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
+        .select(
+          'piv.professor.id',
+          'piv.pessoa.nome',
+          'piv.usuario.email',
+          'piv.pessoa.cpf',
+          'piv.pessoa.data_nascimento',
+          'piv.pessoa.logradouro',
+          'piv.pessoa.numero',
+          'piv.pessoa.bairro',
+          'piv.pessoa.cidade_id',
+          'piv.cidade.nome as cidade',
+          'piv.pessoa.estado',
+          'piv.pessoa.cep',
+          'piv.professor.curso_id',
+          'piv.curso.nome as curso',
+          'piv.professor.faculdade_id',
+          'piv.faculdade.nome as faculdade'
+        )
         .where('piv.professor.id', id)
         .first();
     });

@@ -3,11 +3,15 @@ import { CidadeRepository } from "../repository/CidadeRepository";
 export class CidadeService {
     private cidadeRepository = new CidadeRepository()
     
-    async listarCidades(filtros?: { ibge?: string, nome?: string }) {
+    async listarCidades(filtros?: { ibge?: string, nome?: string, uf?: string }) {
         return this.cidadeRepository.listarCidades(filtros)
     }
 
     async buscarCidadePorIbge(ibge: string) {
         return this.cidadeRepository.buscarCidadePorIbge(ibge)
+    }
+
+    async listarEstados(search?: string) {
+        return this.cidadeRepository.listarEstados(search)
     }
 }

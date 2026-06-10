@@ -17,57 +17,17 @@ import type { SelectOption } from "../../components/SearchableSelect/SearchableS
 import { professorApi } from "../../services/professor-api";
 import type { Professor, AtualizarProfessorDTO } from "../../models/professor-model";
 import type { Cursos } from "../../enums/cursos";
+import {
+    buscarCidadesOptions,
+    buscarCursosOptions,
+    buscarEstadosOptions,
+    buscarFaculdadesOptions,
+} from "./professor-lookups";
 
-// Dados mockados
-const MOCK_CURSOS: SelectOption[] = [
-    { id: '550e8400-e29b-41d4-a716-446655440001', label: 'Engenharia da Computação', sublabel: 'EC001' },
-    { id: '550e8400-e29b-41d4-a716-446655440002', label: 'Sistemas de Informação', sublabel: 'SI001' },
-    { id: '550e8400-e29b-41d4-a716-446655440003', label: 'Ciência da Computação', sublabel: 'CC001' },
-    { id: '550e8400-e29b-41d4-a716-446655440004', label: 'Engenharia de Software', sublabel: 'ES001' },
-];
-
-const MOCK_FACULDADES: SelectOption[] = [
-    { id: '550e8400-e29b-41d4-a716-446655440010', label: 'Faculdade de Tecnologia', sublabel: undefined },
-    { id: '550e8400-e29b-41d4-a716-446655440011', label: 'Faculdade de Engenharia', sublabel: undefined },
-    { id: '550e8400-e29b-41d4-a716-446655440012', label: 'Faculdade de Ciências Exatas', sublabel: undefined },
-];
-
-const MOCK_ESTADOS: SelectOption[] = [
-    { id: 'SP', label: 'SP — São Paulo', sublabel: 'SP' },
-    { id: 'RJ', label: 'RJ — Rio de Janeiro', sublabel: 'RJ' },
-    { id: 'MG', label: 'MG — Minas Gerais', sublabel: 'MG' },
-    { id: 'RS', label: 'RS — Rio Grande do Sul', sublabel: 'RS' },
-    { id: 'BA', label: 'BA — Bahia', sublabel: 'BA' },
-];
-
-const MOCK_CIDADES: Record<string, SelectOption[]> = {
-    SP: [
-        { id: '550e8400-e29b-41d4-a716-446655440100', label: 'São Paulo', sublabel: 'SP' },
-        { id: '550e8400-e29b-41d4-a716-446655440101', label: 'Campinas', sublabel: 'SP' },
-        { id: '550e8400-e29b-41d4-a716-446655440102', label: 'Santos', sublabel: 'SP' },
-        { id: '550e8400-e29b-41d4-a716-446655440103', label: 'Sorocaba', sublabel: 'SP' },
-    ],
-    RJ: [
-        { id: '550e8400-e29b-41d4-a716-446655440104', label: 'Rio de Janeiro', sublabel: 'RJ' },
-        { id: '550e8400-e29b-41d4-a716-446655440105', label: 'Niterói', sublabel: 'RJ' },
-        { id: '550e8400-e29b-41d4-a716-446655440106', label: 'Duque de Caxias', sublabel: 'RJ' },
-    ],
-    MG: [
-        { id: '550e8400-e29b-41d4-a716-446655440107', label: 'Belo Horizonte', sublabel: 'MG' },
-        { id: '550e8400-e29b-41d4-a716-446655440108', label: 'Uberlândia', sublabel: 'MG' },
-        { id: '550e8400-e29b-41d4-a716-446655440109', label: 'Contagem', sublabel: 'MG' },
-    ],
-    RS: [
-        { id: '550e8400-e29b-41d4-a716-446655440110', label: 'Porto Alegre', sublabel: 'RS' },
-        { id: '550e8400-e29b-41d4-a716-446655440111', label: 'Caxias do Sul', sublabel: 'RS' },
-        { id: '550e8400-e29b-41d4-a716-446655440112', label: 'Pelotas', sublabel: 'RS' },
-    ],
-    BA: [
-        { id: '550e8400-e29b-41d4-a716-446655440113', label: 'Salvador', sublabel: 'BA' },
-        { id: '550e8400-e29b-41d4-a716-446655440114', label: 'Feira de Santana', sublabel: 'BA' },
-        { id: '550e8400-e29b-41d4-a716-446655440115', label: 'Vitória da Conquista', sublabel: 'BA' },
-    ],
-};
+function formatDateInput(value?: string) {
+    if (!value) return "";
+    return value.slice(0, 10);
+}
 
 interface ProfessorEditData {
     nome: string;
@@ -165,7 +125,7 @@ export default function Professores() {
                 professor.email.toLowerCase().includes(searchLower) ||
                 professor.cpf.toLowerCase().includes(searchLower) ||
                 (professor.curso && professor.curso.toLowerCase().includes(searchLower)) ||
-                (professor.faculdade_id && professor.faculdade_id.toLowerCase().includes(searchLower));
+                (professor.faculdade && professor.faculdade.toLowerCase().includes(searchLower));
             if (!matchesSearch) return false;
         }
 
@@ -192,12 +152,7 @@ export default function Professores() {
         debounce('curso', async () => {
             setLoadingCursos(true);
             try {
-                // Filtra cursos mockados por query
-                const filtered = MOCK_CURSOS.filter(c =>
-                    c.label.toLowerCase().includes(query.toLowerCase()) ||
-                    c.sublabel?.toLowerCase().includes(query.toLowerCase())
-                );
-                setCursoOptions(filtered);
+                setCursoOptions(await buscarCursosOptions(query));
             } catch {
                 setCursoOptions([]);
             } finally {
@@ -210,11 +165,7 @@ export default function Professores() {
         debounce('faculdade', async () => {
             setLoadingFaculdades(true);
             try {
-                // Filtra faculdades mockadas por query
-                const filtered = MOCK_FACULDADES.filter(f =>
-                    f.label.toLowerCase().includes(query.toLowerCase())
-                );
-                setFaculdadeOptions(filtered);
+                setFaculdadeOptions(await buscarFaculdadesOptions(query));
             } catch {
                 setFaculdadeOptions([]);
             } finally {
@@ -227,12 +178,7 @@ export default function Professores() {
         debounce('estado', async () => {
             setLoadingEstados(true);
             try {
-                // Filtra estados mockados por query
-                const filtered = MOCK_ESTADOS.filter(e =>
-                    e.label.toLowerCase().includes(query.toLowerCase()) ||
-                    e.id.toLowerCase().includes(query.toLowerCase())
-                );
-                setEstadoOptions(filtered);
+                setEstadoOptions(await buscarEstadosOptions(query));
             } catch {
                 setEstadoOptions([]);
             } finally {
@@ -246,12 +192,7 @@ export default function Professores() {
         debounce('cidade', async () => {
             setLoadingCidades(true);
             try {
-                // Pega cidades do estado mockado
-                const cidades = MOCK_CIDADES[editData.uf] || [];
-                const filtered = cidades.filter(c =>
-                    c.label.toLowerCase().includes(query.toLowerCase())
-                );
-                setCidadeOptions(filtered);
+                setCidadeOptions(await buscarCidadesOptions(query, editData.uf));
             } catch {
                 setCidadeOptions([]);
             } finally {
@@ -277,7 +218,7 @@ export default function Professores() {
         setEditData(prev => ({
             ...prev,
             uf: option.id,
-            uf_nome: option.label,
+            uf_nome: option.label || option.id,
             cidade_id: '',
             cidade_nome: '',
         }));
@@ -286,7 +227,13 @@ export default function Professores() {
     };
 
     const handleSelectCidade = (option: SelectOption) => {
-        setEditData(prev => ({ ...prev, cidade_id: option.id, cidade_nome: option.label }));
+        setEditData(prev => ({
+            ...prev,
+            cidade_id: option.id,
+            cidade_nome: option.label,
+            uf: option.sublabel || prev.uf,
+            uf_nome: option.sublabel || prev.uf_nome,
+        }));
         clearError('cidade_id');
     };
 
@@ -308,21 +255,21 @@ export default function Professores() {
         setEditData({
             nome: professor.nome,
             cpf: professor.cpf,
-            dataNascimento: '', // Não disponível na API atual
+            dataNascimento: formatDateInput(professor.data_nascimento),
             email: professor.email,
-            senha: '', // Não exibimos senha na edição
+            senha: '',
             curso_id: professor.curso_id || '',
             faculdade_id: professor.faculdade_id || '',
-            cidade_id: '', // Não disponível na API atual
-            uf: '', // Não disponível na API atual
+            cidade_id: professor.cidade_id || '',
+            uf: professor.estado || '',
             curso_nome: professor.curso || '',
             faculdade_nome: professor.faculdade || '',
-            cidade_nome: '', // Não disponível na API atual
-            uf_nome: '', // Não disponível na API atual
-            logradouro: '', // Não disponível na API atual
-            bairro: '', // Não disponível na API atual
-            numero: '', // Não disponível na API atual
-            cep: '', // Não disponível na API atual
+            cidade_nome: professor.cidade || '',
+            uf_nome: professor.estado || '',
+            logradouro: professor.logradouro || '',
+            bairro: professor.bairro || '',
+            numero: professor.numero || '',
+            cep: professor.cep || '',
         });
         setErrors({});
         setDialogEditOpen(true);

@@ -60,6 +60,7 @@ app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, re
 app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res));
 
 app.get('/cidades', (req, res) => cidadeController.listarCidades(req, res));
+app.get('/estados', (req, res) => cidadeController.listarEstados(req, res));
 app.get('/cidades/:ibge', (req, res) => cidadeController.buscarCidadePorIbge(req, res));
 
 app.get('/faculdades', (req, res) => faculdadeController.listarFaculdades(req, res));
