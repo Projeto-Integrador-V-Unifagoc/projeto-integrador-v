@@ -31,8 +31,8 @@ function validarDados(dados: CriarAvaliacaoDTO): void {
     throw new Error('Tipo de avaliação inválido. Use: PROVA, TPI ou TRABALHO.');
   }
 
-  if (!dados.turma_id) {
-    throw new Error('O campo turma_id é obrigatório.');
+  if (!dados.turma_disciplina_id) {
+    throw new Error('O campo turma_disciplina_id é obrigatório.');
   }
 
   if (typeof dados.valor !== 'number' || Number.isNaN(dados.valor) || dados.valor <= 0) {
@@ -58,7 +58,7 @@ function validarRegrasDePontuacao(
   idAtual?: string,
 ): void {
   const outrasAvaliacoes = avaliacoes.filter(
-    (av) => av.id !== idAtual && av.turma_id === candidato.turma_id,
+    (av) => av.id !== idAtual && av.turma_disciplina_id === candidato.turma_disciplina_id,
   );
   const provas = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === 'PROVA');
   const tpis = outrasAvaliacoes.filter((av) => av.tipo_avaliacao === 'TPI');
@@ -125,8 +125,8 @@ async function atualizar(id: string, dados: AtualizarAvaliacaoDTO): Promise<Aval
     valor: dados.valor ?? atual.valor,
     nota: (dados.nota ?? atual.nota ?? 0) as number,
     data_devolucao: dados.data_devolucao !== undefined ? dados.data_devolucao : (atual.data_devolucao || null),
-    aluno_turma_id: dados.aluno_turma_id !== undefined ? dados.aluno_turma_id : (atual.aluno_turma_id || null),
-    turma_id: dados.turma_id ?? atual.turma_id,
+    matricula_turma_disciplina_id: dados.matricula_turma_disciplina_id !== undefined ? dados.matricula_turma_disciplina_id : (atual.matricula_turma_disciplina_id || undefined),
+    turma_disciplina_id: dados.turma_disciplina_id ?? atual.turma_disciplina_id,
   };
 
   const payload = normalizarPayload(merged);

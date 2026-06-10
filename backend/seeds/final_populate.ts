@@ -42,20 +42,5 @@ export async function seed(knex: Knex): Promise<void> {
     }
   }
 
-  // Insert Avaliações
-  if (turmaDisciplinas.length > 0 && matriculas.length > 0) {
-    try {
-      await knex(`${SCHEMA}.avaliacao`).insert({
-        id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-        tipo_avaliacao: "PROVA",
-        descricao_avaliacao: "Prova 1",
-        valor: "10.00",
-        turma_disciplina_id: turmaDisciplinas[0].id,
-      }).onConflict("id").ignore();
-    } catch (e) {
-      // ignore
-    }
-  }
-
   console.log("✅ Tabelas finais populadas!");
 }

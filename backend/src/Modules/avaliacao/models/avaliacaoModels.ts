@@ -8,8 +8,16 @@ export interface Avaliacao {
   valor: number;
   nota?: number | null;
   data_devolucao?: string | Date | null;
-  aluno_turma_id?: string | null;     
-  turma_id: string;                   
+  turma_disciplina_id: string;
+  matricula_turma_disciplina_id?: string | null;
+  turma_id?: string;
+  turma_sigla?: string;
+  turma_descricao?: string;
+  disciplina_id?: string;
+  disciplina_codigo?: string;
+  disciplina_nome?: string;
+  professor_id?: string;
+  professor_nome?: string;
 }
 
 export interface CriarAvaliacaoDTO {
@@ -19,8 +27,8 @@ export interface CriarAvaliacaoDTO {
   valor: number;
   nota?: number;
   data_devolucao?: string | Date | null;
-  aluno_turma_id?: string | null;
-  turma_id: string;
+  turma_disciplina_id: string;
+  matricula_turma_disciplina_id?: string | null;
 }
 
 export interface AtualizarAvaliacaoDTO {
@@ -30,6 +38,6 @@ export interface AtualizarAvaliacaoDTO {
   valor?: number;
   nota?: number | null;
   data_devolucao?: string | Date | null;
-  aluno_turma_id?: string | null;
-  turma_id?: string;
+  turma_disciplina_id?: string;
+  matricula_turma_disciplina_id?: string | null;
 }

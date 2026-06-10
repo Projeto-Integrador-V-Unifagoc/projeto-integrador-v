@@ -33,10 +33,10 @@ async function buscarPorId(req: Request, res: Response): Promise<void> {
 
 async function criar(req: Request, res: Response): Promise<void> {
   try {
-    const { tipo_avaliacao, descricao_avaliacao, data_lancamento, valor, nota, data_devolucao, aluno_turma_id, turma_id } = req.body;
+    const { tipo_avaliacao, descricao_avaliacao, data_lancamento, valor, nota, data_devolucao, matricula_turma_disciplina_id, turma_disciplina_id } = req.body;
 
-    if (!tipo_avaliacao || !data_lancamento || !turma_id) {
-      res.status(400).json({ mensagem: 'Os campos tipo_avaliacao, data_lancamento e turma_id são obrigatórios.' });
+    if (!tipo_avaliacao || !data_lancamento || !turma_disciplina_id) {
+      res.status(400).json({ mensagem: 'Os campos tipo_avaliacao, data_lancamento e turma_disciplina_id são obrigatórios.' });
       return;
     }
 
@@ -47,8 +47,8 @@ async function criar(req: Request, res: Response): Promise<void> {
       valor,
       nota,
       data_devolucao,
-      aluno_turma_id,
-      turma_id,
+      matricula_turma_disciplina_id,
+      turma_disciplina_id,
     });
 
     res.status(201).json(novaAvaliacao);
@@ -77,10 +77,10 @@ async function atualizar(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const { tipo_avaliacao, descricao_avaliacao, data_lancamento, valor, nota, data_devolucao, aluno_turma_id, turma_id } = req.body;
+    const { tipo_avaliacao, descricao_avaliacao, data_lancamento, valor, nota, data_devolucao, matricula_turma_disciplina_id, turma_disciplina_id } = req.body;
 
     const dadosParaAtualizar = Object.fromEntries(
-      Object.entries({ tipo_avaliacao, descricao_avaliacao, data_lancamento, valor, nota, data_devolucao, aluno_turma_id, turma_id }).filter(
+      Object.entries({ tipo_avaliacao, descricao_avaliacao, data_lancamento, valor, nota, data_devolucao, matricula_turma_disciplina_id, turma_disciplina_id }).filter(
         ([_, v]) => v !== undefined,
       ),
     );
