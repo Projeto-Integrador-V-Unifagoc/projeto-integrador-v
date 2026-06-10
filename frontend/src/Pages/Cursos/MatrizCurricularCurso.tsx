@@ -38,6 +38,8 @@ export default function MatrizCurricularCurso() {
   const [curso, setCurso] = useState<CursoResponse | null>(null);
   const [disciplinas, setDisciplinas] = useState<DisciplinaResponse[]>([]);
   const [matriz, setMatriz] = useState<CursoDisciplinaResponse[]>([]);
+  const [filtroPeriodoIdeal, setFiltroPeriodoIdeal] = useState("");
+  const [filtroObrigatoria, setFiltroObrigatoria] = useState<"todas" | "sim" | "nao">("todas");
   const [alerta, setAlerta] = useState<{ tipo: "success" | "error"; mensagem: string } | null>(null);
   const [dialogoAberto, setDialogoAberto] = useState(false);
   const [registroEdicao, setRegistroEdicao] = useState<CursoDisciplinaResponse | null>(null);
@@ -159,6 +161,32 @@ export default function MatrizCurricularCurso() {
     return !matriz.some((item) => item.disciplina.id === disciplina.id);
   });
 
+  const periodosDisponiveis = [...new Set(matriz.map((item) => item.periodo_ideal).filter((periodo) => periodo !== undefined && periodo !== null))]
+    .sort((a, b) => Number(a) - Number(b));
+
+  const matrizFiltrada = matriz.filter((item) => {
+    const correspondePeriodo =
+      !filtroPeriodoIdeal || String(item.periodo_ideal ?? "") === filtroPeriodoIdeal;
+
+    const correspondeObrigatoria =
+      filtroObrigatoria === "todas" ||
+      (filtroObrigatoria === "sim" && item.obrigatoria) ||
+      (filtroObrigatoria === "nao" && !item.obrigatoria);
+
+    return correspondePeriodo && correspondeObrigatoria;
+  });
+
+  const matrizOrdenada = [...matrizFiltrada].sort((a, b) => {
+    const periodoA = a.periodo_ideal ?? Number.MAX_SAFE_INTEGER;
+    const periodoB = b.periodo_ideal ?? Number.MAX_SAFE_INTEGER;
+
+    if (periodoA !== periodoB) {
+      return periodoA - periodoB;
+    }
+
+    return a.disciplina.nome.localeCompare(b.disciplina.nome);
+  });
+
   const columns: GridColDef<CursoDisciplinaResponse>[] = [
     { field: "codigo", headerName: "Codigo", width: 140, valueGetter: (_, row) => row.disciplina.codigo },
     { field: "nome", headerName: "Disciplina", flex: 1, valueGetter: (_, row) => row.disciplina.nome },
@@ -195,10 +223,68 @@ export default function MatrizCurricularCurso() {
 
         <Card.Root>
           <Card.Header>
+            <Card.Title>Resumo do Curso</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography variant="body2"><strong>Codigo:</strong> {curso?.codigo ?? "-"}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography variant="body2"><strong>Nome:</strong> {curso?.nome ?? "-"}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography variant="body2"><strong>Departamento:</strong> {curso?.departamento.nome ?? "-"}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography variant="body2"><strong>Faculdade:</strong> {curso?.departamento.faculdade.nome ?? "-"}</Typography>
+              </Grid>
+            </Grid>
+          </Card.Content>
+        </Card.Root>
+
+        <Card.Root>
+          <Card.Header>
             <Card.Title>Disciplinas do Curso</Card.Title>
           </Card.Header>
           <Card.Content>
             <Stack gap={2}>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <TextField
+                    label="Filtrar por Periodo"
+                    select
+                    value={filtroPeriodoIdeal}
+                    onChange={(e) => setFiltroPeriodoIdeal(e.target.value)}
+                  >
+                    <MenuItem value="">Todos</MenuItem>
+                    {periodosDisponiveis.map((periodo) => (
+                      <MenuItem key={String(periodo)} value={String(periodo)}>
+                        {periodo}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <TextField
+                    label="Filtrar por Tipo"
+                    select
+                    value={filtroObrigatoria}
+                    onChange={(e) => setFiltroObrigatoria(e.target.value as "todas" | "sim" | "nao")}
+                  >
+                    <MenuItem value="todas">Todas</MenuItem>
+                    <MenuItem value="sim">Obrigatorias</MenuItem>
+                    <MenuItem value="nao">Optativas</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Stack justifyContent="center" height="100%">
+                    <Typography variant="body2" color="text.secondary">
+                      Exibindo {matrizOrdenada.length} disciplina(s) na matriz com ordenacao por periodo ideal e nome.
+                    </Typography>
+                  </Stack>
+                </Grid>
+              </Grid>
               <Stack direction="row" justifyContent="flex-end">
                 <Button
                   variant="contained"
@@ -208,7 +294,7 @@ export default function MatrizCurricularCurso() {
                   Adicionar Disciplina
                 </Button>
               </Stack>
-              <DataTable columns={columns} rows={matriz} loading={carregando} />
+              <DataTable columns={columns} rows={matrizOrdenada} loading={carregando} />
             </Stack>
           </Card.Content>
         </Card.Root>
@@ -221,6 +307,11 @@ export default function MatrizCurricularCurso() {
         </Dialog.Header>
         <Dialog.Content>
           <Grid container spacing={2}>
+            <Grid size={12}>
+              <Typography variant="body2" color="text.secondary">
+                Somente disciplinas ainda nao vinculadas a este curso estao disponiveis para selecao.
+              </Typography>
+            </Grid>
             <Grid size={12}>
               <TextField
                 required
@@ -245,6 +336,11 @@ export default function MatrizCurricularCurso() {
                   </MenuItem>
                 ))}
               </TextField>
+              {!registroEdicao && (
+                <Typography variant="caption" color="text.secondary">
+                  {disciplinasDisponiveis.length} disciplina(s) disponivel(is) para vinculacao.
+                </Typography>
+              )}
             </Grid>
             <Grid size={6}>
               <TextField
