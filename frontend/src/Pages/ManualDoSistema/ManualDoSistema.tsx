@@ -137,7 +137,9 @@ export default function ManualDoSistema() {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <ManualCard.Root>
+                            <ManualCard.Root
+                                onClick={() => navigate("/manual-do-sistema/cursos")}
+                            >
                                 <ManualCard.Header>
                                     <ManualCard.Content
                                         icon={<GraduationCap size={27} />}
@@ -149,7 +151,9 @@ export default function ManualDoSistema() {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <ManualCard.Root>
+                            <ManualCard.Root
+                                onClick={() => navigate("/manual-do-sistema/disciplinas")}
+                            >
                                 <ManualCard.Header>
                                     <ManualCard.Content
                                         icon={<NotebookPen size={27} />}
@@ -175,7 +179,9 @@ export default function ManualDoSistema() {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <ManualCard.Root>
+                            <ManualCard.Root
+                                onClick={() => navigate("/manual-do-sistema/periodos-letivos")}
+                            >
                                 <ManualCard.Header>
                                     <ManualCard.Content
                                         icon={<Layers size={27} />}
@@ -187,7 +193,9 @@ export default function ManualDoSistema() {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <ManualCard.Root>
+                            <ManualCard.Root
+                                onClick={() => navigate("/manual-do-sistema/turmas")}
+                            >
                                 <ManualCard.Header>
                                     <ManualCard.Content
                                         icon={<Users size={27} />}
