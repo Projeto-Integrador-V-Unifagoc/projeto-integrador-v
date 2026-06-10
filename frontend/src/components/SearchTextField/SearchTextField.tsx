@@ -21,14 +21,19 @@ import Button from "../Button";
 import { ListFilter, Search } from "lucide-react";
 import type { PERIODOS } from "../../enums/periodos";
 
-type SearchFilters = {
+export type SearchFilters = {
   codigo?: string;
   matricula?: string;
   cursoId?: Cursos | "";
   periodo?: string;
 };
 
-const EMPTY_FILTERS: SearchFilters = {};
+const EMPTY_FILTERS: SearchFilters = {
+  codigo: "",
+  matricula: "",
+  cursoId: "",
+  periodo: "",
+};
 
 interface SearchTextFieldProps {
   children: ReactNode;
@@ -46,7 +51,6 @@ interface SearchTextFieldProps {
   addPath?: string;
   placeholder?: string;
   showFilters?: boolean;
-  onSearchFilters?: (filters: SearchFilters) => void;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
@@ -66,7 +70,6 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     addPath,
     placeholder,
     showFilters = true,
-    onSearchFilters,
   } = props;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -123,6 +126,12 @@ export default function SearchTextField(props: SearchTextFieldProps) {
   const handleSearch = () => {
     onFilterChange?.(localFilters)
     handleClose()
+  }
+
+  const handleReset = () => {
+    setLocalFilters(EMPTY_FILTERS)
+    onFilterChange?.(EMPTY_FILTERS)
+    setAnchorEl(null)
   }
 
   return (
@@ -223,7 +232,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
             )}
           </FilterMenu.Content>
 
-          <FilterMenu.Footer onSearch={handleSearch} onReset={handleClose} />
+          <FilterMenu.Footer onSearch={handleSearch} onReset={handleReset} />
         </FilterMenu.Root>
       )}
     </>

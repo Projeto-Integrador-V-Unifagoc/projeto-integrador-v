@@ -17,6 +17,7 @@ export default function DropDownPeriodos({
     return (
         <TextField
             label='Período'
+            variant="standard"
             InputLabelProps={{
                 shrink: true
             }}

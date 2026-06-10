@@ -31,6 +31,7 @@ export default function DropDownCursos({
   return (
     <TextField
       label="Curso"
+      variant="standard"
       InputLabelProps={{ shrink: true }}
       select
       fullWidth

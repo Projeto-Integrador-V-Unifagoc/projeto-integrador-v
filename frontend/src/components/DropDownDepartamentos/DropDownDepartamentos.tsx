@@ -29,6 +29,7 @@ export default function DropDownDepartamentos({
   return (
     <TextField
       label="Departamento"
+      variant="standard"
       InputLabelProps={{ shrink: true }}
       select
       fullWidth
