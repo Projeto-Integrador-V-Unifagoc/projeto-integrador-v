@@ -22,6 +22,25 @@ export interface MatriculaVinculo {
     aprovacao: boolean | null;
 }
 
+export interface VinculoStatus {
+    id: string;
+    status: string | null;
+    aprovacao: boolean | null;
+    disciplina_nome: string;
+    semestre: string;
+}
+
+export interface ConsultaStatusAluno {
+    aluno_id: string;
+    matricula: number;
+    periodo: number | null;
+    nome: string;
+    cpf: string;
+    curso_id: string;
+    curso_nome: string;
+    vinculos: VinculoStatus[];
+}
+
 export interface MatriculaDetalhada extends MatriculaVinculo {
     aluno_nome: string;
     aluno_matricula: number;
@@ -143,5 +162,39 @@ export class MatriculaRepository {
             .update({ status })
             .returning("*");
         return mat ?? null;
+    }
+
+    async consultarStatusPorMatricula(matricula: number): Promise<ConsultaStatusAluno | null> {
+        const aluno = await db("aluno as a")
+            .join("pessoa as p", "a.pessoa_id", "p.id")
+            .join("curso as c", "a.curso_id", "c.id")
+            .where("a.matricula", matricula)
+            .select(
+                "a.id as aluno_id",
+                "a.matricula",
+                "a.periodo",
+                "p.nome",
+                "p.cpf",
+                "c.id as curso_id",
+                "c.nome as curso_nome"
+            )
+            .first();
+
+        if (!aluno) return null;
+
+        const vinculos = await db("aluno_turma as at")
+            .join("turma as t", "at.turma_id", "t.id")
+            .join("disciplinas as d", "t.disciplina_id", "d.id")
+            .where("at.aluno_id", aluno.aluno_id)
+            .select(
+                "at.id",
+                "at.status",
+                "at.aprovacao",
+                "d.nome as disciplina_nome",
+                "t.semestre"
+            )
+            .orderBy("t.semestre", "desc");
+
+        return { ...aluno, vinculos };
     }
 }

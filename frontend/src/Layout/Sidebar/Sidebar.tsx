@@ -247,7 +247,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
                 )}
 
                 {(ehSecretaria || ehProfessor) && (
-                  <ListItemButton sx={{ pl: 4 }} href="/status">
+                  <ListItemButton sx={{ pl: 4 }} href="/statusLista">
                     <ListItemIcon sx={{ minWidth: 28 }}>
                       <Info size={17} />
                     </ListItemIcon>

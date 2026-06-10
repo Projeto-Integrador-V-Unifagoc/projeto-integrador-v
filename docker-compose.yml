@@ -1,5 +1,12 @@
 version: '3.9'
 
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
 services:
   postgres:
     image: postgres:15
@@ -9,10 +16,46 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: projeto_integrador
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-volumes:
-  postgres_data:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pi_backend
+    restart: always
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: projeto_integrador
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pi_frontend
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    depends_on:
+      - backend

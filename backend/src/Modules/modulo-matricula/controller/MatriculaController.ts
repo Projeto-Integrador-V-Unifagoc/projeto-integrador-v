@@ -51,6 +51,17 @@ export class MatriculaController {
         }
     }
 
+    async consultarStatus(req: any, res: any) {
+        try {
+            const matricula = parseInt(req.params.matricula, 10);
+            if (isNaN(matricula)) return res.status(400).json({ error: 'Número de matrícula deve ser um inteiro.' });
+            res.status(200).json(await service.consultarStatusPorMatricula(matricula));
+        } catch (err: any) {
+            const status = err.message.includes("não encontrado") ? 404 : 400;
+            res.status(status).json({ error: err.message });
+        }
+    }
+
     async atualizarStatus(req: any, res: any) {
         try {
             const { status } = req.body;

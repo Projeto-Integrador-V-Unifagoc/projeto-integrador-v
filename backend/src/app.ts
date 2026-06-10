@@ -64,7 +64,9 @@ app.get('/statusDisciplina', (req, res) => statusDisciplinaController.listarStat
 app.get('/statusCurso', (req, res) => statusMatriculaController.listarStatusMatriculaCurso(req, res))
 
 app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res));
+
 app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, res));
+app.get('/alunos/buscar', (req, res) => alunoController.buscarAluno(req, res));
 app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res));
 
 app.get('/cidades', (req, res) => cidadeController.listarCidades(req, res));
