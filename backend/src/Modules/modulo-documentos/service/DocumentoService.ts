@@ -32,7 +32,19 @@ export class DocumentoService {
         }
         const doc = await this.repository.buscarPorId(id);
         if (!doc) throw new Error(`Documento ${id} não encontrado.`);
-        return (await this.repository.validar(id, status, observacao))!;
+
+        const documentoAtualizado = (await this.repository.validar(id, status, observacao))!;
+
+        if (status === "REPROVADO") {
+            await this.repository.atualizarStatusMatriculaAluno(doc.aluno_id, "CANCELADO");
+        } else if (status === "APROVADO") {
+            const pendentes = await this.repository.contarDocumentosPendentesOuReprovados(doc.aluno_id);
+            if (pendentes === 0) {
+                await this.repository.atualizarStatusMatriculaAluno(doc.aluno_id, "MATRICULADO");
+            }
+        }
+
+        return documentoAtualizado;
     }
 
     async deletar(id: string): Promise<void> {

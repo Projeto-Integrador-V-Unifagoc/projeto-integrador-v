@@ -4,6 +4,10 @@ import {
     Box,
     Chip,
     CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Divider,
     Paper,
     Snackbar,
@@ -16,7 +20,7 @@ import {
     Tooltip,
     Typography,
 } from "@mui/material";
-import { FileText, Search, Upload, User } from "lucide-react";
+import { CheckCircle, FileText, Search, Upload, User, XCircle } from "lucide-react";
 import Container from "../../components/Container";
 import TextField from "../../components/TextField";
 import Button from "../../components/Button";
@@ -64,6 +68,10 @@ export default function Documentos() {
     const [documentos, setDocumentos] = useState<Documento[]>([]);
     const [carregandoDocs, setCarregandoDocs] = useState(false);
     const [uploadingTipo, setUploadingTipo] = useState<string | null>(null);
+    const [validandoId, setValidandoId] = useState<string | null>(null);
+    const [reprovarDialog, setReprovarDialog] = useState<{ aberto: boolean; docId: string; observacao: string }>({
+        aberto: false, docId: "", observacao: "",
+    });
     const [snackbar, setSnackbar] = useState<{ aberto: boolean; mensagem: string; severidade: "success" | "error" }>({
         aberto: false, mensagem: "", severidade: "success",
     });
@@ -117,6 +125,22 @@ export default function Documentos() {
         }
     }
 
+    async function handleValidar(docId: string, status: "APROVADO" | "REPROVADO", observacao?: string) {
+        setValidandoId(docId);
+        try {
+            await api.patch(`/documentos/${docId}/validar`, { status, observacao });
+            const msg = status === "APROVADO"
+                ? "Documento aprovado! Matrícula atualizada."
+                : "Documento reprovado. Matrícula cancelada.";
+            setSnackbar({ aberto: true, mensagem: msg, severidade: status === "APROVADO" ? "success" : "error" });
+            if (aluno) await carregarDocumentos(aluno.id);
+        } catch (err) {
+            setSnackbar({ aberto: true, mensagem: getMensagemErro(err, "Erro ao validar documento."), severidade: "error" });
+        } finally {
+            setValidandoId(null);
+        }
+    }
+
     function docDeTipo(tipo: string): Documento | undefined {
         return [...documentos]
             .filter((d) => d.tipo_documento === tipo)
@@ -130,6 +154,42 @@ export default function Documentos() {
                     {snackbar.mensagem}
                 </Alert>
             </Snackbar>
+
+            {/* Dialog de reprovação */}
+            <Dialog open={reprovarDialog.aberto} onClose={() => setReprovarDialog((d) => ({ ...d, aberto: false }))} maxWidth="xs" fullWidth>
+                <DialogTitle>Reprovar documento</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" mb={2}>
+                        Informe o motivo da reprovação (opcional).
+                    </Typography>
+                    <TextField
+                        label="Observação"
+                        multiline
+                        rows={3}
+                        fullWidth
+                        value={reprovarDialog.observacao}
+                        onChange={(e) => setReprovarDialog((d) => ({ ...d, observacao: e.target.value }))}
+                        placeholder="Ex.: documento ilegível, vencido..."
+                    />
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+                    <Button variant="outlined" sx={{ width: "auto" }} onClick={() => setReprovarDialog((d) => ({ ...d, aberto: false }))}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        sx={{ width: "auto" }}
+                        isLoading={validandoId === reprovarDialog.docId}
+                        onClick={async () => {
+                            await handleValidar(reprovarDialog.docId, "REPROVADO", reprovarDialog.observacao || undefined);
+                            setReprovarDialog({ aberto: false, docId: "", observacao: "" });
+                        }}
+                    >
+                        Confirmar reprovação
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <Stack spacing={2} alignItems="center">
                 {/* Busca */}
@@ -234,10 +294,39 @@ export default function Documentos() {
                                                                 e.target.value = "";
                                                             }}
                                                         />
-                                                        <Button variant="outlined" size="small" sx={{ width: "auto", minWidth: 110 }} onClick={() => inputRefs.current[tipo]?.click()} disabled={isUploading} isLoading={isUploading}>
-                                                            <Upload size={14} style={{ marginRight: 4 }} />
-                                                            {doc ? "Substituir" : "Enviar"}
-                                                        </Button>
+                                                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                            {doc?.status === "PENDENTE" && (
+                                                                <>
+                                                                    <Button
+                                                                        variant="contained"
+                                                                        size="small"
+                                                                        color="success"
+                                                                        sx={{ width: "auto", minWidth: 90 }}
+                                                                        isLoading={validandoId === doc.id}
+                                                                        disabled={!!validandoId}
+                                                                        onClick={() => void handleValidar(doc.id, "APROVADO")}
+                                                                    >
+                                                                        <CheckCircle size={14} style={{ marginRight: 4 }} />
+                                                                        Aprovar
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="outlined"
+                                                                        size="small"
+                                                                        color="error"
+                                                                        sx={{ width: "auto", minWidth: 90 }}
+                                                                        disabled={!!validandoId}
+                                                                        onClick={() => setReprovarDialog({ aberto: true, docId: doc.id, observacao: "" })}
+                                                                    >
+                                                                        <XCircle size={14} style={{ marginRight: 4 }} />
+                                                                        Reprovar
+                                                                    </Button>
+                                                                </>
+                                                            )}
+                                                            <Button variant="outlined" size="small" sx={{ width: "auto", minWidth: 100 }} onClick={() => inputRefs.current[tipo]?.click()} disabled={isUploading || !!validandoId} isLoading={isUploading}>
+                                                                <Upload size={14} style={{ marginRight: 4 }} />
+                                                                {doc ? "Substituir" : "Enviar"}
+                                                            </Button>
+                                                        </Stack>
                                                     </TableCell>
                                                 </TableRow>
                                             );
