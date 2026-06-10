@@ -57,6 +57,7 @@ app.post('/turmas', (req, res) => turmaController.criarTurma(req, res));
 app.post('/turmas/:id/disciplinas', (req, res) => turmaDisciplinaController.criarTurmaDisciplina(req, res));
 
 app.get('/alunos', (req, res) => alunoController.listarAlunos(req, res));
+app.get('/alunos/buscar', (req, res) => alunoController.buscarAluno(req, res));
 app.get('/alunos/id/:id', (req, res) => alunoController.buscarAlunoPorId(req, res));
 app.get('/alunos/:matricula', (req, res) => alunoController.buscarAlunoPorMatricula(req, res));
 
