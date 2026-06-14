@@ -95,7 +95,9 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     }
   }
 
-  const ehSecretaria = tipoUsuario === "secretaria";
+  // Secretaria e Administrador têm acesso total (podem cadastrar).
+  const podeAdicionar =
+    tipoUsuario === "secretaria" || tipoUsuario === "administrador";
   const open = Boolean(anchorEl);
 
   const handleOpen = (event: MouseEvent<HTMLElement>) => {
@@ -113,7 +115,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
   };
 
   function handleAddClick() {
-    if (!ehSecretaria) return;
+    if (!podeAdicionar) return;
 
     if (buttonOnClick) {
       buttonOnClick();
@@ -177,7 +179,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
           }}
         />
 
-        {ehSecretaria && (
+        {podeAdicionar && (
           <Button
             variant="contained"
             onClick={handleAddClick}

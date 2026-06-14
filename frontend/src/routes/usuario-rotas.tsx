@@ -35,7 +35,7 @@ export const userRoutes: RouteObject[] = [
   {
     path: '/usuarios/lista',
     element: (
-      <RotaProtegida perfisPermitidos={[Perfil.SECRETARIA]}>
+      <RotaProtegida perfisPermitidos={[Perfil.SECRETARIA, Perfil.ADMINISTRADOR]}>
         <Usuarios />
       </RotaProtegida>
     ),
@@ -43,7 +43,7 @@ export const userRoutes: RouteObject[] = [
   {
     path: '/cadastro',
     element: (
-      <RotaProtegida perfisPermitidos={[Perfil.SECRETARIA]}>
+      <RotaProtegida perfisPermitidos={[Perfil.SECRETARIA, Perfil.ADMINISTRADOR]}>
         <Usuarios />
       </RotaProtegida>
     ),

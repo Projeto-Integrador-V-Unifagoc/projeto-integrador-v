@@ -12,11 +12,11 @@ class AutenticacaoController {
       });
     }
 
-    const tiposPermitidos = ['aluno', 'professor', 'secretaria'];
+    const tiposPermitidos = ['aluno', 'professor', 'secretaria', 'administrador'];
 
     if (!tiposPermitidos.includes(tipo_usuario)) {
       return res.status(400).json({
-        error: 'tipo_usuario inválido. Use aluno, professor ou secretaria.',
+        error: 'tipo_usuario inválido. Use aluno, professor, secretaria ou administrador.',
       });
     }
 
