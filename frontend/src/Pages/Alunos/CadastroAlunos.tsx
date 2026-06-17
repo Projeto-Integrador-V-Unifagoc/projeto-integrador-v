@@ -82,7 +82,9 @@ export default function CadastroAlunos() {
     }
   }
 
-  const ehSecretaria = tipoUsuario === "secretaria";
+  // Secretaria e Administrador têm acesso total (podem cadastrar).
+  const podeCadastrar =
+    tipoUsuario === "secretaria" || tipoUsuario === "administrador";
 
   async function buscarEnderecoPeloCep() {
 
@@ -112,7 +114,7 @@ export default function CadastroAlunos() {
   }
 
   async function handleSubmit() {
-    if (!ehSecretaria) return;
+    if (!podeCadastrar) return;
 
     try {
       await alunoSchema.validate(form, { abortEarly: false });
@@ -351,7 +353,7 @@ export default function CadastroAlunos() {
               </Alert>
             )}
 
-            {ehSecretaria && (
+            {podeCadastrar && (
               <Button
                 variant="contained"
                 sx={{ width: "90px", height: "35px" }}

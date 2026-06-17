@@ -2,7 +2,24 @@ import { Box, Stack, Typography } from "@mui/material"
 import buildingImage from "../../../public/assets/building.svg"
 import Container from "../../components/Container"
 
+function obterNomeUsuario(): string {
+  const usuarioStorage = localStorage.getItem("@UniEduca:user")
+
+  if (!usuarioStorage) return "usuário"
+
+  try {
+    const usuario = JSON.parse(usuarioStorage)
+    const nome = String(usuario?.nome || "").trim()
+    // Usa apenas o primeiro nome para a saudação.
+    return nome ? nome.split(" ")[0] : "usuário"
+  } catch {
+    return "usuário"
+  }
+}
+
 export default function BuildingPage() {
+  const nomeUsuario = obterNomeUsuario()
+
   return (
     <Container
       maxWidth={false}
@@ -44,7 +61,7 @@ export default function BuildingPage() {
           alignItems='center'
           mt={1}
         >
-          <Typography variant="body1" fontWeight='bold'>Olá usuário, esta página ainda está em construção!</Typography>
+          <Typography variant="body1" fontWeight='bold'>Olá {nomeUsuario}, esta página ainda está em construção!</Typography>
           <Typography variant="body2" color="textDisabled">Por favor, retorne para a página anterior para que seja possível continuar com a utilização do sistema.</Typography>
         </Stack>
 

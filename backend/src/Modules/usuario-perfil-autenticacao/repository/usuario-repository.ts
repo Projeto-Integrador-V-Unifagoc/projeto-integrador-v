@@ -6,7 +6,7 @@ export interface Usuario {
   nome: string;
   email: string;
   senha: string;
-  tipo_usuario: 'aluno' | 'professor' | 'secretaria';
+  tipo_usuario: 'aluno' | 'professor' | 'secretaria' | 'administrador';
   created_at?: Date;
   updated_at?: Date;
 }

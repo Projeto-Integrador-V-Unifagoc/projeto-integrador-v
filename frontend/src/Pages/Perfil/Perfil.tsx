@@ -45,6 +45,7 @@ const ROTULO_PERFIL: Record<string, string> = {
   aluno: "Aluno",
   professor: "Professor",
   secretaria: "Secretaria",
+  administrador: "Administrador",
 };
 
 function iniciais(nome: string): string {
