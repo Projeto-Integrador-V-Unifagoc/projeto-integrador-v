@@ -19,10 +19,7 @@ export const alunoMock: AlunoFicha = {
 
 export const abasFicha: { label: string; value: AbaFicha }[] = [
   { label: "Notas/Faltas", value: "notas" },
-  { label: "Financeiro", value: "financeiro" },
-  { label: "Ficha Medica", value: "ficha-medica" },
   { label: "Documentos", value: "documentos" },
-  { label: "Ocorrencias", value: "ocorrencias" },
   { label: "Requerimentos", value: "requerimentos" },
   { label: "Relatorios", value: "relatorios" },
 ];

@@ -169,12 +169,9 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
             </Avatar>
 
             <Stack spacing={1.1} minWidth={0}>
-              <LinhaInfo label="Unidade:" value={aluno.unidade} />
               <LinhaInfo label="Curso:" value={aluno.curso} />
               <LinhaInfo label="Campus/Polo:" value={aluno.campusPolo} />
               <LinhaInfo label="Periodo:" value={aluno.periodo} />
-              <LinhaInfo label="Turno:" value={aluno.turno} />
-              <LinhaInfo label="Turma:" value={aluno.turma} />
               <LinhaInfo label="Status:" value={aluno.status} />
             </Stack>
           </Stack>
@@ -201,17 +198,6 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
         </Stack>
 
         <Stack direction="row" justifyContent="flex-end">
-          <Button
-            variant="contained"
-            sx={{
-              width: { xs: "100%", sm: 160 },
-              minWidth: { xs: 0, sm: 160 },
-              height: 40,
-              alignSelf: "flex-end",
-            }}
-          >
-            Mais detalhes
-          </Button>
         </Stack>
       </Stack>
     </Paper>
