@@ -50,7 +50,7 @@ export default function DropDownCidades({
             options={cidades}
             value={value}
             disabled={disabled}
-            inputValue={value ? `${value.nome} - ${value.uf}` : inputValue}
+            inputValue={value ? `${value.nome}` : inputValue}
             loading={carregando}
             getOptionLabel={(option) =>
                 `${option.nome} - ${option.uf}`

@@ -18,6 +18,7 @@ export class AlunoRepository {
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
             .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
             .leftJoin("cidade", "pessoa.cidade_id", "=", "cidade.ibge")
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
 
             if (filtros?.cursoId) {
                 query.where("aluno.curso_id", filtros.cursoId)
@@ -47,7 +48,10 @@ export class AlunoRepository {
                 "cidade.id as c_id",          
                 "cidade.ibge as c_ibge",      
                 "cidade.nome as c_nome",
-                "cidade.uf as c_uf"
+                "cidade.uf as c_uf",
+                "curso.id as curso_id",
+                "curso.codigo as curso_codigo",
+                "curso.nome as curso_nome",
             )
 
             return rows.map(AlunoMapper.toDomain);
@@ -110,6 +114,7 @@ export class AlunoRepository {
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
             .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
             .leftJoin("cidade", "pessoa.cidade_id", "=", "cidade.ibge")
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
             .where("aluno.matricula", matricula)
             .select(
                 "aluno.*",
@@ -127,7 +132,10 @@ export class AlunoRepository {
                 "cidade.id as c_id",          
                 "cidade.ibge as c_ibge",      
                 "cidade.nome as c_nome",
-                "cidade.uf as c_uf"
+                "cidade.uf as c_uf",
+                "curso.id as curso_id",
+                "curso.codigo as curso_codigo",
+                "curso.nome as curso_nome",
             )
             .first();
 
@@ -154,7 +162,7 @@ export class AlunoRepository {
         await db("aluno")
             .where("matricula", matricula)
             .update({
-                curso_id: null,
+                curso_id: dados.curso,
                 periodo: dados.periodo
             });
 

@@ -76,6 +76,11 @@ export default function Alunos() {
       flex: 1
     },
     {
+      field: "curso",
+      headerName: "Curso",
+      flex: 1
+    },
+    {
       field: "id",
       headerName: "Ações",
       flex: 1,
@@ -118,12 +123,12 @@ export default function Alunos() {
         estado: aluno.pessoa?.estado,
         cep: aluno.pessoa?.cep,
         periodo: aluno.periodo,
+        curso: aluno?.curso?.nome
       }))
       setAlunos(alunosMapeados)
     }
     buscarAlunos()
   }, [filters, pesquisa])
-
 
 
   return (

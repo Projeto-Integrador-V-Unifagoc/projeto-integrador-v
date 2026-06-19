@@ -26,10 +26,21 @@ export class AlunoMapper {
             id: raw.id,
             matricula: raw.matricula,
             periodo: raw.periodo,
-            pessoa: PessoaMapper.toDomain(raw), 
-            usuario: raw.u_id ? UsuarioMapper.toDomain(raw) : undefined,
-            curso: raw.curso_id ? CursoMapper.toDomain(raw) : undefined
-        };
+
+            pessoa: PessoaMapper.toDomain(raw),
+
+            usuario: raw.u_id 
+                ? UsuarioMapper.toDomain(raw) 
+                : undefined,
+
+            curso: raw.curso_id 
+                ? CursoMapper.toDomain({
+                    id: raw.curso_id,
+                    codigo: raw.curso_codigo,
+                    nome: raw.curso_nome
+                }) 
+                : undefined
+        }
     }
 }
 

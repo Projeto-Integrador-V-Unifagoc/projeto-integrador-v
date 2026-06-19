@@ -10,7 +10,7 @@ export function Footer() {
             })}
         >
             <Typography fontSize={12} color="text.secondary">
-                Não sei o que colocar aqui ainda
+                
             </Typography>
         </CardContent>
     )
