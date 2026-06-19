@@ -73,8 +73,10 @@ export class FichaService {
       entry.avaliacoes.push({
         id: av.id,
         nome: av.descricao_avaliacao || av.tipo_avaliacao,
-        nota:
-          typeof av.nota === "number" && !Number.isNaN(av.nota) ? av.nota : 0,
+        nota: (() => {
+          const n = av.nota == null ? NaN : Number(av.nota);
+          return Number.isFinite(n) ? n : 0;
+        })(),
         peso: av.valor ?? 0,
       });
     }
