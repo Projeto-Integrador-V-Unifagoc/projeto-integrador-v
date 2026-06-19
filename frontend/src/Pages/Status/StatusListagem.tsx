@@ -44,7 +44,6 @@ export default function StatusMatriculaLista() {
   }
 
   const columns = (tipo: "disciplina" | "matricula"): GridColDef<StatusView>[] => [
-    { field: "id", headerName: "ID", width: 120 },
     { field: "descricao", headerName: "Descrição", flex: 1, minWidth: 240 },
     {
       field: "acoes",
