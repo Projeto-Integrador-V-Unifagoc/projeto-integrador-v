@@ -1,12 +1,13 @@
 import { MenuItem, type TextFieldProps } from "@mui/material";
-import { Periodos } from "../../enums/periodos";
+
+import { PERIODOS } from "../../enums/periodos";
 import TextField from "../TextField";
 import { theme } from "../../theme";
 
-type DropDownPeriodosProps = TextFieldProps & {
-    value: Periodos | ''
-    onChange: (value: Periodos) => void
-}
+type DropDownPeriodosProps = Omit<TextFieldProps, "value" | "onChange"> & {
+    value: typeof PERIODOS[number]['value'] | '';
+    onChange: (value: typeof PERIODOS[number]['value']) => void;
+};
 
 export default function DropDownPeriodos({
     value,
@@ -16,13 +17,14 @@ export default function DropDownPeriodos({
     return (
         <TextField
             label='Período'
+            variant="standard"
             InputLabelProps={{
                 shrink: true
-            }}        
+            }}
             select
             fullWidth
             value={value}
-            onChange={(e) => onChange(e.target.value as Periodos)}
+            onChange={(e) => onChange(e.target.value as typeof PERIODOS[number]['value'])}
             SelectProps={{
                 MenuProps: {
                     PaperProps: {
@@ -37,18 +39,18 @@ export default function DropDownPeriodos({
             }}
             {...rest}
         >
-            {Object.values(Periodos).map((periodo) => (
+            {PERIODOS.map((periodo) => (
                 <MenuItem
-                    key={periodo}
-                    value={periodo}
+                    key={periodo.value}
+                    value={periodo.value}
                     sx={{
                         backgroundColor: `${theme.palette.background.default}`,
                         borderRadius: '8px'
-                    }}                
+                    }}
                 >
-                    {periodo}
+                    {periodo.label}
                 </MenuItem>
             ))}
         </TextField>
-    )
+    );
 }

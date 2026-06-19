@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 
-
 import { FormCadatroMobile } from "../../components/FormCadastroMobile/FormCadastroMobile";
 import FormCadastroAluno from "../../components/FormCadastroAluno/FormCadastroAluno";
 import DropDownCidades from "../../components/DropDownCidades/DropDownCidades";
@@ -17,7 +16,7 @@ import {
   IconButton,
   Stack,
   useMediaQuery,
-  useTheme
+  useTheme,
 } from "@mui/material";
 
 import { useAluno } from "../../hooks/use-aluno";
@@ -25,9 +24,10 @@ import { useViaCep } from "../../hooks/use-cep";
 
 import { alunoSchema } from "../../validators/aluno-schema";
 import DropDownCursos from "../../components/DropDownCursos/DropDownCursos";
+import type { CidadeModel } from "../../models/cidade-model";
+import { useCidade } from "../../hooks/use-cidade";
 
 export default function CadastroAlunos() {
-
   type FormType = {
     nome: string
     cpf: string
@@ -35,7 +35,7 @@ export default function CadastroAlunos() {
     logradouro: string
     numero: string
     bairro: string
-    cidadeIbge: string
+    cidade: CidadeModel | null
     estado: string
     cep: string
     curso: string
@@ -48,73 +48,86 @@ export default function CadastroAlunos() {
     logradouro: "",
     numero: "",
     bairro: "",
-    cidadeIbge: "",
+    cidade: null,
     estado: "",
     cep: "",
     curso: "",
-    periodo: ""
-  }
-  const [form, setForm] = useState<FormType>(initialForm)
+    periodo: "",
+  };
 
+  const [form, setForm] = useState<FormType>(initialForm);
   const [alerta, setAlerta] = useState<{
-    tipo: "success" | "error"
-    mensagem: string
-  } | null>(null)
-  const [erros, setErros] = useState<Record<string, string>>({})
+    tipo: "success" | "error";
+    mensagem: string;
+  } | null>(null);
+  const [erros, setErros] = useState<Record<string, string>>({});
 
   const { buscarCep } = useViaCep()
+  const { buscarCidadePorIbge } = useCidade()
   const { carregando, criarAluno } = useAluno()
   const navigate = useNavigate();
 
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const usuarioStorage = localStorage.getItem("@UniEduca:user");
+  let tipoUsuario = "";
+
+  if (usuarioStorage) {
+    try {
+      const usuario = JSON.parse(usuarioStorage);
+      tipoUsuario = String(usuario?.tipo_usuario || "").trim().toLowerCase();
+    } catch {
+      tipoUsuario = "";
+    }
+  }
+
+  // Secretaria e Administrador têm acesso total (podem cadastrar).
+  const podeCadastrar =
+    tipoUsuario === "secretaria" || tipoUsuario === "administrador";
 
   async function buscarEnderecoPeloCep() {
+
     const data = await buscarCep(form.cep)
 
     if (!data) {
-      return
+        return
     }
 
+    const cidade = await buscarCidadePorIbge(String(data.ibge))
 
     setForm((prev) => ({
-      ...prev,
-      logradouro: data.logradouro,
-      bairro: data.bairro,
-      estado: data.uf,
-      cidadeIbge: String(data.ibge),
+        ...prev,
+        logradouro: data.logradouro,
+        bairro: data.bairro,
+        estado: data.uf,
+        cep: data.cep,
+        cidade
     }))
-  }
+}
 
-  function handleChange<K extends keyof FormType>(
-    name: K,
-    value: FormType[K]
-  ) {
+  function handleChange<K extends keyof FormType>(name: K, value: FormType[K]) {
     setForm((prev) => ({
       ...prev,
-      [name]: value
-    }))
+      [name]: value,
+    }));
   }
 
   async function handleSubmit() {
+    if (!podeCadastrar) return;
 
     try {
-
-      await alunoSchema.validate(form, { abortEarly: false })
-
-      setErros({})
-
+      await alunoSchema.validate(form, { abortEarly: false });
+      setErros({});
     } catch (error: any) {
-
-      const errosFormatados: Record<string, string> = {}
+      const errosFormatados: Record<string, string> = {};
 
       error.inner.forEach((err: any) => {
-        errosFormatados[err.path] = err.message
-      })
+        errosFormatados[err.path] = err.message;
+      });
 
-      setErros(errosFormatados)
-
-      return
+      setErros(errosFormatados);
+      return;
     }
 
     try {
@@ -127,31 +140,30 @@ export default function CadastroAlunos() {
           logradouro: form.logradouro,
           numero: Number(form.numero),
           bairro: form.bairro,
-          cidadeIbge: form.cidadeIbge,
+          cidadeIbge: String(form.cidade?.ibge || ""),
           estado: form.estado,
-          cep: form.cep
-        }
-      }
-      console.log(alunoData)
+          cep: form.cep,
+        },
+      };
 
-      await criarAluno(alunoData)
+      await criarAluno(alunoData);
+
       setAlerta({
         tipo: "success",
-        mensagem: "Que beleza, seu aluno foi cadastrado com sucesso!"
-      })
+        mensagem: "Que beleza, seu aluno foi cadastrado com sucesso!",
+      });
 
-      setForm(initialForm)
+      setForm(initialForm);
 
       setTimeout(() => {
-        navigate("/alunos/lista")
-      }, 2000)
-
+        navigate("/alunos/lista");
+      }, 2000);
     } catch (err) {
-      console.error(err)
+      console.error(err);
       setAlerta({
         tipo: "error",
-        mensagem: "Opss, parece que algo deu errado durante o cadastro do aluno." // precisamos mapear esse erro depois no back pra vir do response by João Pedro Vidal
-      })
+        mensagem: "Opss, parece que algo deu errado durante o cadastro do aluno.",
+      });
     }
   }
 
@@ -162,11 +174,10 @@ export default function CadastroAlunos() {
           <FormCadatroMobile.Title>Cadastrar Aluno</FormCadatroMobile.Title>
           <FormCadatroMobile.Content>
             <FormCadastroAluno />
-          </FormCadatroMobile.Content>          
+          </FormCadatroMobile.Content>
         </Stack>
-
       ) : (
-        <Stack mt={2} gap={2} component='div'>
+        <Stack mt={2} gap={2} component="div">
           <Stack>
             <Card.Root>
               <Card.Header>
@@ -174,7 +185,6 @@ export default function CadastroAlunos() {
               </Card.Header>
               <Card.Content>
                 <Grid container spacing={1}>
-
                   <Grid size={6}>
                     <TextField
                       required
@@ -251,8 +261,8 @@ export default function CadastroAlunos() {
 
                   <Grid size={4}>
                     <DropDownCidades
-                      value={form.cidadeIbge}
-                      onChange={(value) => handleChange("cidadeIbge", value)}
+                      value={form.cidade}
+                      onChange={(cidade) => handleChange("cidade", cidade)}
                     />
                   </Grid>
 
@@ -276,21 +286,15 @@ export default function CadastroAlunos() {
                       value={form.cep}
                       error={!!erros.cep}
                       helperText={erros.cep}
-                      onChange={(e) => {
-                        handleChange("cep", e.target.value)
-                      }}
+                      onChange={(e) => handleChange("cep", e.target.value)}
                     />
                   </Grid>
 
                   <Grid size={2}>
-                    <IconButton
-                      color="primary"
-                      onClick={buscarEnderecoPeloCep}
-                    >
+                    <IconButton color="primary" onClick={buscarEnderecoPeloCep}>
                       <MapPin size={22} />
                     </IconButton>
                   </Grid>
-
                 </Grid>
               </Card.Content>
             </Card.Root>
@@ -298,17 +302,17 @@ export default function CadastroAlunos() {
 
           <Stack>
             <Card.Root>
-
               <Card.Header>
                 <Card.Title>Dados do Curso</Card.Title>
               </Card.Header>
 
               <Card.Content>
                 <Grid container spacing={1}>
-
                   <Grid size={4}>
                     <DropDownCursos
                       value={form.curso}
+                      error={!!erros.cidade}
+                      helperText={erros.cidade}
                       onChange={(value) => handleChange("curso", value)}
                     />
                   </Grid>
@@ -324,13 +328,10 @@ export default function CadastroAlunos() {
                       onChange={(e) => handleChange("periodo", e.target.value)}
                     />
                   </Grid>
-
                 </Grid>
               </Card.Content>
             </Card.Root>
           </Stack>
-
-
 
           <Stack
             display="flex"
@@ -342,28 +343,29 @@ export default function CadastroAlunos() {
               <Alert
                 severity={alerta.tipo}
                 sx={{
-                  width: '100%',
-                  height: '35px',
-                  display: 'flex',
-                  alignItems: 'center'
+                  width: "100%",
+                  height: "35px",
+                  display: "flex",
+                  alignItems: "center",
                 }}
               >
                 {alerta.mensagem}
               </Alert>
             )}
-            <Button
-              variant="contained"
-              sx={{ width: "90px", height: "35px" }}
-              onClick={handleSubmit}
-              isLoading={carregando}
-            >
-              Cadastrar
-            </Button>
+
+            {podeCadastrar && (
+              <Button
+                variant="contained"
+                sx={{ width: "90px", height: "35px" }}
+                onClick={handleSubmit}
+                isLoading={carregando}
+              >
+                Cadastrar
+              </Button>
+            )}
           </Stack>
         </Stack>
       )}
-
     </Container>
-
-  )
+  );
 }

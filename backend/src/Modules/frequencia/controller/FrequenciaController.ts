@@ -5,7 +5,7 @@ export class FrequenciaController {
 
   async listarOpcoes(req: any, res: any) {
     try {
-      res.status(200).json(await this.frequenciaService.listarOpcoes());
+      res.status(200).json(await this.frequenciaService.listarOpcoes(req));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
@@ -14,7 +14,9 @@ export class FrequenciaController {
   async obterChamada(req: any, res: any) {
     try {
       const turmaDisciplinaId = req.query.turmaDisciplinaId || req.query.turmaId;
-      res.status(200).json(await this.frequenciaService.obterChamada(turmaDisciplinaId, req.query.data));
+      res
+        .status(200)
+        .json(await this.frequenciaService.obterChamada(turmaDisciplinaId, req.query.data, req));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
@@ -22,7 +24,7 @@ export class FrequenciaController {
 
   async registrarFrequencia(req: any, res: any) {
     try {
-      const frequencia = await this.frequenciaService.registrarFrequencia();
+      const frequencia = await this.frequenciaService.registrarFrequencia(req.body, req);
       res.status(201).json(frequencia);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
@@ -31,7 +33,9 @@ export class FrequenciaController {
 
   async editarFrequencia(req: any, res: any) {
     try {
-      res.status(200).json(await this.frequenciaService.editarFrequencia(req.params.id, req.body));
+      res
+        .status(200)
+        .json(await this.frequenciaService.editarFrequencia(req.params.id, req.body, req));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
@@ -39,7 +43,7 @@ export class FrequenciaController {
 
   async removerFrequencia(req: any, res: any) {
     try {
-      res.status(200).json(await this.frequenciaService.removerFrequencia(req.params.id));
+      res.status(200).json(await this.frequenciaService.removerFrequencia(req.params.id, req));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
@@ -47,7 +51,7 @@ export class FrequenciaController {
 
   async consultarAluno(req: any, res: any) {
     try {
-      res.status(200).json(await this.frequenciaService.consultarAluno(req.params.alunoId));
+      res.status(200).json(await this.frequenciaService.consultarAluno(req.params.alunoId, req));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
@@ -55,7 +59,9 @@ export class FrequenciaController {
 
   async consultarTurma(req: any, res: any) {
     try {
-      res.status(200).json(await this.frequenciaService.consultarTurma(req.params.turmaId));
+      res
+        .status(200)
+        .json(await this.frequenciaService.consultarTurma(req.params.turmaId, req, req.query));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
@@ -65,7 +71,13 @@ export class FrequenciaController {
     try {
       res
         .status(200)
-        .json(await this.frequenciaService.registrarJustificativa(req.params.id, req.body.justificativa));
+        .json(
+          await this.frequenciaService.registrarJustificativa(
+            req.params.id,
+            req.body.justificativa,
+            req
+          )
+        );
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
@@ -73,7 +85,7 @@ export class FrequenciaController {
 
   async gerarRelatorio(req: any, res: any) {
     try {
-      res.status(200).json(await this.frequenciaService.gerarRelatorio(req.query));
+      res.status(200).json(await this.frequenciaService.gerarRelatorio(req.query, req));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }

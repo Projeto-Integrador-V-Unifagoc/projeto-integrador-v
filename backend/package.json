@@ -1,7 +1,7 @@
 {
     "name": "projeto-integrador-v",
     "version": "1.0.0",
-    "description": "��#\u0000 \u0000p\u0000r\u0000o\u0000j\u0000e\u0000t\u0000o\u0000-\u0000i\u0000n\u0000t\u0000e\u0000g\u0000r\u0000a\u0000d\u0000o\u0000r\u0000-\u0000v\u0000\r\u0000 \u0000",
+    "description": "Projeto Integrador V",
     "homepage": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v#readme",
     "bugs": {
         "url": "https://github.com/Projeto-Integrador-V-Unifagoc/projeto-integrador-v/issues"
@@ -15,9 +15,11 @@
     "type": "commonjs",
     "main": "app.ts",
     "scripts": {
-        "test": "test",
-        "start": "ts-node src/app.ts",
-        "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts"
+        "dev": "tsx watch src/app.ts",
+        "start": "tsx src/app.ts",
+        "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
+        "seed": "node -r ts-node/register node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
+        "test": "tsx --test \"src/**/*.test.ts\""
     },
     "dependencies": {
         "@types/cors": "^2.8.19",
@@ -26,7 +28,9 @@
         "cors": "^2.8.6",
         "dotenv": "^17.3.1",
         "express": "^5.2.1",
+        "jsonwebtoken": "^9.0.3",
         "knex": "^3.1.0",
+        "multer": "^1.4.5-lts.2",
         "pg": "^8.20.0",
         "typescript": "^5.9.3",
         "uuid": "^13.0.0"
@@ -34,8 +38,10 @@
     "keywords": [],
     "devDependencies": {
         "@types/bcrypt": "^6.0.0",
+        "@types/multer": "^1.4.12",
         "@types/uuid": "^10.0.0",
         "bcrypt": "^6.0.0",
-        "ts-node": "^10.9.2"
+        "ts-node": "^10.9.2",
+        "tsx": "^4.19.2"
     }
 }

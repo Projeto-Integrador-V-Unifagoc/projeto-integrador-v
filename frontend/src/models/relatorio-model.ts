@@ -1,4 +1,5 @@
-export type PerfilRelatorio = "Professor" | "Aluno";
+export type PerfilRelatorio = "Professor" | "Aluno" | "Secretaria";
+export type TipoUsuarioRelatorio = "aluno" | "professor" | "secretaria" | "administrador";
 export type TipoRelatorio = "Notas" | "Frequencia" | "Consulta" | "Historico";
 export type SituacaoAcademica =
   | "Aprovado"

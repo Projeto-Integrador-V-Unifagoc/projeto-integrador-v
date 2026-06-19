@@ -9,8 +9,6 @@ import {
   InputAdornment,
   MenuItem,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import {
@@ -18,9 +16,11 @@ import {
   FileText,
   GraduationCap,
   Search,
+  ShieldCheck,
   UserRound,
   UsersRound,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import Button from "../../components/Button";
 import Container from "../../components/Container";
@@ -34,6 +34,7 @@ import type {
   RelatorioLinha,
   SituacaoAcademica,
   TipoRelatorio,
+  TipoUsuarioRelatorio,
 } from "../../models/relatorio-model";
 
 const periodosProfessor: PeriodoRelatorio[] = [
@@ -173,7 +174,7 @@ const relatoriosMockados: RelatorioItem[] = [
     descricao: "Vis\u00e3o do professor com notas dos alunos por per\u00edodo letivo.",
     tipo: "Notas",
     ano: "2026",
-    perfis: ["Professor"],
+    perfis: ["Professor", "Secretaria"],
     curso: "Analise e Desenvolvimento de Sistemas",
     matrizCurricular: "Matriz ADS 2026",
     periodos: periodosProfessor,
@@ -198,7 +199,7 @@ const relatoriosMockados: RelatorioItem[] = [
     descricao: "Acompanhamento de frequ\u00eancia por aluno, disciplina e semestre.",
     tipo: "Frequencia",
     ano: "2026",
-    perfis: ["Professor"],
+    perfis: ["Professor", "Secretaria"],
     curso: "Analise e Desenvolvimento de Sistemas",
     matrizCurricular: "Matriz ADS 2026",
     periodos: periodosProfessor,
@@ -223,7 +224,7 @@ const relatoriosMockados: RelatorioItem[] = [
     descricao: "Consulta acad\u00eamica simples dos alunos vinculados ao curso.",
     tipo: "Consulta",
     ano: "2026",
-    perfis: ["Professor"],
+    perfis: ["Professor", "Secretaria"],
     curso: "Analise e Desenvolvimento de Sistemas",
     matrizCurricular: "Matriz ADS 2026",
     periodos: [
@@ -288,7 +289,7 @@ const relatoriosMockados: RelatorioItem[] = [
     descricao: "Hist\u00f3rico acad\u00eamico completo dispon\u00edvel para acompanhamento docente.",
     tipo: "Historico",
     ano: "2025",
-    perfis: ["Professor"],
+    perfis: ["Professor", "Secretaria"],
     curso: "Analise e Desenvolvimento de Sistemas",
     matrizCurricular: "Matriz ADS 2026",
     periodos: periodosProfessor,
@@ -690,15 +691,110 @@ async function buscarRelatoriosMockados(filtros: FiltrosRelatorios) {
   return Promise.resolve(relatorios);
 }
 
+type UsuarioLogado = {
+  nome?: string;
+  email?: string;
+  tipo_usuario?: TipoUsuarioRelatorio | string;
+};
+
+function obterUsuarioLogado(): UsuarioLogado {
+  const usuarioStorage = localStorage.getItem("@UniEduca:user");
+
+  if (!usuarioStorage) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(usuarioStorage);
+  } catch {
+    return {};
+  }
+}
+
+function perfilPorTipoUsuario(tipoUsuario?: string): PerfilRelatorio {
+  const tipoNormalizado = String(tipoUsuario || "").trim().toLowerCase();
+
+  if (tipoNormalizado === "aluno") {
+    return "Aluno";
+  }
+
+  if (tipoNormalizado === "professor") {
+    return "Professor";
+  }
+
+  return "Secretaria";
+}
+
+function labelPerfil(perfil: PerfilRelatorio) {
+  const labels: Record<PerfilRelatorio, string> = {
+    Aluno: "Aluno",
+    Professor: "Professor",
+    Secretaria: "Secretaria",
+  };
+
+  return labels[perfil];
+}
+
+function contextoPerfil(perfil: PerfilRelatorio) {
+  const contextos: Record<
+    PerfilRelatorio,
+    {
+      titulo: string;
+      descricao: string;
+      detalhe: string;
+      indicador: string;
+      cor: string;
+      fundo: string;
+      icone: LucideIcon;
+    }
+  > = {
+    Aluno: {
+      titulo: "Area pessoal do aluno",
+      descricao: "Exibe somente notas, frequencia e historico vinculados ao aluno logado.",
+      detalhe: "Visao individual",
+      indicador: "Meus dados",
+      cor: "#0E6F3F",
+      fundo: "#E6F4EA",
+      icone: UserRound,
+    },
+    Professor: {
+      titulo: "Acompanhamento docente",
+      descricao: "Mostra turmas, alunos, notas e frequencia sob responsabilidade do professor.",
+      detalhe: "Turmas vinculadas",
+      indicador: "Dados das turmas",
+      cor: "#0B5CAD",
+      fundo: "#EAF3FF",
+      icone: UsersRound,
+    },
+    Secretaria: {
+      titulo: "Visao administrativa academica",
+      descricao: "Disponibiliza relatorios amplos para acompanhamento institucional.",
+      detalhe: "Escopo geral",
+      indicador: "Todos os dados academicos",
+      cor: "#5B3E96",
+      fundo: "#F1ECFA",
+      icone: ShieldCheck,
+    },
+  };
+
+  return contextos[perfil];
+}
+
 export default function Relatorios() {
   const { listarRelatorios, carregando } = useRelatorio();
+  const usuarioLogado = useMemo(() => obterUsuarioLogado(), []);
+  const perfil = useMemo(
+    () => perfilPorTipoUsuario(usuarioLogado.tipo_usuario),
+    [usuarioLogado.tipo_usuario]
+  );
+  const contexto = useMemo(() => contextoPerfil(perfil), [perfil]);
+  const IconePerfil = contexto.icone;
   const [busca, setBusca] = useState("");
   const [ano, setAno] = useState("Todos");
   const [tipo, setTipo] = useState("Todos");
-  const [perfil, setPerfil] = useState<PerfilRelatorio>("Professor");
   const [usandoDadosMockados, setUsandoDadosMockados] = useState(false);
   const [relatoriosDisponiveis, setRelatoriosDisponiveis] = useState<RelatorioItem[]>(
-    relatoriosMockados.filter((item) => item.perfis.includes("Professor"))
+    relatoriosMockados.filter((item) => item.perfis.includes(perfil))
   );
   const [relatoriosFiltrados, setRelatoriosFiltrados] = useState<RelatorioItem[]>([]);
 
@@ -767,16 +863,6 @@ export default function Relatorios() {
 
   const totalRelatoriosPerfil = relatoriosDoPerfil.length;
 
-  function alterarPerfil(_: React.MouseEvent<HTMLElement>, novoPerfil: PerfilRelatorio | null) {
-    if (!novoPerfil) {
-      return;
-    }
-
-    setPerfil(novoPerfil);
-    setAno("Todos");
-    setTipo("Todos");
-  }
-
   function emitirRelatorio(relatorio: RelatorioItem) {
     const pdfBlob = buildMockPdf(relatorio);
     const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -815,78 +901,84 @@ export default function Relatorios() {
             </Typography>
           </Box>
 
-          <ToggleButtonGroup
-            exclusive
-            value={perfil}
-            onChange={alterarPerfil}
-            size="small"
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
             sx={{
-              backgroundColor: "#FFF",
-              borderRadius: "8px",
               width: { xs: "100%", sm: "auto" },
-              "& .MuiToggleButton-root": {
-                borderColor: "transparent",
-                gap: 1,
-                px: 2,
-                width: { xs: "50%", sm: "auto" },
-                textTransform: "none",
-              },
-              "& .Mui-selected": {
-                backgroundColor: "primary.main",
-                color: "#FFF",
-                "&:hover": {
-                  backgroundColor: "primary.dark",
-                },
-              },
+              justifyContent: { xs: "space-between", sm: "flex-end" },
             }}
           >
-            <ToggleButton value="Professor">
-              <UsersRound size={16} />
-              Professor
-            </ToggleButton>
-            <ToggleButton value="Aluno">
-              <UserRound size={16} />
-              Aluno
-            </ToggleButton>
-          </ToggleButtonGroup>
+            <Chip
+              icon={<IconePerfil size={15} />}
+              label={labelPerfil(perfil)}
+              sx={{
+                backgroundColor: contexto.fundo,
+                color: contexto.cor,
+                border: `1px solid ${contexto.cor}`,
+                fontWeight: 700,
+                "& .MuiChip-icon": {
+                  color: contexto.cor,
+                },
+              }}
+            />
+            <Chip
+              size="small"
+              label={usandoDadosMockados ? "Fallback local" : "API integrada"}
+              variant="outlined"
+            />
+          </Stack>
         </Stack>
 
         <Card
           elevation={0}
-          sx={(theme) => ({
-            border: `1px solid ${theme.palette.grey[100]}`,
+          sx={{
+            border: `1px solid ${contexto.cor}`,
             borderRadius: "8px",
-          })}
+            backgroundColor: contexto.fundo,
+          }}
         >
           <CardContent sx={{ padding: "16px !important" }}>
             <Stack spacing={2}>
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Box
-                  sx={(theme) => ({
+                  sx={{
                     width: 38,
                     height: 38,
                     borderRadius: "8px",
-                    backgroundColor: theme.palette.primary.light,
-                    color: theme.palette.primary.contrastText,
+                    backgroundColor: "#FFF",
+                    color: contexto.cor,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                  })}
+                  }}
                 >
                   <GraduationCap size={19} />
                 </Box>
                 <Box>
-                  <Typography fontWeight="bold">
-                    {perfil === "Professor"
-                      ? "Acesso simulado do Professor"
-                      : "Acesso simulado do Aluno"}
+                  <Typography fontWeight="bold" color={contexto.cor}>
+                    {contexto.titulo}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {perfil === "Professor"
-                      ? "Inclui notas, frequ\u00eancia, consulta de alunos e hist\u00f3rico escolar."
-                      : "Exibe apenas minhas notas, minha frequ\u00eancia e meu hist\u00f3rico escolar."}
+                    {contexto.descricao}
                   </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {usuarioLogado.nome ? `${usuarioLogado.nome} - ` : ""}
+                    {contexto.detalhe}
+                  </Typography>
+                  <Box mt={1}>
+                    <Chip
+                      size="small"
+                      label={contexto.indicador}
+                      sx={{
+                        backgroundColor: "#FFF",
+                        color: contexto.cor,
+                        fontWeight: 700,
+                      }}
+                    />
+                  </Box>
                 </Box>
               </Stack>
 
@@ -894,7 +986,11 @@ export default function Relatorios() {
 
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                 <TextField
-                  placeholder={"Buscar por relat\u00f3rio, aluno, disciplina ou situa\u00e7\u00e3o..."}
+                  placeholder={
+                    perfil === "Aluno"
+                      ? "Buscar por relatorio, disciplina ou situacao..."
+                      : "Buscar por relatorio, aluno, disciplina ou situacao..."
+                  }
                   value={busca}
                   onChange={(event) => setBusca(event.target.value)}
                   InputProps={{

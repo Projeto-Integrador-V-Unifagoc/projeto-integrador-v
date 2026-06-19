@@ -5,7 +5,12 @@ import Button from "../Button";
 
 import { Search } from "lucide-react";
 
-export default function Footer() {
+interface FooterProps {
+    onSearch: () => void;
+    onReset: () => void;
+}
+
+export default function Footer({ onSearch, onReset }: FooterProps) {
     return (
         <Stack
             display='flex'
@@ -26,7 +31,8 @@ export default function Footer() {
                 variant="outlined"
                 sx={(theme) => ({
                     backgroundColor: theme.palette.background.default
-                })}    
+                })}   
+                onClick={onReset} 
             >
                 Resetar
             </Button>
@@ -36,6 +42,7 @@ export default function Footer() {
                 sx={{
                     width: '100px'
                 }}
+                onClick={onSearch}
             >
                 Pesquisar
             </Button>

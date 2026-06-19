@@ -1,6 +1,6 @@
 import { MapPin } from "lucide-react"
 
-import { IconButton, Stack, TextField } from "@mui/material"
+import { Alert, IconButton, Stack, TextField } from "@mui/material"
 
 import { FormCadatroMobile } from "../FormCadastroMobile/FormCadastroMobile"
 import DropDownCidades from "../DropDownCidades/DropDownCidades"
@@ -9,8 +9,9 @@ import Container from "../Container"
 import Button from "../Button"
 
 import { useAluno } from "../../hooks/use-aluno"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { useEffect, useState } from "react"
+import type { CidadeModel } from "../../models/cidade-model"
 
 export default function EditFormCadastroAlunoMobile() {
 
@@ -21,7 +22,7 @@ export default function EditFormCadastroAlunoMobile() {
         logradouro: string
         numero: string
         bairro: string
-        cidadeIbge: string | number
+        cidade: CidadeModel | null
         estado: string
         cep: string
         curso: string
@@ -34,7 +35,7 @@ export default function EditFormCadastroAlunoMobile() {
         logradouro: "",
         numero: "",
         bairro: "",
-        cidadeIbge: "",
+        cidade: null,
         estado: "",
         cep: "",
         curso: "",
@@ -43,12 +44,18 @@ export default function EditFormCadastroAlunoMobile() {
     const [form, setForm] = useState<FormType>(initialForm)
     const { matricula } = useParams()
     const { buscarAlunoPorMatricula } = useAluno()
+    const [alerta, setAlerta] = useState<{
+    tipo: "success" | "error";
+    mensagem: string;
+  } | null>(null);
+    const navigate = useNavigate()
 
     useEffect(() => {
         async function carregarAluno() {
             if (!matricula) return
 
             const data = await buscarAlunoPorMatricula(matricula)
+            const cursoId = typeof data.curso === "string" ? data.curso : data.curso?.id || ""
 
             setForm({
                 nome: data.pessoa?.nome || "",
@@ -59,10 +66,10 @@ export default function EditFormCadastroAlunoMobile() {
                 logradouro: data.pessoa?.logradouro || "",
                 numero: data.pessoa?.numero || "",
                 bairro: data.pessoa?.bairro || "",
-                cidadeIbge: data.pessoa?.cidade?.ibge || "",
+                cidade: data.pessoa?.cidade || null,
                 estado: data.pessoa?.estado || "",
                 cep: data.pessoa?.cep || "",
-                curso: data.curso || "",
+                curso: cursoId,
                 periodo: data.periodo || ""
             })
         }
@@ -80,6 +87,32 @@ export default function EditFormCadastroAlunoMobile() {
         }))
     }
 
+    function salvarAlunoEditado(aluno: FormType) {
+    try {
+      fetch(`http://localhost:3000/alunos/editar-aluno/${matricula}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(aluno),
+      });
+      setAlerta({
+        tipo: "success",
+        mensagem: "Aluno atualizado com sucesso!",
+      });
+
+      setTimeout(() => {
+        navigate("/alunos/lista")
+      }, 1500)
+
+    } catch (error: any) {
+      setAlerta({
+        tipo: "error",
+        mensagem: error.message || "Erro ao atualizar aluno",
+      });
+    }
+  }
+
     return (
         <>
             <Container>
@@ -91,21 +124,18 @@ export default function EditFormCadastroAlunoMobile() {
                 >
 
                     <TextField
-                        disabled
                         label="Nome"
                         name="nome"
                         value={form.nome}
                         onChange={(e) => handleChange("nome", e.target.value)}
                     />
                     <TextField
-                        disabled
                         label="CPF"
                         name="cpf"
                         value={form.cpf}
                         onChange={(e) => handleChange("cpf", e.target.value)}
                     />
                     <TextField
-                        disabled
                         label="Data Nascimento"
                         name="dataNascimento"
                         type="date"
@@ -114,21 +144,18 @@ export default function EditFormCadastroAlunoMobile() {
                         InputLabelProps={{ shrink: true }}
                     />
                     <TextField
-                        disabled
                         label="Logradouro"
                         name="logradouro"
                         value={form.logradouro}
                         onChange={(e) => handleChange("logradouro", e.target.value)}
                     />
                     <TextField
-                        disabled
                         label="Número"
                         name="numero"
                         value={form.numero}
                         onChange={(e) => handleChange("numero", e.target.value)}
                     />
                     <TextField
-                        disabled
                         label="Bairro"
                         name="bairro"
                         value={form.bairro}
@@ -143,14 +170,12 @@ export default function EditFormCadastroAlunoMobile() {
                             label="CEP"
                             name="cep"
                             value={form.cep}
-                            disabled
                             onChange={(e) => {
                                 handleChange("cep", e.target.value)
                             }}
                         />
 
                         <IconButton
-                            disabled
                             color="primary"
                         //onClick={buscarEnderecoPeloCep}
                         >
@@ -159,30 +184,28 @@ export default function EditFormCadastroAlunoMobile() {
 
                     </Stack>
                     <DropDownCidades
-                        disabled
-                        value={form.cidadeIbge}
-                        onChange={(value) => handleChange("cidadeIbge", value)}
+                        value={form.cidade}
+                        onChange={(value) => handleChange("cidade", value)}
                     />
                     <TextField
-                        disabled
                         label="Estado"
                         name="estado"
                         value={form.estado}
                         onChange={(e) => handleChange("estado", e.target.value)}
                     />
                     <DropDownCursos
-                        disabled
+                        optionValue="id"
                         value={form.curso}
                         onChange={(value) => handleChange("curso", value)}
                     />
                     <TextField
-                        disabled
                         label="Periodo"
                         name="periodo"
                         value={form.periodo}
                         onChange={(e) => handleChange("periodo", e.target.value)}
                     />
                     <Button
+                        onClick={() => salvarAlunoEditado(form)}
                         variant="contained"
                         sx={{
                             width: "100%",
@@ -191,6 +214,11 @@ export default function EditFormCadastroAlunoMobile() {
                     >
                         Editar Aluno
                     </Button>
+                    {alerta && (
+                            <Alert severity={alerta.tipo} onClose={() => setAlerta(null)}>
+                              {alerta.mensagem}
+                            </Alert>
+                          )}
                 </Stack>
             </Container>
         </>

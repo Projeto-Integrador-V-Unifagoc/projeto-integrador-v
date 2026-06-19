@@ -55,6 +55,7 @@ const createPivTables = async (db: Knex) => {
 
   await db.schema.withSchema(SCHEMA).createTable("usuario", (table) => {
     uuidPrimary(table, db);
+    table.string("nome").notNullable();
     table.string("email").notNullable().unique();
     table.string("senha").notNullable();
     table.timestamp("created_at", { useTz: true }).notNullable().defaultTo(db.fn.now());
@@ -66,7 +67,17 @@ const createPivTables = async (db: Knex) => {
     uuidPrimary(table, db);
     table.string("codigo").notNullable().unique();
   });
+  
+  await db.schema.withSchema(SCHEMA).createTable("status_disciplina", (table) => {
+    uuidPrimary(table, db);
+    table.text("descricao").notNullable();
+  });
 
+  await db.schema.withSchema(SCHEMA).createTable("status_matricula", (table) => {
+    uuidPrimary(table, db);
+    table.text("descricao").notNullable();
+  });
+  
   await db.schema.withSchema(SCHEMA).createTable("frequencia", (table) => {
     uuidPrimary(table, db);
     table.string("status").notNullable();

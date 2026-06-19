@@ -1,4 +1,5 @@
-export type PerfilRelatorio = "Professor" | "Aluno";
+export type PerfilRelatorio = "Professor" | "Aluno" | "Secretaria";
+export type TipoUsuarioRelatorio = "aluno" | "professor" | "secretaria" | "administrador";
 export type TipoRelatorio = "Notas" | "Frequencia" | "Consulta" | "Historico";
 export type SituacaoAcademica =
   | "Aprovado"
@@ -16,7 +17,13 @@ export interface FiltrosRelatorioAcademico {
   matricula?: string;
   cursoId?: string;
   turmaId?: string;
+  turmaIdsPermitidos?: string[];
   disciplinaId?: string;
+}
+
+export interface ContextoRelatorioAcademico {
+  usuarioId: string;
+  tipoUsuario: TipoUsuarioRelatorio;
 }
 
 export interface RelatorioAcademicoLinha {

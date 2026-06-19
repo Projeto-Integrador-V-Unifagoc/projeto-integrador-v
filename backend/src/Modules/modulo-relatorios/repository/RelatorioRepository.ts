@@ -2,6 +2,20 @@ import { db } from "../../../database/connection";
 import { FiltrosRelatorioAcademico } from "../models/RelatorioAcademico";
 
 export class RelatorioRepository {
+  async buscarAlunoPorUsuarioId(usuarioId: string) {
+    return db("aluno").where({ usuario_id: usuarioId }).select("id").first();
+  }
+
+  async buscarProfessorPorUsuarioId(usuarioId: string) {
+    return db("professor").where({ usuario_id: usuarioId }).select("id").first();
+  }
+
+  async listarTurmasDisciplinaDoProfessor(professorId: string) {
+    return db("turma_disciplina")
+      .where({ professor_id: professorId })
+      .select("id");
+  }
+
   async listarLinhasAcademicas(filtros: FiltrosRelatorioAcademico) {
     const query = db("aluno as a")
       .join("pessoa as p", "p.id", "a.pessoa_id")
@@ -59,6 +73,10 @@ export class RelatorioRepository {
 
     if (filtros.turmaId) {
       query.where("t.id", filtros.turmaId);
+    }
+
+    if (filtros.turmaIdsPermitidos?.length) {
+      query.whereIn("t.id", filtros.turmaIdsPermitidos);
     }
 
     if (filtros.disciplinaId) {

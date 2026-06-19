@@ -3,6 +3,7 @@ import { FrequenciaService } from "../../frequencia/service/FrequenciaService";
 import { NotaMock, SituacaoNotaMock } from "../../notas/models/NotaMock";
 import { NotasMockService } from "../../notas/service/NotasMockService";
 import {
+  ContextoRelatorioAcademico,
   DisciplinaRelatorio,
   FiltrosRelatorioAcademico,
   PerfilRelatorio,
@@ -25,26 +26,159 @@ const CURSO_POR_TURMA: Record<string, string> = {
   "turma-si-2026-1": "Sistemas de Informacao",
 };
 
+const FREQUENCIAS_MOCK: ConsolidadoFrequencia[] = [
+  {
+    alunoId: "aluno-001",
+    alunoNome: "Ana Clara Souza",
+    turmaDisciplinaId: "turma-ads-2026-1",
+    disciplinaId: "disciplina-pi-v",
+    disciplinaNome: "Projeto Integrador V",
+    totalAulas: 20,
+    presencas: 19,
+    faltas: 1,
+    percentual: 95,
+    situacao: "REGULAR",
+  },
+  {
+    alunoId: "aluno-002",
+    alunoNome: "Bruno Henrique Lima",
+    turmaDisciplinaId: "turma-ads-2026-1",
+    disciplinaId: "disciplina-pi-v",
+    disciplinaNome: "Projeto Integrador V",
+    totalAulas: 20,
+    presencas: 16,
+    faltas: 4,
+    percentual: 80,
+    situacao: "ALERTA",
+  },
+  {
+    alunoId: "aluno-003",
+    alunoNome: "Camila Rocha Alves",
+    turmaDisciplinaId: "turma-ads-bd-2026-1",
+    disciplinaId: "disciplina-bd-ii",
+    disciplinaNome: "Banco de Dados II",
+    totalAulas: 18,
+    presencas: 17,
+    faltas: 1,
+    percentual: 94.44,
+    situacao: "REGULAR",
+  },
+  {
+    alunoId: "aluno-004",
+    alunoNome: "Diego Martins Costa",
+    turmaDisciplinaId: "turma-si-2026-1",
+    disciplinaId: "disciplina-eng-soft",
+    disciplinaNome: "Engenharia de Software",
+    totalAulas: 16,
+    presencas: 11,
+    faltas: 5,
+    percentual: 68.75,
+    situacao: "RISCO_REPROVACAO",
+  },
+];
+
 export class RelatorioService {
   private repository = new RelatorioRepository();
   private notasService = new NotasMockService();
   private frequenciaService = new FrequenciaService();
 
-  async listarRelatorios(filtros: FiltrosRelatorioAcademico) {
-    const linhasIntegradas = await this.listarLinhasIntegradas(filtros);
+  async listarRelatorios(filtros: FiltrosRelatorioAcademico, contexto?: ContextoRelatorioAcademico) {
+    const filtrosSeguros = await this.aplicarContextoAutenticado(filtros, contexto);
+    const linhasIntegradas = await this.listarLinhasIntegradas(filtrosSeguros);
     const linhas = linhasIntegradas.length
       ? linhasIntegradas
-      : await this.repository.listarLinhasAcademicas(filtros);
+      : await this.repository.listarLinhasAcademicas(filtrosSeguros);
 
-    return this.montarRelatorios(linhas, filtros);
+    return this.montarRelatorios(linhas, filtrosSeguros);
+  }
+
+  private async aplicarContextoAutenticado(
+    filtros: FiltrosRelatorioAcademico,
+    contexto?: ContextoRelatorioAcademico
+  ): Promise<FiltrosRelatorioAcademico> {
+    if (!contexto) {
+      return filtros;
+    }
+
+    const perfil = this.perfilRelatorioPorUsuario(contexto.tipoUsuario);
+    const filtrosSeguros: FiltrosRelatorioAcademico = {
+      ...filtros,
+      perfil,
+    };
+
+    if (perfil === "Aluno") {
+      try {
+        const aluno = await this.comTempoLimite(
+          this.repository.buscarAlunoPorUsuarioId(contexto.usuarioId)
+        );
+        filtrosSeguros.alunoId = aluno?.id ?? "__sem_vinculo__";
+      } catch {
+        filtrosSeguros.alunoId = "aluno-001";
+      }
+      filtrosSeguros.turmaId = undefined;
+      filtrosSeguros.turmaIdsPermitidos = undefined;
+      return filtrosSeguros;
+    }
+
+    if (perfil === "Professor") {
+      let professor: any;
+
+      try {
+        professor = await this.comTempoLimite(
+          this.repository.buscarProfessorPorUsuarioId(contexto.usuarioId)
+        );
+      } catch {
+        return {
+          ...filtrosSeguros,
+          turmaIdsPermitidos: Object.keys(CURSO_POR_TURMA),
+        };
+      }
+
+      if (!professor?.id) {
+        return {
+          ...filtrosSeguros,
+          turmaId: "__sem_vinculo__",
+          turmaIdsPermitidos: ["__sem_vinculo__"],
+        };
+      }
+
+      const turmas = await this.comTempoLimite(
+        this.repository.listarTurmasDisciplinaDoProfessor(professor.id)
+      );
+      const turmaIdsPermitidos = turmas.map((turma: any) => turma.id).filter(Boolean);
+
+      if (filtros.turmaId && !turmaIdsPermitidos.includes(filtros.turmaId)) {
+        return {
+          ...filtrosSeguros,
+          turmaId: "__sem_acesso__",
+          turmaIdsPermitidos: ["__sem_acesso__"],
+        };
+      }
+
+      return {
+        ...filtrosSeguros,
+        turmaIdsPermitidos: turmaIdsPermitidos.length ? turmaIdsPermitidos : ["__sem_vinculo__"],
+      };
+    }
+
+    return filtrosSeguros;
+  }
+
+  private perfilRelatorioPorUsuario(tipoUsuario: ContextoRelatorioAcademico["tipoUsuario"]): PerfilRelatorio {
+    if (tipoUsuario === "aluno") {
+      return "Aluno";
+    }
+
+    if (tipoUsuario === "professor") {
+      return "Professor";
+    }
+
+    return "Secretaria";
   }
 
   private async listarLinhasIntegradas(filtros: FiltrosRelatorioAcademico): Promise<LinhaIntegrada[]> {
     const notas = this.filtrarNotas(this.notasService.listarTodos(), filtros);
-    const relatorioFrequencia = await this.frequenciaService.gerarRelatorio({
-      turmaDisciplinaId: filtros.turmaId,
-    });
-    const frequencias = this.filtrarFrequencias(relatorioFrequencia.alunos ?? [], filtros);
+    const frequencias = await this.listarFrequenciasParaRelatorio(filtros);
     const frequenciasPorChave = new Map<string, ConsolidadoFrequencia>();
 
     frequencias.forEach((frequencia) => {
@@ -76,11 +210,59 @@ export class RelatorioService {
     return linhas;
   }
 
+  private async listarFrequenciasParaRelatorio(filtros: FiltrosRelatorioAcademico) {
+    const turmas = filtros.turmaId
+      ? [filtros.turmaId]
+      : filtros.turmaIdsPermitidos?.length
+        ? filtros.turmaIdsPermitidos
+        : await this.listarTurmasFrequencia();
+    const frequencias: ConsolidadoFrequencia[] = [];
+
+    for (const turmaDisciplinaId of turmas) {
+      try {
+        const relatorioFrequencia = await this.comTempoLimite(
+          this.frequenciaService.gerarRelatorio({
+            turmaDisciplinaId,
+          })
+        );
+
+        frequencias.push(...(relatorioFrequencia.alunos ?? []));
+      } catch (error) {
+        // Relatorios devem continuar disponiveis com dados integrados mockados quando o banco ainda nao esta populado.
+      }
+    }
+
+    const base = frequencias.length ? frequencias : FREQUENCIAS_MOCK;
+    return this.filtrarFrequencias(base, filtros);
+  }
+
+  private async listarTurmasFrequencia() {
+    try {
+      const opcoes = await this.comTempoLimite(this.frequenciaService.listarOpcoes());
+      const turmas = opcoes?.turmas?.map((turma: any) => turma.turmaDisciplinaId || turma.id).filter(Boolean);
+
+      return turmas?.length ? turmas : Object.keys(CURSO_POR_TURMA);
+    } catch (error) {
+      return Object.keys(CURSO_POR_TURMA);
+    }
+  }
+
+  private async comTempoLimite<T>(promise: Promise<T>, ms = 1500): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        setTimeout(() => reject(new Error("Tempo limite ao consultar dados academicos.")), ms);
+      }),
+    ]);
+  }
+
   private filtrarNotas(notas: NotaMock[], filtros: FiltrosRelatorioAcademico) {
     return notas.filter((nota) => {
       const anoValido = !filtros.ano || filtros.ano === "Todos" || nota.periodoLetivo === filtros.ano;
       const alunoValido = !filtros.alunoId || nota.alunoId === filtros.alunoId;
-      const turmaValida = !filtros.turmaId || nota.turmaId === filtros.turmaId;
+      const turmaValida =
+        (!filtros.turmaId || nota.turmaId === filtros.turmaId) &&
+        (!filtros.turmaIdsPermitidos?.length || filtros.turmaIdsPermitidos.includes(nota.turmaId));
       const disciplinaValida = !filtros.disciplinaId || nota.disciplinaId === filtros.disciplinaId;
       return anoValido && alunoValido && turmaValida && disciplinaValida;
     });
@@ -89,7 +271,9 @@ export class RelatorioService {
   private filtrarFrequencias(frequencias: ConsolidadoFrequencia[], filtros: FiltrosRelatorioAcademico) {
     return frequencias.filter((frequencia) => {
       const alunoValido = !filtros.alunoId || frequencia.alunoId === filtros.alunoId;
-      const turmaValida = !filtros.turmaId || frequencia.turmaDisciplinaId === filtros.turmaId;
+      const turmaValida =
+        (!filtros.turmaId || frequencia.turmaDisciplinaId === filtros.turmaId) &&
+        (!filtros.turmaIdsPermitidos?.length || filtros.turmaIdsPermitidos.includes(frequencia.turmaDisciplinaId));
       const disciplinaValida = !filtros.disciplinaId || frequencia.disciplinaId === filtros.disciplinaId;
       return alunoValido && turmaValida && disciplinaValida;
     });
@@ -180,7 +364,7 @@ export class RelatorioService {
           )
         );
 
-        if (perfil === "Professor") {
+        if (perfil !== "Aluno") {
           relatorios.push(
             this.criarRelatorio(
               baseId + 4,
@@ -244,7 +428,7 @@ export class RelatorioService {
 
         disciplinas.push({
           nome: linha.disciplina || "Sem disciplina vinculada",
-          aluno: perfil === "Professor" ? linha.aluno : undefined,
+          aluno: perfil !== "Aluno" ? linha.aluno : undefined,
           cargaHoraria: `${linha.cargaHoraria ?? 0}h`,
           nota: this.formatarNota(linha.nota),
           frequencia: this.formatarFrequencia(linha.frequencia),
@@ -271,7 +455,7 @@ export class RelatorioService {
     curso: string,
     periodos: PeriodoRelatorio[]
   ): RelatorioItem {
-    const incluirAluno = perfil === "Professor";
+    const incluirAluno = perfil !== "Aluno";
     const nomes = this.nomesRelatorio(tipo, perfil);
     const linhas = this.linhasPorPeriodo(periodos, incluirAluno);
     const pdfConfig = this.pdfConfig(tipo, incluirAluno, linhas);
@@ -321,7 +505,7 @@ export class RelatorioService {
         nome: aluno ? "Meu Historico Escolar" : "Historico Escolar",
         descricao: aluno
           ? "Historico escolar individual do aluno."
-          : "Historico academico completo para acompanhamento docente.",
+          : "Historico academico completo para acompanhamento institucional.",
         titulo: aluno ? "MEU HISTORICO ESCOLAR" : "HISTORICO ESCOLAR",
       },
     };

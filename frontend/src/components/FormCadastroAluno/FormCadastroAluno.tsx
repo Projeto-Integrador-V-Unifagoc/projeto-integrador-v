@@ -9,6 +9,7 @@ import { Alert, IconButton, Stack, } from "@mui/material";
 import { MapPin } from "lucide-react";
 import DropDownCursos from "../DropDownCursos/DropDownCursos";
 import Button from "../Button";
+import type { CidadeModel } from "../../models/cidade-model";
 
 
 export default function FormCadastroAluno() {
@@ -20,7 +21,7 @@ export default function FormCadastroAluno() {
         logradouro: string
         numero: string
         bairro: string
-        cidadeIbge: string
+        cidade: CidadeModel | null
         estado: string
         cep: string
         curso: string
@@ -33,7 +34,7 @@ export default function FormCadastroAluno() {
         logradouro: "",
         numero: "",
         bairro: "",
-        cidadeIbge: "",
+        cidade: null,
         estado: "",
         cep: "",
         curso: "",
@@ -65,7 +66,12 @@ export default function FormCadastroAluno() {
             logradouro: data.logradouro,
             bairro: data.bairro,
             estado: data.uf,
-            cidadeIbge: String(data.ibge),
+            cidade: data.ibge ? {
+                id: String(data.ibge),
+                ibge: Number(data.ibge),
+                nome: data.localidade,
+                uf: data.uf
+            } : null,
         }))
     }
 
@@ -110,7 +116,7 @@ export default function FormCadastroAluno() {
                     logradouro: form.logradouro,
                     numero: Number(form.numero),
                     bairro: form.bairro,
-                    cidadeIbge: form.cidadeIbge,
+                    cidadeIbge: form.cidade?.ibge ? String(form.cidade.ibge) : "",
                     estado: form.estado,
                     cep: form.cep
                 }
@@ -227,8 +233,8 @@ export default function FormCadastroAluno() {
 
                 </Stack>
                 <DropDownCidades
-                    value={form.cidadeIbge}
-                    onChange={(value) => handleChange("cidadeIbge", value)}
+                    value={form.cidade}
+                    onChange={(value) => handleChange("cidade", value)}
                 />
                 <TextField
                     required
