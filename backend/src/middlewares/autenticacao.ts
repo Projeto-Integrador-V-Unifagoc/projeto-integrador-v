@@ -21,8 +21,15 @@ export const autenticar = (req: Request, res: Response, next: NextFunction) => {
 
     (req as any).user = {
       id: decoded.id,
-      tipo_usuario: decoded.tipo_usuario 
+      tipo_usuario: decoded.tipo_usuario
     };
+
+    const tokenRenovado = jwt.sign(
+      { id: decoded.id, tipo_usuario: decoded.tipo_usuario },
+      secret,
+      { expiresIn: '1h' }
+    );
+    res.setHeader('x-token-renovado', tokenRenovado);
 
     return next();
   } catch (err: any) {
