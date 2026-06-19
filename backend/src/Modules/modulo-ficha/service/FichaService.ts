@@ -21,9 +21,15 @@ export class FichaService {
   async montarFicha(alunoId: string) {
     const aluno = await this.alunoService.buscarAlunoPorId(alunoId);
     const matriculas = await this.matriculaService.listarPorAluno(alunoId);
-    const frequencia = await this.frequenciaService.consultarAluno(alunoId).catch(() => undefined);
-    const documentos = await this.documentoService.listarPorAluno(alunoId).catch(() => []);
-    const periodos = await this.periodoService.listarPeriodosLetivos().catch(() => []);
+    const frequencia = await this.frequenciaService
+      .consultarAluno(alunoId)
+      .catch(() => undefined);
+    const documentos = await this.documentoService
+      .listarPorAluno(alunoId)
+      .catch(() => []);
+    const periodos = await this.periodoService
+      .listarPeriodosLetivos()
+      .catch(() => []);
 
     const mtdIds = (
       matriculas
@@ -31,13 +37,20 @@ export class FichaService {
         .filter(Boolean) as string[]
     ).filter(Boolean);
 
-    const avaliacoes = await avaliacaoRepository.buscarPorMatriculaTurmaDisciplinaIds(mtdIds).catch(() => []);
+    const avaliacoes = await avaliacaoRepository
+      .buscarPorMatriculaTurmaDisciplinaIds(mtdIds)
+      .catch(() => []);
 
     // Agrupar avaliacoes por disciplina
     const notasPorDisciplinaMap = new Map<string, any>();
 
     for (const av of avaliacoes) {
-      const key = av.disciplina_nome || av.turma_disciplina_id || av.turma_id || av.disciplina_id || av.id;
+      const key =
+        av.disciplina_nome ||
+        av.turma_disciplina_id ||
+        av.turma_id ||
+        av.disciplina_id ||
+        av.id;
       if (!notasPorDisciplinaMap.has(key)) {
         notasPorDisciplinaMap.set(key, {
           id: `nota-${key}`,
@@ -60,7 +73,8 @@ export class FichaService {
       entry.avaliacoes.push({
         id: av.id,
         nome: av.descricao_avaliacao || av.tipo_avaliacao,
-        nota: typeof av.nota === "number" && !Number.isNaN(av.nota) ? av.nota : 0,
+        nota:
+          typeof av.nota === "number" && !Number.isNaN(av.nota) ? av.nota : 0,
         peso: av.valor ?? 0,
       });
     }
@@ -68,9 +82,16 @@ export class FichaService {
     const notas = [] as any[];
 
     for (const [_, item] of notasPorDisciplinaMap.entries()) {
-      const totalPeso = item.avaliacoes.reduce((s: number, a: any) => s + (a.peso || 0), 0);
-      const totalNota = item.avaliacoes.reduce((s: number, a: any) => s + (a.nota || 0) * (a.peso || 0), 0);
-      const media = totalPeso > 0 ? Number((totalNota / totalPeso).toFixed(1)) : 0;
+      const totalPeso = item.avaliacoes.reduce(
+        (s: number, a: any) => s + (a.peso || 0),
+        0,
+      );
+      const totalNota = item.avaliacoes.reduce(
+        (s: number, a: any) => s + (a.nota || 0) * (a.peso || 0),
+        0,
+      );
+      const media =
+        totalPeso > 0 ? Number((totalNota / totalPeso).toFixed(1)) : 0;
       item.media = media;
       item.situacao = NOTA_SITUACAO(media);
       notas.push(item);

@@ -71,12 +71,12 @@ export const avaliacaoRepository = {
         "piv.curso_disciplina.disciplina_id",
         "piv.disciplinas.id",
       )
-      .join(
+      .leftJoin(
         "piv.professor",
         "piv.turma_disciplina.professor_id",
         "piv.professor.id",
       )
-      .join("piv.pessoa", "piv.professor.pessoa_id", "piv.pessoa.id")
+      .leftJoin("piv.pessoa", "piv.professor.pessoa_id", "piv.pessoa.id")
       .whereIn("piv.turma_disciplina.status", ["ativa", "ATIVA"])
       .whereIn("piv.turma.status", ["ativa", "ATIVA"])
       .select(
@@ -96,35 +96,25 @@ export const avaliacaoRepository = {
     return query;
   },
 
-  buscarTodas: async (
-    professorId?: string,
-    turmaDisciplinaId?: string,
-    executor: Executor = db,
-  ) => {
-    const query = baseQuery(executor).orderBy(
-      "piv.avaliacao.data_lancamento",
-      "desc",
-    );
-    if (professorId)
-      query.where("piv.turma_disciplina.professor_id", professorId);
-    if (turmaDisciplinaId)
-      query.where("piv.avaliacao.turma_disciplina_id", turmaDisciplinaId);
-    return query;
-  },
+  buscarTodas: async (executor: Executor = db): Promise<Avaliacao[]> =>
+    baseQuery(executor).orderBy("piv.avaliacao.data_lancamento", "desc"),
 
-  buscarPorId: (id: string, executor: Executor = db) =>
+  buscarPorId: async (
+    id: string,
+    executor: Executor = db,
+  ): Promise<Avaliacao | undefined> =>
     baseQuery(executor).where("piv.avaliacao.id", id).first(),
 
-  buscarPorTurmaDisciplina: (
+  buscarPorTurmaDisciplina: async (
     turmaDisciplinaId: string,
     executor: Executor = db,
-  ) =>
+  ): Promise<Avaliacao[]> =>
     baseQuery(executor).where(
       "piv.avaliacao.turma_disciplina_id",
       turmaDisciplinaId,
     ),
 
-  bloquearAtribuicoes: async (ids: string[], executor: Executor) =>
+  bloquearAtribuicoes: async (ids: string[], executor: Executor = db) =>
     executor("piv.turma_disciplina")
       .whereIn("id", [...new Set(ids)].sort())
       .orderBy("id")
@@ -133,7 +123,7 @@ export const avaliacaoRepository = {
   buscarAtribuicaoPorId: (id: string, executor: Executor = db) =>
     executor("piv.turma_disciplina").where({ id }).first(),
 
-  bloquearAvaliacao: (id: string, executor: Executor) =>
+  bloquearAvaliacao: (id: string, executor: Executor = db) =>
     executor("piv.avaliacao").where({ id }).forUpdate().first(),
 
   criar: async (dados: CriarAvaliacaoDTO, executor: Executor = db) => {
@@ -164,25 +154,6 @@ export const avaliacaoRepository = {
       "piv.avaliacao.matricula_turma_disciplina_id",
       ids,
     );
-  },
-
-  criar: async (dados: CriarAvaliacaoDTO, executor: Executor = db) => {
-    const [row] = await executor<Avaliacao>("piv.avaliacao")
-      .insert(dados)
-      .returning("*");
-    return (await avaliacaoRepository.buscarPorId(row.id, executor)) ?? row;
-  },
-
-  atualizar: async (
-    id: string,
-    dados: AtualizarAvaliacaoDTO,
-    executor: Executor = db,
-  ) => {
-    const [row] = await executor<Avaliacao>("piv.avaliacao")
-      .where({ id })
-      .update(dados)
-      .returning("*");
-    return row ? avaliacaoRepository.buscarPorId(id, executor) : undefined;
   },
 
   deletar: (id: string, executor: Executor = db) =>

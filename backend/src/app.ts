@@ -7,12 +7,12 @@ import { DepartamentoController } from "./Modules/modulo-facul-dp-curso/controll
 import CursoController from "./Modules/modulo-facul-dp-curso/controller/CursoController";
 import { DisciplinaController } from "./Modules/modulo-disciplinas/controller/DisciplinaController";
 import { professorRouter } from "./Modules/routes/professorRoutes";
+import { homeAlunoRouter } from "./Modules/routes/homeAlunoRoutes";
 import { avaliacaoRouter } from "./Modules/routes/avaliacaoRoutes";
 import { frequenciaRouter } from "./Modules/routes/frequenciaRoutes";
 import { notasRouter } from "./Modules/routes/notasRoutes";
 import { matriculaRouter } from "./Modules/routes/matriculaRoutes";
 import { documentoRouter } from "./Modules/routes/documentoRoutes";
-import { homeAlunoRouter } from "./Modules/routes/homeAlunoRoutes";
 import { FichaController } from "./Modules/modulo-ficha/controller/FichaController";
 import authRoutes from "./Modules/usuario-perfil-autenticacao/routes/auth-routes";
 import { StatusDisciplinaController } from "./Modules/modulo-status-matricula-disciplina/controller/DisciplinaController";
