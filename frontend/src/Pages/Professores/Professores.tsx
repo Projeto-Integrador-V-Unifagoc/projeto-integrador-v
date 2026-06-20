@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Grid, IconButton, Stack, Tooltip } from "@mui/material";
-import { Pencil, Trash2 } from "lucide-react";
+import { Alert, Grid, IconButton, MenuItem, Stack, Tooltip } from "@mui/material";
+import { Pencil, RotateCcw, UserRoundX } from "lucide-react";
 import type { GridColDef } from "@mui/x-data-grid";
 
 import Container from "../../components/Container";
@@ -24,8 +24,6 @@ interface ProfessorEditData {
     nome: string;
     cpf: string;
     dataNascimento: string;
-    email: string;
-    senha: string;
     curso_id: string;
     faculdade_id: string;
     cidade_id: string;
@@ -43,8 +41,6 @@ const initialEditData: ProfessorEditData = {
     nome: "",
     cpf: "",
     dataNascimento: "",
-    email: "",
-    senha: "",
     curso_id: "",
     faculdade_id: "",
     cidade_id: "",
@@ -79,7 +75,6 @@ export default function Professores() {
     const [cursos, setCursos] = useState<CursoResponse[]>([]);
     const [cidades, setCidades] = useState<CidadeModel[]>([]);
     const [cursoOptions, setCursoOptions] = useState<SelectOption[]>([]);
-    const [faculdadeOptions, setFaculdadeOptions] = useState<SelectOption[]>([]);
     const [cidadeOptions, setCidadeOptions] = useState<SelectOption[]>([]);
     const [dialogEditOpen, setDialogEditOpen] = useState(false);
     const [dialogDeleteOpen, setDialogDeleteOpen] = useState(false);
@@ -92,10 +87,9 @@ export default function Professores() {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [searchValue, setSearchValue] = useState("");
+    const [filtroAtivo, setFiltroAtivo] = useState<"todos" | "ativos" | "inativos">("todos");
     const [filters, setFilters] = useState<{ codigo?: string; matricula?: string; curso?: Cursos | ""; periodo?: string }>({});
     const [editData, setEditData] = useState<ProfessorEditData>(initialEditData);
-
-    const faculdades = useMemo(() => mapearFaculdades(cursos), [cursos]);
 
     useEffect(() => {
         void carregarDados();
@@ -113,7 +107,6 @@ export default function Professores() {
             setCursos(cursosResponse);
             setCidades(cidadesResponse);
             setCursoOptions(mapearCursos(cursosResponse));
-            setFaculdadeOptions(mapearFaculdades(cursosResponse));
             setCidadeOptions(mapearCidades(cidadesResponse));
         } catch (error) {
             setErrorMessage(getMensagemErro(error, "Nao foi possivel carregar professores."));
@@ -126,15 +119,6 @@ export default function Professores() {
         return data.map((curso) => ({ id: curso.id, label: curso.nome, sublabel: curso.codigo }));
     }
 
-    function mapearFaculdades(data: CursoResponse[]) {
-        const mapa = new Map<string, SelectOption>();
-        data.forEach((curso) => {
-            const faculdade = curso.departamento?.faculdade;
-            if (faculdade?.id) mapa.set(faculdade.id, { id: faculdade.id, label: faculdade.nome });
-        });
-        return Array.from(mapa.values()).sort((a, b) => a.label.localeCompare(b.label));
-    }
-
     function mapearCidades(data: CidadeModel[]) {
         return data.map((cidade) => ({ id: String(cidade.ibge), label: cidade.nome, sublabel: cidade.uf }));
     }
@@ -142,6 +126,8 @@ export default function Professores() {
     const professoresFiltrados = useMemo(() => {
         const search = normalizar(searchValue);
         return professores.filter((professor) => {
+            if (filtroAtivo === "ativos" && !professor.ativo) return false;
+            if (filtroAtivo === "inativos" && professor.ativo) return false;
             if (search) {
                 const campos = [
                     professor.nome,
@@ -159,7 +145,7 @@ export default function Professores() {
             if (filters.periodo && professor.faculdade_id !== filters.periodo) return false;
             return true;
         });
-    }, [filters, professores, searchValue]);
+    }, [filtroAtivo, filters, professores, searchValue]);
 
     function handleSearchCurso(query: string) {
         const term = normalizar(query);
@@ -172,17 +158,14 @@ export default function Professores() {
         );
     }
 
-    function handleSearchFaculdade(query: string) {
-        const term = normalizar(query);
-        setFaculdadeOptions(faculdades.filter((faculdade) => normalizar(faculdade.label).includes(term)));
-    }
-
     async function handleSearchCidade(query: string) {
         setLoadingCidades(true);
         try {
             const response = await cidadeApi.buscarCidades(query ? { nome: query } : undefined);
             setCidades(response);
             setCidadeOptions(mapearCidades(response));
+        } catch (error) {
+            setErrorMessage(getMensagemErro(error, "Não foi possível buscar cidades."));
         } finally {
             setLoadingCidades(false);
         }
@@ -195,15 +178,10 @@ export default function Professores() {
             ...prev,
             curso_id: option.id,
             curso_nome: option.label,
-            faculdade_id: faculdade?.id || prev.faculdade_id,
-            faculdade_nome: faculdade?.nome || prev.faculdade_nome,
+            faculdade_id: faculdade?.id || "",
+            faculdade_nome: faculdade?.nome || "",
         }));
         clearError("curso_id");
-        clearError("faculdade_id");
-    }
-
-    function handleSelectFaculdade(option: SelectOption) {
-        setEditData((prev) => ({ ...prev, faculdade_id: option.id, faculdade_nome: option.label }));
         clearError("faculdade_id");
     }
 
@@ -227,8 +205,6 @@ export default function Professores() {
                 nome: professorCompleto.nome,
                 cpf: professorCompleto.cpf,
                 dataNascimento: professorCompleto.data_nascimento?.slice(0, 10) || "",
-                email: professorCompleto.email,
-                senha: "",
                 curso_id: professorCompleto.curso_id || "",
                 faculdade_id: professorCompleto.faculdade_id || "",
                 cidade_id: professorCompleto.cidade_id || "",
@@ -265,12 +241,10 @@ export default function Professores() {
     function validarEdicao() {
         const novosErros: Partial<Record<keyof ProfessorEditData, string>> = {};
 
-        if (editData.email && !/\S+@\S+\.\S+/.test(editData.email)) novosErros.email = "E-mail invalido";
         if (editData.cpf && editData.cpf.replace(/\D/g, "").length !== 11) {
             novosErros.cpf = "CPF deve ter 11 digitos";
         }
         if (!editData.nome.trim()) novosErros.nome = "Campo obrigatorio";
-        if (!editData.email.trim()) novosErros.email = "Campo obrigatorio";
         if (!editData.cpf.trim()) novosErros.cpf = "Campo obrigatorio";
         if (!editData.curso_id) novosErros.curso_id = "Campo obrigatorio";
         if (!editData.faculdade_id) novosErros.faculdade_id = "Campo obrigatorio";
@@ -286,8 +260,6 @@ export default function Professores() {
         try {
             const payload: AtualizarProfessorDTO = {
                 nome: editData.nome.trim(),
-                email: editData.email.trim(),
-                senha: editData.senha || undefined,
                 cpf: editData.cpf.replace(/\D/g, ""),
                 data_nascimento: editData.dataNascimento || undefined,
                 logradouro: editData.logradouro || undefined,
@@ -318,10 +290,24 @@ export default function Professores() {
         try {
             await professorApi.deletar(professorSelecionado.id);
             await carregarDados();
-            setSuccessMessage("Professor excluido com sucesso!");
+            setSuccessMessage("Professor inativado com sucesso!");
             setDialogDeleteOpen(false);
         } catch (error) {
-            setErrorMessage(getMensagemErro(error, "Erro ao excluir professor."));
+            setErrorMessage(getMensagemErro(error, "Erro ao inativar professor."));
+        } finally {
+            setLoadingDeletar(false);
+        }
+    }
+
+    async function reativarProfessor(professor: Professor) {
+        setLoadingDeletar(true);
+        setErrorMessage(null);
+        try {
+            await professorApi.reativar(professor.id);
+            await carregarDados();
+            setSuccessMessage("Professor reativado com sucesso!");
+        } catch (error) {
+            setErrorMessage(getMensagemErro(error, "Erro ao reativar professor."));
         } finally {
             setLoadingDeletar(false);
         }
@@ -331,9 +317,9 @@ export default function Professores() {
         { field: "id", headerName: "Id", width: 90 },
         { field: "nome", headerName: "Nome", flex: 1, minWidth: 180 },
         { field: "curso", headerName: "Curso", flex: 1, minWidth: 180 },
-        { field: "email", headerName: "Email", flex: 1, minWidth: 200 },
         { field: "cpf", headerName: "CPF", width: 150 },
         { field: "faculdade", headerName: "Faculdade", flex: 1, minWidth: 180 },
+        { field: "ativo", headerName: "Status", width: 110, valueGetter: (value) => value ? "Ativo" : "Inativo" },
         {
             field: "acoes",
             headerName: "Acoes",
@@ -346,11 +332,19 @@ export default function Professores() {
                             <Pencil size={16} />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title="Excluir">
-                        <IconButton size="small" color="error" onClick={() => abrirExclusao(params.row as Professor)}>
-                            <Trash2 size={16} />
-                        </IconButton>
-                    </Tooltip>
+                    {(params.row as Professor).ativo ? (
+                        <Tooltip title="Inativar">
+                            <IconButton size="small" color="error" onClick={() => abrirExclusao(params.row as Professor)}>
+                                <UserRoundX size={16} />
+                            </IconButton>
+                        </Tooltip>
+                    ) : (
+                        <Tooltip title="Reativar">
+                            <IconButton size="small" color="success" disabled={loadingDeletar} onClick={() => void reativarProfessor(params.row as Professor)}>
+                                <RotateCcw size={16} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                 </Stack>
             ),
         },
@@ -385,6 +379,19 @@ export default function Professores() {
                         {errorMessage || successMessage}
                     </Alert>
                 )}
+                <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
+                    <TextField
+                        select
+                        label="Status"
+                        value={filtroAtivo}
+                        onChange={(event) => setFiltroAtivo(event.target.value as typeof filtroAtivo)}
+                        sx={{ width: 180 }}
+                    >
+                        <MenuItem value="todos">Todos</MenuItem>
+                        <MenuItem value="ativos">Ativos</MenuItem>
+                        <MenuItem value="inativos">Inativos</MenuItem>
+                    </TextField>
+                </Stack>
                 <DataTable columns={columns} rows={professoresFiltrados} loading={loading} />
             </Container>
 
@@ -405,16 +412,10 @@ export default function Professores() {
                             <TextField label="Nascimento" type="date" value={editData.dataNascimento} onChange={(e) => handleEditChange("dataNascimento", e.target.value)} InputLabelProps={{ shrink: true }} />
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField label="Email" value={editData.email} onChange={(e) => handleEditChange("email", e.target.value)} error={!!errors.email} helperText={errors.email} />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField label="Senha" type="password" value={editData.senha} onChange={(e) => handleEditChange("senha", e.target.value)} helperText="Deixe vazio para manter a atual" />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
                             <SearchableSelect label="Curso" value={editData.curso_id} displayValue={editData.curso_nome} options={cursoOptions} onSearch={handleSearchCurso} onSelect={handleSelectCurso} error={!!errors.curso_id} helperText={errors.curso_id} />
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <SearchableSelect label="Faculdade" value={editData.faculdade_id} displayValue={editData.faculdade_nome} options={faculdadeOptions} onSearch={handleSearchFaculdade} onSelect={handleSelectFaculdade} error={!!errors.faculdade_id} helperText={errors.faculdade_id} />
+                            <TextField label="Faculdade" value={editData.faculdade_nome} disabled error={!!errors.faculdade_id} helperText={errors.faculdade_id || "Definida automaticamente pelo curso"} />
                         </Grid>
                         <Grid size={{ xs: 12, md: 5 }}>
                             <TextField label="Logradouro" value={editData.logradouro} onChange={(e) => handleEditChange("logradouro", e.target.value)} />
@@ -448,12 +449,12 @@ export default function Professores() {
 
             <Dialog.Root open={dialogDeleteOpen} onClose={() => setDialogDeleteOpen(false)} maxWidth="xs">
                 <Dialog.Header>
-                    <Dialog.Title>Confirmar Exclusao</Dialog.Title>
+                    <Dialog.Title>Confirmar inativação</Dialog.Title>
                     <Dialog.ActionClose onClose={() => setDialogDeleteOpen(false)} />
                 </Dialog.Header>
                 <Dialog.Content>
                     <p style={{ margin: 0 }}>
-                        Tem certeza que deseja excluir o professor <strong>{professorSelecionado?.nome}</strong>?
+                        Tem certeza que deseja inativar o professor <strong>{professorSelecionado?.nome}</strong>? O histórico acadêmico será preservado.
                     </p>
                 </Dialog.Content>
                 <Dialog.Footer>
@@ -461,7 +462,7 @@ export default function Professores() {
                         Cancelar
                     </Button>
                     <Button variant="contained" color="error" onClick={confirmarExclusao} isLoading={loadingDeletar}>
-                        Excluir
+                        Inativar
                     </Button>
                 </Dialog.Footer>
             </Dialog.Root>

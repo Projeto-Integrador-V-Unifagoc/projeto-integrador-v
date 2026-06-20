@@ -36,6 +36,9 @@ class AutenticacaoService {
       if (!professor) {
         throw new Error('Professor selecionado não encontrado.');
       }
+      if (professor.ativo === false) {
+        throw new Error('Professor inativo não pode receber acesso.');
+      }
       if (professor.usuario_id) {
         throw new Error('Este professor já possui um login vinculado.');
       }
@@ -77,6 +80,13 @@ class AutenticacaoService {
 
     if (!usuario) {
       throw new Error('Usuário não encontrado');
+    }
+
+    if (usuario.tipo_usuario === 'professor') {
+      const professor = await this.usuarioRepository.buscarProfessorPorUsuario(String(usuario.id));
+      if (!professor || professor.ativo === false) {
+        throw new Error('Professor inativo. Acesso negado.');
+      }
     }
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
@@ -217,6 +227,9 @@ class AutenticacaoService {
       const professor = await this.usuarioRepository.buscarProfessorSimples(professor_id);
       if (!professor) {
         throw new Error('Professor selecionado não encontrado.');
+      }
+      if (professor.ativo === false) {
+        throw new Error('Professor inativo não pode receber acesso.');
       }
       if (professor.usuario_id && String(professor.usuario_id) !== String(usuarioId)) {
         throw new Error('Este professor já possui um login vinculado.');

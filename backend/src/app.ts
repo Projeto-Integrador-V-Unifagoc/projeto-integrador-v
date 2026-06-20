@@ -7,7 +7,6 @@ import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controll
 import CursoController from './Modules/modulo-facul-dp-curso/controller/CursoController';
 import { DisciplinaController } from './Modules/modulo-disciplinas/controller/DisciplinaController';
 import { professorRouter } from './Modules/routes/professorRoutes';
-import { professoresAcademicoRouter } from './Modules/routes/professoresAcademicoRoutes';
 import { avaliacaoRouter } from './Modules/routes/avaliacaoRoutes';
 import { frequenciaRouter } from './Modules/routes/frequenciaRoutes';
 import { notasRouter } from './Modules/routes/notasRoutes';
@@ -107,7 +106,6 @@ app.put('/turmas/:id/disciplinas/:turmaDisciplinaId', (req, res) => turmaDiscipl
 app.delete('/turmas/:id/disciplinas/:turmaDisciplinaId', (req, res) => turmaDisciplinaController.removerTurmaDisciplina(req, res));
 
 app.use('/professores', professorRouter);
-app.use('/professores-academico', professoresAcademicoRouter);
 app.use('/avaliacoes', avaliacaoRouter);
 app.use('/frequencias', frequenciaRouter);
 app.use('/notas', notasRouter);

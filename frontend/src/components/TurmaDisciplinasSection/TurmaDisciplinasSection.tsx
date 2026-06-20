@@ -9,10 +9,10 @@ import TextField from "../TextField";
 import { Card } from "../Card";
 import { useTurma } from "../../hooks/use-turma";
 import { useCursoDisciplina } from "../../hooks/use-curso-disciplina";
-import { useProfessorAcademico } from "../../hooks/use-professor-academico";
+import { useProfessor } from "../../hooks/use-professor";
 import { turmaDisciplinaSchema } from "../../validators/turma-disciplina-schema";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
-import type { ProfessorAcademico } from "../../models/professor-academico-model";
+import type { ProfessorOpcao } from "../../models/professor-model";
 import type { TurmaDisciplinaResponse } from "../../models/turma-model";
 import type { GridColDef } from "@mui/x-data-grid";
 
@@ -36,7 +36,7 @@ const initialForm: FormType = {
 export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   const [disciplinasTurma, setDisciplinasTurma] = useState<TurmaDisciplinaResponse[]>([]);
   const [disciplinasMatriz, setDisciplinasMatriz] = useState<CursoDisciplinaResponse[]>([]);
-  const [professores, setProfessores] = useState<ProfessorAcademico[]>([]);
+  const [professores, setProfessores] = useState<ProfessorOpcao[]>([]);
   const [alerta, setAlerta] = useState<{ tipo: "success" | "error"; mensagem: string } | null>(null);
   const [dialogoAberto, setDialogoAberto] = useState(false);
   const [registroEdicao, setRegistroEdicao] = useState<TurmaDisciplinaResponse | null>(null);
@@ -46,7 +46,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   const [filtroStatus, setFiltroStatus] = useState<"todas" | "ativa" | "planejada" | "encerrada">("todas");
   const { carregando, listarDisciplinasDaTurma, criarDisciplinaDaTurma, atualizarDisciplinaDaTurma, removerDisciplinaDaTurma } = useTurma();
   const { listarMatrizCurricularPorCursoId } = useCursoDisciplina();
-  const { listarProfessores } = useProfessorAcademico();
+  const { listarOpcoes } = useProfessor();
 
   async function carregarDados() {
     if (!cursoId) {
@@ -56,7 +56,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
     const [disciplinasTurmaResponse, matrizResponse, professoresResponse] = await Promise.all([
       listarDisciplinasDaTurma(turmaId),
       listarMatrizCurricularPorCursoId(cursoId),
-      listarProfessores(),
+      listarOpcoes(),
     ]);
 
     setDisciplinasTurma(disciplinasTurmaResponse);

@@ -3,11 +3,17 @@ import type {
     AtualizarProfessorDTO,
     CriarProfessorDTO,
     Professor,
+    ProfessorOpcao,
 } from "../models/professor-model";
 
 export const professorApi = {
-    async listar(): Promise<Professor[]> {
-        const response = await api.get<Professor[]>("/professores");
+    async listar(ativo?: boolean): Promise<Professor[]> {
+        const response = await api.get<Professor[]>("/professores", { params: ativo === undefined ? undefined : { ativo } });
+        return response.data;
+    },
+
+    async listarOpcoes(): Promise<ProfessorOpcao[]> {
+        const response = await api.get<ProfessorOpcao[]>("/professores/opcoes");
         return response.data;
     },
 
@@ -28,5 +34,10 @@ export const professorApi = {
 
     async deletar(id: string): Promise<void> {
         await api.delete(`/professores/${id}`);
+    },
+
+    async reativar(id: string): Promise<Professor> {
+        const response = await api.patch<Professor>(`/professores/${id}/reativar`);
+        return response.data;
     },
 };

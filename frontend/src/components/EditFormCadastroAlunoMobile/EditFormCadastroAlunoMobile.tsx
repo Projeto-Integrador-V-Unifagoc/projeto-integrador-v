@@ -68,7 +68,7 @@ export default function EditFormCadastroAlunoMobile() {
                 cidade: data.pessoa?.cidade || null,
                 estado: data.pessoa?.estado || "",
                 cep: data.pessoa?.cep || "",
-                curso: data?.curso?.id || "",
+                curso: data?.curso || "",
                 periodo: data.periodo || ""
             })
         }

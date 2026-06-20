@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Grid, Stack } from "@mui/material";
 
@@ -18,8 +18,6 @@ interface ProfessorFormData {
     nome: string;
     cpf: string;
     dataNascimento: string;
-    email: string;
-    senha: string;
     curso_id: string;
     faculdade_id: string;
     cidade_id: string;
@@ -37,8 +35,6 @@ const initialState: ProfessorFormData = {
     nome: "",
     cpf: "",
     dataNascimento: "",
-    email: "",
-    senha: "",
     curso_id: "",
     faculdade_id: "",
     cidade_id: "",
@@ -77,21 +73,9 @@ export default function Cadastro() {
     const [cursos, setCursos] = useState<CursoResponse[]>([]);
     const [cidades, setCidades] = useState<CidadeModel[]>([]);
     const [cursoOptions, setCursoOptions] = useState<SelectOption[]>([]);
-    const [faculdadeOptions, setFaculdadeOptions] = useState<SelectOption[]>([]);
     const [cidadeOptions, setCidadeOptions] = useState<SelectOption[]>([]);
     const [loadingCursos, setLoadingCursos] = useState(false);
     const [loadingCidades, setLoadingCidades] = useState(false);
-
-    const faculdades = useMemo(() => {
-        const mapa = new Map<string, SelectOption>();
-        cursos.forEach((curso) => {
-            const faculdade = curso.departamento?.faculdade;
-            if (faculdade?.id) {
-                mapa.set(faculdade.id, { id: faculdade.id, label: faculdade.nome });
-            }
-        });
-        return Array.from(mapa.values()).sort((a, b) => a.label.localeCompare(b.label));
-    }, [cursos]);
 
     useEffect(() => {
         void carregarOpcoesIniciais();
@@ -108,7 +92,6 @@ export default function Cadastro() {
             setCursos(cursosResponse);
             setCidades(cidadesResponse);
             setCursoOptions(mapearCursos(cursosResponse));
-            setFaculdadeOptions(mapearFaculdades(cursosResponse));
             setCidadeOptions(mapearCidades(cidadesResponse));
         } catch (error) {
             setErrorMessage(getMensagemErro(error, "Nao foi possivel carregar opcoes do cadastro."));
@@ -124,15 +107,6 @@ export default function Cadastro() {
             label: curso.nome,
             sublabel: curso.codigo,
         }));
-    }
-
-    function mapearFaculdades(data: CursoResponse[]) {
-        const mapa = new Map<string, SelectOption>();
-        data.forEach((curso) => {
-            const faculdade = curso.departamento?.faculdade;
-            if (faculdade?.id) mapa.set(faculdade.id, { id: faculdade.id, label: faculdade.nome });
-        });
-        return Array.from(mapa.values()).sort((a, b) => a.label.localeCompare(b.label));
     }
 
     function mapearCidades(data: CidadeModel[]) {
@@ -154,17 +128,14 @@ export default function Cadastro() {
         );
     }
 
-    function handleSearchFaculdade(query: string) {
-        const term = normalizar(query);
-        setFaculdadeOptions(faculdades.filter((faculdade) => normalizar(faculdade.label).includes(term)));
-    }
-
     async function handleSearchCidade(query: string) {
         setLoadingCidades(true);
         try {
             const response = await cidadeApi.buscarCidades(query ? { nome: query } : undefined);
             setCidades(response);
             setCidadeOptions(mapearCidades(response));
+        } catch (error) {
+            setErrorMessage(getMensagemErro(error, "Não foi possível buscar cidades."));
         } finally {
             setLoadingCidades(false);
         }
@@ -177,19 +148,10 @@ export default function Cadastro() {
             ...prev,
             curso_id: option.id,
             curso_nome: option.label,
-            faculdade_id: faculdade?.id || prev.faculdade_id,
-            faculdade_nome: faculdade?.nome || prev.faculdade_nome,
+            faculdade_id: faculdade?.id || "",
+            faculdade_nome: faculdade?.nome || "",
         }));
         clearError("curso_id");
-        clearError("faculdade_id");
-    }
-
-    function handleSelectFaculdade(option: SelectOption) {
-        setFormData((prev) => ({
-            ...prev,
-            faculdade_id: option.id,
-            faculdade_nome: option.label,
-        }));
         clearError("faculdade_id");
     }
 
@@ -220,8 +182,6 @@ export default function Cadastro() {
             "nome",
             "cpf",
             "dataNascimento",
-            "email",
-            "senha",
             "curso_id",
             "faculdade_id",
             "cidade_id",
@@ -236,16 +196,8 @@ export default function Cadastro() {
             if (!formData[campo]?.toString().trim()) novosErros[campo] = "Campo obrigatorio";
         });
 
-        if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-            novosErros.email = "E-mail invalido";
-        }
-
         if (formData.cpf && formData.cpf.replace(/\D/g, "").length !== 11) {
             novosErros.cpf = "CPF deve ter 11 digitos";
-        }
-
-        if (formData.senha && formData.senha.length < 6) {
-            novosErros.senha = "A senha deve ter no minimo 6 caracteres";
         }
 
         setErrors(novosErros);
@@ -260,8 +212,6 @@ export default function Cadastro() {
         try {
             const payload: CriarProfessorDTO = {
                 nome: formData.nome.trim(),
-                email: formData.email.trim(),
-                senha: formData.senha,
                 cpf: formData.cpf.replace(/\D/g, ""),
                 data_nascimento: formData.dataNascimento,
                 logradouro: formData.logradouro.trim(),
@@ -285,8 +235,6 @@ export default function Cadastro() {
             const mensagem = getMensagemErro(error, "Erro ao cadastrar professor.");
             if (mensagem.toLowerCase().includes("cpf")) {
                 setErrors({ cpf: mensagem });
-            } else if (mensagem.toLowerCase().includes("email")) {
-                setErrors({ email: mensagem });
             } else {
                 setErrorMessage(mensagem);
             }
@@ -337,25 +285,6 @@ export default function Cadastro() {
                             />
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                label="Email"
-                                value={formData.email}
-                                onChange={(e) => handleInputChange("email", e.target.value)}
-                                error={!!errors.email}
-                                helperText={errors.email}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                label="Senha"
-                                type="password"
-                                value={formData.senha}
-                                onChange={(e) => handleInputChange("senha", e.target.value)}
-                                error={!!errors.senha}
-                                helperText={errors.senha}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
                             <SearchableSelect
                                 label="Curso"
                                 placeholder="Buscar curso"
@@ -370,17 +299,12 @@ export default function Cadastro() {
                             />
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <SearchableSelect
+                            <TextField
                                 label="Faculdade"
-                                placeholder="Buscar faculdade"
-                                value={formData.faculdade_id}
-                                displayValue={formData.faculdade_nome}
-                                options={faculdadeOptions}
-                                onSearch={handleSearchFaculdade}
-                                onSelect={handleSelectFaculdade}
-                                loading={loadingCursos}
+                                value={formData.faculdade_nome}
+                                disabled
+                                helperText={formData.faculdade_nome || "Definida automaticamente pelo curso"}
                                 error={!!errors.faculdade_id}
-                                helperText={errors.faculdade_id}
                             />
                         </Grid>
                         <Grid size={{ xs: 12, md: 5 }}>

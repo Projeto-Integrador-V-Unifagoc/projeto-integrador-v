@@ -1,171 +1,99 @@
-import db from '../../../database/index.js';
-import type { Professor, CriarProfessorDTO, AtualizarProfessor, Usuario, Pessoa } from '../models/professorModels.js';
+import { db } from '../../../database/connection.js';
+import type { AtualizarProfessor, CriarProfessorDTO, FiltroProfessor } from '../models/professorModels.js';
+
+const baseQuery = () => db('piv.professor')
+  .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
+  .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
+  .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
+  .leftJoin('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id');
+
+const camposCompletos = [
+  'piv.professor.id', 'piv.professor.usuario_id', 'piv.professor.pessoa_id',
+  'piv.professor.ativo', 'piv.pessoa.nome', 'piv.usuario.email', 'piv.pessoa.cpf',
+  'piv.pessoa.data_nascimento', 'piv.pessoa.logradouro', 'piv.pessoa.numero',
+  'piv.pessoa.bairro', 'piv.pessoa.cidade_id', 'piv.pessoa.estado', 'piv.pessoa.cep',
+  'piv.professor.curso_id', 'piv.curso.nome as curso', 'piv.professor.faculdade_id',
+  'piv.faculdade.nome as faculdade',
+];
 
 export const professorRepository = {
-  listarTodos: async () => {
-    return await db('piv.professor')
-      .join('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
-      .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
-      .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
-      .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
-      .select(
-        'piv.professor.id',
-        'piv.pessoa.nome as nome',
-        'piv.usuario.email',
-        'piv.pessoa.cpf',
-        'piv.curso.nome as curso',
-        'piv.professor.curso_id as curso_id',
-        'piv.faculdade.nome as faculdade',
-        'piv.professor.faculdade_id as faculdade_id'
-      );
+  async listarTodos(filtro: FiltroProfessor = {}) {
+    const query = baseQuery().select(camposCompletos).orderBy('piv.pessoa.nome');
+    if (filtro.ativo !== undefined) query.where('piv.professor.ativo', filtro.ativo);
+    return query;
   },
 
-  buscarPorId: async (id: string) => {
-    return await db('piv.professor')
-      .join('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
-      .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
-      .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
-      .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
-      .select(
-        'piv.professor.id',
-        'piv.professor.usuario_id',
-        'piv.professor.pessoa_id',
-        'piv.pessoa.nome',
-        'piv.usuario.email',
-        'piv.pessoa.cpf',
-        'piv.pessoa.data_nascimento',
-        'piv.pessoa.logradouro',
-        'piv.pessoa.numero',
-        'piv.pessoa.bairro',
-        'piv.pessoa.cidade_id',
-        'piv.pessoa.estado',
-        'piv.pessoa.cep',
-        'piv.professor.curso_id',
-        'piv.curso.nome as curso',
-        'piv.professor.faculdade_id',
-        'piv.faculdade.nome as faculdade'
-      )
-      .where('piv.professor.id', id)
-      .first();
+  async listarOpcoes() {
+    return baseQuery()
+      .where('piv.professor.ativo', true)
+      .select('piv.professor.id', 'piv.pessoa.nome', 'piv.curso.id as curso_id', 'piv.curso.nome as curso_nome')
+      .orderBy('piv.pessoa.nome');
   },
 
-  buscarPorEmail: async (email: string) => {
-    return await db('piv.usuario')
-      .join('piv.professor', 'piv.professor.usuario_id', 'piv.usuario.id')
-      .select('piv.professor.id')
-      .where('piv.usuario.email', email)
-      .first();
+  async buscarPorId(id: string) {
+    return baseQuery().select(camposCompletos).where('piv.professor.id', id).first();
   },
 
-  buscarPorCpf: async (cpf: string) => {
-    return await db('piv.pessoa')
-      .join('piv.professor', 'piv.professor.pessoa_id', 'piv.pessoa.id')
-      .select('piv.professor.id')
-      .where('piv.pessoa.cpf', cpf)
-      .first();
+  async buscarPorCpf(cpf: string) {
+    return db('piv.pessoa').join('piv.professor', 'piv.professor.pessoa_id', 'piv.pessoa.id')
+      .select('piv.professor.id').where('piv.pessoa.cpf', cpf).first();
   },
 
-  criar: async (dados: CriarProfessorDTO) => {
-    return await db.transaction(async (trx) => {
-      try {
-        const usuarioResult = await trx('piv.usuario').insert({
-          nome: dados.nome,
-          email: dados.email,
-          senha: dados.senha,
-          tipo_usuario: 'professor'
-        }).returning('*');
-        const usuario = Array.isArray(usuarioResult) ? usuarioResult[0] : usuarioResult;
+  async buscarCursoComFaculdade(id: string) {
+    return db('piv.curso').join('piv.departamento', 'piv.curso.departamento_id', 'piv.departamento.id')
+      .select('piv.curso.id', 'piv.departamento.faculdade_id').where('piv.curso.id', id).first();
+  },
 
-        const pessoaResult = await trx('piv.pessoa').insert({
-          nome: dados.nome,
-          cpf: dados.cpf,
-          data_nascimento: dados.data_nascimento || null,
-          logradouro: dados.logradouro || '',
-          numero: dados.numero || '',
-          bairro: dados.bairro || '',
-          cidade_id: dados.cidade_id || null,
-          estado: dados.estado || '',
-          cep: dados.cep || ''
-        }).returning('*');
-        const pessoa = Array.isArray(pessoaResult) ? pessoaResult[0] : pessoaResult;
+  async buscarCidadePorIbge(ibge: string) {
+    return db('piv.cidade').select('ibge', 'uf').where({ ibge }).first();
+  },
 
-        const professorResult = await trx('piv.professor').insert({
-          usuario_id: usuario.id,
-          pessoa_id: pessoa.id,
-          curso_id: dados.curso_id || null,
-          faculdade_id: dados.faculdade_id || null
-        }).returning('*');
-        const professor = Array.isArray(professorResult) ? professorResult[0] : professorResult;
-
-        return {
-          id: professor.id,
-          nome: pessoa.nome,
-          email: usuario.email,
-          cpf: pessoa.cpf,
-          curso_id: professor.curso_id,
-          faculdade_id: professor.faculdade_id
-        };
-      } catch (erro) {
-        throw erro;
-      }
+  async criar(dados: CriarProfessorDTO & { faculdade_id: string }) {
+    return db.transaction(async (trx) => {
+      const [pessoa] = await trx('piv.pessoa').insert({
+        nome: dados.nome, cpf: dados.cpf, data_nascimento: dados.data_nascimento,
+        logradouro: dados.logradouro, numero: dados.numero, bairro: dados.bairro,
+        cidade_id: dados.cidade_id, estado: dados.estado, cep: dados.cep,
+      }).returning('*');
+      const [professor] = await trx('piv.professor').insert({
+        usuario_id: null, pessoa_id: pessoa.id, curso_id: dados.curso_id,
+        faculdade_id: dados.faculdade_id, ativo: true,
+      }).returning('*');
+      return { ...professor, nome: pessoa.nome, cpf: pessoa.cpf };
     });
   },
 
-  atualizar: async (id: string, dados: AtualizarProfessor) => {
-    return await db.transaction(async (trx) => {
+  async atualizar(id: string, dados: AtualizarProfessor & { faculdade_id?: string }) {
+    return db.transaction(async (trx) => {
       const professor = await trx('piv.professor').where({ id }).first();
-      if (!professor) {
-        return null;
+      if (!professor) return null;
+      const pessoa: Record<string, unknown> = {};
+      for (const campo of ['nome', 'cpf', 'data_nascimento', 'logradouro', 'numero', 'bairro', 'cidade_id', 'estado', 'cep'] as const) {
+        if (dados[campo] !== undefined) pessoa[campo] = dados[campo];
       }
-
-      if (dados.email !== undefined || dados.senha !== undefined) {
-        const updateUsuario: any = {};
-        if (dados.email !== undefined) updateUsuario.email = dados.email;
-        if (dados.senha !== undefined) updateUsuario.senha = dados.senha;
-        await trx('piv.usuario').where({ id: professor.usuario_id }).update(updateUsuario);
+      if (Object.keys(pessoa).length) await trx('piv.pessoa').where({ id: professor.pessoa_id }).update(pessoa);
+      const academico: Record<string, unknown> = {};
+      if (dados.curso_id !== undefined) academico.curso_id = dados.curso_id;
+      if (dados.faculdade_id !== undefined) academico.faculdade_id = dados.faculdade_id;
+      if (Object.keys(academico).length) await trx('piv.professor').where({ id }).update(academico);
+      if (dados.nome !== undefined && professor.usuario_id) {
+        await trx('piv.usuario').where({ id: professor.usuario_id }).update({ nome: dados.nome, updated_at: trx.fn.now() });
       }
-
-      if (dados.nome !== undefined || dados.cpf !== undefined || dados.data_nascimento !== undefined ||
-          dados.logradouro !== undefined || dados.numero !== undefined || dados.bairro !== undefined ||
-          dados.cidade_id !== undefined || dados.estado !== undefined || dados.cep !== undefined) {
-        const updatePessoa: any = {};
-        if (dados.nome !== undefined) updatePessoa.nome = dados.nome;
-        if (dados.cpf !== undefined) updatePessoa.cpf = dados.cpf;
-        if (dados.data_nascimento !== undefined) updatePessoa.data_nascimento = dados.data_nascimento;
-        if (dados.logradouro !== undefined) updatePessoa.logradouro = dados.logradouro;
-        if (dados.numero !== undefined) updatePessoa.numero = dados.numero;
-        if (dados.bairro !== undefined) updatePessoa.bairro = dados.bairro;
-        if (dados.cidade_id !== undefined) updatePessoa.cidade_id = dados.cidade_id;
-        if (dados.estado !== undefined) updatePessoa.estado = dados.estado;
-        if (dados.cep !== undefined) updatePessoa.cep = dados.cep;
-        await trx('piv.pessoa').where({ id: professor.pessoa_id }).update(updatePessoa);
-      }
-
-      const updateProfessor: any = {};
-      if (dados.curso_id !== undefined) updateProfessor.curso_id = dados.curso_id;
-      if (dados.faculdade_id !== undefined) updateProfessor.faculdade_id = dados.faculdade_id;
-      
-      if (Object.keys(updateProfessor).length > 0) {
-        await trx('piv.professor').where({ id }).update(updateProfessor);
-      }
-
-      return await trx('piv.professor')
-        .join('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
+      return trx('piv.professor')
         .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
-        .select('piv.professor.id', 'piv.pessoa.nome', 'piv.usuario.email', 'piv.pessoa.cpf', 'piv.professor.curso_id', 'piv.professor.faculdade_id')
-        .where('piv.professor.id', id)
-        .first();
+        .join('piv.curso', 'piv.professor.curso_id', 'piv.curso.id')
+        .join('piv.faculdade', 'piv.professor.faculdade_id', 'piv.faculdade.id')
+        .leftJoin('piv.usuario', 'piv.professor.usuario_id', 'piv.usuario.id')
+        .select(camposCompletos).where('piv.professor.id', id).first();
     });
   },
 
-  remover: async (id: string) => {
-    return await db.transaction(async (trx) => {
-      const professor = await trx('piv.professor').where({ id }).first();
-      if (professor) {
-        await trx('piv.professor').where({ id }).del();
-        await trx('piv.pessoa').where({ id: professor.pessoa_id }).del();
-        await trx('piv.usuario').where({ id: professor.usuario_id }).del();
-      }
-    });
-  }
+  async definirAtivo(id: string, ativo: boolean) {
+    const [professor] = await db('piv.professor').where({ id }).update({ ativo, updated_at: db.fn.now() }).returning('*');
+    return professor ?? null;
+  },
+
+  async buscarProfessorAtivoPorId(id: string) {
+    return db('piv.professor').select('id', 'ativo').where({ id, ativo: true }).first();
+  },
 };
