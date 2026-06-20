@@ -50,6 +50,7 @@ interface SearchTextFieldProps {
   addPath?: string;
   placeholder?: string;
   showFilters?: boolean;
+  autoComplete?: string;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
@@ -69,6 +70,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     addPath,
     placeholder,
     showFilters = true,
+    autoComplete,
   } = props;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -152,6 +154,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
           placeholder={placeholder || searchPlaceholder}
           fullWidth
           value={searchValue}
+          autoComplete={autoComplete}
           onChange={(e) => onSearchChange?.(e.target.value)}
           InputProps={{
             endAdornment: showFilters ? (

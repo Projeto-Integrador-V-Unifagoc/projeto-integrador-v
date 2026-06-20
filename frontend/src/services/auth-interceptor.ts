@@ -1,8 +1,11 @@
 import type { AxiosInstance } from "axios";
 
-export function configurarSessaoDeslizante(api: AxiosInstance) {
-  api.interceptors.request.use((config) => {
-    const token = localStorage.getItem("@UniEduca:token");
+const TOKEN_KEY = "@UniEduca:token";
+const USER_KEY = "@UniEduca:user";
+
+export function configurarSessaoDeslizante(instance: AxiosInstance) {
+  instance.interceptors.request.use((config) => {
+    const token = localStorage.getItem(TOKEN_KEY);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -10,4 +13,28 @@ export function configurarSessaoDeslizante(api: AxiosInstance) {
 
     return config;
   });
+
+  instance.interceptors.response.use(
+    (response) => {
+      const tokenRenovado = response.headers["x-token-renovado"];
+
+      if (tokenRenovado) {
+        localStorage.setItem(TOKEN_KEY, tokenRenovado);
+      }
+
+      return response;
+    },
+    (error) => {
+      if (error.response?.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+      }
+
+      return Promise.reject(error);
+    }
+  );
 }

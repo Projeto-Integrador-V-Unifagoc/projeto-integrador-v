@@ -13,6 +13,7 @@ import {
 
 import { UserRound } from "lucide-react";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
+import { authService } from "../../services/auth-services";
 
 interface Pessoa {
   nome: string | null;
@@ -70,19 +71,11 @@ export default function Perfil() {
   useEffect(() => {
     async function carregarPerfil() {
       try {
-        const token = localStorage.getItem("@UniEduca:token");
+        const token = localStorage.getItem("@UniEduca:token") ?? "";
 
-        const resposta = await fetch("http://localhost:3000/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!resposta.ok) {
-          throw new Error("Não foi possível carregar os dados do perfil.");
-        }
-
-        const dados = await resposta.json();
+        // Passa pela instância do axios com sliding session: renova o token e
+        // trata 401 (sessão expirada) de forma centralizada.
+        const dados = await authService.getMe(token);
         setPerfil(dados.data);
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
