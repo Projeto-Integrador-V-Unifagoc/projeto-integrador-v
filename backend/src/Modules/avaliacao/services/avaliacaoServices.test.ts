@@ -1,103 +1,80 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
-
 import { avaliacaoRepository } from "../repository/avaliacaoRepository.js";
 import { avaliacaoService } from "./avaliacaoServices.js";
 import type { Avaliacao } from "../models/avaliacaoModels.js";
 
-const repositoryOriginal = { ...avaliacaoRepository };
-
-const baseAvaliacao: Avaliacao = {
-  id: "avaliacao-1",
-  tipo_avaliacao: "TRABALHO",
-  descricao_avaliacao: "Trabalho",
-  data_lancamento: "2026-05-01",
-  valor: 10,
-  data_devolucao: null,
-  turma_disciplina_id: "turma-disciplina-1",
-  matricula_turma_disciplina_id: null,
-};
+const TD1 = "11111111-1111-4111-8111-111111111111";
+const TD2 = "22222222-2222-4222-8222-222222222222";
+const ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const ADMIN = { usuarioId: "admin", tipoUsuario: "administrador" };
+const original = { ...avaliacaoRepository };
+const repo: any = avaliacaoRepository;
+const base: Avaliacao = { id: ID, tipo_avaliacao: "TRABALHO", descricao_avaliacao: "Trabalho", data_lancamento: "2026-05-01", valor: 10, data_devolucao: null, turma_disciplina_id: TD1, professor_id: "prof-1" };
 
 describe("avaliacaoService", () => {
   beforeEach(() => {
-    Object.assign(avaliacaoRepository, repositoryOriginal);
+    Object.assign(avaliacaoRepository, original);
+    repo.transacao = async (callback: any) => callback({});
+    repo.bloquearAtribuicoes = async () => [];
+    repo.bloquearAvaliacao = async () => ({});
+    repo.buscarAtribuicaoPorId = async (id: string) => ({ id, professor_id: "prof-1", status: "ativa" });
+    repo.buscarPorTurmaDisciplina = async () => [];
+    repo.criar = async (payload: any) => ({ ...base, ...payload });
+  });
+  afterEach(() => Object.assign(avaliacaoRepository, original));
+
+  it("normaliza prova e TPI", async () => {
+    const prova = await avaliacaoService.criar({ tipo_avaliacao: "PROVA", data_lancamento: "2026-05-01", valor: 1, turma_disciplina_id: TD1 }, ADMIN);
+    const tpi = await avaliacaoService.criar({ tipo_avaliacao: "TPI", data_lancamento: "2026-05-01", valor: 99, turma_disciplina_id: TD1 }, ADMIN);
+    assert.equal(Number(prova.valor), 20); assert.equal(Number(tpi.valor), 5);
   });
 
-  afterEach(() => {
-    Object.assign(avaliacaoRepository, repositoryOriginal);
+  it("bloqueia quarta prova e segundo TPI", async () => {
+    repo.buscarPorTurmaDisciplina = async () => [1, 2, 3].map((n) => ({ ...base, id: `${n}`, tipo_avaliacao: "PROVA", valor: 20 }));
+    await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "PROVA", data_lancamento: "2026-05-01", valor: 20, turma_disciplina_id: TD1 }, ADMIN), /3 provas/);
+    repo.buscarPorTurmaDisciplina = async () => [{ ...base, tipo_avaliacao: "TPI", valor: 5 }];
+    await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "TPI", data_lancamento: "2026-05-01", valor: 5, turma_disciplina_id: TD1 }, ADMIN), /Ja existe um TPI/);
   });
 
-  it("normaliza o valor de prova para 20 pontos ao criar", async () => {
-    let payloadRecebido: any;
-
-    avaliacaoRepository.buscarPorTurmaDisciplina = async () => [];
-    avaliacaoRepository.criar = async (payload: any) => {
-      payloadRecebido = payload;
-      return { ...baseAvaliacao, ...payload, id: "avaliacao-prova" };
-    };
-
-    const result = await avaliacaoService.criar({
-      tipo_avaliacao: "PROVA",
-      descricao_avaliacao: "Prova bimestral",
-      data_lancamento: "2026-05-01",
-      valor: 1,
-      turma_disciplina_id: "turma-disciplina-1",
-    });
-
-    assert.equal(payloadRecebido.valor, 20);
-    assert.equal(result.valor, 20);
+  it("aceita trabalhos exatamente no limite e rejeita acima", async () => {
+    repo.buscarPorTurmaDisciplina = async () => [{ ...base, valor: 20 }];
+    assert.equal(Number((await avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 5, turma_disciplina_id: TD1 }, ADMIN)).valor), 5);
+    await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 5.01, turma_disciplina_id: TD1 }, ADMIN), /25 pontos/);
   });
 
-  it("bloqueia a quarta prova da mesma turma/disciplina", async () => {
-    avaliacaoRepository.buscarPorTurmaDisciplina = async () => [
-      { ...baseAvaliacao, id: "prova-1", tipo_avaliacao: "PROVA", valor: 20 },
-      { ...baseAvaliacao, id: "prova-2", tipo_avaliacao: "PROVA", valor: 20 },
-      { ...baseAvaliacao, id: "prova-3", tipo_avaliacao: "PROVA", valor: 20 },
-    ];
-
-    await assert.rejects(
-      () =>
-        avaliacaoService.criar({
-          tipo_avaliacao: "PROVA",
-          descricao_avaliacao: "Prova final",
-          data_lancamento: "2026-05-01",
-          valor: 20,
-          turma_disciplina_id: "turma-disciplina-1",
-        }),
-      /Ja existem 3 provas/,
-    );
+  it("isola as regras por turma/disciplina no repositorio", async () => {
+    const consultadas: string[] = [];
+    repo.buscarPorTurmaDisciplina = async (id: string) => { consultadas.push(id); return []; };
+    await avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 25, turma_disciplina_id: TD2 }, ADMIN);
+    assert.deepEqual(consultadas, [TD2]);
   });
 
-  it("valida o limite de 25 pontos para trabalhos por turma/disciplina", async () => {
-    avaliacaoRepository.buscarPorTurmaDisciplina = async () => [
-      { ...baseAvaliacao, id: "trab-1", tipo_avaliacao: "TRABALHO", valor: 15 },
-      { ...baseAvaliacao, id: "trab-2", tipo_avaliacao: "TRABALHO", valor: 10 },
-    ];
-
-    await assert.rejects(
-      () =>
-        avaliacaoService.criar({
-          tipo_avaliacao: "TRABALHO",
-          descricao_avaliacao: "Seminario",
-          data_lancamento: "2026-05-01",
-          valor: 1,
-          turma_disciplina_id: "turma-disciplina-1",
-        }),
-      /trabalhos podem somar no maximo 25/,
-    );
+  it("ignora o proprio registro durante edicao", async () => {
+    repo.buscarPorId = async () => ({ ...base, tipo_avaliacao: "PROVA", valor: 20 });
+    repo.buscarPorTurmaDisciplina = async () => [{ ...base, tipo_avaliacao: "PROVA", valor: 20 }];
+    repo.atualizar = async (_id: string, payload: any) => ({ ...base, ...payload });
+    const resultado = await avaliacaoService.atualizar(ID, { descricao_avaliacao: "Nova" }, ADMIN);
+    assert.equal(resultado.descricao_avaliacao, "Nova");
   });
 
-  it("exige turma_disciplina_id no payload", async () => {
-    await assert.rejects(
-      () =>
-        avaliacaoService.criar({
-          tipo_avaliacao: "TRABALHO",
-          descricao_avaliacao: "Seminario",
-          data_lancamento: "2026-05-01",
-          valor: 5,
-          turma_disciplina_id: "",
-        }),
-      /turma_disciplina_id/,
-    );
+  it("valida UUIDs, relacionamento e ordem das datas", async () => {
+    await assert.rejects(() => avaliacaoService.buscarPorId("invalido", ADMIN), /ID invalido/);
+    repo.buscarAtribuicaoPorId = async () => undefined;
+    await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 2, turma_disciplina_id: TD1 }, ADMIN), /inexistente/);
+    await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-02", data_devolucao: "2026-05-01", valor: 2, turma_disciplina_id: TD1 }, ADMIN), /anterior/);
+  });
+
+  it("restringe professor a sua atribuicao", async () => {
+    repo.buscarProfessorPorUsuarioId = async () => ({ id: "prof-1" });
+    repo.buscarAtribuicaoPorId = async () => ({ id: TD1, professor_id: "prof-2", status: "ativa" });
+    await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 2, turma_disciplina_id: TD1 }, { usuarioId: "u1", tipoUsuario: "professor" }), (e: any) => e.status === 403);
+  });
+
+  it("retorna 404 para busca, atualizacao e exclusao inexistentes", async () => {
+    repo.buscarPorId = async () => undefined;
+    await assert.rejects(() => avaliacaoService.buscarPorId(ID, ADMIN), (e: any) => e.status === 404);
+    await assert.rejects(() => avaliacaoService.atualizar(ID, { descricao_avaliacao: "x" }, ADMIN), (e: any) => e.status === 404);
+    await assert.rejects(() => avaliacaoService.deletar(ID, ADMIN), (e: any) => e.status === 404);
   });
 });
