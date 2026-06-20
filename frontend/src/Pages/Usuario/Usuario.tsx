@@ -343,6 +343,7 @@ export default function Usuarios() {
         onSearchChange={setSearch}
         searchPlaceholder="Pesquisar por nome ou e-mail..."
         showFilters={false}
+        autoComplete="off"
       >
         Usuários
       </SearchTextField>
@@ -518,6 +519,7 @@ export default function Usuarios() {
                 label={isEditing ? "Nova Senha (opcional)" : "Senha"}
                 required={!isEditing}
                 type={mostrarSenha ? "text" : "password"}
+                autoComplete="new-password"
                 fullWidth
                 helperText={
                   isEditing

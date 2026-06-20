@@ -10,7 +10,7 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({ exposedHeaders: ['x-token-renovado'] }));
 app.use(express.json());
 
 console.log("autenticar:", typeof autenticar);
