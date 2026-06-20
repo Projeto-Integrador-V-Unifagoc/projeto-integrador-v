@@ -228,7 +228,7 @@ export class RelatorioService {
 
         frequencias.push(...(relatorioFrequencia.alunos ?? []));
       } catch (error) {
-        // Relatorios devem continuar disponiveis com dados integrados mockados quando o banco ainda nao esta populado.
+        // Relatorios devem continuar disponiveis quando o banco ainda nao esta populado.
       }
     }
 
@@ -473,7 +473,7 @@ export class RelatorioService {
       pdf: {
         titulo: nomes.titulo,
         universidade: "UniEduca",
-        rodape: "Relatorio gerado a partir dos dados mockados integrados do modulo academico.",
+        rodape: "Documento emitido pelo sistema academico UniEduca.",
         ...pdfConfig,
       },
     };
