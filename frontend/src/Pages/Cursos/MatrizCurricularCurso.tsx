@@ -91,6 +91,21 @@ export default function MatrizCurricularCurso() {
     setDialogoAberto(true);
   }
 
+  function handlePeriodoIdealChange(value: string) {
+    const apenasDigitos = value.replace(/\D/g, "").slice(0, 2);
+
+    if (!apenasDigitos) {
+      setForm((prev) => ({ ...prev, periodoIdeal: "" }));
+      return;
+    }
+
+    const periodo = Number(apenasDigitos);
+
+    if (periodo >= 1 && periodo <= 12) {
+      setForm((prev) => ({ ...prev, periodoIdeal: apenasDigitos }));
+    }
+  }
+
   async function salvar() {
     const payload = {
       ...form,
@@ -346,10 +361,12 @@ export default function MatrizCurricularCurso() {
               <TextField
                 required
                 label="Periodo Ideal"
+                type="number"
                 value={form.periodoIdeal}
                 error={!!erros.periodoIdeal}
                 helperText={erros.periodoIdeal}
-                onChange={(e) => setForm((prev) => ({ ...prev, periodoIdeal: e.target.value }))}
+                onChange={(e) => handlePeriodoIdealChange(e.target.value)}
+                inputProps={{ min: 1, max: 12, step: 1 }}
               />
             </Grid>
             <Grid size={6}>

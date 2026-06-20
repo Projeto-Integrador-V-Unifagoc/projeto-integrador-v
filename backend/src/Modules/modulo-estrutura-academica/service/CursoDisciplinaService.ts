@@ -9,6 +9,14 @@ export class CursoDisciplinaService {
     cursoRepository = new CursoRepository();
     disciplinaRepository = new DisciplinaRepository();
 
+    private validarPeriodoIdeal(periodoIdeal: any) {
+        const periodo = Number(periodoIdeal);
+
+        if (!Number.isInteger(periodo) || periodo < 1 || periodo > 12) {
+            throw new Error("Periodo ideal deve estar entre 1 e 12");
+        }
+    }
+
     async criarCursoDisciplina(data: any) {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(data.cursoId);
 
@@ -30,6 +38,8 @@ export class CursoDisciplinaService {
         if (associacaoExistente) {
             throw new Error("Disciplina ja associada a este curso");
         }
+
+        this.validarPeriodoIdeal(data.periodoIdeal);
 
         const cursoDisciplina: CursoDisciplinaCommand = {
             id: uuidv4(),
@@ -63,6 +73,10 @@ export class CursoDisciplinaService {
 
         if (!associacaoAtual) {
             return null;
+        }
+
+        if (data.periodoIdeal !== undefined && data.periodoIdeal !== "") {
+            this.validarPeriodoIdeal(data.periodoIdeal);
         }
 
         return await this.cursoDisciplinaRepository.atualizarCursoDisciplina(id, {
