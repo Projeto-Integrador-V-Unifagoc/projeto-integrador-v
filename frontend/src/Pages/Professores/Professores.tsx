@@ -332,6 +332,19 @@ export default function Professores() {
                     secondFilterLabel="Nome"
                     fourthFilterLabel="Faculdade"
                     usePeriodFilter={false}
+                    endContent={
+                        <TextField
+                            select
+                            label="Status"
+                            value={filtroAtivo}
+                            onChange={(event) => setFiltroAtivo(event.target.value as typeof filtroAtivo)}
+                            sx={{ width: { xs: "100%", sm: 180 }, flexShrink: 0 }}
+                        >
+                            <MenuItem value="todos">Todos</MenuItem>
+                            <MenuItem value="ativos">Ativos</MenuItem>
+                            <MenuItem value="inativos">Inativos</MenuItem>
+                        </TextField>
+                    }
                 >
                     Professores
                 </SearchTextField>
@@ -347,19 +360,6 @@ export default function Professores() {
                         {errorMessage || successMessage}
                     </Alert>
                 )}
-                <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
-                    <TextField
-                        select
-                        label="Status"
-                        value={filtroAtivo}
-                        onChange={(event) => setFiltroAtivo(event.target.value as typeof filtroAtivo)}
-                        sx={{ width: { xs: "100%", sm: 180 } }}
-                    >
-                        <MenuItem value="todos">Todos</MenuItem>
-                        <MenuItem value="ativos">Ativos</MenuItem>
-                        <MenuItem value="inativos">Inativos</MenuItem>
-                    </TextField>
-                </Stack>
                 <DataTable
                     columns={columns}
                     rows={professoresFiltrados}

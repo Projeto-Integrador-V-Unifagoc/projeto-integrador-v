@@ -120,6 +120,7 @@ export default function Cadastro() {
             if (!formData[campo]?.toString().trim()) novosErros[campo] = "Campo obrigatório";
         });
         if (formData.cpf && formData.cpf.replace(/\D/g, "").length !== 11) novosErros.cpf = "CPF deve ter 11 dígitos";
+        if (formData.cep && formData.cep.replace(/\D/g, "").length !== 8) novosErros.cep = "CEP deve ter 8 dígitos";
         setErrors(novosErros);
         return Object.keys(novosErros).length === 0;
     }
@@ -149,7 +150,7 @@ export default function Cadastro() {
     }
 
     return (
-        <Card.Root>
+        <Card.Root sx={{ overflow: "visible", backgroundColor: "background.default" }}>
             <Card.Header>Cadastro de Professor</Card.Header>
             <Card.Content>
                 {(successMessage || errorMessage) && <Alert severity={errorMessage ? "error" : "success"} sx={{ mb: 2 }}>{errorMessage || successMessage}</Alert>}

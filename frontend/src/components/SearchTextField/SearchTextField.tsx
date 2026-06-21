@@ -52,6 +52,7 @@ interface SearchTextFieldProps {
   placeholder?: string;
   showFilters?: boolean;
   autoComplete?: string;
+  endContent?: ReactNode;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
@@ -72,6 +73,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     placeholder,
     showFilters = true,
     autoComplete,
+    endContent,
   } = props;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -181,6 +183,8 @@ export default function SearchTextField(props: SearchTextFieldProps) {
             width: "100%",
           }}
         />
+
+        {endContent}
 
         {podeAdicionar && (
           <Button

@@ -58,7 +58,13 @@ export default function ProfessorFormFields({
     return (
         <Grid container columnSpacing={2} rowSpacing={0.5}>
             <Grid size={{ xs: 12, sm: 6, md: 6 }}>{field("nome", "Nome")}</Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>{field("cpf", "CPF", { inputProps: { inputMode: "numeric" } })}</Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                {field("cpf", "CPF", {
+                    onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                        onChange("cpf", event.target.value.replace(/\D/g, "").slice(0, 11)),
+                    inputProps: { inputMode: "numeric", maxLength: 11 },
+                })}
+            </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 {field("dataNascimento", "Nascimento", { type: "date", InputLabelProps: { shrink: true } })}
             </Grid>
@@ -114,7 +120,13 @@ export default function ProfessorFormFields({
                     inputProps: { maxLength: 2 },
                 })}
             </Grid>
-            <Grid size={{ xs: 12, sm: 4, md: 4 }}>{field("cep", "CEP", { inputProps: { inputMode: "numeric" } })}</Grid>
+            <Grid size={{ xs: 12, sm: 4, md: 4 }}>
+                {field("cep", "CEP", {
+                    onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                        onChange("cep", event.target.value.replace(/\D/g, "").slice(0, 8)),
+                    inputProps: { inputMode: "numeric", maxLength: 8 },
+                })}
+            </Grid>
         </Grid>
     );
 }
