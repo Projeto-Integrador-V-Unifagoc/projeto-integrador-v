@@ -12,16 +12,9 @@ import {
 } from "@mui/material";
 import { CalendarDays, Mail, ShieldUser } from "lucide-react";
 
-import Button from "../Button";
 import type { AlunoFicha } from "./types";
 
-function LinhaInfo({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function LinhaInfo({ label, value }: { label: string; value: string }) {
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
@@ -63,11 +56,7 @@ function BlocoContato({
       alignItems="flex-start"
       sx={{ width: "100%" }}
     >
-      <Box
-        color="primary.main"
-        display="flex"
-        sx={{ mt: 0.25, flexShrink: 0 }}
-      >
+      <Box color="primary.main" display="flex" sx={{ mt: 0.25, flexShrink: 0 }}>
         {icon}
       </Box>
       <Stack minWidth={0}>
@@ -108,7 +97,7 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 3,
         p: { xs: 2, md: 3 },
-        bgcolor: `${theme.palette.background.default}`
+        bgcolor: `${theme.palette.background.default}`,
       }}
     >
       <Stack spacing={2.5}>
@@ -129,7 +118,11 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
             >
               {aluno.nome}
             </Typography>
-            <Typography variant="subtitle1" color="textSecondary" fontWeight={600}>
+            <Typography
+              variant="subtitle1"
+              color="textSecondary"
+              fontWeight={600}
+            >
               RA: {aluno.ra}
             </Typography>
           </Box>
@@ -185,7 +178,7 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
             <Divider />
             <BlocoContato
               icon={<ShieldUser size={20} />}
-              label="Resp. Fin."
+              label="Responsável"
               value={aluno.responsavelFinanceiro}
             />
             <Divider />
@@ -197,8 +190,7 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
           </Stack>
         </Stack>
 
-        <Stack direction="row" justifyContent="flex-end">
-        </Stack>
+        <Stack direction="row" justifyContent="flex-end"></Stack>
       </Stack>
     </Paper>
   );

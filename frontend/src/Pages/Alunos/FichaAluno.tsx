@@ -35,6 +35,8 @@ import { frequenciaApi } from "../../services/frequencia-api";
 import { matriculaApi } from "../../services/matricula-api";
 import { notasApi, type NotaMockApi } from "../../services/notas-api";
 import { periodoLetivoApi } from "../../services/periodo-letivo-api";
+import { cursoApi } from "../../services/curso-api";
+import usuarioApi from "../../services/usuario-api";
 
 const VALOR_NAO_INFORMADO = "Nao informado";
 
@@ -300,7 +302,6 @@ function montarNotasFicha(
 export default function FichaAluno() {
   const { id, matricula } = useParams<{ id?: string; matricula?: string }>();
 
-  const [busca, setBusca] = useState("");
   const [semestre, setSemestre] = useState("");
   const [abaAtual, setAbaAtual] = useState<AbaFicha>("notas");
   const [aluno, setAluno] = useState<AlunoFichaApi | null>(null);
@@ -372,16 +373,73 @@ export default function FichaAluno() {
           notasCarregadas,
         );
 
-        setAluno(alunoResponse);
+        // normalize aluno object and fetch extra info when available (curso, email)
+        const alunoInicial: AlunoFichaApi = alunoResponse;
+
+        // try to fetch usuario email if missing
+        try {
+          if (!alunoInicial.usuario?.email && alunoInicial.usuario?.id) {
+            const resp = await usuarioApi.get(
+              `/usuarios/${alunoInicial.usuario.id}`,
+            );
+            if (resp?.data?.email) {
+              alunoInicial.usuario = {
+                ...(alunoInicial.usuario ?? {}),
+                email: resp.data.email,
+              };
+            }
+          }
+        } catch (e) {
+          // ignore and continue
+        }
+
+        // determine active matricula to try fetch curso if possible
+        const matriculaAtivaLocal = getMatriculaAtiva(matriculasCarregadas);
+        try {
+          // backend may include curso_id on matricula; try to fetch course by id
+          const cursoId =
+            (matriculaAtivaLocal as any)?.curso_id ||
+            (matriculaAtivaLocal as any)?.cursoId;
+          if (!alunoInicial.curso && cursoId) {
+            const cursoResp = await cursoApi.buscarCursoPorId(cursoId);
+            if (cursoResp?.nome) alunoInicial.curso = cursoResp.nome;
+          }
+          // fallback to curso_nome from matricula
+          if (!alunoInicial.curso && matriculaAtivaLocal?.curso_nome) {
+            alunoInicial.curso = matriculaAtivaLocal.curso_nome;
+          }
+        } catch (e) {
+          // ignore and continue
+        }
+
+        // prefer periodo from matricula ativa when aluno.periodo is missing
+        if (!alunoInicial.periodo && (matriculaAtivaLocal as any)?.semestre) {
+          alunoInicial.periodo = (matriculaAtivaLocal as any).semestre;
+        }
+
+        setAluno(alunoInicial);
         setMatriculas(matriculasCarregadas);
         setNotas(notasCarregadas);
         setFrequencia(frequenciaCarregada);
         setDocumentos(documentosCarregados);
         setPeriodos(periodosCarregados);
+
+        // prefer period with status 'ativo' as initial semester selection
+        const periodoAtivo = periodosCarregados.find(
+          (p: PeriodoLetivoResponse) =>
+            String(p.status ?? "").toLowerCase() === "ativo",
+        );
+        const semestrePadrao = periodoAtivo
+          ? normalizarSemestre(
+              periodoAtivo.codigo ||
+                `${periodoAtivo.ano}-${periodoAtivo.semestre}`,
+            )
+          : opcoesCarregadas[0] || "";
+
         setSemestre((semestreAtual) =>
           semestreAtual && opcoesCarregadas.includes(semestreAtual)
             ? semestreAtual
-            : opcoesCarregadas[0] || "",
+            : semestrePadrao,
         );
       } catch (error) {
         if (!deveAtualizarEstado) return;
@@ -447,10 +505,8 @@ export default function FichaAluno() {
       <Container sx={{ p: { xs: 2, md: 3 } }}>
         <Stack spacing={2.5}>
           <FichaAlunoHeader
-            busca={busca}
             semestre={semestre}
             opcoesSemestre={opcoesSemestre}
-            onBuscaChange={setBusca}
             onSemestreChange={setSemestre}
           />
           <FichaAlunoResumoCard aluno={{ ...alunoFicha, semestre }} />
