@@ -33,7 +33,7 @@ export const REGRAS_AVALIACAO = {
   maxProvas: 3,
   valorProva: 20,
   valorTpi: 5,
-  limiteTrabalhos: 25,
+  limiteTrabalhos: 35,
 } as const;
 
 export interface AtribuicaoAvaliacao {

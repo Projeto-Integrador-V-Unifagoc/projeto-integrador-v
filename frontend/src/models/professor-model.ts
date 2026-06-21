@@ -1,7 +1,6 @@
 export interface Professor {
     id: string
     nome: string
-    email?: string | null
     cpf: string
     curso: string
     curso_id?: string

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Alert, IconButton, MenuItem, Stack, Tooltip } from "@mui/material";
 import { Pencil, RotateCcw, UserRoundX } from "lucide-react";
 import type { GridColDef } from "@mui/x-data-grid";
+import { ValidationError } from "yup";
 
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
@@ -22,6 +23,7 @@ import { cidadeApi } from "../../services/cidade-api";
 import type { Professor, AtualizarProfessorDTO } from "../../models/professor-model";
 import type { CursoResponse } from "../../models/curso-model";
 import type { CidadeModel } from "../../models/cidade-model";
+import { professorSchema } from "../../validators/professor-schema";
 import type { Cursos } from "../../enums/cursos";
 
 type ProfessorEditData = ProfessorFormData;
@@ -105,7 +107,6 @@ export default function Professores() {
             if (search) {
                 const campos = [
                     professor.nome,
-                    professor.email,
                     professor.cpf,
                     professor.curso || "",
                     professor.faculdade || "",
@@ -207,23 +208,25 @@ export default function Professores() {
         setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
 
-    function validarEdicao() {
-        const novosErros: Partial<Record<keyof ProfessorEditData, string>> = {};
-
-        if (editData.cpf && editData.cpf.replace(/\D/g, "").length !== 11) {
-            novosErros.cpf = "CPF deve ter 11 dígitos";
+    async function validarEdicao() {
+        try {
+            await professorSchema.validate(editData, { abortEarly: false });
+            setErrors({});
+            return true;
+        } catch (error) {
+            if (!(error instanceof ValidationError)) return false;
+            const novosErros: Partial<Record<keyof ProfessorEditData, string>> = {};
+            error.inner.forEach((item) => {
+                const campo = item.path as keyof ProfessorEditData | undefined;
+                if (campo && !novosErros[campo]) novosErros[campo] = item.message;
+            });
+            setErrors(novosErros);
+            return false;
         }
-        if (!editData.nome.trim()) novosErros.nome = "Campo obrigatório";
-        if (!editData.cpf.trim()) novosErros.cpf = "Campo obrigatório";
-        if (!editData.curso_id) novosErros.curso_id = "Campo obrigatório";
-        if (!editData.faculdade_id) novosErros.faculdade_id = "Campo obrigatório";
-
-        setErrors(novosErros);
-        return Object.keys(novosErros).length === 0;
     }
 
     async function salvarEdicao() {
-        if (!professorSelecionado || !validarEdicao()) return;
+        if (!professorSelecionado || !(await validarEdicao())) return;
         setLoadingSalvar(true);
         setErrorMessage(null);
         try {

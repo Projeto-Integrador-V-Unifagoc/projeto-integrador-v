@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Stack } from "@mui/material";
+import { ValidationError } from "yup";
 
 import { Card } from "../../components/Card";
 import Button from "../../components/Button";
@@ -12,6 +13,7 @@ import type { CidadeModel } from "../../models/cidade-model";
 import type { CursoResponse } from "../../models/curso-model";
 import type { CriarProfessorDTO } from "../../models/professor-model";
 import ProfessorFormFields from "./ProfessorFormFields";
+import { professorSchema } from "../../validators/professor-schema";
 import {
     initialProfessorFormData,
     type ProfessorFormData,
@@ -112,21 +114,25 @@ export default function Cadastro() {
         clearError(field);
     }
 
-    function validarCampos() {
-        const novosErros: Partial<Record<keyof ProfessorFormData, string>> = {};
-        const obrigatorios: (keyof ProfessorFormData)[] = ["nome", "cpf", "dataNascimento", "curso_id", "faculdade_id",
-            "cidade_id", "uf", "logradouro", "bairro", "numero", "cep"];
-        obrigatorios.forEach((campo) => {
-            if (!formData[campo]?.toString().trim()) novosErros[campo] = "Campo obrigatório";
-        });
-        if (formData.cpf && formData.cpf.replace(/\D/g, "").length !== 11) novosErros.cpf = "CPF deve ter 11 dígitos";
-        if (formData.cep && formData.cep.replace(/\D/g, "").length !== 8) novosErros.cep = "CEP deve ter 8 dígitos";
-        setErrors(novosErros);
-        return Object.keys(novosErros).length === 0;
+    async function validarCampos() {
+        try {
+            await professorSchema.validate(formData, { abortEarly: false });
+            setErrors({});
+            return true;
+        } catch (error) {
+            if (!(error instanceof ValidationError)) return false;
+            const novosErros: Partial<Record<keyof ProfessorFormData, string>> = {};
+            error.inner.forEach((item) => {
+                const campo = item.path as keyof ProfessorFormData | undefined;
+                if (campo && !novosErros[campo]) novosErros[campo] = item.message;
+            });
+            setErrors(novosErros);
+            return false;
+        }
     }
 
     async function gravarAlteracoes() {
-        if (!validarCampos()) return;
+        if (!(await validarCampos())) return;
         setIsLoading(true);
         setErrorMessage(null);
         try {

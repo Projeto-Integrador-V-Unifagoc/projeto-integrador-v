@@ -9,7 +9,7 @@ const baseQuery = () => db('piv.professor')
 
 const camposCompletos = [
   'piv.professor.id', 'piv.professor.usuario_id', 'piv.professor.pessoa_id',
-  'piv.professor.ativo', 'piv.pessoa.nome', 'piv.usuario.email', 'piv.pessoa.cpf',
+  'piv.professor.ativo', 'piv.pessoa.nome', 'piv.pessoa.cpf',
   'piv.pessoa.data_nascimento', 'piv.pessoa.logradouro', 'piv.pessoa.numero',
   'piv.pessoa.bairro', 'piv.pessoa.cidade_id', 'piv.pessoa.estado', 'piv.pessoa.cep',
   'piv.professor.curso_id', 'piv.curso.nome as curso', 'piv.professor.faculdade_id',

@@ -15,6 +15,7 @@ import {
 import type { GridColDef } from "@mui/x-data-grid";
 import { ClipboardCheck, FileText, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import axios from "axios";
+import { ValidationError } from "yup";
 import Button from "../../components/Button";
 import { Card } from "../../components/Card";
 import Container from "../../components/Container";
@@ -24,9 +25,11 @@ import TextField from "../../components/TextField";
 import type { AtribuicaoAvaliacao, Avaliacao, CriarAvaliacaoDTO, TipoAvaliacao } from "../../models/avaliacao-model";
 import { avaliacaoApi } from "../../services/avaliacao-api";
 import { COR_TIPO_AVALIACAO, formatarDataPtBr, formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
+import { avaliacaoSchema } from "../../validators/avaliacao-schema";
 
 const tipos: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
 type FormState = { turma_disciplina_id: string; tipo_avaliacao: TipoAvaliacao; descricao_avaliacao: string; valor: number | ""; data_lancamento: string; data_devolucao: string };
+type FormErrors = Partial<Record<keyof FormState, string>>;
 const formInicial: FormState = { turma_disciplina_id: "", tipo_avaliacao: "PROVA", descricao_avaliacao: "", valor: 20, data_lancamento: "", data_devolucao: "" };
 
 const mensagemErro = (erro: unknown, fallback: string) => axios.isAxiosError(erro) && typeof erro.response?.data?.mensagem === "string" ? erro.response.data.mensagem : erro instanceof Error ? erro.message : fallback;
@@ -45,6 +48,7 @@ export default function Avaliacoes() {
   const [busca, setBusca] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formErro, setFormErro] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [form, setForm] = useState<FormState>(formInicial);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -82,8 +86,8 @@ export default function Avaliacoes() {
     return avaliacoes.filter((a) => [a.tipo_avaliacao, a.descricao_avaliacao ?? "", a.valor, formatarDataPtBr(a.data_lancamento), formatarDataPtBr(a.data_devolucao)].some((v) => String(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(termo)));
   }, [avaliacoes, busca]);
 
-  const abrirCadastro = () => { setEditingId(null); setForm({ ...formInicial, turma_disciplina_id: contextoId }); setFormErro(null); setDialogOpen(true); };
-  const abrirEdicao = (a: Avaliacao) => { setEditingId(a.id); setForm({ turma_disciplina_id: a.turma_disciplina_id, tipo_avaliacao: a.tipo_avaliacao, descricao_avaliacao: a.descricao_avaliacao ?? "", valor: Number(a.valor), data_lancamento: a.data_lancamento.slice(0, 10), data_devolucao: a.data_devolucao?.slice(0, 10) ?? "" }); setFormErro(null); setDialogOpen(true); };
+  const abrirCadastro = () => { setEditingId(null); setForm({ ...formInicial, turma_disciplina_id: contextoId }); setFormErro(null); setFormErrors({}); setDialogOpen(true); };
+  const abrirEdicao = (a: Avaliacao) => { setEditingId(a.id); setForm({ turma_disciplina_id: a.turma_disciplina_id, tipo_avaliacao: a.tipo_avaliacao, descricao_avaliacao: a.descricao_avaliacao ?? "", valor: Number(a.valor), data_lancamento: a.data_lancamento.slice(0, 10), data_devolucao: a.data_devolucao?.slice(0, 10) ?? "" }); setFormErro(null); setFormErrors({}); setDialogOpen(true); };
 
   function alterarForm(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = event.target;
@@ -91,20 +95,28 @@ export default function Avaliacoes() {
       const tipo = value as TipoAvaliacao;
       setForm((f) => ({ ...f, tipo_avaliacao: tipo, valor: tipo === "PROVA" ? 20 : tipo === "TPI" ? 5 : f.tipo_avaliacao === "TRABALHO" ? f.valor : "" }));
     } else setForm((f) => ({ ...f, [name]: name === "valor" ? value === "" ? "" : Number(value) : value }));
+    setFormErrors((erros) => ({ ...erros, [name]: undefined, ...(name === "tipo_avaliacao" ? { valor: undefined } : {}) }));
+    setFormErro(null);
   }
 
   async function salvar() {
     if (saving) return;
     setSaving(true); setFormErro(null);
     try {
-      if (!form.turma_disciplina_id || !form.data_lancamento) throw new Error("Turma/disciplina e data de lançamento são obrigatórias.");
-      if (form.data_devolucao && form.data_devolucao < form.data_lancamento) throw new Error("A devolução não pode ser anterior ao lançamento.");
+      await avaliacaoSchema.validate(form, { abortEarly: false });
+      setFormErrors({});
       const payload: CriarAvaliacaoDTO = { ...form, valor: Number(form.valor), descricao_avaliacao: form.descricao_avaliacao.trim(), data_devolucao: form.data_devolucao || null };
       if (editingId) await avaliacaoApi.atualizar(editingId, payload); else await avaliacaoApi.criar(payload);
       setContextoId(payload.turma_disciplina_id);
       await carregarAvaliacoes(payload.turma_disciplina_id);
       setDialogOpen(false); setSucesso(editingId ? "Avaliação atualizada com sucesso." : "Avaliação cadastrada com sucesso.");
-    } catch (e) { setFormErro(mensagemErro(e, "Não foi possível salvar a avaliação.")); }
+    } catch (e) {
+      if (e instanceof ValidationError) {
+        const erros: FormErrors = {};
+        e.inner.forEach((item) => { if (item.path && !erros[item.path as keyof FormState]) erros[item.path as keyof FormState] = item.message; });
+        setFormErrors(erros);
+      } else setFormErro(mensagemErro(e, "Não foi possível salvar a avaliação."));
+    }
     finally { setSaving(false); }
   }
 
@@ -158,12 +170,11 @@ export default function Avaliacoes() {
     {formErro && <Alert severity="error">{formErro}</Alert>}
     <Alert severity="info">Provas valem 20 pontos, o TPI vale 5 e trabalhos devem somar no máximo 35.</Alert>
     <Grid container spacing={2}>
-      <Grid size={12}><TextField select label="Turma e disciplina" name="turma_disciplina_id" value={form.turma_disciplina_id} onChange={alterarForm} helperText=" " sx={campoSx}>{atribuicoes.map((a) => <MenuItem key={a.id} value={a.id}>{nomeAtribuicao(a)}</MenuItem>)}</TextField></Grid>
-      <Grid size={{ xs: 12, sm: 6 }}><TextField select label="Tipo" name="tipo_avaliacao" value={form.tipo_avaliacao} onChange={alterarForm} helperText=" " sx={campoSx}>{tipos.map((t) => <MenuItem key={t} value={t}>{ROTULO_TIPO_AVALIACAO[t]}</MenuItem>)}</TextField></Grid>
-      <Grid size={{ xs: 12, sm: 6 }}><TextField label="Valor" name="valor" type="number" value={form.valor} onChange={alterarForm} disabled={form.tipo_avaliacao !== "TRABALHO"} inputProps={{ min: 0.01, step: 0.01 }} helperText={form.tipo_avaliacao === "TRABALHO" ? "Informe os pontos do trabalho." : "Valor definido pelo tipo de avaliação."} sx={campoSx} /></Grid>
-      <Grid size={12}><TextField label="Descrição" name="descricao_avaliacao" value={form.descricao_avaliacao} onChange={alterarForm} helperText=" " sx={campoSx} /></Grid>
-      <Grid size={{ xs: 12, sm: 6 }}><TextField label="Data de lançamento" name="data_lancamento" type="date" value={form.data_lancamento} onChange={alterarForm} InputLabelProps={{ shrink: true }} helperText=" " sx={campoSx} /></Grid>
-      <Grid size={{ xs: 12, sm: 6 }}><TextField label="Data de devolução" name="data_devolucao" type="date" value={form.data_devolucao} onChange={alterarForm} inputProps={{ min: form.data_lancamento }} InputLabelProps={{ shrink: true }} helperText=" " sx={campoSx} /></Grid>
+      <Grid size={{ xs: 12, sm: 6 }}><TextField select label="Tipo" name="tipo_avaliacao" value={form.tipo_avaliacao} onChange={alterarForm} error={Boolean(formErrors.tipo_avaliacao)} helperText={formErrors.tipo_avaliacao || " "} sx={campoSx}>{tipos.map((t) => <MenuItem key={t} value={t}>{ROTULO_TIPO_AVALIACAO[t]}</MenuItem>)}</TextField></Grid>
+      <Grid size={{ xs: 12, sm: 6 }}><TextField label="Valor" name="valor" type="number" value={form.valor} onChange={alterarForm} disabled={form.tipo_avaliacao !== "TRABALHO"} error={Boolean(formErrors.valor)} inputProps={{ min: 0.01, step: 0.01 }} helperText={formErrors.valor || (form.tipo_avaliacao === "TRABALHO" ? "Informe os pontos do trabalho." : "Valor definido pelo tipo de avaliação.")} sx={campoSx} /></Grid>
+      <Grid size={12}><TextField label="Descrição" name="descricao_avaliacao" value={form.descricao_avaliacao} onChange={alterarForm} error={Boolean(formErrors.descricao_avaliacao)} helperText={formErrors.descricao_avaliacao || " "} sx={campoSx} /></Grid>
+      <Grid size={{ xs: 12, sm: 6 }}><TextField label="Data de lançamento" name="data_lancamento" type="date" value={form.data_lancamento} onChange={alterarForm} error={Boolean(formErrors.data_lancamento)} InputLabelProps={{ shrink: true }} helperText={formErrors.data_lancamento || " "} sx={campoSx} /></Grid>
+      <Grid size={{ xs: 12, sm: 6 }}><TextField label="Data de devolução" name="data_devolucao" type="date" value={form.data_devolucao} onChange={alterarForm} error={Boolean(formErrors.data_devolucao)} inputProps={{ min: form.data_lancamento }} InputLabelProps={{ shrink: true }} helperText={formErrors.data_devolucao || " "} sx={campoSx} /></Grid>
     </Grid>
   </Stack></Dialog.Content><Dialog.Footer><Button variant="outlined" disabled={saving} onClick={() => setDialogOpen(false)}>Cancelar</Button><Button variant="contained" disabled={saving} isLoading={saving} onClick={salvar}>Salvar</Button></Dialog.Footer></Dialog.Root>
 
