@@ -2,17 +2,30 @@ import { db } from "../../../database/connection";
 
 export interface TurmaDisponivel {
   id: string;
+  semestre?: string;
+  capacidade_alunos?: number;
+  vagas_disponiveis?: number;
+  disciplina_id?: string;
+  disciplina_nome?: string;
+  disciplina_codigo?: string;
+  carga_horaria?: number;
+  professor_nome?: string;
+  curso_id?: string;
+  curso_nome?: string;
 }
 export interface MatriculaVinculo {
   id: string;
   aluno_id: string;
   turma_id: string;
-  status: string;
+  status: string | null;
+  aprovacao?: boolean | null;
 }
 export interface VinculoStatus {
   id: string;
-  status: string;
+  status: string | null;
+  aprovacao: boolean | null;
   disciplina_nome: string;
+  semestre?: string;
 }
 export interface ConsultaStatusAluno {
   aluno_id: string;
@@ -25,11 +38,13 @@ export interface ConsultaStatusAluno {
   vinculos: VinculoStatus[];
 }
 export interface MatriculaDetalhada extends MatriculaVinculo {
-  matricula_turma_disciplina_id: string;
+  matricula_turma_disciplina_id?: string | null;
   aluno_nome: string;
   aluno_matricula: number;
   disciplina_nome: string;
+  semestre?: string;
   curso_nome: string;
+  professor_nome?: string | null;
 }
 
 export class MatriculaRepository {
