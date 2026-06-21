@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
 
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import Perfil from "../Pages/Perfil/Perfil";
@@ -59,7 +60,7 @@ function RouteByRole({
   children,
   perfisPermitidos,
 }: {
-  children: any;
+  children: ReactNode;
   perfisPermitidos: string[];
 }) {
   const usuarioStorage = localStorage.getItem("@UniEduca:user");
@@ -72,7 +73,7 @@ function RouteByRole({
 
   try {
     usuario = JSON.parse(usuarioStorage);
-  } catch (error) {
+  } catch {
     localStorage.removeItem("@UniEduca:user");
     localStorage.removeItem("@UniEduca:token");
     return <Navigate to="/login" replace />;
@@ -357,6 +358,14 @@ export default function AppRoutes() {
           path="/frequencias/lista"
           element={
             <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
+              <Frequencia />
+            </RouteByRole>
+          }
+        />
+        <Route
+          path="/minha-frequencia"
+          element={
+            <RouteByRole perfisPermitidos={["aluno"]}>
               <Frequencia />
             </RouteByRole>
           }
