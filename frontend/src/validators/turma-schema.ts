@@ -7,7 +7,8 @@ export const turmaSchema = yup.object({
     .number()
     .typeError("Informe o periodo curricular")
     .integer("O periodo curricular deve ser inteiro")
-    .positive("O periodo curricular deve ser maior que zero")
+    .min(1, "O periodo curricular deve estar entre 1 e 12")
+    .max(12, "O periodo curricular deve estar entre 1 e 12")
     .required("Informe o periodo curricular"),
   descricao: yup.string().required("Informe a descricao"),
   sigla: yup.string().required("Informe a sigla"),

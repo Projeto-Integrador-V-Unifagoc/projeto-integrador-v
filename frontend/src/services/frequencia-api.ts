@@ -1,37 +1,11 @@
 import { api } from "../lib/axios";
-import type { RegistrarFrequenciaPayload, StatusFrequencia } from "../models/frequencia-model";
-
+import type { MinhaFrequenciaAluno, RegistrarFrequenciaPayload } from "../models/frequencia-model";
 export const frequenciaApi = {
-  async listarOpcoes() {
-    const response = await api.get("/frequencias/opcoes");
-    return response.data;
-  },
-  async obterChamada(params: { turmaDisciplinaId: string; data: string }) {
-    const response = await api.get("/frequencias/chamada", { params });
-    return response.data;
-  },
-  async registrarFrequencia(data: RegistrarFrequenciaPayload) {
-    const response = await api.post("/frequencias", data);
-    return response.data;
-  },
-  async editarFrequencia(id: string, status: StatusFrequencia) {
-    const response = await api.put(`/frequencias/${id}`, { status });
-    return response.data;
-  },
-  async removerFrequencia(id: string) {
-    const response = await api.delete(`/frequencias/${id}`);
-    return response.data;
-  },
-  async consultarAluno(alunoId: string) {
-    const response = await api.get(`/frequencias/aluno/${alunoId}`);
-    return response.data;
-  },
-  async registrarJustificativa(id: string, justificativa: string) {
-    const response = await api.post(`/frequencias/${id}/justificativa`, { justificativa });
-    return response.data;
-  },
-  async gerarRelatorio(params: { turmaDisciplinaId: string; dataInicio?: string; dataFim?: string }) {
-    const response = await api.get("/frequencias/relatorio", { params });
-    return response.data;
-  },
+  listarOpcoes: async () => (await api.get("/frequencias/opcoes")).data,
+  obterChamada: async (params: { turmaDisciplinaId: string; data: string }) => (await api.get("/frequencias/chamada", { params })).data,
+  salvarChamada: async (data: RegistrarFrequenciaPayload) => (await api.put("/frequencias/chamada", data)).data,
+  consultarAluno: async (id: string) => (await api.get(`/frequencias/aluno/${id}`)).data,
+  minhaFrequencia: async (): Promise<MinhaFrequenciaAluno> => (await api.get("/frequencias/minha")).data,
+  justificar: async (id: string, dados: { motivo: string; observacao?: string; confirmarSubstituicao?: boolean }) => (await api.post(`/frequencias/${id}/justificativa`, dados)).data,
+  gerarRelatorio: async (params: { turmaDisciplinaId: string; dataInicio?: string; dataFim?: string }) => (await api.get("/frequencias/relatorio", { params })).data,
 };

@@ -17,6 +17,7 @@
     "@mui/x-data-grid": "^8.27.1",
     "axios": "^1.14.0",
     "lucide-react": "^0.563.0",
+    "projeto-integrador-v": "file:..",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",

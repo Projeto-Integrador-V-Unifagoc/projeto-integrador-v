@@ -25,6 +25,12 @@ export class TurmaService {
         if (Number(data.capacidadeAlunos) <= 0) {
             throw new Error("Capacidade de alunos deve ser maior que zero");
         }
+
+        const periodoCurricular = Number(data.periodoCurricular);
+
+        if (!Number.isInteger(periodoCurricular) || periodoCurricular < 1 || periodoCurricular > 12) {
+            throw new Error("Periodo curricular deve estar entre 1 e 12");
+        }
     }
 
     async criarTurma(data: any) {

@@ -1,13 +1,19 @@
 import { api } from "../lib/axios";
 import type {
   AtualizarAvaliacaoDTO,
+  AtribuicaoAvaliacao,
   Avaliacao,
   CriarAvaliacaoDTO,
 } from "../models/avaliacao-model";
 
 export const avaliacaoApi = {
-  async listar(): Promise<Avaliacao[]> {
-    const response = await api.get<Avaliacao[]>("/avaliacoes");
+  async listar(turmaDisciplinaId?: string): Promise<Avaliacao[]> {
+    const response = await api.get<Avaliacao[]>("/avaliacoes", { params: turmaDisciplinaId ? { turma_disciplina_id: turmaDisciplinaId } : undefined });
+    return response.data;
+  },
+
+  async listarAtribuicoes(): Promise<AtribuicaoAvaliacao[]> {
+    const response = await api.get<AtribuicaoAvaliacao[]>("/avaliacoes/atribuicoes");
     return response.data;
   },
 

@@ -1,5 +1,5 @@
 export type StatusFrequencia = "PRESENTE" | "AUSENTE";
-export type SituacaoFrequencia = "REGULAR" | "ALERTA" | "RISCO_REPROVACAO";
+export type SituacaoFrequencia = "REGULAR" | "ALERTA" | "RISCO_REPROVACAO" | "NAO_LANCADO";
 export type PerfilFrequencia = "PROFESSOR" | "ALUNO" | "COORDENADOR";
 
 export interface ContextoAutenticado {
@@ -17,12 +17,19 @@ export interface RegistroFrequenciaRequest {
 export interface RegistrarFrequenciaRequest {
   turmaDisciplinaId: string;
   aulaId?: string;
+  localId?: string;
   data: string;
   registros: RegistroFrequenciaRequest[];
 }
 
 export interface EditarFrequenciaRequest {
   status: StatusFrequencia;
+}
+
+export interface JustificativaRequest {
+  motivo: string;
+  observacao?: string;
+  confirmarSubstituicao?: boolean;
 }
 
 export interface FrequenciaRegistro {
@@ -34,8 +41,11 @@ export interface FrequenciaRegistro {
   status: StatusFrequencia;
   data: string;
   justificativa?: string | null;
-  criadoEm: string;
-  atualizadoEm: string;
+  motivoJustificativa?: string | null;
+  observacaoJustificativa?: string | null;
+  criadoEm?: string;
+  lancadaEm?: string;
+  atualizadoEm?: string;
 }
 
 export interface TurmaFrequencia {
@@ -55,7 +65,7 @@ export interface AlunoChamada {
   matricula: number;
   nome: string;
   statusMatricula: string;
-  percentualAtual: number;
+  percentualAtual: number | null;
   frequenciaId?: string;
   status: StatusFrequencia;
   justificativa?: string;
@@ -70,7 +80,8 @@ export interface ConsolidadoFrequencia {
   totalAulas: number;
   presencas: number;
   faltas: number;
-  percentual: number;
+  naoLancadas: number;
+  percentual: number | null;
   situacao: SituacaoFrequencia;
 }
 
@@ -83,6 +94,8 @@ export interface HistoricoFrequenciaAluno {
   data: string;
   status: StatusFrequencia;
   justificativa?: string;
+  motivoJustificativa?: string | null;
+  observacaoJustificativa?: string | null;
 }
 
 function formatDate(value: unknown) {
@@ -101,7 +114,10 @@ export class FrequenciaMapper {
       status: row.status,
       data: formatDate(row.data),
       justificativa: row.justificativa,
-      criadoEm: row.created_at || row.criado_em,
+      motivoJustificativa: row.justificativa_motivo || row.justificativa || null,
+      observacaoJustificativa: row.justificativa_observacao || null,
+      criadoEm: row.criado_em || row.created_at,
+      lancadaEm: row.lancada_em || row.created_at,
       atualizadoEm: row.updated_at || row.atualizado_em,
     };
   }

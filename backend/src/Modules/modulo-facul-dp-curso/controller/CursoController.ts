@@ -53,7 +53,10 @@ export default class CursoController {
             }
             res.status(204).send();
         } catch (error) {
-            res.status(500).json({ error: "Erro ao remover curso" });
+            const mensagem = (error as Error).message;
+            const status = mensagem.startsWith("Nao e possivel remover o curso") ? 400 : 500;
+
+            res.status(status).json({ error: mensagem });
         }
     }
 }

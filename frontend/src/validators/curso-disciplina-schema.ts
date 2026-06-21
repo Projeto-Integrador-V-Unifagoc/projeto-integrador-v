@@ -6,7 +6,8 @@ export const cursoDisciplinaSchema = yup.object({
     .number()
     .typeError("Informe o periodo ideal")
     .integer("O periodo ideal deve ser inteiro")
-    .positive("O periodo ideal deve ser maior que zero")
+    .min(1, "O periodo ideal deve estar entre 1 e 12")
+    .max(12, "O periodo ideal deve estar entre 1 e 12")
     .required("Informe o periodo ideal"),
   cargaHoraria: yup
     .number()

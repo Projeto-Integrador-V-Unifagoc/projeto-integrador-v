@@ -6,10 +6,8 @@ export interface Avaliacao {
   descricao_avaliacao?: string | null;
   data_lancamento: string;
   valor: number;
-  nota?: number | null;
   data_devolucao?: string | null;
   turma_disciplina_id: string;
-  matricula_turma_disciplina_id?: string | null;
   turma_id?: string;
   turma_sigla?: string;
   turma_descricao?: string;
@@ -25,10 +23,8 @@ export interface CriarAvaliacaoDTO {
   descricao_avaliacao?: string;
   data_lancamento: string;
   valor: number;
-  nota?: number;
   data_devolucao?: string | null;
   turma_disciplina_id: string;
-  matricula_turma_disciplina_id?: string | null;
 }
 
 export type AtualizarAvaliacaoDTO = Partial<CriarAvaliacaoDTO>;
@@ -37,5 +33,17 @@ export const REGRAS_AVALIACAO = {
   maxProvas: 3,
   valorProva: 20,
   valorTpi: 5,
-  limiteTrabalhos: 25,
+  limiteTrabalhos: 35,
 } as const;
+
+export interface AtribuicaoAvaliacao {
+  id: string;
+  professor_id: string;
+  turma_id: string;
+  turma_sigla: string;
+  turma_descricao: string;
+  disciplina_id: string;
+  disciplina_codigo: string;
+  disciplina_nome: string;
+  professor_nome: string;
+}

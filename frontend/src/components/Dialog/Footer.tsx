@@ -6,7 +6,7 @@ export function Footer({ children }: StackProps) {
         <Stack
             component="footer"
             position="absolute"
-            direction="row"
+            direction={{ xs: "column-reverse", sm: "row" }}
             alignItems="center"
             bottom={0}
             left={0}
@@ -15,8 +15,11 @@ export function Footer({ children }: StackProps) {
             borderTop={`solid 1px ${theme.palette.grey[300]}`}
             justifyContent={"flex-end"}
             gap={1}
-            height="48px"
-            sx={{ backgroundColor: '#F4F4F4' }}
+            minHeight={{ xs: "96px", sm: "48px" }}
+            sx={{
+                backgroundColor: '#F4F4F4',
+                "& > button": { width: { xs: "100%", sm: "auto" }, minWidth: 88 }
+            }}
         >
             {children}
         </Stack>

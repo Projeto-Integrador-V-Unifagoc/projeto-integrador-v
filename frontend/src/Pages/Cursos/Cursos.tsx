@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { Alert, IconButton, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { Eye, Pencil, Trash2 } from "lucide-react";
@@ -49,8 +50,14 @@ export default function Cursos() {
       setAlerta({ tipo: "success", mensagem: "Curso removido com sucesso!" })
       setCursoParaExcluir(null)
       carregarCursos()
-    } catch {
-      setAlerta({ tipo: "error", mensagem: "Não foi possível remover o curso." })
+    } catch (error) {
+      const mensagem =
+        axios.isAxiosError(error) && error.response?.data?.error
+          ? error.response.data.error
+          : "Não foi possível remover o curso."
+
+      setCursoParaExcluir(null)
+      setAlerta({ tipo: "error", mensagem })
     }
   }
 
@@ -62,10 +69,11 @@ export default function Cursos() {
     {
       field: "id",
       headerName: "Ações",
-      width: 120,
+      width: 160,
+      minWidth: 160,
       sortable: false,
       renderCell: (params) => (
-        <>
+        <Stack direction="row" alignItems="center">
           <IconButton onClick={() => navigate(`/cursos/${params.row.id}`)} color="primary">
             <Pencil size={18} />
           </IconButton>
@@ -75,7 +83,7 @@ export default function Cursos() {
           <IconButton onClick={() => setCursoParaExcluir(params.row)} color="error">
             <Trash2 size={18} />
           </IconButton>
-        </>
+        </Stack>
       ),
     },
   ]

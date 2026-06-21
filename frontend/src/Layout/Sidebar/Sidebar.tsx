@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   List,
   ListItemButton,
@@ -33,29 +32,25 @@ interface MenuItem {
 }
 
 export default function Sidebar({ expandido }: SidebarProps) {
-  const [tipoUsuario, setTipoUsuario] = useState<string>("");
-
-  useEffect(() => {
+  const tipoUsuario = (() => {
     const usuarioStorage = localStorage.getItem("@UniEduca:user");
-
     if (usuarioStorage) {
       try {
         const usuario = JSON.parse(usuarioStorage);
-        const tipoNormalizado = String(usuario?.tipo_usuario || "")
+        return String(usuario?.tipo_usuario || "")
           .trim()
           .toLowerCase();
-
-        setTipoUsuario(tipoNormalizado);
-      } catch (error) {
-        setTipoUsuario("");
-      }
+      } catch { return ""; }
     }
-  }, []);
+    return "";
+  })();
 
   const ehSecretaria = tipoUsuario === "secretaria";
   const ehProfessor = tipoUsuario === "professor";
   const ehAluno = tipoUsuario === "aluno";
   const ehAdministrador = tipoUsuario === "administrador";
+
+  // Secretaria e Administrador têm acesso total.
   const ehAdmin = ehSecretaria || ehAdministrador;
 
   const itens: MenuItem[] = [
@@ -63,10 +58,10 @@ export default function Sidebar({ expandido }: SidebarProps) {
       label: "Tarefas",
       href: "/tarefas/lista",
       icon: ClipboardList,
-      podeVer: ehAdmin || ehAluno,
+      podeVer: ehAdmin,
     },
     {
-      label: "Periodos Letivos",
+      label: "Períodos Letivos",
       href: "/periodos-letivos/lista",
       icon: Layers,
       podeVer: ehAdmin,
@@ -102,7 +97,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
       podeVer: ehAdmin,
     },
     {
-      label: "Matricula",
+      label: "Matrícula",
       href: "/matricula/nova",
       icon: ClipboardCheck,
       podeVer: ehAdmin || ehAluno,
@@ -120,31 +115,43 @@ export default function Sidebar({ expandido }: SidebarProps) {
       podeVer: ehAdmin,
     },
     {
-      label: "Usuarios",
+      label: "Usuários",
       href: "/usuarios/lista",
       icon: Users,
       podeVer: ehAdmin,
     },
     {
-      label: "Avaliacoes",
+      label: "Avaliações",
       href: "/avaliacoes/lista",
       icon: ClipboardCheck,
       podeVer: ehAdmin || ehProfessor,
     },
     {
-      label: "Frequencia",
+      label: "Frequência",
       href: "/frequencias/lista",
       icon: CalendarCheck,
       podeVer: ehAdmin || ehProfessor,
     },
     {
-      label: "Lancamento de Notas",
+      label: "Minha Frequência",
+      href: "/minha-frequencia",
+      icon: CalendarCheck,
+      podeVer: ehAluno,
+    },
+    {
+      label: "Lançamento de Notas",
       href: "/notas/lancamento",
       icon: ClipboardPen,
       podeVer: ehAdmin || ehProfessor,
     },
     {
-      label: "Relatorios",
+      label: "Minhas Notas",
+      href: "/minhas-notas",
+      icon: ClipboardPen,
+      podeVer: ehAluno,
+    },
+    {
+      label: "Relatórios",
       href: "/relatorios/lista",
       icon: FileBarChart,
       podeVer: ehAdmin || ehProfessor || ehAluno,

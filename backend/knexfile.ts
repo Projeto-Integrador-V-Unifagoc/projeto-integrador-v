@@ -19,6 +19,8 @@ const config: { [key: string]: Knex.Config } = {
   development: {
     client: "pg",
     connection,
+    // As tabelas da aplicação ficam em `piv`, enquanto o histórico do Knex
+    // existente fica em `public`. Ambos precisam estar visíveis no startup.
     searchPath: ['piv', 'public'],
     seeds: {
       directory: "./seeds"
@@ -29,6 +31,7 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: "knex_migrations",
+      schemaName: "public",
       directory: "./migrations"
     }
   },
@@ -46,6 +49,7 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: "knex_migrations",
+      schemaName: "public",
       directory: "./migrations"
     }
   },

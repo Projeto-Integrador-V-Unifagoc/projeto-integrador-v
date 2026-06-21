@@ -14,8 +14,15 @@ export function useProfessor() {
     }
   };
 
+  const listarOpcoes = async () => {
+    setCarregando(true);
+    try { return await professorApi.listarOpcoes(); }
+    finally { setCarregando(false); }
+  };
+
   return {
     carregando,
     listarProfessores,
+    listarOpcoes,
   };
 }
