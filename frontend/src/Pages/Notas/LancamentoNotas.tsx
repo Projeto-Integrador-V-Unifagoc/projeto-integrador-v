@@ -1,25 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Tab,
-  Tabs,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { DataGrid, type GridColDef, type GridRowModel } from "@mui/x-data-grid";
+import { Alert, Box, Chip, Grid, MenuItem, Stack, Tab, Tabs, Typography } from "@mui/material";
+import type { GridColDef, GridRowModel } from "@mui/x-data-grid";
+import { RefreshCw, Save, ShieldCheck } from "lucide-react";
+import Button from "../../components/Button";
+import { Card } from "../../components/Card";
 import Container from "../../components/Container";
+import DataTable from "../../components/DataTable/DataTable";
+import TextField from "../../components/TextField";
 import { useNota } from "../../hooks/use-nota";
 import {
   SITUACAO_LABEL,
@@ -30,27 +17,38 @@ import {
   type Lancamento,
   type Recuperacao,
   type Rendimento,
+  type SituacaoNota,
 } from "../../models/nota-model";
+import AutorizacaoDialog from "./AutorizacaoDialog";
+import { type Aviso, formatarMedia, formatarNotaValor, mensagemErro, perfilLocal } from "./notas-utils";
 
 type LinhaLancamento = AlunoLancamento & { id: string };
 type LinhaRecuperacao = AlunoRecuperacao & { id: string; valor: number | null };
 type LinhaRendimento = Record<string, number | string | null>;
 type LinhaEditada = { id: string; alunoId: string; valor: unknown };
 
-const mensagemErro = (erro: unknown) => {
-  const e = erro as { response?: { data?: { mensagem?: string } }; message?: string };
-  return e.response?.data?.mensagem || e.message || "Não foi possível concluir a operação.";
-};
-const perfilLocal = () => {
-  try {
-    return String(JSON.parse(localStorage.getItem("@UniEduca:user") || "{}").tipo_usuario || "").toLowerCase();
-  } catch {
-    return "";
-  }
-};
-const fmtMedia = (v: number | null) => (v === null ? "—" : `${v.toFixed(1).replace(".", ",")}%`);
+// Situação sempre comunicada por rótulo; a cor apenas reforça (sem depender só de cor).
+const chipSituacao = (valor: unknown) => (
+  <Chip size="small" color={situacaoCor(valor as SituacaoNota)} label={SITUACAO_LABEL[valor as SituacaoNota]} />
+);
 
-type Aviso = { tipo: "success" | "error" | "info" | "warning"; texto: string };
+// Célula de nota em leitura: "Não lançada" (itálico) é visualmente distinto de zero e de erro;
+// alterações ainda não salvas recebem marcador (ponto + negrito), não apenas cor.
+const renderNota = (valor: number | null | undefined, alterada: boolean) =>
+  valor === null || valor === undefined ? (
+    <Typography variant="body2" color="text.disabled" fontStyle="italic">
+      Não lançada
+    </Typography>
+  ) : (
+    <Stack direction="row" alignItems="center" gap={0.5} title={alterada ? "Alteração não salva" : undefined}>
+      {alterada && (
+        <Box component="span" aria-hidden="true" sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
+      )}
+      <Typography component="span" variant="body2" fontWeight={alterada ? 700 : 400}>
+        {formatarNotaValor(Number(valor))}
+      </Typography>
+    </Stack>
+  );
 
 export default function LancamentoNotas() {
   const api = useNota();
@@ -66,11 +64,13 @@ export default function LancamentoNotas() {
   const [lancamento, setLancamento] = useState<Lancamento>();
   const [linhas, setLinhas] = useState<LinhaLancamento[]>([]);
   const [alterado, setAlterado] = useState(false);
+  const [alteradasLanc, setAlteradasLanc] = useState<Set<string>>(new Set());
 
   const [rendimento, setRendimento] = useState<Rendimento>();
   const [recuperacao, setRecuperacao] = useState<Recuperacao>();
   const [linhasRec, setLinhasRec] = useState<LinhaRecuperacao[]>([]);
   const [alteradoRec, setAlteradoRec] = useState(false);
+  const [alteradasRec, setAlteradasRec] = useState<Set<string>>(new Set());
 
   const [autorizar, setAutorizar] = useState(false);
   const [motivoAutorizacao, setMotivoAutorizacao] = useState("");
@@ -115,6 +115,7 @@ export default function LancamentoNotas() {
       setLancamento(r);
       setLinhas(r.alunos.map((a) => ({ ...a, id: a.matriculaTurmaDisciplinaId })));
       setAlterado(false);
+      setAlteradasLanc(new Set());
       setAviso(undefined);
     } catch (e) {
       setAviso({ tipo: "error", texto: mensagemErro(e) });
@@ -138,6 +139,7 @@ export default function LancamentoNotas() {
       setRecuperacao(r);
       setLinhasRec(r.alunos.map((a) => ({ ...a, id: a.matriculaTurmaDisciplinaId, valor: a.notaRecuperacao })));
       setAlteradoRec(false);
+      setAlteradasRec(new Set());
     } catch (e) {
       setAviso({ tipo: "error", texto: mensagemErro(e) });
     }
@@ -163,11 +165,14 @@ export default function LancamentoNotas() {
       }
     }
     const atualizada = { ...nova, valor };
+    const id = String(nova.id);
     if (campo === "linhas") {
       setLinhas((rs) => rs.map((r) => (r.id === nova.id ? (atualizada as LinhaLancamento) : r)));
+      setAlteradasLanc((s) => new Set(s).add(id));
       setAlterado(true);
     } else {
       setLinhasRec((rs) => rs.map((r) => (r.id === nova.id ? (atualizada as LinhaRecuperacao) : r)));
+      setAlteradasRec((s) => new Set(s).add(id));
       setAlteradoRec(true);
     }
     return atualizada;
@@ -186,6 +191,7 @@ export default function LancamentoNotas() {
       setLancamento(r);
       setLinhas(r.alunos.map((a) => ({ ...a, id: a.matriculaTurmaDisciplinaId })));
       setAlterado(false);
+      setAlteradasLanc(new Set());
       setAviso({ tipo: "success", texto: "Notas salvas com sucesso em uma única transação." });
     } catch (e) {
       setAviso({ tipo: "error", texto: mensagemErro(e) });
@@ -204,6 +210,7 @@ export default function LancamentoNotas() {
     try {
       await api.salvarLote(recuperacao.recuperacaoAvaliacaoId, itens);
       setAlteradoRec(false);
+      setAlteradasRec(new Set());
       setAviso({ tipo: "success", texto: "Notas de recuperação salvas e média final recalculada." });
       await carregarRecuperacao();
     } catch (e) {
@@ -232,21 +239,22 @@ export default function LancamentoNotas() {
       width: 150,
       editable: podeEditar,
       type: "number",
-      renderCell: ({ row }) =>
-        row.valor === null || row.valor === undefined ? (
-          <Typography variant="body2" color="text.disabled" fontStyle="italic">
-            Não lançada
-          </Typography>
-        ) : (
-          <span>{Number(row.valor).toFixed(2).replace(".", ",")}</span>
-        ),
+      renderCell: ({ row }) => renderNota(row.valor, alteradasLanc.has(String(row.id))),
     },
     {
       field: "prazoExpirado",
-      headerName: "Prazo",
-      width: 150,
+      headerName: "Prazo de retificação",
+      width: 170,
       renderCell: ({ row }) =>
-        row.prazoExpirado ? <Chip size="small" color="warning" label="Prazo expirado" /> : row.lancada ? <Chip size="small" label="No prazo" /> : null,
+        row.prazoExpirado ? (
+          <Chip size="small" variant="outlined" color="error" label="Prazo expirado" />
+        ) : row.lancada ? (
+          <Chip size="small" variant="outlined" color="success" label="No prazo" />
+        ) : (
+          <Typography variant="body2" color="text.disabled">
+            —
+          </Typography>
+        ),
     },
   ];
 
@@ -256,20 +264,16 @@ export default function LancamentoNotas() {
       field: `av_${a.id}`,
       headerName: `${a.tipo} (${a.valor})`,
       width: 120,
-      valueFormatter: (v) => (v === null || v === undefined ? "—" : Number(v).toFixed(1).replace(".", ",")),
+      type: "number",
+      valueFormatter: (v) => (v === null || v === undefined ? "—" : formatarNotaValor(Number(v))),
     }));
     return [
       { field: "matricula", headerName: "Matrícula", width: 100 },
       { field: "nome", headerName: "Aluno", flex: 1, minWidth: 180 },
       ...dinamicas,
-      { field: "mediaParcial", headerName: "Média parcial", width: 130, valueFormatter: (v) => fmtMedia(v ?? null) },
-      { field: "mediaFinal", headerName: "Média final", width: 120, valueFormatter: (v) => fmtMedia(v ?? null) },
-      {
-        field: "situacao",
-        headerName: "Situação",
-        width: 150,
-        renderCell: ({ value }) => <Chip size="small" color={situacaoCor(value)} label={SITUACAO_LABEL[value as keyof typeof SITUACAO_LABEL]} />,
-      },
+      { field: "mediaParcial", headerName: "Média parcial", width: 130, valueFormatter: (v) => formatarMedia(v as number | null) },
+      { field: "mediaFinal", headerName: "Média final", width: 120, valueFormatter: (v) => formatarMedia(v as number | null) },
+      { field: "situacao", headerName: "Situação", width: 160, renderCell: ({ value }) => chipSituacao(value) },
     ];
   }, [rendimento]);
 
@@ -285,181 +289,235 @@ export default function LancamentoNotas() {
   const colunasRecuperacao: GridColDef[] = [
     { field: "matricula", headerName: "Matrícula", width: 100 },
     { field: "nome", headerName: "Aluno", flex: 1, minWidth: 180 },
-    { field: "mediaParcial", headerName: "Média parcial", width: 130, valueFormatter: (v) => fmtMedia(v ?? null) },
+    { field: "mediaParcial", headerName: "Média parcial", width: 130, valueFormatter: (v) => formatarMedia(v as number | null) },
     {
       field: "valor",
-      headerName: "Recuperação (0-100)",
+      headerName: "Recuperação (0 a 100)",
       width: 180,
       editable: !periodoFechado,
       type: "number",
-      renderCell: ({ row }) =>
-        row.valor === null || row.valor === undefined ? (
-          <Typography variant="body2" color="text.disabled" fontStyle="italic">
-            Não lançada
-          </Typography>
-        ) : (
-          <span>{Number(row.valor).toFixed(2).replace(".", ",")}</span>
-        ),
+      renderCell: ({ row }) => renderNota(row.valor, alteradasRec.has(String(row.id))),
     },
-    { field: "mediaFinal", headerName: "Média final", width: 120, valueFormatter: (v) => fmtMedia(v ?? null) },
-    {
-      field: "situacao",
-      headerName: "Situação",
-      width: 150,
-      renderCell: ({ value }) => <Chip size="small" color={situacaoCor(value)} label={SITUACAO_LABEL[value as keyof typeof SITUACAO_LABEL]} />,
-    },
+    { field: "mediaFinal", headerName: "Média final", width: 120, valueFormatter: (v) => formatarMedia(v as number | null) },
+    { field: "situacao", headerName: "Situação", width: 160, renderCell: ({ value }) => chipSituacao(value) },
   ];
+
+  const colunasTurmaTamanho = aba === 0 ? { xs: 12, md: 6 } : { xs: 12 };
 
   return (
     <Container sx={{ p: { xs: 2, md: 3 } }}>
       <Stack gap={2}>
-        <Typography variant="h5" fontWeight={700}>
+        <Typography component="h1" variant="h5" fontWeight={700}>
           Lançamento de Notas
         </Typography>
-        {aviso && <Alert severity={aviso.tipo} onClose={() => setAviso(undefined)}>{aviso.texto}</Alert>}
+
+        {aviso && (
+          <Alert severity={aviso.tipo} onClose={() => setAviso(undefined)}>
+            {aviso.texto}
+          </Alert>
+        )}
         {periodoFechado && <Alert severity="info">Período letivo fechado: as notas estão em modo somente leitura.</Alert>}
+        {ehSecretaria && !periodoFechado && (
+          <Alert severity="info">
+            Perfil de secretaria: acesso de consulta e autorização excepcional. O lançamento e a edição das notas são feitos pelo professor.
+          </Alert>
+        )}
 
-        <Paper sx={{ p: 2 }}>
-          <Stack direction={{ xs: "column", md: "row" }} gap={2}>
-            <FormControl fullWidth>
-              <InputLabel>Turma / disciplina</InputLabel>
-              <Select
-                label="Turma / disciplina"
-                value={turmaId}
-                onChange={(e) => {
-                  setTurmaId(e.target.value);
-                  const nova = atribuicoes.find((a) => a.turmaDisciplinaId === e.target.value);
-                  setAvaliacaoId(nova?.avaliacoes[0]?.id || "");
-                }}
-              >
-                {atribuicoes.map((a) => (
-                  <MenuItem key={a.turmaDisciplinaId} value={a.turmaDisciplinaId}>
-                    {a.turma.sigla} — {a.disciplina.nome} — {a.periodoLetivo.codigo}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {aba === 0 && (
-              <FormControl fullWidth>
-                <InputLabel>Avaliação</InputLabel>
-                <Select label="Avaliação" value={avaliacaoId} onChange={(e) => setAvaliacaoId(e.target.value)}>
-                  {(atribuicao?.avaliacoes ?? [])
-                    .filter((av) => av.tipo !== "RECUPERACAO")
-                    .map((av) => (
-                      <MenuItem key={av.id} value={av.id}>
-                        {av.tipo} ({av.valor}) {av.descricao ? `— ${av.descricao}` : ""}
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
-            )}
-          </Stack>
-        </Paper>
+        <Card.Root elevation={0} variant="outlined">
+          <Card.Content>
+            <Grid container spacing={1.5} alignItems="flex-start">
+              <Grid size={colunasTurmaTamanho}>
+                <TextField
+                  select
+                  label="Turma e disciplina"
+                  value={turmaId}
+                  onChange={(e) => {
+                    setTurmaId(e.target.value);
+                    const nova = atribuicoes.find((a) => a.turmaDisciplinaId === e.target.value);
+                    setAvaliacaoId(nova?.avaliacoes[0]?.id || "");
+                  }}
+                >
+                  {atribuicoes.map((a) => (
+                    <MenuItem key={a.turmaDisciplinaId} value={a.turmaDisciplinaId}>
+                      {a.turma.sigla} — {a.disciplina.nome} — {a.periodoLetivo.codigo}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              {aba === 0 && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField select label="Avaliação" value={avaliacaoId} onChange={(e) => setAvaliacaoId(e.target.value)}>
+                    {(atribuicao?.avaliacoes ?? [])
+                      .filter((av) => av.tipo !== "RECUPERACAO")
+                      .map((av) => (
+                        <MenuItem key={av.id} value={av.id}>
+                          {av.tipo} ({av.valor}){av.descricao ? ` — ${av.descricao}` : ""}
+                        </MenuItem>
+                      ))}
+                  </TextField>
+                </Grid>
+              )}
+            </Grid>
+          </Card.Content>
+        </Card.Root>
 
-        <Tabs value={aba} onChange={(_, v) => setAba(v)}>
-          <Tab label="Lançamento" />
-          <Tab label="Rendimento" />
-          <Tab label="Recuperação" />
-        </Tabs>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Tabs
+            value={aba}
+            onChange={(_, v) => setAba(v)}
+            textColor="primary"
+            indicatorColor="primary"
+            aria-label="Visões de notas da turma"
+          >
+            <Tab label="Lançamento" id="notas-tab-lancamento" aria-controls="notas-painel-lancamento" />
+            <Tab label="Rendimento" id="notas-tab-rendimento" aria-controls="notas-painel-rendimento" />
+            <Tab label="Recuperação" id="notas-tab-recuperacao" aria-controls="notas-painel-recuperacao" />
+          </Tabs>
+        </Box>
 
         {aba === 0 && (
-          <>
-            {lancamento && (
-              <Typography variant="body2" color="text.secondary">
-                {lancamento.avaliacao.disciplina.nome} · {lancamento.avaliacao.tipo} · máximo {max} pontos
-              </Typography>
-            )}
-            {lancamento && lancamento.matriculasIrregulares > 0 && (
-              <Alert severity="info">{lancamento.matriculasIrregulares} matrícula(s) irregular(es) foram omitidas.</Alert>
-            )}
-            {alterado && <Alert severity="warning">Existem alterações não salvas.</Alert>}
-            {linhas.some((l) => l.prazoExpirado) && (
-              <Alert severity="warning">
-                Há notas com prazo de retificação expirado.{" "}
-                {ehSecretaria ? "Como secretaria, você pode autorizar a retificação excepcional." : "Solicite autorização excepcional à secretaria."}
-                {ehSecretaria && (
-                  <Button size="small" sx={{ ml: 1 }} onClick={() => setAutorizar(true)}>
-                    Autorizar retificação
+          <Box role="tabpanel" id="notas-painel-lancamento" aria-labelledby="notas-tab-lancamento">
+            <Stack gap={2}>
+              {lancamento && (
+                <Typography variant="body2" color="text.secondary">
+                  {lancamento.avaliacao.disciplina.nome} · {lancamento.avaliacao.tipo} · máximo {formatarNotaValor(max)} pontos
+                </Typography>
+              )}
+              {lancamento && lancamento.matriculasIrregulares > 0 && (
+                <Alert severity="info">{lancamento.matriculasIrregulares} matrícula(s) irregular(es) foram omitidas.</Alert>
+              )}
+              {linhas.some((l) => l.prazoExpirado) && (
+                <Alert
+                  severity="warning"
+                  action={
+                    ehSecretaria ? (
+                      <Button
+                        variant="outlined"
+                        onClick={() => setAutorizar(true)}
+                        startIcon={<ShieldCheck size={16} aria-hidden="true" />}
+                        sx={{ height: 30, width: "auto", minWidth: 200 }}
+                      >
+                        Autorizar retificação
+                      </Button>
+                    ) : undefined
+                  }
+                >
+                  Há notas com prazo de retificação expirado.{" "}
+                  {ehSecretaria
+                    ? "Como secretaria, você pode autorizar a retificação excepcional."
+                    : "Solicite autorização excepcional à secretaria."}
+                </Alert>
+              )}
+              {alterado && <Alert severity="warning">Existem alterações não salvas. Salve o lote para registrá-las.</Alert>}
+              {podeEditar && (
+                <Stack direction="row" justifyContent="flex-end">
+                  <Button
+                    variant="contained"
+                    onClick={salvarLancamento}
+                    disabled={!alterado || api.carregando}
+                    isLoading={api.carregando}
+                    startIcon={<Save size={16} aria-hidden="true" />}
+                    sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 160 }}
+                  >
+                    Salvar lote
                   </Button>
-                )}
-              </Alert>
-            )}
-            {podeEditar && (
-              <Stack direction="row" justifyContent="flex-end">
-                <Button variant="contained" onClick={salvarLancamento} disabled={!alterado || api.carregando}>
-                  Salvar lote
-                </Button>
-              </Stack>
-            )}
-            <Paper sx={{ height: 480 }}>
-              <DataGrid
-                rows={linhas}
-                columns={colunasLancamento}
-                loading={api.carregando}
-                processRowUpdate={processarLinha("linhas", max)}
-                onProcessRowUpdateError={(e) => setAviso({ tipo: "error", texto: (e as Error).message })}
-                disableRowSelectionOnClick
-              />
-            </Paper>
-          </>
+                </Stack>
+              )}
+              <Card.Root elevation={0} variant="outlined">
+                <Card.Content sx={{ minHeight: 480 }}>
+                  <DataTable
+                    rows={linhas}
+                    columns={colunasLancamento}
+                    loading={api.carregando}
+                    processRowUpdate={processarLinha("linhas", max)}
+                    onProcessRowUpdateError={(e) => setAviso({ tipo: "error", texto: (e as Error).message })}
+                    emptyTitle="Nenhum aluno para lançamento"
+                    emptyDescription="Selecione a turma e a avaliação para carregar os alunos."
+                  />
+                </Card.Content>
+              </Card.Root>
+            </Stack>
+          </Box>
         )}
 
         {aba === 1 && (
-          <Paper sx={{ height: 520 }}>
-            <DataGrid rows={linhasRendimento} columns={colunasRendimento} loading={api.carregando} disableRowSelectionOnClick />
-          </Paper>
+          <Box role="tabpanel" id="notas-painel-rendimento" aria-labelledby="notas-tab-rendimento">
+            <Stack gap={2}>
+              <Stack direction="row" justifyContent="flex-end">
+                <Button
+                  variant="contained"
+                  onClick={carregarRendimento}
+                  disabled={!turmaId || api.carregando}
+                  isLoading={api.carregando}
+                  startIcon={<RefreshCw size={16} aria-hidden="true" />}
+                  sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 180 }}
+                >
+                  Atualizar rendimento
+                </Button>
+              </Stack>
+              <Card.Root elevation={0} variant="outlined">
+                <Card.Content sx={{ minHeight: 480 }}>
+                  <DataTable
+                    rows={linhasRendimento}
+                    columns={colunasRendimento}
+                    loading={api.carregando}
+                    emptyTitle="Nenhum rendimento para exibir"
+                    emptyDescription="Selecione a turma para visualizar o rendimento consolidado."
+                  />
+                </Card.Content>
+              </Card.Root>
+            </Stack>
+          </Box>
         )}
 
         {aba === 2 && (
-          <>
-            <Typography variant="body2" color="text.secondary">
-              Alunos elegíveis (média parcial abaixo de 60% com etapa regular concluída). Recuperação de 0 a 100; a média final é o maior valor entre a média parcial e a recuperação.
-            </Typography>
-            {alteradoRec && <Alert severity="warning">Existem alterações não salvas.</Alert>}
-            {!periodoFechado && (
-              <Stack direction="row" justifyContent="flex-end">
-                <Button variant="contained" onClick={salvarRecuperacao} disabled={!alteradoRec || api.carregando}>
-                  Salvar recuperação
-                </Button>
-              </Stack>
-            )}
-            <Paper sx={{ height: 480 }}>
-              <DataGrid
-                rows={linhasRec}
-                columns={colunasRecuperacao}
-                loading={api.carregando}
-                processRowUpdate={processarLinha("recuperacao", 100)}
-                onProcessRowUpdateError={(e) => setAviso({ tipo: "error", texto: (e as Error).message })}
-                disableRowSelectionOnClick
-              />
-            </Paper>
-          </>
+          <Box role="tabpanel" id="notas-painel-recuperacao" aria-labelledby="notas-tab-recuperacao">
+            <Stack gap={2}>
+              <Typography variant="body2" color="text.secondary">
+                Alunos elegíveis (média parcial abaixo de 60% com etapa regular concluída). Recuperação de 0 a 100; a média final é o maior
+                valor entre a média parcial e a recuperação.
+              </Typography>
+              {alteradoRec && <Alert severity="warning">Existem alterações não salvas. Salve a recuperação para registrá-las.</Alert>}
+              {!periodoFechado && (
+                <Stack direction="row" justifyContent="flex-end">
+                  <Button
+                    variant="contained"
+                    onClick={salvarRecuperacao}
+                    disabled={!alteradoRec || api.carregando}
+                    isLoading={api.carregando}
+                    startIcon={<Save size={16} aria-hidden="true" />}
+                    sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 180 }}
+                  >
+                    Salvar recuperação
+                  </Button>
+                </Stack>
+              )}
+              <Card.Root elevation={0} variant="outlined">
+                <Card.Content sx={{ minHeight: 480 }}>
+                  <DataTable
+                    rows={linhasRec}
+                    columns={colunasRecuperacao}
+                    loading={api.carregando}
+                    processRowUpdate={processarLinha("recuperacao", 100)}
+                    onProcessRowUpdateError={(e) => setAviso({ tipo: "error", texto: (e as Error).message })}
+                    emptyTitle="Nenhum aluno elegível para recuperação"
+                    emptyDescription="Apenas alunos com média parcial abaixo de 60% e etapa regular concluída aparecem aqui."
+                  />
+                </Card.Content>
+              </Card.Root>
+            </Stack>
+          </Box>
         )}
       </Stack>
 
-      <Dialog open={autorizar} onClose={() => setAutorizar(false)} fullWidth>
-        <DialogTitle>Autorizar retificação excepcional</DialogTitle>
-        <DialogContent>
-          <Stack gap={2} mt={1}>
-            <Alert severity="info">A autorização libera a edição fora do prazo de 7 dias enquanto o período estiver aberto e fica registrada em auditoria.</Alert>
-            <TextField
-              label="Motivo"
-              required
-              multiline
-              minRows={3}
-              value={motivoAutorizacao}
-              onChange={(e) => setMotivoAutorizacao(e.target.value)}
-              inputProps={{ maxLength: 500 }}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAutorizar(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={enviarAutorizacao} disabled={motivoAutorizacao.trim().length < 5}>
-            Registrar autorização
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AutorizacaoDialog
+        open={autorizar}
+        motivo={motivoAutorizacao}
+        saving={api.carregando}
+        onMotivo={setMotivoAutorizacao}
+        onClose={() => setAutorizar(false)}
+        onSave={enviarAutorizacao}
+      />
     </Container>
   );
 }
