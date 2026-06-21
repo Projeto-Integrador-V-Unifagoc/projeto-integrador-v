@@ -70,6 +70,20 @@ export class FichaService {
       }
 
       const entry = notasPorDisciplinaMap.get(key);
+      // if avaliacao references a matricula_turma_disciplina, try to fill periodoLetivo
+      try {
+        if (av.matricula_turma_disciplina_id && !entry.periodoLetivo) {
+          const matriculaMatch = matriculas.find(
+            (m: any) =>
+              m.matricula_turma_disciplina_id ===
+              av.matricula_turma_disciplina_id,
+          );
+          if (matriculaMatch?.semestre)
+            entry.periodoLetivo = matriculaMatch.semestre;
+        }
+      } catch (e) {
+        // ignore
+      }
       entry.avaliacoes.push({
         id: av.id,
         nome: av.descricao_avaliacao || av.tipo_avaliacao,
