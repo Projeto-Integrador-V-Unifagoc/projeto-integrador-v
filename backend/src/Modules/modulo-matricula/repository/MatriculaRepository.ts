@@ -43,6 +43,7 @@ export interface MatriculaDetalhada extends MatriculaVinculo {
   aluno_matricula: number;
   disciplina_nome: string;
   semestre?: string;
+  periodo_codigo?: string | null;
   curso_nome: string;
   professor_nome?: string | null;
 }
@@ -130,6 +131,7 @@ export class MatriculaRepository {
       .join("aluno as a", "m.aluno_id", "a.id")
       .join("pessoa as p", "a.pessoa_id", "p.id")
       .join("turma as t", "m.turma_id", "t.id")
+      .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
       .join("curso as c", "t.curso_id", "c.id")
       .leftJoin("matricula_turma_disciplina as mtd", "mtd.matricula_id", "m.id")
       .leftJoin("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
@@ -147,6 +149,7 @@ export class MatriculaRepository {
         "a.matricula as aluno_matricula",
         "d.nome as disciplina_nome",
         "t.sigla as semestre",
+        "pl.codigo as periodo_codigo",
         "c.nome as curso_nome",
         "pp.nome as professor_nome",
       );

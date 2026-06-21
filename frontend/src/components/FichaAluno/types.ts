@@ -11,6 +11,7 @@ export type NotaAluno = {
   disciplina: string;
   mediaFinal: number;
   avaliacao: number;
+  avaliacoes?: Array<{ id: string; nome: string; nota: number; peso: number }>;
   provaFinal: number;
   provaInova: number;
   provaSegundaChamada: number;

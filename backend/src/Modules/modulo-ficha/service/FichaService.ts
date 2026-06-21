@@ -78,8 +78,10 @@ export class FichaService {
               m.matricula_turma_disciplina_id ===
               av.matricula_turma_disciplina_id,
           );
-          if (matriculaMatch?.semestre)
-            entry.periodoLetivo = matriculaMatch.semestre;
+          if (matriculaMatch) {
+            entry.periodoLetivo =
+              matriculaMatch.periodo_codigo ?? matriculaMatch.semestre ?? null;
+          }
         }
       } catch (e) {
         // ignore
