@@ -12,6 +12,7 @@ import { frequenciaRouter } from './Modules/routes/frequenciaRoutes';
 import { notasRouter } from './Modules/routes/notasRoutes';
 import { matriculaRouter } from './Modules/routes/matriculaRoutes';
 import { documentoRouter } from './Modules/routes/documentoRoutes';
+import { homeAlunoRouter } from './Modules/routes/homeAlunoRoutes';
 import authRoutes from './Modules/usuario-perfil-autenticacao/routes/auth-routes';
 import { StatusDisciplinaController } from './Modules/modulo-status-matricula-disciplina/controller/DisciplinaController';
 import { MatriculaController } from './Modules/modulo-status-matricula-disciplina/controller/MatriculaController';
@@ -109,6 +110,7 @@ app.use('/professores', professorRouter);
 app.use('/avaliacoes', avaliacaoRouter);
 app.use('/frequencias', frequenciaRouter);
 app.use('/notas', notasRouter);
+app.use(homeAlunoRouter);
 app.use(matriculaRouter);
 app.use(documentoRouter);
 

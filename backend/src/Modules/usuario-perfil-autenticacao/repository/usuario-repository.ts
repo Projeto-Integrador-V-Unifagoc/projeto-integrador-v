@@ -57,6 +57,7 @@ export class UsuarioRepository {
       .where('aluno.usuario_id', usuarioId)
       .select(
         'aluno.id as vinculo_id',
+        'aluno.matricula',
         'aluno.periodo',
         'pessoa.nome as pessoa_nome',
         'pessoa.cpf',

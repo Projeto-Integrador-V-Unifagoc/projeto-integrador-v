@@ -135,6 +135,7 @@ class AutenticacaoService {
       if (aluno) {
         pessoa = this.montarPessoa(aluno);
         academico = {
+          matricula: aluno.matricula ?? null,
           curso: aluno.curso_nome ?? null,
           curso_codigo: aluno.curso_codigo ?? null,
           periodo: aluno.periodo ?? null,

@@ -26,15 +26,13 @@ import {
 } from "lucide-react";
 import { frequenciaApi } from "../../services/frequencia-api";
 import { notaApi } from "../../services/nota-api";
-
-interface DisciplinaEstudante {
-  id: string;
-  codigo: string;
-  nome: string;
-  cargaHoraria: number;
-  professor: string;
-  turma: string;
-}
+import { authService } from "../../services/auth-services";
+import { homeAlunoApi } from "../../services/home-aluno-api";
+import type {
+  DisciplinaAluno,
+  TarefaAluno,
+  TipoTarefa,
+} from "../../models/home-aluno-model";
 
 interface UsuarioLocal {
   nome?: string;
@@ -42,76 +40,39 @@ interface UsuarioLocal {
   tipo_usuario?: string;
 }
 
-interface PerfilAcademico {
-  curso?: string;
-  periodo?: string | number;
-}
-
-interface AlunoBanco {
-  id?: string;
-  matricula?: string | number;
-  curso_nome?: string;
-  periodo?: string | number;
-  usuario?: { email?: string };
-}
-
-interface MatriculaAluno {
-  id: string;
-  status: string;
-  disciplina_nome: string;
-  professor_nome?: string;
-  semestre?: string;
-}
-
-interface DisciplinaApi {
-  id: string;
-  codigo?: string;
-  nome: string;
-  carga_horaria?: number;
-}
-
 interface InformacaoAluno {
-  id?: string;
-  matricula: string | number;
-  curso: string;
-  periodo: string | number;
+  matricula: string | number | null;
+  curso: string | null;
+  periodo: string | number | null;
 }
 
-interface TarefaMock {
-  id: string;
-  titulo: string;
-  disciplina: string;
-  tipo: "PROVA" | "TPI" | "TRABALHO";
-  dataVencimento: Date;
-  status: string;
+// Resposta de GET /me — apenas os campos usados no cabeçalho do aluno.
+interface RespostaMe {
+  data?: {
+    academico?: {
+      matricula?: string | number | null;
+      curso?: string | null;
+      periodo?: string | number | null;
+    } | null;
+  };
 }
 
-const MOCK_DISCIPLINAS: DisciplinaEstudante[] = [
-  {
-    id: "mock-1",
-    codigo: "PI5A",
-    nome: "Projeto Integrador V",
-    cargaHoraria: 80,
-    professor: "Evandro de Paula Marques",
-    turma: "2026/1",
-  },
-  {
-    id: "mock-2",
-    codigo: "BD2B",
-    nome: "Banco de Dados II",
-    cargaHoraria: 60,
-    professor: "Marcos Antônio dos Santos",
-    turma: "2026/1",
-  },
-  {
-    id: "mock-3",
-    codigo: "ES3C",
-    nome: "Engenharia de Software",
-    cargaHoraria: 60,
-    professor: "Felipe José de Souza",
-    turma: "2026/1",
-  },
-];
+// Cor do Chip por tipo de avaliação exibido na aba "A Fazer".
+const corDoTipo = (
+  tipo: TipoTarefa
+): "error" | "info" | "warning" | "secondary" => {
+  if (tipo === "PROVA") return "error";
+  if (tipo === "TRABALHO") return "info";
+  if (tipo === "RECUPERACAO") return "secondary";
+  return "warning"; // TPI
+};
+
+// Formata "AAAA-MM-DD" em pt-BR sem sofrer deslocamento de fuso horário.
+const formatarVencimento = (iso: string): string => {
+  const [ano, mes, dia] = iso.split("-").map(Number);
+  if (!ano || !mes || !dia) return iso;
+  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR");
+};
 
 export default function Home() {
   const navigate = useNavigate();
@@ -140,11 +101,19 @@ export default function Home() {
     );
   }, [user]);
 
-  // Estados específicos para o fluxo do Aluno
+  // Cabeçalho do aluno (derivado do JWT via GET /me)
   const [studentInfo, setStudentInfo] = useState<InformacaoAluno | null>(null);
-  const [disciplinas, setDisciplinas] = useState<DisciplinaEstudante[]>([]);
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+
+  // Aba Disciplinas
+  const [disciplinas, setDisciplinas] = useState<DisciplinaAluno[]>([]);
+  const [carregandoDisciplinas, setCarregandoDisciplinas] = useState(false);
+  const [erroDisciplinas, setErroDisciplinas] = useState<string | null>(null);
+
+  // Aba A Fazer
+  const [tarefas, setTarefas] = useState<TarefaAluno[]>([]);
+  const [carregandoTarefas, setCarregandoTarefas] = useState(false);
+  const [erroTarefas, setErroTarefas] = useState<string | null>(null);
+
   const [tabValue, setTabValue] = useState(0);
   const [alertaFrequencia, setAlertaFrequencia] = useState(false);
   const [alertaNotas, setAlertaNotas] = useState(false);
@@ -153,199 +122,84 @@ export default function Home() {
     setTabValue(newValue);
   };
 
-  // Carrega dados acadêmicos do aluno
-  const carregarDadosDoAluno = async (currentUser: UsuarioLocal) => {
-    setCarregando(true);
-    setErro(null);
-    try {
-      const token = localStorage.getItem("@UniEduca:token");
-      const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-
-      // 1. Obter informações detalhadas do perfil (/me) para recuperar o CPF
-      let cpf = "";
-      let academicProfile: PerfilAcademico | null = null;
-      try {
-        const meResponse = await fetch(`${baseUrl}/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (meResponse.ok) {
-          const meData = (await meResponse.json()) as {
-            success?: boolean;
-            data?: { pessoa?: { cpf?: string }; academico?: PerfilAcademico };
-          };
-          if (meData.success && meData.data) {
-            cpf = meData.data.pessoa?.cpf || "";
-            academicProfile = meData.data.academico ?? null;
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao buscar dados do perfil em /me:", error);
-      }
-
-      // 2. Buscar o aluno correspondente no banco pelo CPF para obter o ID acadêmico e matrícula
-      let studentDb: AlunoBanco | null = null;
-      if (cpf) {
-        try {
-          const searchResponse = await fetch(`${baseUrl}/alunos/buscar?q=${cpf}`);
-          if (searchResponse.ok) {
-            const searchData = (await searchResponse.json()) as AlunoBanco[];
-            if (Array.isArray(searchData) && searchData.length > 0) {
-              studentDb = searchData[0];
-            }
-          }
-        } catch (error) {
-          console.error("Erro ao localizar aluno por CPF:", error);
-        }
-      }
-
-      // Fallback: se não achar por CPF, tenta listar todos e filtar por e-mail
-      if (!studentDb) {
-        try {
-          const listResponse = await fetch(`${baseUrl}/alunos`);
-          if (listResponse.ok) {
-            const listData = (await listResponse.json()) as AlunoBanco[];
-            if (Array.isArray(listData)) {
-              studentDb = listData.find((a) => a.usuario?.email === currentUser.email) ?? null;
-            }
-          }
-        } catch (error) {
-          console.error("Erro no fallback de listagem de alunos:", error);
-        }
-      }
-
-      setStudentInfo({
-        matricula: studentDb?.matricula || "—",
-        curso: studentDb?.curso_nome || academicProfile?.curso || "Não informado",
-        periodo: studentDb?.periodo || academicProfile?.periodo || "—",
-        id: studentDb?.id,
-      });
-
-      // 3. Buscar as matrículas do aluno em turmas
-      let matriculas: MatriculaAluno[] = [];
-      if (studentDb?.id) {
-        try {
-          const matResponse = await fetch(`${baseUrl}/matriculas/aluno/${studentDb.id}`);
-          if (matResponse.ok) {
-            matriculas = (await matResponse.json()) as MatriculaAluno[];
-          }
-        } catch (error) {
-          console.error("Erro ao buscar matrículas:", error);
-        }
-      }
-
-      // 4. Buscar a lista geral de disciplinas do sistema para correlacionar ID e Carga Horária
-      let todasDisciplinas: DisciplinaApi[] = [];
-      try {
-        const discResponse = await fetch(`${baseUrl}/disciplinas`);
-        if (discResponse.ok) {
-          todasDisciplinas = (await discResponse.json()) as DisciplinaApi[];
-        }
-      } catch (error) {
-        console.error("Erro ao buscar lista de disciplinas:", error);
-      }
-
-      // 5. Cruzar as informações de matrícula e disciplinas
-      const matriculasAtivas = matriculas.filter(
-        (m) => m.status !== "CANCELADO" && m.status !== "INATIVO"
-      );
-
-      const discMapeadas: DisciplinaEstudante[] = matriculasAtivas.map((mat) => {
-        const matched = todasDisciplinas.find(
-          (d) =>
-            d.nome.trim().toLowerCase() === mat.disciplina_nome.trim().toLowerCase()
-        );
-        return {
-          id: matched?.id || mat.id, // Se não achar disciplina global, navega pelo ID da matrícula
-          codigo: matched?.codigo || "—",
-          nome: mat.disciplina_nome,
-          cargaHoraria: matched?.carga_horaria || 0,
-          professor: mat.professor_nome || "A definir",
-          turma: mat.semestre || "—",
-        };
-      });
-
-      // Ordenar por nome em ordem alfabética
-      discMapeadas.sort((a, b) => a.nome.localeCompare(b.nome));
-
-      setDisciplinas(discMapeadas);
-    } catch (e: unknown) {
-      console.error("Erro geral ao carregar dados do aluno:", e);
-      setErro("Houve uma falha ao conectar com o servidor acadêmico. Dados provisórios exibidos.");
-    } finally {
-      setCarregando(false);
-    }
-  };
-
   useEffect(() => {
-    if (isAluno && user) {
-      carregarDadosDoAluno(user);
-      frequenciaApi.minhaFrequencia()
-        .then((dados) => setAlertaFrequencia(Boolean(dados.possuiAlerta)))
-        .catch(() => setAlertaFrequencia(false));
-      notaApi.meuResumo()
-        .then((dados) => setAlertaNotas(Boolean(dados.possuiAlerta)))
-        .catch(() => setAlertaNotas(false));
-    }
+    if (!isAluno || !user) return;
+
+    const token = localStorage.getItem("@UniEduca:token") ?? "";
+
+    // Cabeçalho via JWT (GET /me) — sem busca por CPF/e-mail no cliente.
+    const carregarCabecalho = async () => {
+      try {
+        const resposta: RespostaMe = await authService.getMe(token);
+        const academico = resposta?.data?.academico ?? null;
+        setStudentInfo({
+          matricula: academico?.matricula ?? null,
+          curso: academico?.curso ?? null,
+          periodo: academico?.periodo ?? null,
+        });
+      } catch {
+        setStudentInfo(null);
+      }
+    };
+
+    // Aba Disciplinas — disciplinas do período corrente (GET /me/disciplinas).
+    const carregarDisciplinas = async () => {
+      setCarregandoDisciplinas(true);
+      setErroDisciplinas(null);
+      try {
+        setDisciplinas(await homeAlunoApi.minhasDisciplinas());
+      } catch {
+        setErroDisciplinas(
+          "Não foi possível carregar suas disciplinas. Tente novamente mais tarde."
+        );
+      } finally {
+        setCarregandoDisciplinas(false);
+      }
+    };
+
+    // Aba A Fazer — avaliações a vencer (GET /me/tarefas).
+    const carregarTarefas = async () => {
+      setCarregandoTarefas(true);
+      setErroTarefas(null);
+      try {
+        setTarefas(await homeAlunoApi.minhasTarefas());
+      } catch {
+        setErroTarefas(
+          "Não foi possível carregar suas tarefas. Tente novamente mais tarde."
+        );
+      } finally {
+        setCarregandoTarefas(false);
+      }
+    };
+
+    // Alertas no topo (integração já existente).
+    const carregarAlertas = async () => {
+      try {
+        const dados = await frequenciaApi.minhaFrequencia();
+        setAlertaFrequencia(Boolean(dados.possuiAlerta));
+      } catch {
+        setAlertaFrequencia(false);
+      }
+      try {
+        const dados = await notaApi.meuResumo();
+        setAlertaNotas(Boolean(dados.possuiAlerta));
+      } catch {
+        setAlertaNotas(false);
+      }
+    };
+
+    void carregarCabecalho();
+    void carregarDisciplinas();
+    void carregarTarefas();
+    void carregarAlertas();
   }, [isAluno, user]);
 
-  // Lista dinâmica de tarefas baseada nas disciplinas reais ou mocks
-  const mockTasks = useMemo(() => {
-    const nomesDisciplinas =
-      disciplinas.length > 0
-        ? disciplinas.map((d) => d.nome)
-        : MOCK_DISCIPLINAS.map((d) => d.nome);
-
-    const d1 = nomesDisciplinas[0] || "Projeto Integrador V";
-    const d2 = nomesDisciplinas[1] || "Banco de Dados II";
-    const d3 = nomesDisciplinas[2] || "Engenharia de Software";
-
-    const tasksList: TarefaMock[] = [
-      {
-        id: "task-1",
-        titulo: "Entrega do Relatório Final - A1",
-        disciplina: d1,
-        tipo: "TRABALHO",
-        dataVencimento: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // 3 dias
-        status: "Pendente",
-      },
-      {
-        id: "task-2",
-        titulo: "Prova Regular de Conteúdo - A2",
-        disciplina: d2,
-        tipo: "PROVA",
-        dataVencimento: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 dias
-        status: "Pendente",
-      },
-      {
-        id: "task-3",
-        titulo: "Trabalho de Pesquisa PI - Protótipo",
-        disciplina: d1,
-        tipo: "TPI",
-        dataVencimento: new Date(Date.now() + 1000 * 60 * 60 * 24 * 10), // 10 dias
-        status: "Pendente",
-      },
-      {
-        id: "task-4",
-        titulo: "Exercícios Teóricos de Fixação",
-        disciplina: d3,
-        tipo: "TRABALHO",
-        dataVencimento: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14 dias
-        status: "Pendente",
-      },
-    ];
-
-    // Ordenação ascendente por data de vencimento
-    return tasksList.sort((a, b) => a.dataVencimento.getTime() - b.dataVencimento.getTime());
-  }, [disciplinas]);
-
-  // Renderizador de card de disciplinas
-  const renderDisciplinaCard = (disc: DisciplinaEstudante) => {
+  // Card de disciplina -> destino somente-leitura acessível ao aluno.
+  const renderDisciplinaCard = (disc: DisciplinaAluno) => {
     return (
-      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={disc.id}>
+      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={disc.turmaDisciplinaId}>
         <Card.Root
-          onClick={() => navigate(`/disciplinas/${disc.id}`)}
+          onClick={() => navigate("/minhas-notas")}
           sx={{
             cursor: "pointer",
             height: "100%",
@@ -366,10 +220,10 @@ export default function Home() {
               <strong>Código:</strong> {disc.codigo}
             </Typography>
             <Typography variant="body2">
-              <strong>Professor:</strong> {disc.professor}
+              <strong>Professor:</strong> {disc.professorNome}
             </Typography>
             <Typography variant="body2">
-              <strong>Turma/Semestre:</strong> {disc.turma}
+              <strong>Turma/Semestre:</strong> {disc.turmaSigla}
             </Typography>
             <Typography variant="body2">
               <strong>Carga Horária:</strong> {disc.cargaHoraria}h
@@ -508,7 +362,7 @@ export default function Home() {
                     MATRÍCULA
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
-                    {studentInfo.matricula}
+                    {studentInfo.matricula ?? "—"}
                   </Typography>
                 </Box>
                 <Box>
@@ -516,7 +370,7 @@ export default function Home() {
                     CURSO
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
-                    {studentInfo.curso}
+                    {studentInfo.curso ?? "—"}
                   </Typography>
                 </Box>
                 <Box>
@@ -524,7 +378,7 @@ export default function Home() {
                     PERÍODO
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
-                    {studentInfo.periodo}º
+                    {studentInfo.periodo ? `${studentInfo.periodo}º` : "—"}
                   </Typography>
                 </Box>
               </Stack>
@@ -559,7 +413,7 @@ export default function Home() {
         {/* Conteúdo Aba Disciplinas */}
         {tabValue === 0 && (
           <Box mt={1}>
-            {carregando ? (
+            {carregandoDisciplinas ? (
               <Box
                 display="flex"
                 justifyContent="center"
@@ -573,13 +427,8 @@ export default function Home() {
                   Carregando suas disciplinas...
                 </Typography>
               </Box>
-            ) : erro ? (
-              <Stack gap={2}>
-                <Alert severity="warning">{erro}</Alert>
-                <Grid container spacing={3}>
-                  {MOCK_DISCIPLINAS.map((disc) => renderDisciplinaCard(disc))}
-                </Grid>
-              </Stack>
+            ) : erroDisciplinas ? (
+              <Alert severity="error">{erroDisciplinas}</Alert>
             ) : disciplinas.length === 0 ? (
               <Paper
                 elevation={0}
@@ -611,7 +460,23 @@ export default function Home() {
         {/* Conteúdo Aba A Fazer */}
         {tabValue === 1 && (
           <Box mt={1}>
-            {mockTasks.length === 0 ? (
+            {carregandoTarefas ? (
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                minHeight={200}
+                flexDirection="column"
+                gap={2}
+              >
+                <CircularProgress color="primary" />
+                <Typography variant="body2" color="textSecondary">
+                  Carregando suas tarefas...
+                </Typography>
+              </Box>
+            ) : erroTarefas ? (
+              <Alert severity="error">{erroTarefas}</Alert>
+            ) : tarefas.length === 0 ? (
               <Paper
                 elevation={0}
                 sx={{
@@ -633,8 +498,8 @@ export default function Home() {
               </Paper>
             ) : (
               <Grid container spacing={2}>
-                {mockTasks.map((task) => (
-                  <Grid size={12} key={task.id}>
+                {tarefas.map((task) => (
+                  <Grid size={12} key={task.avaliacaoId}>
                     <Paper
                       elevation={0}
                       sx={{
@@ -662,27 +527,26 @@ export default function Home() {
                           <Chip
                             label={task.tipo}
                             size="small"
-                            color={
-                              task.tipo === "PROVA"
-                                ? "error"
-                                : task.tipo === "TRABALHO"
-                                ? "info"
-                                : "warning"
-                            }
+                            color={corDoTipo(task.tipo)}
                             variant="filled"
                             sx={{ height: 20, fontSize: "10px", fontWeight: "bold" }}
                           />
                         </Box>
                         <Typography variant="body2" color="textSecondary">
-                          Disciplina: <strong>{task.disciplina}</strong>
+                          Disciplina: <strong>{task.disciplinaNome}</strong>
                         </Typography>
+                        {task.valor !== null && (
+                          <Typography variant="body2" color="textSecondary">
+                            Valor: <strong>{task.valor} pts</strong>
+                          </Typography>
+                        )}
                       </Stack>
                       <Stack direction="row" alignItems="center" spacing={3}>
                         <Stack spacing={0.5} alignItems="flex-end">
                           <Box display="flex" alignItems="center" gap={0.5} color="text.secondary">
                             <Calendar size={14} />
                             <Typography variant="body2" fontSize="13px">
-                              Vencimento: {task.dataVencimento.toLocaleDateString("pt-BR")}
+                              Vencimento: {formatarVencimento(task.dataVencimento)}
                             </Typography>
                           </Box>
                           <Box display="flex" alignItems="center" gap={0.5} color="warning.main">
