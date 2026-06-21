@@ -105,6 +105,21 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
     }));
   }
 
+  function handlePeriodoCurricularChange(value: string) {
+    const apenasDigitos = value.replace(/\D/g, "").slice(0, 2);
+
+    if (!apenasDigitos) {
+      handleChange("periodoCurricular", "");
+      return;
+    }
+
+    const periodo = Number(apenasDigitos);
+
+    if (periodo >= 1 && periodo <= 12) {
+      handleChange("periodoCurricular", apenasDigitos);
+    }
+  }
+
   async function handleSubmit() {
     const payload = {
       ...form,
@@ -194,10 +209,12 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
                 <TextField
                   required
                   label="Periodo Curricular"
+                  type="number"
                   value={form.periodoCurricular}
                   error={!!erros.periodoCurricular}
                   helperText={erros.periodoCurricular}
-                  onChange={(e) => handleChange("periodoCurricular", e.target.value)}
+                  onChange={(e) => handlePeriodoCurricularChange(e.target.value)}
+                  inputProps={{ min: 1, max: 12, step: 1 }}
                 />
               </Grid>
               <Grid size={5}>
