@@ -8,6 +8,7 @@ interface ActionCloseProps {
 export function ActionClose({ onClose }: ActionCloseProps) {
     return (
         <IconButton
+            aria-label="Fechar diálogo"
             size="small"
             onClick={onClose}
         >
