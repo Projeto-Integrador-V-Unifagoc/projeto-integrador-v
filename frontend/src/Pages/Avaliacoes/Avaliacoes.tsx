@@ -74,6 +74,7 @@ export default function Avaliacoes() {
 
   const provas = useMemo(() => avaliacoes.filter((a) => a.tipo_avaliacao === "PROVA"), [avaliacoes]);
   const tpis = useMemo(() => avaliacoes.filter((a) => a.tipo_avaliacao === "TPI"), [avaliacoes]);
+  const pontosProvas = useMemo(() => provas.reduce((s, a) => s + Number(a.valor), 0), [provas]);
   const pontosTrabalhos = useMemo(() => avaliacoes.filter((a) => a.tipo_avaliacao === "TRABALHO").reduce((s, a) => s + Number(a.valor), 0), [avaliacoes]);
   const total = useMemo(() => avaliacoes.reduce((s, a) => s + Number(a.valor), 0), [avaliacoes]);
   const rows = useMemo(() => {
@@ -125,16 +126,16 @@ export default function Avaliacoes() {
   ];
 
   const indicadores = [
-    { label: "Provas", value: `${provas.length}/3`, icon: <ClipboardCheck size={22} aria-hidden="true" /> },
-    { label: "TPI", value: tpis.length ? "5/5 pts" : "0/5 pts", icon: <ShieldCheck size={22} aria-hidden="true" /> },
-    { label: "Trabalhos", value: `${formatarNumeroIndicador(pontosTrabalhos)}/25 pts`, icon: <FileText size={22} aria-hidden="true" /> },
-    { label: "Total", value: `${formatarNumeroIndicador(total)}/90 pts`, icon: null },
+    { label: "Provas", value: `${provas.length}/3`, detail: `${formatarNumeroIndicador(pontosProvas)}/60 pts`, icon: <ClipboardCheck size={22} aria-hidden="true" /> },
+    { label: "TPI", value: tpis.length ? "5/5 pts" : "0/5 pts", detail: undefined, icon: <ShieldCheck size={22} aria-hidden="true" /> },
+    { label: "Trabalhos", value: `${formatarNumeroIndicador(pontosTrabalhos)}/35 pts`, detail: undefined, icon: <FileText size={22} aria-hidden="true" /> },
+    { label: "Total", value: `${formatarNumeroIndicador(total)}/100 pts`, detail: undefined, icon: null },
   ];
 
   return <Container><Stack gap={2} py={2}>
     <Box>
       <Typography component="h1" variant="h5" fontWeight={700}>Gestão de avaliações</Typography>
-      <Typography color="text.secondary">Planeje as atividades por turma e disciplina: 3 provas, 1 TPI e até 25 pontos em trabalhos.</Typography>
+      <Typography color="text.secondary">Planeje as atividades por turma e disciplina: 3 provas, 1 TPI e até 35 pontos em trabalhos.</Typography>
     </Box>
 
     <Card.Root elevation={0} variant="outlined"><Card.Content>
@@ -148,14 +149,14 @@ export default function Avaliacoes() {
     {(erro || sucesso) && <Alert severity={erro ? "error" : "success"} onClose={() => { setErro(null); setSucesso(null); }}>{erro || sucesso}</Alert>}
 
     {contextoId && <>
-      <Grid container spacing={2}>{indicadores.map(({ label, value, icon }) => <Grid key={label} size={{ xs: 12, sm: 6, md: 3 }}><Card.Root elevation={0} variant="outlined" sx={{ height: "100%" }}><Card.Content sx={{ height: "100%", minHeight: 104, p: 2, "&:last-child": { pb: 2 } }}><Stack direction="row" alignItems="center" justifyContent="space-between" height="100%"><Stack gap={0.5}><Typography color="text.secondary" variant="body2">{label}</Typography><Typography variant="h5" fontWeight={700}>{value}</Typography></Stack><Box color="primary.main">{icon}</Box></Stack></Card.Content></Card.Root></Grid>)}</Grid>
+      <Grid container spacing={2}>{indicadores.map(({ label, value, detail, icon }) => <Grid key={label} size={{ xs: 12, sm: 6, md: 3 }}><Card.Root elevation={0} variant="outlined" sx={{ height: "100%" }}><Card.Content sx={{ height: "100%", minHeight: 104, p: 2, "&:last-child": { pb: 2 } }}><Stack direction="row" alignItems="center" justifyContent="space-between" height="100%"><Stack gap={0.5}><Typography color="text.secondary" variant="body2">{label}</Typography><Stack direction="row" alignItems="baseline" gap={1}><Typography variant="h5" fontWeight={700}>{value}</Typography>{detail && <Typography variant="body2" fontWeight={700} color="text.secondary">{detail}</Typography>}</Stack></Stack><Box color="primary.main">{icon}</Box></Stack></Card.Content></Card.Root></Grid>)}</Grid>
       <Card.Root elevation={0} variant="outlined"><Card.Header><Card.Title>Avaliações do contexto selecionado</Card.Title></Card.Header><Card.Content sx={{ minHeight: 480 }}><DataTable rows={rows} columns={columns} loading={loading} emptyTitle="Nenhuma avaliação encontrada" emptyDescription={avaliacoes.length === 0 ? "Adicione uma avaliação para começar." : "Revise o termo informado na pesquisa."} /></Card.Content></Card.Root>
     </>}
   </Stack>
 
   <Dialog.Root open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="md" aria-labelledby="dialog-avaliacao-title"><Dialog.Header><Dialog.Title><span id="dialog-avaliacao-title">{editingId ? "Editar avaliação" : "Nova avaliação"}</span></Dialog.Title><Dialog.ActionClose onClose={() => !saving && setDialogOpen(false)} /></Dialog.Header><Dialog.Content><Stack gap={2}>
     {formErro && <Alert severity="error">{formErro}</Alert>}
-    <Alert severity="info">Provas valem 20 pontos, o TPI vale 5 e trabalhos devem somar no máximo 25.</Alert>
+    <Alert severity="info">Provas valem 20 pontos, o TPI vale 5 e trabalhos devem somar no máximo 35.</Alert>
     <Grid container spacing={2}>
       <Grid size={12}><TextField select label="Turma e disciplina" name="turma_disciplina_id" value={form.turma_disciplina_id} onChange={alterarForm} helperText=" " sx={campoSx}>{atribuicoes.map((a) => <MenuItem key={a.id} value={a.id}>{nomeAtribuicao(a)}</MenuItem>)}</TextField></Grid>
       <Grid size={{ xs: 12, sm: 6 }}><TextField select label="Tipo" name="tipo_avaliacao" value={form.tipo_avaliacao} onChange={alterarForm} helperText=" " sx={campoSx}>{tipos.map((t) => <MenuItem key={t} value={t}>{ROTULO_TIPO_AVALIACAO[t]}</MenuItem>)}</TextField></Grid>

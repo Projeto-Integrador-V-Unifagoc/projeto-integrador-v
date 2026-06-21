@@ -38,9 +38,15 @@ describe("avaliacaoService", () => {
   });
 
   it("aceita avaliacoes regulares exatamente no limite de 100 e rejeita acima", async () => {
-    repo.buscarPorTurmaDisciplina = async () => [{ ...base, valor: 95 }];
+    repo.buscarPorTurmaDisciplina = async () => [
+      { ...base, id: "p1", tipo_avaliacao: "PROVA", valor: 20 },
+      { ...base, id: "p2", tipo_avaliacao: "PROVA", valor: 20 },
+      { ...base, id: "p3", tipo_avaliacao: "PROVA", valor: 20 },
+      { ...base, id: "tpi", tipo_avaliacao: "TPI", valor: 5 },
+      { ...base, id: "trabalho", valor: 30 },
+    ];
     assert.equal(Number((await avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 5, turma_disciplina_id: TD1 }, ADMIN)).valor), 5);
-    await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 5.01, turma_disciplina_id: TD1 }, ADMIN), /100 pontos/);
+    await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 5.01, turma_disciplina_id: TD1 }, ADMIN), /35 pontos/);
   });
 
   it("isola as regras por turma/disciplina no repositorio", async () => {
