@@ -4,11 +4,16 @@ import { useNavigate } from "react-router-dom";
 import {
   Alert,
   Box,
+  Checkbox,
   Chip,
   CircularProgress,
   Divider,
   Grid,
   LinearProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Paper,
   Skeleton,
   Stack,
@@ -25,7 +30,6 @@ import {
   ClipboardCheck,
   ClipboardList,
   ClipboardPen,
-  Clock,
   FileBarChart,
   FileText,
   GraduationCap,
@@ -673,76 +677,77 @@ export default function Home() {
                     descricao="Novas atividades aparecerão aqui assim que forem publicadas."
                   />
                 ) : (
-                  <Grid container spacing={2}>
+                  <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden", backgroundColor: "#FFF" }}>
+                    <List disablePadding aria-label="Lista de tarefas pendentes">
                     {tarefas.map((task) => (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={task.avaliacaoId}>
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            backgroundColor: "#FFF",
-                            height: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 1,
-                          }}
-                        >
-                          <Box
-                            display="flex"
-                            alignItems="flex-start"
-                            justifyContent="space-between"
-                            gap={1}
-                          >
-                            <Typography fontWeight={700}>{task.titulo}</Typography>
-                            <Chip
-                              label={ROTULO_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
-                              size="small"
-                              color={COR_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
-                              variant="outlined"
-                              sx={{ fontWeight: 700, flexShrink: 0 }}
-                            />
-                          </Box>
-                          <LinhaInfo rotulo="Disciplina" valor={task.disciplinaNome} />
-                          <Box sx={{ mt: "auto", pt: 1 }}>
+                      <ListItem
+                        key={task.avaliacaoId}
+                        divider
+                        alignItems="flex-start"
+                        sx={{
+                          px: { xs: 1.5, sm: 2 },
+                          py: 1.5,
+                          gap: 1,
+                          "&:last-child": { borderBottom: 0 },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 40, pt: 0.25 }}>
+                          <Checkbox
+                            disabled
+                            checked={false}
+                            inputProps={{ "aria-label": `${task.titulo}: pendente` }}
+                            sx={{ p: 0.5 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          disableTypography
+                          primary={
                             <Stack
-                              direction="row"
-                              alignItems="center"
+                              direction={{ xs: "column", sm: "row" }}
+                              alignItems={{ xs: "flex-start", sm: "center" }}
                               justifyContent="space-between"
                               gap={1}
                             >
-                              <Box
-                                display="flex"
-                                alignItems="center"
-                                gap={0.5}
-                                color="text.secondary"
-                              >
-                                <Calendar size={14} aria-hidden="true" />
-                                <Typography variant="body2">
-                                  {formatarDataPtBr(task.dataVencimento)}
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography fontWeight={700}>{task.titulo}</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {task.disciplinaNome}
                                 </Typography>
                               </Box>
-                              <Typography variant="body2" fontWeight={700}>
+                              <Chip
+                                label={ROTULO_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
+                                size="small"
+                                color={COR_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
+                                variant="outlined"
+                                sx={{ fontWeight: 700, flexShrink: 0 }}
+                              />
+                            </Stack>
+                          }
+                          secondary={
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              alignItems={{ xs: "flex-start", sm: "center" }}
+                              justifyContent="space-between"
+                              gap={1}
+                              mt={1}
+                            >
+                              <Stack direction="row" alignItems="center" gap={0.75} color="text.secondary">
+                                <Calendar size={15} aria-hidden="true" />
+                                <Typography variant="body2">
+                                  Prazo: {formatarDataPtBr(task.dataVencimento)}
+                                </Typography>
+                                <Chip label="Pendente" size="small" color="warning" variant="outlined" />
+                              </Stack>
+                              <Typography variant="body2" fontWeight={700} color="text.primary">
                                 {formatarPontos(task.valor)}
                               </Typography>
                             </Stack>
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              gap={0.5}
-                              color="warning.main"
-                              mt={0.5}
-                            >
-                              <Clock size={14} aria-hidden="true" />
-                              <Typography variant="caption" fontWeight={700}>
-                                Pendente
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Paper>
-                      </Grid>
+                          }
+                        />
+                      </ListItem>
                     ))}
-                  </Grid>
+                    </List>
+                  </Paper>
                 ))}
             </Box>
           </Box>

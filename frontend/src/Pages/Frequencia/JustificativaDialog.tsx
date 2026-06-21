@@ -26,6 +26,12 @@ export default function JustificativaDialog({
   onClose,
   onSave,
 }: JustificativaDialogProps) {
+  const campoSx = {
+    textAlign: "left",
+    "& .MuiInputBase-input": { textAlign: "left" },
+    "& .MuiFormHelperText-root": { mx: 0, mt: 0.75, textAlign: "left" },
+  } as const;
+
   const fechar = () => {
     if (!saving) onClose();
   };
@@ -49,7 +55,9 @@ export default function JustificativaDialog({
             value={motivo}
             onChange={(e) => onMotivo(e.target.value)}
             inputProps={{ maxLength: 200, "aria-label": "Motivo da justificativa" }}
+            InputLabelProps={{ shrink: true }}
             helperText="Obrigatório. A falta permanece no cálculo da frequência."
+            sx={campoSx}
           />
           <TextField
             label="Observação"
@@ -58,7 +66,21 @@ export default function JustificativaDialog({
             value={observacao}
             onChange={(e) => onObservacao(e.target.value)}
             inputProps={{ maxLength: 1000, "aria-label": "Observação da justificativa" }}
+            InputLabelProps={{ shrink: true }}
             helperText="Opcional."
+            sx={{
+              ...campoSx,
+              "& .MuiOutlinedInput-root": {
+                height: "auto",
+                minHeight: 88,
+                alignItems: "flex-start",
+                py: 1,
+              },
+              "& .MuiInputBase-inputMultiline": {
+                p: 0,
+                lineHeight: 1.5,
+              },
+            }}
           />
         </Stack>
       </Dialog.Content>
