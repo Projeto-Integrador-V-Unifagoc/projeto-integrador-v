@@ -32,6 +32,7 @@ import type { AlunoParaMatricula, TurmaDisponivel, MatriculaCriada } from "../..
 const STEPS = ["Identificar aluno", "Selecionar turma", "Confirmar matrícula", "Concluído"];
 
 const STATUS_COR: Record<string, string> = {
+    ativa: "#2e7d32",
     MATRICULADO: "#1976d2",
     CURSANDO: "#2e7d32",
     TRANCADO: "#ed6c02",
@@ -54,13 +55,13 @@ export default function NovaMatricula() {
     const [aluno, setAluno] = useState<AlunoParaMatricula | null>(null);
     const [erroAluno, setErroAluno] = useState("");
     const [turmas, setTurmas] = useState<TurmaDisponivel[]>([]);
-    const [turmaId, setTurmaId] = useState("");
+    const [turmaDisciplinaId, setTurmaDisciplinaId] = useState("");
     const [matricula, setMatricula] = useState<MatriculaCriada | null>(null);
     const [snackbar, setSnackbar] = useState<{ aberto: boolean; mensagem: string; severidade: "success" | "error" }>({
         aberto: false, mensagem: "", severidade: "success",
     });
 
-    const turmaSelecionada = turmas.find((t) => t.id === turmaId);
+    const turmaSelecionada = turmas.find((t) => t.id === turmaDisciplinaId);
 
     function resetar() {
         setActiveStep(0);
@@ -68,7 +69,7 @@ export default function NovaMatricula() {
         setAluno(null);
         setErroAluno("");
         setTurmas([]);
-        setTurmaId("");
+        setTurmaDisciplinaId("");
         setMatricula(null);
     }
 
@@ -90,20 +91,21 @@ export default function NovaMatricula() {
 
     async function handleAvancarParaTurmas() {
         if (!aluno?.curso_id) return;
+        setTurmaDisciplinaId("");
         try {
-            const resultado = await listarTurmasDisponiveis(aluno.curso_id);
+            const resultado = await listarTurmasDisponiveis(aluno.curso_id, aluno.id);
             setTurmas(resultado);
             setActiveStep(1);
-        } catch {
+        } catch (err) {
             setTurmas([]);
-            setActiveStep(1);
+            setSnackbar({ aberto: true, mensagem: getMensagemErro(err, "Erro ao carregar as turmas disponíveis."), severidade: "error" });
         }
     }
 
     async function handleConfirmar() {
-        if (!aluno || !turmaId) return;
+        if (!aluno || !turmaDisciplinaId) return;
         try {
-            const resultado = await criarMatricula(aluno.id, turmaId);
+            const resultado = await criarMatricula(aluno.id, turmaDisciplinaId);
             setMatricula(resultado);
             setActiveStep(3);
         } catch (err) {
@@ -201,7 +203,7 @@ export default function NovaMatricula() {
                 {turmas.length > 0 && (
                     <FormControl fullWidth>
                         <FormLabel sx={{ mb: 1, fontSize: 14 }}>Selecione a disciplina / turma:</FormLabel>
-                        <RadioGroup value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
+                        <RadioGroup value={turmaDisciplinaId} onChange={(e) => setTurmaDisciplinaId(e.target.value)}>
                             <Box sx={{ overflowX: "auto" }}>
                                 <Table size="small" sx={{ minWidth: 580 }}>
                                     <TableHead>
@@ -209,7 +211,7 @@ export default function NovaMatricula() {
                                             <TableCell padding="checkbox" />
                                             <TableCell>Disciplina</TableCell>
                                             <TableCell>Código</TableCell>
-                                            <TableCell>Semestre</TableCell>
+                                            <TableCell>Turma / período</TableCell>
                                             <TableCell>Professor</TableCell>
                                             <TableCell>Vagas</TableCell>
                                             <TableCell>C.H.</TableCell>
@@ -217,11 +219,11 @@ export default function NovaMatricula() {
                                     </TableHead>
                                     <TableBody>
                                         {turmas.map((turma) => (
-                                            <TableRow key={turma.id} hover selected={turmaId === turma.id} onClick={() => setTurmaId(turma.id)} sx={{ cursor: "pointer" }}>
+                                            <TableRow key={turma.id} hover selected={turmaDisciplinaId === turma.id} onClick={() => setTurmaDisciplinaId(turma.id)} sx={{ cursor: "pointer" }}>
                                                 <TableCell padding="checkbox"><Radio value={turma.id} size="small" /></TableCell>
                                                 <TableCell>{turma.disciplina_nome}</TableCell>
                                                 <TableCell>{turma.disciplina_codigo}</TableCell>
-                                                <TableCell>{turma.semestre}</TableCell>
+                                                <TableCell>{turma.turma_sigla} · {turma.periodo_letivo}</TableCell>
                                                 <TableCell>{turma.professor_nome}</TableCell>
                                                 <TableCell>
                                                     <Chip label={`${turma.vagas_disponiveis}/${turma.capacidade_alunos}`} size="small" color={Number(turma.vagas_disponiveis) > 5 ? "success" : "warning"} />
@@ -239,7 +241,7 @@ export default function NovaMatricula() {
 
             <Stack direction="row" justifyContent="space-between" sx={{ width: "100%", maxWidth: 900 }}>
                 <Button variant="outlined" sx={{ width: "auto", minWidth: 120 }} onClick={() => setActiveStep(0)}>← Anterior</Button>
-                <Button variant="contained" sx={{ width: "auto", minWidth: 140 }} disabled={!turmaId} onClick={() => setActiveStep(2)}>Próximo →</Button>
+                <Button variant="contained" sx={{ width: "auto", minWidth: 140 }} disabled={!turmaDisciplinaId} onClick={() => setActiveStep(2)}>Próximo →</Button>
             </Stack>
         </Stack>
     );
@@ -261,7 +263,7 @@ export default function NovaMatricula() {
                         <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>Turma selecionada</Typography>
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
                             <Box flex={1}><Typography variant="body2" fontWeight={600}>{turmaSelecionada?.disciplina_nome}</Typography><Typography variant="caption" color="text.secondary">Código: {turmaSelecionada?.disciplina_codigo} · {turmaSelecionada?.carga_horaria}h</Typography></Box>
-                            <Box flex={1}><Typography variant="body2">{turmaSelecionada?.semestre}</Typography><Typography variant="caption" color="text.secondary">Prof. {turmaSelecionada?.professor_nome}</Typography></Box>
+                            <Box flex={1}><Typography variant="body2">{turmaSelecionada?.turma_sigla} · {turmaSelecionada?.periodo_letivo}</Typography><Typography variant="caption" color="text.secondary">Prof. {turmaSelecionada?.professor_nome}</Typography></Box>
                             <Chip label={`${turmaSelecionada?.vagas_disponiveis}/${turmaSelecionada?.capacidade_alunos} vagas`} size="small" color={Number(turmaSelecionada?.vagas_disponiveis) > 5 ? "success" : "warning"} />
                         </Stack>
                     </Box>
@@ -283,7 +285,7 @@ export default function NovaMatricula() {
                     <Typography variant="h5" fontWeight={700} color="success.dark">Matrícula realizada!</Typography>
                     <Typography variant="body2" color="text.secondary">
                         {aluno?.nome} foi matriculado(a) com sucesso em{" "}
-                        <strong>{turmaSelecionada?.disciplina_nome}</strong> — {turmaSelecionada?.semestre}.
+                        <strong>{turmaSelecionada?.disciplina_nome}</strong> — {turmaSelecionada?.turma_sigla}.
                     </Typography>
                     {matricula?.status && (
                         <Chip label={matricula.status} sx={{ backgroundColor: STATUS_COR[matricula.status] ?? "#757575", color: "#fff", fontWeight: 600 }} />

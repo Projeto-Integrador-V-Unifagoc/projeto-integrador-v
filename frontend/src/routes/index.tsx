@@ -125,7 +125,7 @@ export default function AppRoutes() {
         <Route
           path="/tarefas/lista"
           element={
-            <RouteByRole perfisPermitidos={ACESSO_ALUNO}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <BuildingPage />
             </RouteByRole>
           }

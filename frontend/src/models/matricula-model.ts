@@ -10,8 +10,12 @@ export interface AlunoParaMatricula {
 }
 
 export interface TurmaDisponivel {
-    id: string;
-    semestre: string;
+  id: string;
+  turma_id: string;
+  turma_sigla: string;
+  turma_descricao: string;
+  periodo_letivo: string;
+  periodo_curricular: number;
     capacidade_alunos: number;
     vagas_disponiveis: number;
     disciplina_id: string;
@@ -26,15 +30,17 @@ export interface TurmaDisponivel {
 export interface MatriculaCriada {
     id: string;
     aluno_id: string;
-    turma_id: string;
-    status: string | null;
+  turma_id: string;
+  turma_disciplina_id: string;
+  matricula_turma_disciplina_id: string;
+  status: string;
 }
 
 export interface MatriculaDetalhada extends MatriculaCriada {
     aluno_nome: string;
     aluno_matricula: number;
     disciplina_nome: string;
-    semestre: string;
+  periodo_letivo: string;
     curso_nome: string;
     professor_nome: string | null;
 }

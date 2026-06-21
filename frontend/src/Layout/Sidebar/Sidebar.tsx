@@ -58,7 +58,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
       label: "Tarefas",
       href: "/tarefas/lista",
       icon: ClipboardList,
-      podeVer: ehAdmin || ehAluno,
+      podeVer: ehAdmin,
     },
     {
       label: "Períodos Letivos",
