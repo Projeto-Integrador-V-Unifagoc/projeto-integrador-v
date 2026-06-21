@@ -45,12 +45,18 @@ export class FichaService {
     const notasPorDisciplinaMap = new Map<string, any>();
 
     for (const av of avaliacoes) {
-      const key =
-        av.disciplina_nome ||
+      // Prefer a stable disciplina identifier when grouping evaluations.
+      // Use a composite key to avoid collisions: disciplina_id (if present) + turma_disciplina_id,
+      // otherwise fall back to disciplina_nome + turma_disciplina_id, then other fallbacks.
+      const disciplinaPart =
+        av.disciplina_id || av.disciplina_nome || "unknown_disc";
+      const turmaPart =
         av.turma_disciplina_id ||
         av.turma_id ||
-        av.disciplina_id ||
+        av.turma_sigla ||
+        av.turma_descricao ||
         av.id;
+      const key = `${disciplinaPart}::${turmaPart}`;
       if (!notasPorDisciplinaMap.has(key)) {
         notasPorDisciplinaMap.set(key, {
           id: `nota-${key}`,
@@ -94,6 +100,7 @@ export class FichaService {
           return Number.isFinite(n) ? n : 0;
         })(),
         peso: av.valor ?? 0,
+        matricula_turma_disciplina_id: av.matricula_turma_disciplina_id ?? null,
       });
     }
 

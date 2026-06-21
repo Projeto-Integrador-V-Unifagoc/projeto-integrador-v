@@ -35,6 +35,12 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
     ),
   );
 
+  // short labels for headers (remove descriptive suffixes like " - Excelente desempenho")
+  const evalLabels = evalNames.map((n) => ({
+    name: n,
+    label: (n || "").split(" - ")[0].trim(),
+  }));
+
   return (
     <Stack spacing={1.5}>
       <Stack
@@ -94,8 +100,8 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
               >
                 <TableCell>Disciplina</TableCell>
                 <TableCell>Media Final</TableCell>
-                {evalNames.map((name) => (
-                  <TableCell key={name}>{name}</TableCell>
+                {evalLabels.map(({ name, label }) => (
+                  <TableCell key={name}>{label}</TableCell>
                 ))}
                 <TableCell>Prova Final</TableCell>
                 <TableCell>Prova Inova</TableCell>
@@ -113,9 +119,18 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
                   </TableCell>
                   <TableCell>{formatarNota(nota.mediaFinal)}</TableCell>
                   {evalNames.map((name) => {
-                    const a = (nota.avaliacoes ?? []).find(
-                      (x) => x.nome === name || x.id === name,
-                    );
+                    const a = (nota.avaliacoes ?? []).find((x) => {
+                      const matchesName = x.nome === name || x.id === name;
+                      // if nota has a matriculaTurmaDisciplinaId, prefer the avaliacao with same mtd id
+                      if ((nota as any).matriculaTurmaDisciplinaId) {
+                        return (
+                          matchesName &&
+                          x.matricula_turma_disciplina_id ===
+                            (nota as any).matriculaTurmaDisciplinaId
+                        );
+                      }
+                      return matchesName;
+                    });
                     return (
                       <TableCell
                         key={name}

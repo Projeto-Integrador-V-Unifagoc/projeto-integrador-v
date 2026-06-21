@@ -193,7 +193,7 @@ function montarAlunoFicha(
     idade: calcularIdade(aluno.pessoa?.dataNascimento),
     responsavelFinanceiro: aluno.pessoa?.nome ?? VALOR_NAO_INFORMADO,
     email: aluno.usuario?.email ?? VALOR_NAO_INFORMADO,
-    semestre: normalizarSemestre((matriculaAtiva as any)?.semestre),
+    semestre: normalizarSemestre((matriculaAtiva as any).semestre) || "",
   };
 }
 
@@ -218,11 +218,23 @@ function montarNotasFicha(
 
   const notasDaApi: NotaComSemestre[] = notasApiResponse.map((nota) => {
     const disciplinaNome =
-      nota.disciplinaNome ?? nota.disciplinaId ?? "Desconhecida";
+      (nota as any).disciplinaNome ??
+      (nota as any).disciplinaId ??
+      "Desconhecida";
     const frequenciaDisciplina = frequenciaPorDisciplina.get(
       disciplinaNome as string,
     );
-
+    // try to associate the matricula_turma_disciplina_id for this discipline
+    const matriculaMatch = matriculas.find((m) => {
+      if (!m) return false;
+      const nomeMat = String(m.disciplina_nome ?? "").toLowerCase();
+      const nomeNota = String(disciplinaNome ?? "").toLowerCase();
+      if (nomeMat && nomeNota && nomeMat === nomeNota) return true;
+      // fallback: compare turma_disciplina ids when available
+      if ((m as any).disciplina_id && (nota as any).disciplinaId)
+        return (m as any).disciplina_id === (nota as any).disciplinaId;
+      return false;
+    });
     return {
       disciplina: disciplinaNome,
       mediaFinal: Number(nota.media ?? 0),
@@ -236,7 +248,13 @@ function montarNotasFicha(
           nome: a.nome,
           nota: a.nota,
           peso: a.peso,
+          matricula_turma_disciplina_id:
+            (a as any).matricula_turma_disciplina_id ??
+            (a as any).matriculaTurmaDisciplinaId ??
+            null,
         })) ?? [],
+      matriculaTurmaDisciplinaId: (matriculaMatch as any)
+        ?.matricula_turma_disciplina_id,
       provaFinal: getNotaPorNome(nota, "final"),
       provaInova: getNotaPorNome(nota, "inova"),
       provaSegundaChamada: getNotaPorNome(nota, "segunda"),
@@ -296,6 +314,10 @@ function montarNotasFicha(
       faltas: 0,
       percentualFaltas: 0,
       semestre: normalizarSemestre((matricula as any).semestre),
+      matriculaTurmaDisciplinaId:
+        (matricula as any)?.matricula_turma_disciplina_id ??
+        (matricula as any)?.matriculaTurmaDisciplinaId ??
+        null,
     }));
 
   return [...notasDaApi, ...notasPorFrequencia, ...notasPorMatricula]
