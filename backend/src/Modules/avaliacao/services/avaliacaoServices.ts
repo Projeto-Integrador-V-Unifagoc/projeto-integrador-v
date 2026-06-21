@@ -6,7 +6,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const MAX_PROVAS = 3;
 const VALOR_PROVA = 20;
 const VALOR_TPI = 5;
-const LIMITE_TRABALHOS = 25;
+const LIMITE_AVALIACOES_REGULARES = 100;
 
 const ehGestor = (tipo: string) => ["secretaria", "administrador"].includes(tipo.toLowerCase());
 
@@ -39,9 +39,9 @@ function validarRegras(candidato: CriarAvaliacaoDTO, avaliacoes: Avaliacao[], id
   if (candidato.tipo_avaliacao === "TPI" && outras.some((item) => item.tipo_avaliacao === "TPI")) {
     throw new AvaliacaoValidationError("Ja existe um TPI cadastrado de 5 pontos.");
   }
-  if (candidato.tipo_avaliacao === "TRABALHO") {
-    const total = outras.filter((item) => item.tipo_avaliacao === "TRABALHO").reduce((soma, item) => soma + Number(item.valor), 0);
-    if (total + candidato.valor > LIMITE_TRABALHOS) throw new AvaliacaoValidationError("Os trabalhos podem somar no maximo 25 pontos.");
+  const totalRegular = outras.reduce((soma, item) => soma + Number(item.valor), 0);
+  if (totalRegular + candidato.valor > LIMITE_AVALIACOES_REGULARES) {
+    throw new AvaliacaoValidationError("As avaliacoes regulares podem somar no maximo 100 pontos.");
   }
 }
 

@@ -25,6 +25,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { frequenciaApi } from "../../services/frequencia-api";
+import { notaApi } from "../../services/nota-api";
 
 interface DisciplinaEstudante {
   id: string;
@@ -33,6 +34,47 @@ interface DisciplinaEstudante {
   cargaHoraria: number;
   professor: string;
   turma: string;
+}
+
+interface UsuarioLocal {
+  nome?: string;
+  email?: string;
+  tipo_usuario?: string;
+}
+
+interface PerfilAcademico {
+  curso?: string;
+  periodo?: string | number;
+}
+
+interface AlunoBanco {
+  id?: string;
+  matricula?: string | number;
+  curso_nome?: string;
+  periodo?: string | number;
+  usuario?: { email?: string };
+}
+
+interface MatriculaAluno {
+  id: string;
+  status: string;
+  disciplina_nome: string;
+  professor_nome?: string;
+  semestre?: string;
+}
+
+interface DisciplinaApi {
+  id: string;
+  codigo?: string;
+  nome: string;
+  carga_horaria?: number;
+}
+
+interface InformacaoAluno {
+  id?: string;
+  matricula: string | number;
+  curso: string;
+  periodo: string | number;
 }
 
 interface TarefaMock {
@@ -75,11 +117,11 @@ export default function Home() {
   const navigate = useNavigate();
 
   // Inicializa o usuário de forma síncrona para evitar flash visual
-  const [user] = useState<any>(() => {
+  const [user] = useState<UsuarioLocal | null>(() => {
     const stored = localStorage.getItem("@UniEduca:user");
     if (stored) {
       try {
-        return JSON.parse(stored);
+        return JSON.parse(stored) as UsuarioLocal;
       } catch {
         return null;
       }
@@ -99,19 +141,20 @@ export default function Home() {
   }, [user]);
 
   // Estados específicos para o fluxo do Aluno
-  const [studentInfo, setStudentInfo] = useState<any>(null);
+  const [studentInfo, setStudentInfo] = useState<InformacaoAluno | null>(null);
   const [disciplinas, setDisciplinas] = useState<DisciplinaEstudante[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const [alertaFrequencia, setAlertaFrequencia] = useState(false);
+  const [alertaNotas, setAlertaNotas] = useState(false);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
   // Carrega dados acadêmicos do aluno
-  const carregarDadosDoAluno = async (currentUser: any) => {
+  const carregarDadosDoAluno = async (currentUser: UsuarioLocal) => {
     setCarregando(true);
     setErro(null);
     try {
@@ -120,7 +163,7 @@ export default function Home() {
 
       // 1. Obter informações detalhadas do perfil (/me) para recuperar o CPF
       let cpf = "";
-      let academicProfile = null;
+      let academicProfile: PerfilAcademico | null = null;
       try {
         const meResponse = await fetch(`${baseUrl}/me`, {
           headers: {
@@ -128,10 +171,13 @@ export default function Home() {
           },
         });
         if (meResponse.ok) {
-          const meData = await meResponse.json();
+          const meData = (await meResponse.json()) as {
+            success?: boolean;
+            data?: { pessoa?: { cpf?: string }; academico?: PerfilAcademico };
+          };
           if (meData.success && meData.data) {
             cpf = meData.data.pessoa?.cpf || "";
-            academicProfile = meData.data.academico;
+            academicProfile = meData.data.academico ?? null;
           }
         }
       } catch (error) {
@@ -139,12 +185,12 @@ export default function Home() {
       }
 
       // 2. Buscar o aluno correspondente no banco pelo CPF para obter o ID acadêmico e matrícula
-      let studentDb: any = null;
+      let studentDb: AlunoBanco | null = null;
       if (cpf) {
         try {
           const searchResponse = await fetch(`${baseUrl}/alunos/buscar?q=${cpf}`);
           if (searchResponse.ok) {
-            const searchData = await searchResponse.json();
+            const searchData = (await searchResponse.json()) as AlunoBanco[];
             if (Array.isArray(searchData) && searchData.length > 0) {
               studentDb = searchData[0];
             }
@@ -159,9 +205,9 @@ export default function Home() {
         try {
           const listResponse = await fetch(`${baseUrl}/alunos`);
           if (listResponse.ok) {
-            const listData = await listResponse.json();
+            const listData = (await listResponse.json()) as AlunoBanco[];
             if (Array.isArray(listData)) {
-              studentDb = listData.find((a: any) => a.usuario?.email === currentUser.email);
+              studentDb = listData.find((a) => a.usuario?.email === currentUser.email) ?? null;
             }
           }
         } catch (error) {
@@ -177,12 +223,12 @@ export default function Home() {
       });
 
       // 3. Buscar as matrículas do aluno em turmas
-      let matriculas: any[] = [];
+      let matriculas: MatriculaAluno[] = [];
       if (studentDb?.id) {
         try {
           const matResponse = await fetch(`${baseUrl}/matriculas/aluno/${studentDb.id}`);
           if (matResponse.ok) {
-            matriculas = await matResponse.json();
+            matriculas = (await matResponse.json()) as MatriculaAluno[];
           }
         } catch (error) {
           console.error("Erro ao buscar matrículas:", error);
@@ -190,11 +236,11 @@ export default function Home() {
       }
 
       // 4. Buscar a lista geral de disciplinas do sistema para correlacionar ID e Carga Horária
-      let todasDisciplinas: any[] = [];
+      let todasDisciplinas: DisciplinaApi[] = [];
       try {
         const discResponse = await fetch(`${baseUrl}/disciplinas`);
         if (discResponse.ok) {
-          todasDisciplinas = await discResponse.json();
+          todasDisciplinas = (await discResponse.json()) as DisciplinaApi[];
         }
       } catch (error) {
         console.error("Erro ao buscar lista de disciplinas:", error);
@@ -224,7 +270,7 @@ export default function Home() {
       discMapeadas.sort((a, b) => a.nome.localeCompare(b.nome));
 
       setDisciplinas(discMapeadas);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Erro geral ao carregar dados do aluno:", e);
       setErro("Houve uma falha ao conectar com o servidor acadêmico. Dados provisórios exibidos.");
     } finally {
@@ -238,6 +284,9 @@ export default function Home() {
       frequenciaApi.minhaFrequencia()
         .then((dados) => setAlertaFrequencia(Boolean(dados.possuiAlerta)))
         .catch(() => setAlertaFrequencia(false));
+      notaApi.meuResumo()
+        .then((dados) => setAlertaNotas(Boolean(dados.possuiAlerta)))
+        .catch(() => setAlertaNotas(false));
     }
   }, [isAluno, user]);
 
@@ -401,6 +450,11 @@ export default function Home() {
         {alertaFrequencia && (
           <Alert severity="warning" onClick={() => navigate("/minha-frequencia")} sx={{ cursor: "pointer" }}>
             Sua frequência está em 80% ou menos em pelo menos uma disciplina. Consulte “Minha Frequência”.
+          </Alert>
+        )}
+        {alertaNotas && (
+          <Alert severity="warning" onClick={() => navigate("/minhas-notas")} sx={{ cursor: "pointer" }}>
+            Você possui ao menos uma disciplina com média parcial abaixo de 60%. Consulte “Minhas Notas”.
           </Alert>
         )}
         {/* Cabeçalho do Aluno */}

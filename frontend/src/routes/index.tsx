@@ -38,6 +38,8 @@ import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
 import Professores from "../Pages/Professores/Professores";
 import CadastroProfessores from "../Pages/Professores/Cadastro";
 import Frequencia from "../Pages/Frequencia/Frequencia";
+import LancamentoNotas from "../Pages/Notas/LancamentoNotas";
+import MinhasNotas from "../Pages/Notas/MinhasNotas";
 import NovaMatricula from "../Pages/Matricula/NovaMatricula";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
@@ -232,7 +234,16 @@ export default function AppRoutes() {
           path="/notas/lancamento"
           element={
             <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
-              <BuildingPage />
+              <LancamentoNotas />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/minhas-notas"
+          element={
+            <RouteByRole perfisPermitidos={["aluno"]}>
+              <MinhasNotas />
             </RouteByRole>
           }
         />

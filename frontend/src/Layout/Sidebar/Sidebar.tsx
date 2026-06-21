@@ -145,6 +145,12 @@ export default function Sidebar({ expandido }: SidebarProps) {
       podeVer: ehAdmin || ehProfessor,
     },
     {
+      label: "Minhas Notas",
+      href: "/minhas-notas",
+      icon: ClipboardPen,
+      podeVer: ehAluno,
+    },
+    {
       label: "Relatórios",
       href: "/relatorios/lista",
       icon: FileBarChart,
