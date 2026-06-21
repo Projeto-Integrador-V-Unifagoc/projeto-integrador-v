@@ -6,3 +6,4 @@ export interface AlunoChamada { id: string; matriculaTurmaDisciplinaId: string; 
 export interface RegistrarFrequenciaPayload { turmaDisciplinaId: string; aulaId?: string; localId?: string; data: string; registros: Array<{ alunoId: string; status: StatusFrequencia }> }
 export interface ConsolidadoFrequencia { alunoId: string; alunoNome: string; turmaDisciplinaId: string; disciplinaId: string; disciplinaNome: string; totalAulas: number; presencas: number; faltas: number; naoLancadas: number; percentual: number | null; situacao: SituacaoFrequencia }
 export interface HistoricoFrequenciaAluno { id: string; aulaId: string; turmaDisciplinaId: string; disciplinaId: string; disciplinaNome: string; data: string; status: StatusFrequencia; motivoJustificativa?: string; observacaoJustificativa?: string }
+export interface MinhaFrequenciaAluno { alunoId: string; possuiAlerta: boolean; consolidado: ConsolidadoFrequencia[]; historico: HistoricoFrequenciaAluno[] }

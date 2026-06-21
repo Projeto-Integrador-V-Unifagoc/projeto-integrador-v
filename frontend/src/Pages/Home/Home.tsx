@@ -1,28 +1,46 @@
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import Container from "../../components/Container";
-import Aluno from "../../../public/assets/aluno.svg";
-import { Card } from "../../components/Card";
 import {
+  Alert,
   Box,
-  Stack,
-  Typography,
-  Tabs,
-  Tab,
-  Grid,
   Chip,
   CircularProgress,
-  Alert,
-  Paper,
   Divider,
+  Grid,
+  LinearProgress,
+  Paper,
+  Skeleton,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import {
+  ArrowRight,
   BookOpen,
   Calendar,
-  Clock,
+  CalendarCheck,
+  ClipboardCheck,
   ClipboardList,
+  ClipboardPen,
+  Clock,
+  FileBarChart,
+  FileText,
   GraduationCap,
+  Info,
+  Layers,
+  NotebookPen,
+  UserCog,
+  UserStar,
+  Users,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import Button from "../../components/Button";
+import { Card } from "../../components/Card";
+import Container from "../../components/Container";
+import NoData from "../../components/DataTable/NoData";
 import { frequenciaApi } from "../../services/frequencia-api";
 import { notaApi } from "../../services/nota-api";
 import { authService } from "../../services/auth-services";
@@ -32,7 +50,6 @@ import type {
   TarefaAluno,
   TipoTarefa,
 } from "../../models/home-aluno-model";
-import NoData from "../../components/DataTable/NoData";
 import {
   COR_TIPO_AVALIACAO,
   formatarDataPtBr,
@@ -63,10 +80,207 @@ interface RespostaMe {
   };
 }
 
+interface Atalho {
+  label: string;
+  descricao: string;
+  href: string;
+  icon: LucideIcon;
+  podeVer: boolean;
+}
+
+// Altura mínima reservada para os estados de carregando/erro/vazio, evitando salto de layout.
+const MIN_ALTURA_CONTEUDO = 360;
+
+const TRACO = "—";
+
+// Estilo compartilhado dos cartões acionáveis (atalhos e disciplinas): cursor, hover,
+// foco visível por teclado e respeito à preferência de redução de movimento.
+const sxCartaoAcionavel = {
+  cursor: "pointer",
+  height: "100%",
+  transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+  "&:hover": {
+    transform: "translateY(-2px)",
+    boxShadow: 3,
+    borderColor: "primary.main",
+  },
+  "&:focus-visible": {
+    outline: "2px solid",
+    outlineColor: "primary.main",
+    outlineOffset: "2px",
+  },
+  "@media (prefers-reduced-motion: reduce)": {
+    transition: "none",
+    "&:hover": { transform: "none" },
+  },
+} as const;
+
+// Props de acessibilidade para tornar um cartão operável por mouse e teclado.
+function propsCartaoAcionavel(rotulo: string, acao: () => void) {
+  return {
+    role: "button" as const,
+    tabIndex: 0,
+    "aria-label": rotulo,
+    onClick: acao,
+    onKeyDown: (evento: React.KeyboardEvent) => {
+      if (evento.key === "Enter" || evento.key === " ") {
+        evento.preventDefault();
+        acao();
+      }
+    },
+  };
+}
+
+function valorOuTraco(valor: string | number | null | undefined): string {
+  if (valor === null || valor === undefined || valor === "") return TRACO;
+  return String(valor);
+}
+
+// Crachá circular com fundo levemente tingido pela cor primária, reaproveitado nos cabeçalhos e cartões.
+function IconeBadge({ children, size = 48 }: { children: ReactNode; size?: number }) {
+  return (
+    <Box
+      aria-hidden="true"
+      sx={(theme) => ({
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: alpha(theme.palette.primary.main, 0.12),
+        color: theme.palette.primary.main,
+      })}
+    >
+      {children}
+    </Box>
+  );
+}
+
+// Item rótulo/valor do resumo do aluno (matrícula, curso e período).
+function ItemResumo({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        display="block"
+        sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+      >
+        {rotulo}
+      </Typography>
+      <Typography variant="body2" fontWeight={700} sx={{ wordBreak: "break-word" }}>
+        {valor}
+      </Typography>
+    </Box>
+  );
+}
+
+// Linha "rótulo: valor" usada nos cartões de disciplina.
+function LinhaInfo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
+  return (
+    <Typography variant="body2" color="text.secondary">
+      {rotulo}:{" "}
+      <Typography component="span" variant="body2" color="text.primary" fontWeight={600}>
+        {valor}
+      </Typography>
+    </Typography>
+  );
+}
+
+function corFrequencia(valor: number | null): "success" | "warning" | "error" | "primary" {
+  if (valor === null) return "primary";
+  if (valor < 75) return "error";
+  if (valor <= 80) return "warning";
+  return "success";
+}
+
+function IndicadorPercentual({
+  rotulo,
+  valor,
+  carregando,
+  cor,
+}: {
+  rotulo: string;
+  valor: number | null;
+  carregando: boolean;
+  cor: "primary" | "success" | "warning" | "error";
+}) {
+  const texto = valor === null
+    ? TRACO
+    : `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(valor)}%`;
+
+  return (
+    <Box sx={{ flex: 1, minWidth: 140 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1} mb={0.5}>
+        <Typography variant="caption" color="text.secondary">
+          {rotulo}
+        </Typography>
+        {carregando ? (
+          <Skeleton width={38} />
+        ) : (
+          <Typography variant="body2" fontWeight={700}>
+            {texto}
+          </Typography>
+        )}
+      </Stack>
+      <LinearProgress
+        variant="determinate"
+        value={carregando || valor === null ? 0 : Math.min(100, Math.max(0, valor))}
+        color={cor}
+        aria-label={`${rotulo}: ${carregando ? "carregando" : texto}`}
+        sx={{ height: 6, borderRadius: 999, backgroundColor: "grey.100" }}
+      />
+    </Box>
+  );
+}
+
+function EstadoCarregando({ texto }: { texto: string }) {
+  return (
+    <Box
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      gap={2}
+      minHeight={MIN_ALTURA_CONTEUDO}
+    >
+      <CircularProgress color="primary" />
+      <Typography variant="body2" color="text.secondary">
+        {texto}
+      </Typography>
+    </Box>
+  );
+}
+
+function EstadoErro({ texto, onTentarNovamente }: { texto: string; onTentarNovamente: () => void }) {
+  return (
+    <Alert
+      severity="error"
+      action={
+        <Button color="inherit" size="small" onClick={onTentarNovamente} sx={{ width: "auto" }}>
+          Tentar novamente
+        </Button>
+      }
+    >
+      {texto}
+    </Alert>
+  );
+}
+
+function EstadoVazio({ titulo, descricao }: { titulo: string; descricao: string }) {
+  return (
+    <Box minHeight={MIN_ALTURA_CONTEUDO} border="1px solid" borderColor="divider" borderRadius={2}>
+      <NoData title={titulo} description={descricao} />
+    </Box>
+  );
+}
+
 export default function Home() {
   const navigate = useNavigate();
 
-  // Inicializa o usuário de forma síncrona para evitar flash visual
+  // Inicializa o usuário de forma síncrona para evitar flash visual.
   const [user] = useState<UsuarioLocal | null>(() => {
     const stored = localStorage.getItem("@UniEduca:user");
     if (stored) {
@@ -79,40 +293,106 @@ export default function Home() {
     return null;
   });
 
-  const userName = useMemo(() => user?.nome || "Usuário", [user]);
+  const userName = user?.nome?.trim() || "Usuário";
+  const perfil = String(user?.tipo_usuario || "")
+    .trim()
+    .toLowerCase();
+  const isAluno = perfil === "aluno";
+  const ehAdmin = perfil === "secretaria" || perfil === "administrador";
+  const ehProfessor = perfil === "professor";
 
-  const isAluno = useMemo(() => {
-    return (
-      user &&
-      String(user.tipo_usuario || "")
-        .trim()
-        .toLowerCase() === "aluno"
-    );
-  }, [user]);
-
-  // Cabeçalho do aluno (derivado do JWT via GET /me)
+  // Cabeçalho do aluno (derivado do JWT via GET /me).
   const [studentInfo, setStudentInfo] = useState<InformacaoAluno | null>(null);
 
-  // Aba Disciplinas
+  // Aba Disciplinas.
   const [disciplinas, setDisciplinas] = useState<DisciplinaAluno[]>([]);
-  const [carregandoDisciplinas, setCarregandoDisciplinas] = useState(false);
+  const [carregandoDisciplinas, setCarregandoDisciplinas] = useState(isAluno);
   const [erroDisciplinas, setErroDisciplinas] = useState<string | null>(null);
 
-  // Aba A Fazer
+  // Aba A Fazer.
   const [tarefas, setTarefas] = useState<TarefaAluno[]>([]);
-  const [carregandoTarefas, setCarregandoTarefas] = useState(false);
+  const [carregandoTarefas, setCarregandoTarefas] = useState(isAluno);
   const [erroTarefas, setErroTarefas] = useState<string | null>(null);
 
   const [tabValue, setTabValue] = useState(0);
   const [alertaFrequencia, setAlertaFrequencia] = useState(false);
   const [alertaNotas, setAlertaNotas] = useState(false);
+  const [carregandoAlertas, setCarregandoAlertas] = useState(isAluno);
+  const [erroAlertas, setErroAlertas] = useState<string | null>(null);
+  const [frequenciaPorDisciplina, setFrequenciaPorDisciplina] = useState<Record<string, number | null>>({});
+  const [notasPorDisciplina, setNotasPorDisciplina] = useState<Record<string, number | null>>({});
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
+  // Aba Disciplinas — disciplinas do período corrente (GET /me/disciplinas).
+  const carregarDisciplinas = useCallback(async () => {
+    setCarregandoDisciplinas(true);
+    setErroDisciplinas(null);
+    try {
+      setDisciplinas(await homeAlunoApi.minhasDisciplinas());
+    } catch {
+      setErroDisciplinas("Não foi possível carregar suas disciplinas. Tente novamente.");
+    } finally {
+      setCarregandoDisciplinas(false);
+    }
+  }, []);
+
+  // Aba A Fazer — avaliações a vencer (GET /me/tarefas).
+  const carregarTarefas = useCallback(async () => {
+    setCarregandoTarefas(true);
+    setErroTarefas(null);
+    try {
+      setTarefas(await homeAlunoApi.minhasTarefas());
+    } catch {
+      setErroTarefas("Não foi possível carregar suas tarefas. Tente novamente.");
+    } finally {
+      setCarregandoTarefas(false);
+    }
+  }, []);
+
+  const carregarAlertas = useCallback(async () => {
+    setCarregandoAlertas(true);
+    setErroAlertas(null);
+
+    const [resultadoFrequencia, resultadoNotas] = await Promise.allSettled([
+      frequenciaApi.minhaFrequencia(),
+      notaApi.meuBoletim(),
+    ]);
+
+    if (resultadoFrequencia.status === "fulfilled") {
+      setAlertaFrequencia(Boolean(resultadoFrequencia.value.possuiAlerta));
+      setFrequenciaPorDisciplina(
+        Object.fromEntries(
+          resultadoFrequencia.value.consolidado.map((item) => [
+            item.turmaDisciplinaId,
+            item.percentual,
+          ]),
+        ),
+      );
+    }
+    if (resultadoNotas.status === "fulfilled") {
+      setAlertaNotas(Boolean(resultadoNotas.value.possuiAlerta));
+      setNotasPorDisciplina(
+        Object.fromEntries(
+          resultadoNotas.value.disciplinas.map((item) => [
+            item.turmaDisciplinaId,
+            item.mediaParcial,
+          ]),
+        ),
+      );
+    }
+
+    if (resultadoFrequencia.status === "rejected" || resultadoNotas.status === "rejected") {
+      setErroAlertas("Não foi possível atualizar todos os alertas acadêmicos.");
+    }
+
+    setCarregandoAlertas(false);
+  }, []);
+
   useEffect(() => {
-    if (!isAluno || !user) return;
+    if (!isAluno) return;
 
     const token = localStorage.getItem("@UniEduca:token") ?? "";
 
@@ -131,411 +411,417 @@ export default function Home() {
       }
     };
 
-    // Aba Disciplinas — disciplinas do período corrente (GET /me/disciplinas).
-    const carregarDisciplinas = async () => {
-      setCarregandoDisciplinas(true);
-      setErroDisciplinas(null);
-      try {
-        setDisciplinas(await homeAlunoApi.minhasDisciplinas());
-      } catch {
-        setErroDisciplinas(
-          "Não foi possível carregar suas disciplinas. Tente novamente mais tarde."
-        );
-      } finally {
-        setCarregandoDisciplinas(false);
-      }
-    };
-
-    // Aba A Fazer — avaliações a vencer (GET /me/tarefas).
-    const carregarTarefas = async () => {
-      setCarregandoTarefas(true);
-      setErroTarefas(null);
-      try {
-        setTarefas(await homeAlunoApi.minhasTarefas());
-      } catch {
-        setErroTarefas(
-          "Não foi possível carregar suas tarefas. Tente novamente mais tarde."
-        );
-      } finally {
-        setCarregandoTarefas(false);
-      }
-    };
-
-    // Alertas no topo (integração já existente).
-    const carregarAlertas = async () => {
-      try {
-        const dados = await frequenciaApi.minhaFrequencia();
-        setAlertaFrequencia(Boolean(dados.possuiAlerta));
-      } catch {
-        setAlertaFrequencia(false);
-      }
-      try {
-        const dados = await notaApi.meuResumo();
-        setAlertaNotas(Boolean(dados.possuiAlerta));
-      } catch {
-        setAlertaNotas(false);
-      }
-    };
-
     void carregarCabecalho();
+    void carregarAlertas();
     void carregarDisciplinas();
     void carregarTarefas();
-    void carregarAlertas();
-  }, [isAluno, user]);
+  }, [isAluno, carregarAlertas, carregarDisciplinas, carregarTarefas]);
 
-  // Card de disciplina -> destino somente-leitura acessível ao aluno.
-  const renderDisciplinaCard = (disc: DisciplinaAluno) => {
-    return (
-      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={disc.turmaDisciplinaId}>
-        <Card.Root
-          onClick={() => navigate("/minhas-notas")}
-          sx={{
-            cursor: "pointer",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            transition: "transform 0.2s ease, box-shadow 0.2s ease",
-            "&:hover": {
-              transform: "translateY(-4px)",
-              boxShadow: "0 8px 16px rgba(0,0,0,0.08)",
-            },
-          }}
-        >
-          <Card.Header>
-            <Card.Title>{disc.nome}</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <Typography variant="body2" sx={{ mt: 0.5 }}>
-              <strong>Código:</strong> {disc.codigo}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Professor:</strong> {disc.professorNome}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Turma/Semestre:</strong> {disc.turmaSigla}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Carga Horária:</strong> {disc.cargaHoraria}h
-            </Typography>
-          </Card.Content>
-        </Card.Root>
-      </Grid>
-    );
-  };
+  // Cabeçalho de boas-vindas com a mesma hierarquia para aluno e secretaria.
+  const IconeCabecalho = isAluno ? GraduationCap : ehProfessor ? UserStar : Users;
+  const subtituloCabecalho = isAluno
+    ? "Acompanhe suas disciplinas, tarefas, frequência e notas."
+    : ehAdmin
+      ? "Acesse rapidamente as áreas administrativas do sistema."
+      : ehProfessor
+        ? "Acesse rapidamente suas turmas, avaliações e lançamentos."
+        : "Bem-vindo de volta ao seu sistema acadêmico.";
 
-  // Se NÃO for aluno, renderiza a Home padrão atual (boas-vindas + imagem do formando)
-  if (!isAluno) {
-    return (
-      <Container
-        maxWidth={false}
-        sx={(theme) => ({
-          border: `1px solid ${theme.palette.grey[200]}`,
-          borderRadius: "8px",
-          height: "100%",
-          backgroundColor: "#F4F4F4",
-        })}
+  const cabecalho = (
+    <Paper
+      variant="outlined"
+      sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, backgroundColor: "#FFF" }}
+    >
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", md: "center" }}
+        gap={2}
       >
-        <Box
-          component="div"
-          sx={{
-            height: "100%",
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            flexDirection: "column",
-          }}
-        >
-          <Box
-            sx={(theme) => ({
-              backgroundColor: theme.palette.background.default,
-              width: 260,
-              height: 260,
-              borderRadius: "50%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            })}
-          >
-            <img src={Aluno} alt="Aluno se formando" width={230} />
-          </Box>
-
-          <Stack display="flex" justifyContent="center" alignItems="center" mt={1}>
-            <Typography variant="body1" fontWeight="bold">
+        <Stack direction="row" alignItems="center" gap={2} sx={{ minWidth: 0 }}>
+          <IconeBadge size={56}>
+            <IconeCabecalho size={28} aria-hidden="true" />
+          </IconeBadge>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography component="h1" variant="h5" fontWeight={700}>
               Olá, {userName}!
             </Typography>
-            <Typography variant="body2" color="textDisabled">
-              Bem vindo de volta ao seu sistema acadêmico.
+            <Typography variant="body2" color="text.secondary">
+              {subtituloCabecalho}
             </Typography>
-            <Typography variant="body2" color="textDisabled">
-              Acesse os menus desejados e fique por dentro de todas as suas estatísticas.
-            </Typography>
+          </Box>
+        </Stack>
+
+        {isAluno && (
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={{ xs: 1, sm: 3 }}
+            divider={
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ display: { xs: "none", sm: "block" } }}
+              />
+            }
+            sx={{ width: { xs: "100%", md: "auto" } }}
+          >
+            <ItemResumo rotulo="Matrícula" valor={valorOuTraco(studentInfo?.matricula)} />
+            <ItemResumo rotulo="Curso" valor={valorOuTraco(studentInfo?.curso)} />
+            <ItemResumo
+              rotulo="Período"
+              valor={studentInfo?.periodo ? `${studentInfo.periodo}º` : TRACO}
+            />
           </Stack>
-        </Box>
+        )}
+      </Stack>
+    </Paper>
+  );
+
+  // Visão do aluno: alertas, cabeçalho e abas (Disciplinas / A Fazer).
+  if (isAluno) {
+    return (
+      <Container sx={{ p: { xs: 2, md: 3 }, overflowY: "auto" }}>
+        <Stack gap={3}>
+          {cabecalho}
+
+          <Stack gap={1.5} minHeight={carregandoAlertas ? 64 : 0}>
+            {carregandoAlertas && (
+              <Paper
+                variant="outlined"
+                sx={{ p: 2, borderRadius: 2, backgroundColor: "#FFF" }}
+              >
+                <Stack direction="row" alignItems="center" gap={1.5}>
+                  <CircularProgress size={22} />
+                  <Typography variant="body2" color="text.secondary">
+                    Atualizando alertas acadêmicos...
+                  </Typography>
+                </Stack>
+              </Paper>
+            )}
+            {!carregandoAlertas && erroAlertas && (
+              <EstadoErro
+                texto={erroAlertas}
+                onTentarNovamente={() => void carregarAlertas()}
+              />
+            )}
+            {alertaFrequencia && (
+              <Alert
+                severity="warning"
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => navigate("/minha-frequencia")}
+                    aria-label="Consultar minha frequência"
+                    sx={{ width: "auto" }}
+                  >
+                    Consultar
+                  </Button>
+                }
+              >
+                Sua frequência está em 80% ou menos em pelo menos uma disciplina. Acompanhe seu
+                desempenho.
+              </Alert>
+            )}
+            {alertaNotas && (
+              <Alert
+                severity="warning"
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => navigate("/minhas-notas")}
+                    aria-label="Consultar minhas notas"
+                    sx={{ width: "auto" }}
+                  >
+                    Consultar
+                  </Button>
+                }
+              >
+                Você possui ao menos uma disciplina com média parcial abaixo de 60%. Acompanhe seu
+                desempenho.
+              </Alert>
+            )}
+          </Stack>
+
+          <Box>
+            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                textColor="primary"
+                indicatorColor="primary"
+                aria-label="Conteúdo acadêmico"
+              >
+                <Tab
+                  icon={<BookOpen size={18} aria-hidden="true" />}
+                  iconPosition="start"
+                  label="Disciplinas"
+                  id="aba-disciplinas"
+                  aria-controls="painel-disciplinas"
+                />
+                <Tab
+                  icon={<ClipboardList size={18} aria-hidden="true" />}
+                  iconPosition="start"
+                  label="A Fazer"
+                  id="aba-afazer"
+                  aria-controls="painel-afazer"
+                />
+              </Tabs>
+            </Box>
+
+            <Box
+              role="tabpanel"
+              id="painel-disciplinas"
+              aria-labelledby="aba-disciplinas"
+              hidden={tabValue !== 0}
+              sx={{ mt: 2 }}
+            >
+              {tabValue === 0 &&
+                (carregandoDisciplinas ? (
+                  <EstadoCarregando texto="Carregando suas disciplinas..." />
+                ) : erroDisciplinas ? (
+                  <EstadoErro texto={erroDisciplinas} onTentarNovamente={() => void carregarDisciplinas()} />
+                ) : disciplinas.length === 0 ? (
+                  <EstadoVazio
+                    titulo="Nenhuma disciplina disponível no período atual"
+                    descricao="Caso considere que isto é um erro, entre em contato com a secretaria acadêmica."
+                  />
+                ) : (
+                  <Grid container spacing={2}>
+                    {disciplinas.map((disc) => (
+                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={disc.turmaDisciplinaId}>
+                        <Paper
+                          variant="outlined"
+                          {...propsCartaoAcionavel(
+                            `Ver notas de ${disc.nome}`,
+                            () => navigate("/minhas-notas"),
+                          )}
+                          sx={{
+                            ...sxCartaoAcionavel,
+                            p: 2,
+                            borderRadius: 2,
+                            backgroundColor: "#FFF",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1.5,
+                          }}
+                        >
+                          <Stack direction="row" alignItems="center" gap={1.5} sx={{ minWidth: 0 }}>
+                            <IconeBadge>
+                              <BookOpen size={22} aria-hidden="true" />
+                            </IconeBadge>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography fontWeight={700} sx={{ wordBreak: "break-word" }}>
+                                {disc.nome}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {disc.codigo}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                          <Divider />
+                          <Stack gap={0.5}>
+                            <LinhaInfo rotulo="Professor" valor={disc.professorNome} />
+                            <LinhaInfo rotulo="Turma/Semestre" valor={disc.turmaSigla} />
+                            <LinhaInfo rotulo="Carga horária" valor={`${disc.cargaHoraria}h`} />
+                          </Stack>
+                          <Divider />
+                          <Stack direction={{ xs: "column", sm: "row" }} gap={1.5} mt="auto">
+                            <IndicadorPercentual
+                              rotulo="Frequência atual"
+                              valor={frequenciaPorDisciplina[disc.turmaDisciplinaId] ?? null}
+                              carregando={carregandoAlertas}
+                              cor={corFrequencia(
+                                frequenciaPorDisciplina[disc.turmaDisciplinaId] ?? null,
+                              )}
+                            />
+                            <IndicadorPercentual
+                              rotulo="Porcentagem de notas"
+                              valor={notasPorDisciplina[disc.turmaDisciplinaId] ?? null}
+                              carregando={carregandoAlertas}
+                              cor={
+                                (notasPorDisciplina[disc.turmaDisciplinaId] ?? null) !== null &&
+                                (notasPorDisciplina[disc.turmaDisciplinaId] ?? 0) < 60
+                                  ? "error"
+                                  : "primary"
+                              }
+                            />
+                          </Stack>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                ))}
+            </Box>
+
+            <Box
+              role="tabpanel"
+              id="painel-afazer"
+              aria-labelledby="aba-afazer"
+              hidden={tabValue !== 1}
+              sx={{ mt: 2 }}
+            >
+              {tabValue === 1 &&
+                (carregandoTarefas ? (
+                  <EstadoCarregando texto="Carregando suas tarefas..." />
+                ) : erroTarefas ? (
+                  <EstadoErro texto={erroTarefas} onTentarNovamente={() => void carregarTarefas()} />
+                ) : tarefas.length === 0 ? (
+                  <EstadoVazio
+                    titulo="Nenhuma atividade pendente"
+                    descricao="Novas atividades aparecerão aqui assim que forem publicadas."
+                  />
+                ) : (
+                  <Grid container spacing={2}>
+                    {tarefas.map((task) => (
+                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={task.avaliacaoId}>
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            backgroundColor: "#FFF",
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                          }}
+                        >
+                          <Box
+                            display="flex"
+                            alignItems="flex-start"
+                            justifyContent="space-between"
+                            gap={1}
+                          >
+                            <Typography fontWeight={700}>{task.titulo}</Typography>
+                            <Chip
+                              label={ROTULO_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
+                              size="small"
+                              color={COR_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
+                              variant="outlined"
+                              sx={{ fontWeight: 700, flexShrink: 0 }}
+                            />
+                          </Box>
+                          <LinhaInfo rotulo="Disciplina" valor={task.disciplinaNome} />
+                          <Box sx={{ mt: "auto", pt: 1 }}>
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              justifyContent="space-between"
+                              gap={1}
+                            >
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={0.5}
+                                color="text.secondary"
+                              >
+                                <Calendar size={14} aria-hidden="true" />
+                                <Typography variant="body2">
+                                  {formatarDataPtBr(task.dataVencimento)}
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" fontWeight={700}>
+                                {formatarPontos(task.valor)}
+                              </Typography>
+                            </Stack>
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              gap={0.5}
+                              color="warning.main"
+                              mt={0.5}
+                            >
+                              <Clock size={14} aria-hidden="true" />
+                              <Typography variant="caption" fontWeight={700}>
+                                Pendente
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                ))}
+            </Box>
+          </Box>
+        </Stack>
       </Container>
     );
   }
 
-  // Renderiza a Home específica do Aluno com abas (Disciplinas / A Fazer)
+  // Visão da secretaria/administrador/professor: cabeçalho equivalente e atalhos autorizados.
+  const atalhos: Atalho[] = [
+    { label: "Tarefas", descricao: "Acompanhe atividades e pendências", href: "/tarefas/lista", icon: ClipboardList, podeVer: ehAdmin },
+    { label: "Períodos Letivos", descricao: "Gerencie os períodos acadêmicos", href: "/periodos-letivos/lista", icon: Calendar, podeVer: ehAdmin },
+    { label: "Status", descricao: "Configure status de matrícula", href: "/statusLista", icon: Info, podeVer: ehAdmin },
+    { label: "Nova matrícula", descricao: "Matricular alunos em turmas", href: "/matricula/nova", icon: ClipboardCheck, podeVer: ehAdmin },
+    { label: "Documentos", descricao: "Envio e consulta de documentos", href: "/documentos/envio", icon: FileText, podeVer: ehAdmin },
+    { label: "Alunos", descricao: "Cadastro e consulta de alunos", href: "/alunos/lista", icon: Users, podeVer: ehAdmin },
+    { label: "Usuários", descricao: "Gerencie os acessos ao sistema", href: "/usuarios/lista", icon: UserCog, podeVer: ehAdmin },
+    { label: "Professores", descricao: "Gestão do corpo docente", href: "/professores/lista", icon: UserStar, podeVer: ehAdmin },
+    { label: "Cursos", descricao: "Cursos e matrizes curriculares", href: "/cursos/lista", icon: GraduationCap, podeVer: ehAdmin },
+    { label: "Disciplinas", descricao: "Catálogo de disciplinas", href: "/disciplinas/lista", icon: NotebookPen, podeVer: ehAdmin },
+    { label: "Turmas", descricao: "Turmas e suas disciplinas", href: "/turmas/lista", icon: Layers, podeVer: ehAdmin },
+    { label: "Avaliações", descricao: "Planeje provas e trabalhos", href: "/avaliacoes/lista", icon: ClipboardCheck, podeVer: ehAdmin || ehProfessor },
+    { label: "Frequência", descricao: "Registre a chamada das turmas", href: "/frequencias/lista", icon: CalendarCheck, podeVer: ehAdmin || ehProfessor },
+    { label: "Lançamento de Notas", descricao: "Lance e publique notas", href: "/notas/lancamento", icon: ClipboardPen, podeVer: ehAdmin || ehProfessor },
+    { label: "Relatórios", descricao: "Indicadores e relatórios", href: "/relatorios/lista", icon: FileBarChart, podeVer: ehAdmin || ehProfessor },
+  ].filter((atalho) => atalho.podeVer);
+
   return (
-    <Container
-      maxWidth={false}
-      sx={(theme) => ({
-        border: `1px solid ${theme.palette.grey[200]}`,
-        borderRadius: "8px",
-        height: "100%",
-        backgroundColor: "#F4F4F4",
-        overflowY: "auto",
-        p: { xs: 2, md: 3 },
-      })}
-    >
-      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 3 }}>
-        {alertaFrequencia && (
-          <Alert severity="warning" onClick={() => navigate("/minha-frequencia")} sx={{ cursor: "pointer" }}>
-            Sua frequência está em 80% ou menos em pelo menos uma disciplina. Consulte “Minha Frequência”.
-          </Alert>
-        )}
-        {alertaNotas && (
-          <Alert severity="warning" onClick={() => navigate("/minhas-notas")} sx={{ cursor: "pointer" }}>
-            Você possui ao menos uma disciplina com média parcial abaixo de 60%. Consulte “Minhas Notas”.
-          </Alert>
-        )}
-        {/* Cabeçalho do Aluno */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: "12px",
-            border: "1px solid",
-            borderColor: "grey.200",
-            background: "linear-gradient(135deg, #1976D2 0%, #1565C0 100%)",
-            color: "white",
-            boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            flexWrap="wrap"
-            gap={2}
-          >
-            <Stack spacing={0.5}>
-              <Typography variant="h5" fontWeight="bold">
-                Olá, {userName}!
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                Bem-vindo de volta ao seu portal acadêmico. Acompanhe suas disciplinas e tarefas.
-              </Typography>
-            </Stack>
-            {studentInfo && (
-              <Stack
-                direction="row"
-                spacing={2}
-                divider={
-                  <Divider
-                    orientation="vertical"
-                    flexItem
-                    sx={{ borderColor: "rgba(255,255,255,0.3)" }}
-                  />
-                }
-                sx={{
-                  backgroundColor: "rgba(255, 255, 255, 0.15)",
-                  p: 1.5,
-                  borderRadius: "8px",
-                  backdropFilter: "blur(4px)",
-                }}
-              >
-                <Box>
-                  <Typography variant="caption" sx={{ opacity: 0.7 }} display="block">
-                    MATRÍCULA
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {studentInfo.matricula ?? "—"}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" sx={{ opacity: 0.7 }} display="block">
-                    CURSO
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {studentInfo.curso ?? "—"}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" sx={{ opacity: 0.7 }} display="block">
-                    PERÍODO
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {studentInfo.periodo ? `${studentInfo.periodo}º` : "—"}
-                  </Typography>
-                </Box>
-              </Stack>
-            )}
-          </Box>
-        </Paper>
+    <Container sx={{ p: { xs: 2, md: 3 }, overflowY: "auto" }}>
+      <Stack gap={3}>
+        {cabecalho}
 
-        {/* Abas */}
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            textColor="primary"
-            indicatorColor="primary"
-            aria-label="Abas da Página Inicial"
-          >
-            <Tab
-              icon={<BookOpen size={18} />}
-              iconPosition="start"
-              label="Disciplinas"
-              id="student-tab-disciplinas"
-            />
-            <Tab
-              icon={<ClipboardList size={18} />}
-              iconPosition="start"
-              label="A Fazer"
-              id="student-tab-afazer"
-            />
-          </Tabs>
-        </Box>
-
-        {/* Conteúdo Aba Disciplinas */}
-        {tabValue === 0 && (
-          <Box mt={1}>
-            {carregandoDisciplinas ? (
-              <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                minHeight={200}
-                flexDirection="column"
-                gap={2}
-              >
-                <CircularProgress color="primary" />
-                <Typography variant="body2" color="textSecondary">
-                  Carregando suas disciplinas...
-                </Typography>
-              </Box>
-            ) : erroDisciplinas ? (
-              <Alert severity="error">{erroDisciplinas}</Alert>
-            ) : disciplinas.length === 0 ? (
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 6,
-                  textAlign: "center",
-                  border: "1px dashed",
-                  borderColor: "grey.300",
-                  borderRadius: "12px",
-                  backgroundColor: "background.default",
-                }}
-              >
-                <GraduationCap size={48} color="#9E9E9E" style={{ marginBottom: 16 }} />
-                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                  Sem disciplinas matriculadas no período corrente.
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Caso considere que isto é um erro, entre em contato com a secretaria acadêmica.
-                </Typography>
-              </Paper>
-            ) : (
-              <Grid container spacing={3}>
-                {disciplinas.map((disc) => renderDisciplinaCard(disc))}
-              </Grid>
-            )}
-          </Box>
-        )}
-
-        {/* Conteúdo Aba A Fazer */}
-        {tabValue === 1 && (
-          <Box mt={1}>
-            {carregandoTarefas ? (
-              <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                minHeight={200}
-                flexDirection="column"
-                gap={2}
-              >
-                <CircularProgress color="primary" />
-                <Typography variant="body2" color="textSecondary">
-                  Carregando suas tarefas...
-                </Typography>
-              </Box>
-            ) : erroTarefas ? (
-              <Alert severity="error">{erroTarefas}</Alert>
-            ) : tarefas.length === 0 ? (
-              <Paper elevation={0} sx={{ minHeight: 360, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
-                <NoData title="Nenhuma avaliação pendente" description="Suas próximas avaliações aparecerão aqui." />
-              </Paper>
-            ) : (
-              <Grid container spacing={2}>
-                {tarefas.map((task) => (
-                  <Grid size={12} key={task.avaliacaoId}>
-                    <Paper
+        {atalhos.length > 0 && (
+          <Box>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Acesso rápido
+            </Typography>
+            <Grid container spacing={2}>
+              {atalhos.map((atalho) => {
+                const Icone = atalho.icon;
+                return (
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={atalho.href}>
+                    <Card.Root
+                      variant="outlined"
                       elevation={0}
-                      sx={{
-                        p: 2.5,
-                        borderRadius: "10px",
-                        border: "1px solid",
-                        borderColor: "grey.200",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        flexDirection: { xs: "column", sm: "row" },
-                        gap: 2,
-                        transition: "all 0.2s",
-                        "&:hover": {
-                          boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
-                          borderColor: "grey.300",
-                        },
-                      }}
+                      {...propsCartaoAcionavel(
+                        `Ir para ${atalho.label}`,
+                        () => navigate(atalho.href),
+                      )}
+                      sx={{ ...sxCartaoAcionavel, backgroundColor: "#FFF" }}
                     >
-                      <Stack spacing={0.75} sx={{ minWidth: 0, flex: 1 }}>
-                        <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
-                          <Typography variant="subtitle1" fontWeight="bold">
-                            {task.titulo}
-                          </Typography>
-                          <Chip
-                            label={ROTULO_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
-                            size="small"
-                            color={COR_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
-                            variant="outlined"
-                            sx={{ fontWeight: 700 }}
+                      <Card.Content sx={{ height: "100%" }}>
+                        <Stack direction="row" alignItems="center" gap={2} sx={{ minWidth: 0 }}>
+                          <IconeBadge>
+                            <Icone size={22} aria-hidden="true" />
+                          </IconeBadge>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography fontWeight={700}>
+                              {atalho.label}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {atalho.descricao}
+                            </Typography>
+                          </Box>
+                          <ArrowRight
+                            size={18}
+                            aria-hidden="true"
+                            style={{ flexShrink: 0, opacity: 0.5 }}
                           />
-                        </Box>
-                        <Typography variant="body2" color="textSecondary">
-                          Disciplina: <strong>{task.disciplinaNome}</strong>
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          Valor: <strong>{formatarPontos(task.valor)}</strong>
-                        </Typography>
-                      </Stack>
-                      <Stack direction="row" alignItems="center" spacing={3} sx={{ width: { xs: "100%", sm: "auto" } }}>
-                        <Stack spacing={0.5} alignItems={{ xs: "flex-start", sm: "flex-end" }}>
-                          <Box display="flex" alignItems="center" gap={0.5} color="text.secondary">
-                            <Calendar size={14} />
-                            <Typography variant="body2" fontSize="13px">
-                              Data: {formatarDataPtBr(task.dataVencimento)}
-                            </Typography>
-                          </Box>
-                          <Box display="flex" alignItems="center" gap={0.5} color="warning.main">
-                            <Clock size={14} />
-                            <Typography variant="caption" fontWeight="bold">
-                              Pendente
-                            </Typography>
-                          </Box>
                         </Stack>
-                      </Stack>
-                    </Paper>
+                      </Card.Content>
+                    </Card.Root>
                   </Grid>
-                ))}
-              </Grid>
-            )}
+                );
+              })}
+            </Grid>
           </Box>
         )}
-      </Box>
+      </Stack>
     </Container>
   );
 }

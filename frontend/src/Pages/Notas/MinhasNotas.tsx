@@ -9,21 +9,71 @@ import {
   CircularProgress,
   MenuItem,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   Typography,
 } from "@mui/material";
+import type { GridColDef } from "@mui/x-data-grid";
 import { ChevronDown } from "lucide-react";
 import Container from "../../components/Container";
+import DataTable from "../../components/DataTable/DataTable";
 import NoData from "../../components/DataTable/NoData";
 import TextField from "../../components/TextField";
 import { useNota } from "../../hooks/use-nota";
 import { SITUACAO_LABEL, situacaoCor, type BoletimAluno, type DisciplinaBoletim } from "../../models/nota-model";
 import { COR_TIPO_AVALIACAO, formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
 import { formatarMedia, formatarNota, mensagemErro } from "./notas-utils";
+
+type AvaliacaoDisciplina = DisciplinaBoletim["avaliacoes"][number];
+
+const colunasAvaliacoes: GridColDef<AvaliacaoDisciplina>[] = [
+  {
+    field: "tipo",
+    headerName: "Tipo",
+    width: 130,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <Chip
+        size="small"
+        variant="outlined"
+        color={COR_TIPO_AVALIACAO[row.tipo]}
+        label={ROTULO_TIPO_AVALIACAO[row.tipo]}
+      />
+    ),
+  },
+  {
+    field: "descricao",
+    headerName: "Avaliação",
+    flex: 1,
+    minWidth: 240,
+    sortable: false,
+    valueGetter: (_, row) => row.descricao || "Sem descrição",
+  },
+  {
+    field: "valorObtido",
+    headerName: "Nota obtida",
+    width: 150,
+    align: "right",
+    headerAlign: "right",
+    sortable: false,
+    renderCell: ({ row }) => (
+      <Typography
+        variant="body2"
+        color={row.lancada ? "text.primary" : "text.disabled"}
+        fontStyle={row.lancada ? "normal" : "italic"}
+      >
+        {formatarNota(row.valorObtido)}
+      </Typography>
+    ),
+  },
+  {
+    field: "valorMaximo",
+    headerName: "Máximo",
+    width: 130,
+    align: "right",
+    headerAlign: "right",
+    sortable: false,
+    valueFormatter: (valor) => formatarPontos(Number(valor)),
+  },
+];
 
 export default function MinhasNotas() {
   const api = useNota();
@@ -119,7 +169,16 @@ function DisciplinaCard({ disciplina }: { disciplina: DisciplinaBoletim }) {
       disableGutters
       defaultExpanded
       elevation={0}
-      sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, "&:before": { display: "none" } }}
+      sx={{
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 2,
+        backgroundColor: "#FFF",
+        "&:before": { display: "none" },
+        "& .MuiAccordionSummary-root, & .MuiAccordionDetails-root": {
+          backgroundColor: "#FFF",
+        },
+      }}
     >
       <AccordionSummary expandIcon={<ChevronDown size={18} aria-hidden="true" />}>
         <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ sm: "center" }} justifyContent="space-between" gap={1} width="100%" pr={2}>
@@ -139,49 +198,22 @@ function DisciplinaCard({ disciplina }: { disciplina: DisciplinaBoletim }) {
         </Stack>
       </AccordionSummary>
       <AccordionDetails>
-        <Box sx={{ overflowX: "auto" }}>
-          <Table
-            size="small"
-            sx={{
-              minWidth: 560,
-              "& thead th": { fontWeight: 700, backgroundColor: "#F1F5F9", color: "#000" },
-              "& tbody tr:nth-of-type(odd)": { backgroundColor: "#F1F5F9" },
-            }}
-          >
-            <TableHead>
-              <TableRow>
-                <TableCell>Avaliação</TableCell>
-                <TableCell align="right">Nota obtida</TableCell>
-                <TableCell align="right">Máximo</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {disciplina.avaliacoes.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Nenhuma avaliação cadastrada nesta disciplina.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-              {disciplina.avaliacoes.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>
-                    <Stack direction="row" alignItems="center" gap={1}>
-                      <Chip size="small" variant="outlined" color={COR_TIPO_AVALIACAO[a.tipo]} label={ROTULO_TIPO_AVALIACAO[a.tipo]} />
-                      <Typography variant="body2">{a.descricao || "Sem descrição"}</Typography>
-                    </Stack>
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: a.lancada ? "text.primary" : "text.disabled", fontStyle: a.lancada ? "normal" : "italic" }}>
-                    {formatarNota(a.valorObtido)}
-                  </TableCell>
-                  <TableCell align="right">{formatarPontos(a.valorMaximo)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
+        <DataTable
+          rows={disciplina.avaliacoes}
+          columns={colunasAvaliacoes}
+          hideFooter
+          disableColumnMenu
+          emptyTitle="Nenhuma avaliação cadastrada nesta disciplina"
+          emptyDescription="As avaliações aparecerão aqui quando forem cadastradas pelo professor."
+          sx={{
+            mt: 0,
+            backgroundColor: "#FFF",
+            height: disciplina.avaliacoes.length === 0
+              ? 260
+              : 38 + disciplina.avaliacoes.length * 34,
+            minHeight: 0,
+          }}
+        />
         {disciplina.notaRecuperacao !== null && (
           <Typography variant="body2" mt={1.5}>
             Recuperação: <strong>{formatarNota(disciplina.notaRecuperacao)}</strong> · Média final:{" "}
