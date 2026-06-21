@@ -144,29 +144,32 @@ export default function VisaoOperacional() {
         headerName: "Frequência",
         width: 180,
         sortable: false,
-        renderCell: ({ row }) =>
-          podeEditar ? (
-            <Select
-              size="small"
-              value={row.status || ""}
-              displayEmpty
-              onChange={(e) => mudarStatus(row.id, e.target.value as StatusFrequencia)}
-              aria-label={`Frequência de ${row.nome}`}
-              sx={{ height: 30, minWidth: 150 }}
-            >
-              <MenuItem value="" disabled>
-                Selecione
-              </MenuItem>
-              <MenuItem value="PRESENTE">Presente</MenuItem>
-              <MenuItem value="AUSENTE">Ausente</MenuItem>
-            </Select>
-          ) : row.status ? (
-            <Chip size="small" variant="outlined" color={corStatus(row.status)} label={rotuloStatus(row.status)} />
-          ) : (
-            <Typography variant="body2" color="text.disabled">
-              Não lançada
-            </Typography>
-          ),
+        renderCell: ({ row }) => (
+          <Box sx={{ display: "flex", alignItems: "center", width: "100%", height: "100%" }}>
+            {podeEditar ? (
+              <Select
+                size="small"
+                value={row.status || ""}
+                displayEmpty
+                onChange={(e) => mudarStatus(row.id, e.target.value as StatusFrequencia)}
+                aria-label={`Frequência de ${row.nome}`}
+                sx={{ height: 30, minWidth: 150 }}
+              >
+                <MenuItem value="" disabled>
+                  Selecione
+                </MenuItem>
+                <MenuItem value="PRESENTE">Presente</MenuItem>
+                <MenuItem value="AUSENTE">Ausente</MenuItem>
+              </Select>
+            ) : row.status ? (
+              <Chip size="small" variant="outlined" color={corStatus(row.status)} label={rotuloStatus(row.status)} />
+            ) : (
+              <Typography variant="body2" color="text.disabled">
+                Não lançada
+              </Typography>
+            )}
+          </Box>
+        ),
       },
       { field: "percentualAtual", headerName: "% atual", width: 110, valueFormatter: (v) => formatarPercentual(v as number) },
     ],
