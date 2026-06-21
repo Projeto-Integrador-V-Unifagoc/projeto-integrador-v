@@ -22,7 +22,6 @@ import {
   Clock,
   ClipboardList,
   GraduationCap,
-  CheckCircle2,
 } from "lucide-react";
 import { frequenciaApi } from "../../services/frequencia-api";
 import { notaApi } from "../../services/nota-api";
@@ -33,6 +32,13 @@ import type {
   TarefaAluno,
   TipoTarefa,
 } from "../../models/home-aluno-model";
+import NoData from "../../components/DataTable/NoData";
+import {
+  COR_TIPO_AVALIACAO,
+  formatarDataPtBr,
+  formatarPontos,
+  ROTULO_TIPO_AVALIACAO,
+} from "../../utils/avaliacao";
 
 interface UsuarioLocal {
   nome?: string;
@@ -56,23 +62,6 @@ interface RespostaMe {
     } | null;
   };
 }
-
-// Cor do Chip por tipo de avaliação exibido na aba "A Fazer".
-const corDoTipo = (
-  tipo: TipoTarefa
-): "error" | "info" | "warning" | "secondary" => {
-  if (tipo === "PROVA") return "error";
-  if (tipo === "TRABALHO") return "info";
-  if (tipo === "RECUPERACAO") return "secondary";
-  return "warning"; // TPI
-};
-
-// Formata "AAAA-MM-DD" em pt-BR sem sofrer deslocamento de fuso horário.
-const formatarVencimento = (iso: string): string => {
-  const [ano, mes, dia] = iso.split("-").map(Number);
-  if (!ano || !mes || !dia) return iso;
-  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR");
-};
 
 export default function Home() {
   const navigate = useNavigate();
@@ -477,24 +466,8 @@ export default function Home() {
             ) : erroTarefas ? (
               <Alert severity="error">{erroTarefas}</Alert>
             ) : tarefas.length === 0 ? (
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 6,
-                  textAlign: "center",
-                  border: "1px dashed",
-                  borderColor: "grey.300",
-                  borderRadius: "12px",
-                  backgroundColor: "background.default",
-                }}
-              >
-                <CheckCircle2 size={48} color="#2E7D32" style={{ marginBottom: 16 }} />
-                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                  Nenhuma tarefa pendente.
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Parabéns! Você concluiu todas as suas atividades acadêmicas.
-                </Typography>
+              <Paper elevation={0} sx={{ minHeight: 360, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
+                <NoData title="Nenhuma avaliação pendente" description="Suas próximas avaliações aparecerão aqui." />
               </Paper>
             ) : (
               <Grid container spacing={2}>
@@ -510,7 +483,7 @@ export default function Home() {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        flexWrap: "wrap",
+                        flexDirection: { xs: "column", sm: "row" },
                         gap: 2,
                         transition: "all 0.2s",
                         "&:hover": {
@@ -519,34 +492,32 @@ export default function Home() {
                         },
                       }}
                     >
-                      <Stack spacing={0.5} sx={{ maxWidth: "75%" }}>
+                      <Stack spacing={0.75} sx={{ minWidth: 0, flex: 1 }}>
                         <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
                           <Typography variant="subtitle1" fontWeight="bold">
                             {task.titulo}
                           </Typography>
                           <Chip
-                            label={task.tipo}
+                            label={ROTULO_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
                             size="small"
-                            color={corDoTipo(task.tipo)}
-                            variant="filled"
-                            sx={{ height: 20, fontSize: "10px", fontWeight: "bold" }}
+                            color={COR_TIPO_AVALIACAO[task.tipo as TipoTarefa]}
+                            variant="outlined"
+                            sx={{ fontWeight: 700 }}
                           />
                         </Box>
                         <Typography variant="body2" color="textSecondary">
                           Disciplina: <strong>{task.disciplinaNome}</strong>
                         </Typography>
-                        {task.valor !== null && (
-                          <Typography variant="body2" color="textSecondary">
-                            Valor: <strong>{task.valor} pts</strong>
-                          </Typography>
-                        )}
+                        <Typography variant="body2" color="textSecondary">
+                          Valor: <strong>{formatarPontos(task.valor)}</strong>
+                        </Typography>
                       </Stack>
-                      <Stack direction="row" alignItems="center" spacing={3}>
-                        <Stack spacing={0.5} alignItems="flex-end">
+                      <Stack direction="row" alignItems="center" spacing={3} sx={{ width: { xs: "100%", sm: "auto" } }}>
+                        <Stack spacing={0.5} alignItems={{ xs: "flex-start", sm: "flex-end" }}>
                           <Box display="flex" alignItems="center" gap={0.5} color="text.secondary">
                             <Calendar size={14} />
                             <Typography variant="body2" fontSize="13px">
-                              Vencimento: {formatarVencimento(task.dataVencimento)}
+                              Data: {formatarDataPtBr(task.dataVencimento)}
                             </Typography>
                           </Box>
                           <Box display="flex" alignItems="center" gap={0.5} color="warning.main">

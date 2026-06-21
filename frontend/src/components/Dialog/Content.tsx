@@ -4,7 +4,7 @@ export function Content({ children, ...rest }: StackProps) {
     return (
         <Stack
             component='main'
-            margin="44px 0 55.75px"
+            margin={{ xs: "44px 0 104px", sm: "44px 0 55.75px" }}
             overflow='auto'
             sx={(theme) => ({
                 backgroundColor: theme.palette.background.default

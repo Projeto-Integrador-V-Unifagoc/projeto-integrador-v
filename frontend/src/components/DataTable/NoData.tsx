@@ -8,10 +8,12 @@ import NoDataImage from '../../../public/assets/nodata.svg'
 
 
 interface NoDataProps {
+    title?: string;
     description?: string;
 }
 
 export default function NoData({
+    title = "Nenhum registro encontrado",
     description = "Tente outra pesquisa ou adicione um novo registro.",
 }: NoDataProps) {
     return (
@@ -45,7 +47,7 @@ export default function NoData({
                 alignItems='center'
                 mt={1}
             >
-                <Typography variant="body1" fontWeight="bold">Nenhum registro encontrado</Typography>
+                <Typography variant="body1" fontWeight="bold">{title}</Typography>
                 <Typography variant="body2" color="text.secondary" textAlign="center" px={2}>{description}</Typography>
             </Stack>
         </Box>

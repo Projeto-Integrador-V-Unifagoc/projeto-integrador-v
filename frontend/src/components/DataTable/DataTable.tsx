@@ -7,6 +7,7 @@ interface DataTableProps {
   rows: GridValidRowModel[];
   columns: GridColDef[];
   loading?: boolean;
+  emptyTitle?: string;
   emptyDescription?: string;
 }
 
@@ -14,11 +15,12 @@ export default function DataTable({
   rows,
   columns,
   loading,
+  emptyTitle,
   emptyDescription,
 }: DataTableProps) {
   return (
     <Root>
-      <Table rows={rows} columns={columns} loading={loading} emptyDescription={emptyDescription} />
+      <Table rows={rows} columns={columns} loading={loading} emptyTitle={emptyTitle} emptyDescription={emptyDescription} />
     </Root>
   );
 }

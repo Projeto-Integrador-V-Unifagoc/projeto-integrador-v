@@ -6,11 +6,12 @@ import SkeletonOverlay from "./Skeleton";
 import CustomPagination from "./Pagination";
 
 interface TableProps extends DataGridProps {
+  emptyTitle?: string;
   emptyDescription?: string;
 }
 
-export default function Table({ emptyDescription, ...props }: TableProps) {
-  const EmptyOverlay = () => <NoData description={emptyDescription} />;
+export default function Table({ emptyTitle, emptyDescription, ...props }: TableProps) {
+  const EmptyOverlay = () => <NoData title={emptyTitle} description={emptyDescription} />;
 
   return (
     <DataGrid

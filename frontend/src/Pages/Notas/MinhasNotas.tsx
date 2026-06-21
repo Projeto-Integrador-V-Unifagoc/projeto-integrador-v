@@ -10,7 +10,6 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Stack,
   Table,
@@ -20,10 +19,12 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { ChevronDown, GraduationCap } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import Container from "../../components/Container";
+import NoData from "../../components/DataTable/NoData";
 import { useNota } from "../../hooks/use-nota";
 import { SITUACAO_LABEL, situacaoCor, type BoletimAluno, type DisciplinaBoletim } from "../../models/nota-model";
+import { COR_TIPO_AVALIACAO, formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
 
 const mensagemErro = (erro: unknown) => {
   const e = erro as { response?: { data?: { mensagem?: string } }; message?: string };
@@ -101,17 +102,7 @@ export default function MinhasNotas() {
           </Box>
         )}
 
-        {boletim && disciplinas.length === 0 && (
-          <Paper elevation={0} sx={{ p: 6, textAlign: "center", border: "1px dashed", borderColor: "grey.300", borderRadius: 3 }}>
-            <GraduationCap size={48} color="#9E9E9E" style={{ marginBottom: 16 }} />
-            <Typography variant="subtitle1" fontWeight="bold">
-              Nenhuma nota lançada até o momento.
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              As notas aparecerão aqui assim que forem publicadas pelo professor.
-            </Typography>
-          </Paper>
-        )}
+        {boletim && disciplinas.length === 0 && <Box minHeight={360} border="1px solid" borderColor="divider" borderRadius={2}><NoData title="Nenhuma avaliação encontrada" description="As avaliações e notas aparecerão aqui assim que forem publicadas pelo professor." /></Box>}
 
         {disciplinas.map((d) => (
           <DisciplinaCard key={d.turmaDisciplinaId} disciplina={d} />
@@ -143,7 +134,8 @@ function DisciplinaCard({ disciplina }: { disciplina: DisciplinaBoletim }) {
         </Stack>
       </AccordionSummary>
       <AccordionDetails>
-        <Table size="small">
+        <Box sx={{ overflowX: "auto" }}>
+        <Table size="small" sx={{ minWidth: 560 }}>
           <TableHead>
             <TableRow sx={{ "& th": { fontWeight: 700 } }}>
               <TableCell>Avaliação</TableCell>
@@ -164,17 +156,20 @@ function DisciplinaCard({ disciplina }: { disciplina: DisciplinaBoletim }) {
             {disciplina.avaliacoes.map((a) => (
               <TableRow key={a.id}>
                 <TableCell>
-                  {a.tipo}
-                  {a.descricao ? ` — ${a.descricao}` : ""}
+                  <Stack direction="row" alignItems="center" gap={1}>
+                    <Chip size="small" variant="outlined" color={COR_TIPO_AVALIACAO[a.tipo]} label={ROTULO_TIPO_AVALIACAO[a.tipo]} />
+                    <Typography variant="body2">{a.descricao || "Sem descrição"}</Typography>
+                  </Stack>
                 </TableCell>
                 <TableCell align="right" sx={{ color: a.lancada ? "text.primary" : "text.disabled" }}>
                   {formatarNota(a.valorObtido)}
                 </TableCell>
-                <TableCell align="right">{a.valorMaximo}</TableCell>
+                <TableCell align="right">{formatarPontos(a.valorMaximo)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        </Box>
         {disciplina.notaRecuperacao !== null && (
           <Typography variant="body2" mt={1}>
             Recuperação: <strong>{formatarNota(disciplina.notaRecuperacao)}</strong> · Média final:{" "}
