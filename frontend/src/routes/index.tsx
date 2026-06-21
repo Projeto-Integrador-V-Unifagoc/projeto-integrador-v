@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
 
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import Perfil from "../Pages/Perfil/Perfil";
@@ -37,6 +38,8 @@ import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
 import Professores from "../Pages/Professores/Professores";
 import CadastroProfessores from "../Pages/Professores/Cadastro";
 import Frequencia from "../Pages/Frequencia/Frequencia";
+import LancamentoNotas from "../Pages/Notas/LancamentoNotas";
+import MinhasNotas from "../Pages/Notas/MinhasNotas";
 import NovaMatricula from "../Pages/Matricula/NovaMatricula";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
@@ -59,7 +62,7 @@ function RouteByRole({
   children,
   perfisPermitidos,
 }: {
-  children: any;
+  children: ReactNode;
   perfisPermitidos: string[];
 }) {
   const usuarioStorage = localStorage.getItem("@UniEduca:user");
@@ -72,7 +75,7 @@ function RouteByRole({
 
   try {
     usuario = JSON.parse(usuarioStorage);
-  } catch (error) {
+  } catch {
     localStorage.removeItem("@UniEduca:user");
     localStorage.removeItem("@UniEduca:token");
     return <Navigate to="/login" replace />;
@@ -122,7 +125,7 @@ export default function AppRoutes() {
         <Route
           path="/tarefas/lista"
           element={
-            <RouteByRole perfisPermitidos={ACESSO_ALUNO}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <BuildingPage />
             </RouteByRole>
           }
@@ -231,7 +234,16 @@ export default function AppRoutes() {
           path="/notas/lancamento"
           element={
             <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
-              <BuildingPage />
+              <LancamentoNotas />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/minhas-notas"
+          element={
+            <RouteByRole perfisPermitidos={["aluno"]}>
+              <MinhasNotas />
             </RouteByRole>
           }
         />
@@ -357,6 +369,14 @@ export default function AppRoutes() {
           path="/frequencias/lista"
           element={
             <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
+              <Frequencia />
+            </RouteByRole>
+          }
+        />
+        <Route
+          path="/minha-frequencia"
+          element={
+            <RouteByRole perfisPermitidos={["aluno"]}>
               <Frequencia />
             </RouteByRole>
           }

@@ -7,7 +7,15 @@ import {
 import NoDataImage from '../../../public/assets/nodata.svg'
 
 
-export default function NoData() {
+interface NoDataProps {
+    title?: string;
+    description?: string;
+}
+
+export default function NoData({
+    title = "Nenhum registro encontrado",
+    description = "Tente outra pesquisa ou adicione um novo registro.",
+}: NoDataProps) {
     return (
         <Box
             sx={{
@@ -21,8 +29,8 @@ export default function NoData() {
             <Box
                 component='div'
                 sx={(theme) => ({
-                    height: 270,
-                    width: 270,
+                    height: { xs: 150, sm: 210 },
+                    width: { xs: 150, sm: 210 },
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
@@ -31,7 +39,7 @@ export default function NoData() {
                     p: 3
                 })}
             >
-                <img src={NoDataImage} alt="Sem dados" />
+                <Box component="img" src={NoDataImage} alt="" aria-hidden="true" sx={{ maxWidth: "100%", maxHeight: "100%" }} />
             </Box>
             <Stack
                 display='flex'
@@ -39,8 +47,8 @@ export default function NoData() {
                 alignItems='center'
                 mt={1}
             >
-                <Typography variant="body1" fontWeight="bold">Nenhum registro encontrado</Typography>
-                <Typography variant="body2" color="textDisabled">Tente outra pesquisa ou adicione um novo registro.</Typography>
+                <Typography variant="body1" fontWeight="bold">{title}</Typography>
+                <Typography variant="body2" color="text.secondary" textAlign="center" px={2}>{description}</Typography>
             </Stack>
         </Box>
     )

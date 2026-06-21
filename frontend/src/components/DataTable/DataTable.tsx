@@ -1,22 +1,20 @@
-import type { GridColDef } from "@mui/x-data-grid";
+import type { DataGridProps } from "@mui/x-data-grid";
 
 import Table from "./Table";
 import Root from "./Root";
 
-interface DataTableProps {
-  rows: any[];
-  columns: GridColDef[];
-  loading?: boolean
+// Encaminha todas as props do DataGrid (inclusive edição de célula: processRowUpdate,
+// onProcessRowUpdateError, etc.) mantendo o padrão compartilhado de locale pt-BR,
+// paginação, estado vazio e carregamento.
+interface DataTableProps extends DataGridProps {
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
-export default function DataTable({
-  rows,
-  columns,
-  loading
-}: DataTableProps) {
+export default function DataTable({ emptyTitle, emptyDescription, ...props }: DataTableProps) {
   return (
     <Root>
-      <Table rows={rows} columns={columns} loading={loading}/>
+      <Table {...props} emptyTitle={emptyTitle} emptyDescription={emptyDescription} />
     </Root>
   );
 }

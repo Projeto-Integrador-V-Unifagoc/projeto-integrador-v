@@ -1,4 +1,4 @@
-import type { AbaFicha, AlunoFicha, NotaAluno } from "./types";
+import type { AbaFicha, AlunoFicha } from "./types";
 
 export const alunoMock: AlunoFicha = {
   nome: "Joao Pedro Vidal dos Santos",
@@ -16,64 +16,6 @@ export const alunoMock: AlunoFicha = {
   email: "ppvidalsantos@gmail.com",
   semestre: "2026-1",
 };
-
-export const notasMock: NotaAluno[] = [
-  {
-    disciplina: "Aspectos Sociologicos e Antropologicos",
-    mediaFinal: 13,
-    avaliacao: 0,
-    provaFinal: 0,
-    provaInova: 12.25,
-    provaSegundaChamada: 0,
-    conhecimentosGerais: 0.5,
-    faltas: 2,
-    percentualFaltas: 4.17,
-  },
-  {
-    disciplina: "Banco de Dados I",
-    mediaFinal: 9,
-    avaliacao: 0,
-    provaFinal: 0,
-    provaInova: 8.4,
-    provaSegundaChamada: 0,
-    conhecimentosGerais: 0.5,
-    faltas: 2,
-    percentualFaltas: 1.67,
-  },
-  {
-    disciplina: "Engenharia de Software",
-    mediaFinal: 19,
-    avaliacao: 5.75,
-    provaFinal: 0,
-    provaInova: 12.25,
-    provaSegundaChamada: 0,
-    conhecimentosGerais: 0.5,
-    faltas: 4,
-    percentualFaltas: 3.33,
-  },
-  {
-    disciplina: "Gerencia de Projetos de Software",
-    mediaFinal: 16,
-    avaliacao: 6.74,
-    provaFinal: 0,
-    provaInova: 8.75,
-    provaSegundaChamada: 0,
-    conhecimentosGerais: 0.5,
-    faltas: 2,
-    percentualFaltas: 2.78,
-  },
-  {
-    disciplina: "Projeto Integrador de Extensao V",
-    mediaFinal: 11,
-    avaliacao: 11.1,
-    provaFinal: 0,
-    provaInova: 0,
-    provaSegundaChamada: 0,
-    conhecimentosGerais: 0,
-    faltas: 0,
-    percentualFaltas: 0,
-  },
-];
 
 export const abasFicha: { label: string; value: AbaFicha }[] = [
   { label: "Notas/Faltas", value: "notas" },

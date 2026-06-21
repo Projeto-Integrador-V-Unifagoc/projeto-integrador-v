@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { UsuarioRepository } from '../repository/usuario-repository';
 import jwt from 'jsonwebtoken';
+import { obterJwtSecret } from '../../../config/jwt';
 
 class AutenticacaoService {
   private usuarioRepository = new UsuarioRepository();
@@ -35,6 +36,9 @@ class AutenticacaoService {
       const professor = await this.usuarioRepository.buscarProfessorSimples(professor_id);
       if (!professor) {
         throw new Error('Professor selecionado não encontrado.');
+      }
+      if (professor.ativo === false) {
+        throw new Error('Professor inativo não pode receber acesso.');
       }
       if (professor.usuario_id) {
         throw new Error('Este professor já possui um login vinculado.');
@@ -79,6 +83,13 @@ class AutenticacaoService {
       throw new Error('Usuário não encontrado');
     }
 
+    if (usuario.tipo_usuario === 'professor') {
+      const professor = await this.usuarioRepository.buscarProfessorPorUsuario(String(usuario.id));
+      if (!professor || professor.ativo === false) {
+        throw new Error('Professor inativo. Acesso negado.');
+      }
+    }
+
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
     if (!senhaValida) {
@@ -90,7 +101,7 @@ class AutenticacaoService {
         id: usuario.id,
         tipo_usuario: usuario.tipo_usuario,
       },
-      process.env.JWT_SECRET || 'segredo',
+      obterJwtSecret(),
       {
         expiresIn: '1h',
       }
@@ -125,6 +136,7 @@ class AutenticacaoService {
       if (aluno) {
         pessoa = this.montarPessoa(aluno);
         academico = {
+          matricula: aluno.matricula ?? null,
           curso: aluno.curso_nome ?? null,
           curso_codigo: aluno.curso_codigo ?? null,
           periodo: aluno.periodo ?? null,
@@ -217,6 +229,9 @@ class AutenticacaoService {
       const professor = await this.usuarioRepository.buscarProfessorSimples(professor_id);
       if (!professor) {
         throw new Error('Professor selecionado não encontrado.');
+      }
+      if (professor.ativo === false) {
+        throw new Error('Professor inativo não pode receber acesso.');
       }
       if (professor.usuario_id && String(professor.usuario_id) !== String(usuarioId)) {
         throw new Error('Este professor já possui um login vinculado.');

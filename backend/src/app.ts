@@ -7,12 +7,12 @@ import { DepartamentoController } from './Modules/modulo-facul-dp-curso/controll
 import CursoController from './Modules/modulo-facul-dp-curso/controller/CursoController';
 import { DisciplinaController } from './Modules/modulo-disciplinas/controller/DisciplinaController';
 import { professorRouter } from './Modules/routes/professorRoutes';
-import { professoresAcademicoRouter } from './Modules/routes/professoresAcademicoRoutes';
 import { avaliacaoRouter } from './Modules/routes/avaliacaoRoutes';
 import { frequenciaRouter } from './Modules/routes/frequenciaRoutes';
 import { notasRouter } from './Modules/routes/notasRoutes';
 import { matriculaRouter } from './Modules/routes/matriculaRoutes';
 import { documentoRouter } from './Modules/routes/documentoRoutes';
+import { homeAlunoRouter } from './Modules/routes/homeAlunoRoutes';
 import authRoutes from './Modules/usuario-perfil-autenticacao/routes/auth-routes';
 import { StatusDisciplinaController } from './Modules/modulo-status-matricula-disciplina/controller/DisciplinaController';
 import { MatriculaController } from './Modules/modulo-status-matricula-disciplina/controller/MatriculaController';
@@ -20,8 +20,10 @@ import { PeriodoLetivoController } from './Modules/modulo-estrutura-academica/co
 import { CursoDisciplinaController } from './Modules/modulo-estrutura-academica/controller/CursoDisciplinaController';
 import { TurmaController } from './Modules/modulo-estrutura-academica/controller/TurmaController';
 import { TurmaDisciplinaController } from './Modules/modulo-estrutura-academica/controller/TurmaDisciplinaController';
+import { obterJwtSecret } from './config/jwt';
 
 const PORT = process.env.PORT || 3000;
+obterJwtSecret();
 
 const app = express();
 
@@ -107,10 +109,10 @@ app.put('/turmas/:id/disciplinas/:turmaDisciplinaId', (req, res) => turmaDiscipl
 app.delete('/turmas/:id/disciplinas/:turmaDisciplinaId', (req, res) => turmaDisciplinaController.removerTurmaDisciplina(req, res));
 
 app.use('/professores', professorRouter);
-app.use('/professores-academico', professoresAcademicoRouter);
 app.use('/avaliacoes', avaliacaoRouter);
 app.use('/frequencias', frequenciaRouter);
 app.use('/notas', notasRouter);
+app.use(homeAlunoRouter);
 app.use(matriculaRouter);
 app.use(documentoRouter);
 

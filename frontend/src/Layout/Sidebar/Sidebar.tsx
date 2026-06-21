@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   List,
   ListItemButton,
@@ -33,24 +32,18 @@ interface MenuItem {
 }
 
 export default function Sidebar({ expandido }: SidebarProps) {
-  const [tipoUsuario, setTipoUsuario] = useState<string>("");
-
-  useEffect(() => {
+  const tipoUsuario = (() => {
     const usuarioStorage = localStorage.getItem("@UniEduca:user");
-
     if (usuarioStorage) {
       try {
         const usuario = JSON.parse(usuarioStorage);
-        const tipoNormalizado = String(usuario?.tipo_usuario || "")
+        return String(usuario?.tipo_usuario || "")
           .trim()
           .toLowerCase();
-
-        setTipoUsuario(tipoNormalizado);
-      } catch (error) {
-        setTipoUsuario("");
-      }
+      } catch { return ""; }
     }
-  }, []);
+    return "";
+  })();
 
   const ehSecretaria = tipoUsuario === "secretaria";
   const ehProfessor = tipoUsuario === "professor";
@@ -65,7 +58,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
       label: "Tarefas",
       href: "/tarefas/lista",
       icon: ClipboardList,
-      podeVer: ehAdmin || ehAluno,
+      podeVer: ehAdmin,
     },
     {
       label: "Períodos Letivos",
@@ -140,10 +133,22 @@ export default function Sidebar({ expandido }: SidebarProps) {
       podeVer: ehAdmin || ehProfessor,
     },
     {
+      label: "Minha Frequência",
+      href: "/minha-frequencia",
+      icon: CalendarCheck,
+      podeVer: ehAluno,
+    },
+    {
       label: "Lançamento de Notas",
       href: "/notas/lancamento",
       icon: ClipboardPen,
       podeVer: ehAdmin || ehProfessor,
+    },
+    {
+      label: "Minhas Notas",
+      href: "/minhas-notas",
+      icon: ClipboardPen,
+      podeVer: ehAluno,
     },
     {
       label: "Relatórios",

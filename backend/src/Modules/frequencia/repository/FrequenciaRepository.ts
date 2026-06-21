@@ -1,301 +1,127 @@
+import type { Knex } from "knex";
 import db from "../../../database/index.js";
-import { FrequenciaMapper, StatusFrequencia } from "../models/Frequencia";
+import { FrequenciaMapper, type StatusFrequencia } from "../models/Frequencia";
+
+const STATUS_ATIVO = ["ativa", "ATIVA", "ATIVO", "MATRICULADO", "REGULAR"];
 
 export class FrequenciaRepository {
-  async buscarProfessorPorUsuarioId(usuarioId: string) {
-    return db("professor").where({ usuario_id: usuarioId }).first();
+  buscarUsuarioPorId(usuarioId: string) { return db("usuario").select("id", "tipo_usuario").where({ id: usuarioId }).first(); }
+  buscarProfessorPorUsuarioId(usuarioId: string) { return db("professor").where({ usuario_id: usuarioId }).first(); }
+  buscarAlunoPorUsuarioId(usuarioId: string) { return db("aluno").where({ usuario_id: usuarioId }).first(); }
+  professorPossuiTurma(professorId: string, turmaDisciplinaId: string) {
+    return db("turma_disciplina").where({ id: turmaDisciplinaId, professor_id: professorId }).whereIn("status", STATUS_ATIVO).first().then(Boolean);
+  }
+  alunoPertenceATurma(alunoId: string, turmaDisciplinaId: string) {
+    return db("matricula_turma_disciplina as mtd").join("matricula as m", "mtd.matricula_id", "m.id")
+      .where("m.aluno_id", alunoId).where("mtd.turma_disciplina_id", turmaDisciplinaId)
+      .whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_ATIVO).first().then(Boolean);
+  }
+  professorPossuiAluno(professorId: string, alunoId: string) {
+    return db("turma_disciplina as td").join("matricula_turma_disciplina as mtd", "mtd.turma_disciplina_id", "td.id")
+      .join("matricula as m", "mtd.matricula_id", "m.id").where("td.professor_id", professorId)
+      .where("m.aluno_id", alunoId).whereIn("td.status", STATUS_ATIVO).whereIn("mtd.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_ATIVO).first().then(Boolean);
   }
 
-  async buscarAlunoPorUsuarioId(usuarioId: string) {
-    return db("aluno").where({ usuario_id: usuarioId }).first();
+  listarTurmas(professorId?: string, alunoId?: string) {
+    const q = db("turma_disciplina as td").join("turma as t", "td.turma_id", "t.id")
+      .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
+      .join("curso as c", "t.curso_id", "c.id").join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
+      .join("disciplinas as d", "cd.disciplina_id", "d.id")
+      .select("td.id", "td.professor_id", "t.id as turma_id", "t.sigla as turma_sigla", "t.descricao as turma_descricao",
+        "pl.codigo as periodo_codigo", "pl.data_inicio", "pl.data_fim", "pl.status as periodo_status",
+        "d.id as disciplina_id", "d.nome as disciplina_nome", "d.codigo as disciplina_codigo", "c.id as curso_id", "c.nome as curso_nome")
+      .whereIn("td.status", STATUS_ATIVO).orderBy("d.nome");
+    if (professorId) q.where("td.professor_id", professorId);
+    if (alunoId) q.join("matricula_turma_disciplina as mtd", "mtd.turma_disciplina_id", "td.id")
+      .join("matricula as m", "mtd.matricula_id", "m.id").where("m.aluno_id", alunoId)
+      .whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_ATIVO);
+    return q;
   }
-
-  async buscarProfessorPadraoParaFrequencia() {
-    const professorComTurma = await db("professor")
-      .join("turma_disciplina", "professor.id", "turma_disciplina.professor_id")
-      .select("professor.*")
-      .first();
-
-    if (professorComTurma) return professorComTurma;
-    return db("professor").first();
+  listarLocais() { return db("local").select("id", "codigo").orderBy("codigo"); }
+  buscarTurma(id: string) {
+    return db("turma_disciplina as td").join("turma as t", "td.turma_id", "t.id")
+      .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
+      .join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id").join("disciplinas as d", "cd.disciplina_id", "d.id")
+      .where("td.id", id).select("td.*", "t.status as turma_status", "pl.codigo as periodo_codigo", "pl.data_inicio", "pl.data_fim",
+        "pl.status as periodo_status", "pl.ativo as periodo_ativo", "d.id as disciplina_id", "d.nome as disciplina_nome").first();
   }
+  buscarAulaPorId(id: string) { return db("aula").where({ id }).first(); }
 
-  async professorPossuiTurma(professorId: string, turmaDisciplinaId: string) {
-    const turmaDisciplina = await db("turma_disciplina")
-      .where({ id: turmaDisciplinaId, professor_id: professorId })
-      .first();
-    return Boolean(turmaDisciplina);
+  listarAlunosAtivosDaTurma(id: string) {
+    return db("matricula_turma_disciplina as mtd").join("matricula as m", "mtd.matricula_id", "m.id")
+      .join("aluno as a", "m.aluno_id", "a.id").join("pessoa as p", "a.pessoa_id", "p.id")
+      .where("mtd.turma_disciplina_id", id).whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_ATIVO)
+      .select("mtd.id as matricula_turma_disciplina_id", "a.id as aluno_id", "a.matricula", "p.nome", "mtd.status").orderBy("p.nome");
   }
-
-  async listarTurmasDoProfessor(professorId?: string) {
-    const query = db("turma_disciplina")
-      .join("turma", "turma_disciplina.turma_id", "turma.id")
-      .join("periodo_letivo", "turma.periodo_letivo_id", "periodo_letivo.id")
-      .join("curso", "turma.curso_id", "curso.id")
-      .join("curso_disciplina", "turma_disciplina.curso_disciplina_id", "curso_disciplina.id")
-      .join("disciplinas", "curso_disciplina.disciplina_id", "disciplinas.id")
-      .select(
-        "turma_disciplina.id",
-        "turma_disciplina.professor_id",
-        "turma.id as turma_id",
-        "turma.sigla as turma_sigla",
-        "turma.descricao as turma_descricao",
-        "periodo_letivo.ano",
-        "periodo_letivo.semestre",
-        "disciplinas.id as disciplina_id",
-        "disciplinas.nome as disciplina_nome",
-        "disciplinas.codigo as disciplina_codigo",
-        "curso.id as curso_id",
-        "curso.nome as curso_nome",
-      )
-      .whereIn("turma_disciplina.status", ["ativa", "ATIVA"])
-      .orderBy("disciplinas.nome");
-
-    if (professorId) query.where("turma_disciplina.professor_id", professorId);
-    return query;
+  async contarMatriculasIrregulares(id: string) {
+    const [{ total }] = await db("matricula_turma_disciplina as mtd").join("matricula as m", "mtd.matricula_id", "m.id")
+      .where("mtd.turma_disciplina_id", id).where((q) => q.whereNotIn("mtd.status", STATUS_ATIVO).orWhereNotIn("m.status", STATUS_ATIVO)).count("mtd.id as total");
+    return Number(total || 0);
   }
-
-  async listarAlunosAtivosDaTurma(turmaDisciplinaId: string) {
-    return db("matricula_turma_disciplina")
-      .join("matricula", "matricula_turma_disciplina.matricula_id", "matricula.id")
-      .join("aluno", "matricula.aluno_id", "aluno.id")
-      .join("pessoa", "aluno.pessoa_id", "pessoa.id")
-      .where("matricula_turma_disciplina.turma_disciplina_id", turmaDisciplinaId)
-      .whereIn("matricula_turma_disciplina.status", ["ativa", "ATIVO", "MATRICULADO", "REGULAR"])
-      .whereIn("matricula.status", ["ativa", "ATIVO", "MATRICULADO", "REGULAR"])
-      .select(
-        "matricula_turma_disciplina.id as matricula_turma_disciplina_id",
-        "aluno.id as aluno_id",
-        "aluno.matricula",
-        "pessoa.nome",
-        "matricula_turma_disciplina.status",
-      )
-      .orderBy("pessoa.nome");
+  listarRegistrosDaChamada(id: string, data: string) {
+    return this.baseRegistro().where("mtd.turma_disciplina_id", id).whereRaw("(aula.data AT TIME ZONE 'America/Sao_Paulo')::date = ?::date", [data]).orderBy("p.nome");
   }
-
-  async buscarTurma(turmaDisciplinaId: string) {
-    return db("turma_disciplina")
-      .join("turma", "turma_disciplina.turma_id", "turma.id")
-      .join("curso_disciplina", "turma_disciplina.curso_disciplina_id", "curso_disciplina.id")
-      .join("disciplinas", "curso_disciplina.disciplina_id", "disciplinas.id")
-      .where("turma_disciplina.id", turmaDisciplinaId)
-      .select(
-        "turma_disciplina.*",
-        "turma.id as turma_id",
-        "turma.sigla as turma_sigla",
-        "turma.descricao as turma_descricao",
-        "disciplinas.id as disciplina_id",
-        "disciplinas.nome as disciplina_nome",
-      )
-      .first();
+  async calcularPercentualMatriculaTurmaDisciplina(id: string) {
+    const [r] = await db("frequencia").where({ matricula_turma_disciplina_id: id }).count("id as total")
+      .sum({ presencas: db.raw("CASE WHEN status = 'PRESENTE' THEN 1 ELSE 0 END") });
+    const total = Number(r.total || 0); return total ? Number((Number(r.presencas || 0) / total * 100).toFixed(2)) : 100;
   }
-
-  async obterOuCriarAula(turmaDisciplinaId: string, data: Date, professorId: string) {
-    const dataAula = data.toISOString().slice(0, 10);
-    const aulaExistente = await db("aula")
-      .where("turma_disciplina_id", turmaDisciplinaId)
-      .whereRaw("DATE(data) = ?", [dataAula])
-      .first();
-    if (aulaExistente) return aulaExistente;
-
-    const local = await this.obterOuCriarLocalPadrao();
-    const [aula] = await db("aula")
-      .insert({
-        turma_disciplina_id: turmaDisciplinaId,
-        professor_id: professorId,
-        local_id: local.id,
-        data,
-      })
-      .returning("*");
-    return aula;
+  async salvarChamadaAtomica(args: { turmaDisciplinaId: string; aulaId?: string; localId?: string; data: string; professorId: string; usuarioId: string; perfil: string; registros: Array<{ matriculaId: string; status: StatusFrequencia }> }) {
+    return db.transaction(async (trx) => {
+      let aula = args.aulaId ? await trx("aula").where({ id: args.aulaId }).forUpdate().first() :
+        await trx("aula").where("turma_disciplina_id", args.turmaDisciplinaId).whereRaw("(data AT TIME ZONE 'America/Sao_Paulo')::date = ?::date", [args.data]).forUpdate().first();
+      if (aula && (aula.turma_disciplina_id !== args.turmaDisciplinaId || String(aula.professor_id) !== args.professorId || this.dataIso(aula.data) !== args.data)) throw Object.assign(new Error("A aula não pertence à atribuição e data informadas."), { codigoDominio: "AULA_DIVERGENTE" });
+      if (!aula) {
+        if (!args.localId || !(await trx("local").where({ id: args.localId }).first())) throw Object.assign(new Error("Selecione um local de aula válido."), { codigoDominio: "LOCAL_INVALIDO" });
+        [aula] = await trx("aula").insert({ turma_disciplina_id: args.turmaDisciplinaId, professor_id: args.professorId, local_id: args.localId, data: `${args.data}T12:00:00-03:00` }).returning("*");
+      }
+      const existentes = await trx("frequencia").where({ aula_id: aula.id }).forUpdate();
+      if (existentes.some((r) => Date.now() > new Date(r.lancada_em || r.created_at).getTime() + 7 * 86400000)) throw Object.assign(new Error("Prazo de edição de 7 dias expirado."), { codigoDominio: "PRAZO_EXPIRADO" });
+      const porMatricula = new Map(existentes.map((r) => [String(r.matricula_turma_disciplina_id), r]));
+      const ids: string[] = [];
+      for (const item of args.registros) {
+        const anterior = porMatricula.get(item.matriculaId);
+        if (anterior) {
+          const [atual] = await trx("frequencia").where({ id: anterior.id }).update({ status: item.status, data: args.data, justificativa: item.status === "PRESENTE" ? null : anterior.justificativa, justificativa_motivo: item.status === "PRESENTE" ? null : anterior.justificativa_motivo, justificativa_observacao: item.status === "PRESENTE" ? null : anterior.justificativa_observacao, alterada_por_usuario_id: args.usuarioId, updated_at: trx.fn.now() }).returning("*");
+          ids.push(atual.id); await this.auditar(trx, atual.id, args, "CORRECAO", anterior, atual);
+        } else {
+          const [novo] = await trx("frequencia").insert({ aula_id: aula.id, matricula_turma_disciplina_id: item.matriculaId, status: item.status, data: args.data, responsavel_lancamento_usuario_id: args.usuarioId, lancada_em: trx.fn.now() }).returning("*");
+          ids.push(novo.id); await this.auditar(trx, novo.id, args, "LANCAMENTO", null, novo);
+        }
+      }
+      return { aulaId: aula.id, registros: await this.baseRegistro(trx).whereIn("frequencia.id", ids).then((rows) => rows.map(FrequenciaMapper.registro)) };
+    });
   }
-
-  async buscarAulaPorId(aulaId: string) {
-    return db("aula").where("id", aulaId).first();
+  buscarRegistroPorId(id: string) { return this.baseRegistro().where("frequencia.id", id).first().then((r) => r ? FrequenciaMapper.registro(r) : null); }
+  async salvarJustificativa(id: string, dados: any) {
+    return db.transaction(async (trx) => {
+      const anterior = await trx("frequencia").where({ id }).forUpdate().first();
+      const [atual] = await trx("frequencia").where({ id }).update({ justificativa: dados.motivo, justificativa_motivo: dados.motivo, justificativa_observacao: dados.observacao || null, justificada_por_usuario_id: dados.usuarioId, justificada_por_perfil: dados.perfil, justificada_em: trx.fn.now(), updated_at: trx.fn.now() }).returning("*");
+      await this.auditar(trx, id, dados, anterior.justificativa_motivo || anterior.justificativa ? "JUSTIFICATIVA_SUBSTITUIDA" : "JUSTIFICATIVA_INCLUIDA", anterior, atual);
+      const row = await this.baseRegistro(trx).where("frequencia.id", id).first();
+      return row ? FrequenciaMapper.registro(row) : null;
+    });
   }
-
-  async obterOuCriarLocalPadrao() {
-    const codigo = "SALA-FREQ-PADRAO";
-    const local = await db("local").where({ codigo }).first();
-    if (local) return local;
-
-    const [novoLocal] = await db("local").insert({ codigo }).returning("*");
-    return novoLocal;
+  listarHistoricoAluno(alunoId: string, professorId?: string) {
+    const q = this.baseRegistro().where("m.aluno_id", alunoId).orderBy("aula.data", "desc");
+    if (professorId) q.where("td.professor_id", professorId);
+    return q;
   }
-
-  async buscarRegistroPorAulaEMatricula(aulaId: string, matriculaTurmaDisciplinaId: string) {
-    const row = await this.baseRegistroQuery()
-      .where("frequencia.aula_id", aulaId)
-      .where("frequencia.matricula_turma_disciplina_id", matriculaTurmaDisciplinaId)
-      .first();
-    return row ? FrequenciaMapper.registro(row) : null;
+  async buscarConsolidadoTurma(id: string, filtros: { dataInicio?: string; dataFim?: string } = {}) {
+    const alunos = await this.listarAlunosAtivosDaTurma(id); const turma = await this.buscarTurma(id);
+    const aulasQ = db("aula").where("turma_disciplina_id", id).where("aula.data", "<=", db.fn.now()); this.filtrarData(aulasQ, filtros, "aula.data");
+    const aulas = await aulasQ.select("id"); const aulaIds = aulas.map((a) => a.id);
+    const registros = aulaIds.length ? await db("frequencia").whereIn("aula_id", aulaIds).whereIn("matricula_turma_disciplina_id", alunos.map((a) => a.matricula_turma_disciplina_id)) : [];
+    return { totalAulas: aulas.length, rows: alunos.map((aluno) => { const rs = registros.filter((r) => r.matricula_turma_disciplina_id === aluno.matricula_turma_disciplina_id); return { ...aluno, aluno_nome: aluno.nome, turma_disciplina_id: id, disciplina_id: turma?.disciplina_id, disciplina_nome: turma?.disciplina_nome, registros: rs.length, presencas: rs.filter((r) => r.status === "PRESENTE").length, faltas: rs.filter((r) => r.status === "AUSENTE").length }; }) };
   }
-
-  async criarRegistros(registros: any[]) {
-    const rows = await db("frequencia").insert(registros).returning("id");
-    const ids = rows.map((row: any) => row.id || row);
-    return this.listarRegistrosPorIds(ids);
-  }
-
-  async listarRegistrosPorIds(ids: string[]) {
-    const rows = await this.baseRegistroQuery().whereIn("frequencia.id", ids);
-    return rows.map(FrequenciaMapper.registro);
-  }
-
-  async buscarRegistroPorId(id: string) {
-    const row = await this.baseRegistroQuery().where("frequencia.id", id).first();
-    return row ? FrequenciaMapper.registro(row) : null;
-  }
-
-  async atualizarRegistro(id: string, status: StatusFrequencia) {
-    const [row] = await db("frequencia")
-      .where({ id })
-      .update({ status, updated_at: db.fn.now() })
-      .returning("id");
-    const registroId = (row as any)?.id || row;
-    return registroId ? this.buscarRegistroPorId(registroId) : null;
-  }
-
-  async atualizarJustificativa(id: string, justificativa: string) {
-    const [row] = await db("frequencia")
-      .where({ id })
-      .update({ justificativa, updated_at: db.fn.now() })
-      .returning("id");
-    const registroId = (row as any)?.id || row;
-    return registroId ? this.buscarRegistroPorId(registroId) : null;
-  }
-
-  async removerRegistro(id: string) {
-    await db("frequencia").where({ id }).del();
-  }
-
-  async listarRegistrosDaChamada(turmaDisciplinaId: string, data: string) {
-    return this.baseRegistroQuery()
-      .where("matricula_turma_disciplina.turma_disciplina_id", turmaDisciplinaId)
-      .where("frequencia.data", data)
-      .orderBy("pessoa.nome");
-  }
-
-  async buscarConsolidadoTurma(
-    turmaDisciplinaId: string,
-    filtros?: { dataInicio?: string; dataFim?: string },
-  ) {
-    const totalAulasQuery = db("frequencia")
-      .join(
-        "matricula_turma_disciplina",
-        "frequencia.matricula_turma_disciplina_id",
-        "matricula_turma_disciplina.id",
-      )
-      .where("matricula_turma_disciplina.turma_disciplina_id", turmaDisciplinaId)
-      .countDistinct("frequencia.aula_id as total");
-
-    const registrosQuery = db("frequencia")
-      .join(
-        "matricula_turma_disciplina",
-        "frequencia.matricula_turma_disciplina_id",
-        "matricula_turma_disciplina.id",
-      )
-      .join("matricula", "matricula_turma_disciplina.matricula_id", "matricula.id")
-      .join("aluno", "matricula.aluno_id", "aluno.id")
-      .join("pessoa", "aluno.pessoa_id", "pessoa.id")
-      .join(
-        "turma_disciplina",
-        "matricula_turma_disciplina.turma_disciplina_id",
-        "turma_disciplina.id",
-      )
-      .join("curso_disciplina", "turma_disciplina.curso_disciplina_id", "curso_disciplina.id")
-      .join("disciplinas", "curso_disciplina.disciplina_id", "disciplinas.id")
-      .where("matricula_turma_disciplina.turma_disciplina_id", turmaDisciplinaId);
-
-    if (filtros?.dataInicio) {
-      totalAulasQuery.where("frequencia.data", ">=", filtros.dataInicio);
-      registrosQuery.where("frequencia.data", ">=", filtros.dataInicio);
-    }
-    if (filtros?.dataFim) {
-      totalAulasQuery.where("frequencia.data", "<=", filtros.dataFim);
-      registrosQuery.where("frequencia.data", "<=", filtros.dataFim);
-    }
-
-    const [{ total }] = await totalAulasQuery;
-    const rows = await registrosQuery
-      .groupBy(
-        "aluno.id",
-        "pessoa.nome",
-        "turma_disciplina.id",
-        "disciplinas.id",
-        "disciplinas.nome",
-      )
-      .select(
-        "aluno.id as aluno_id",
-        "pessoa.nome as aluno_nome",
-        "turma_disciplina.id as turma_disciplina_id",
-        "disciplinas.id as disciplina_id",
-        "disciplinas.nome as disciplina_nome",
-      )
-      .sum({
-        presencas: db.raw("CASE WHEN frequencia.status = 'PRESENTE' THEN 1 ELSE 0 END"),
-      });
-    return { totalAulas: Number(total || 0), rows };
-  }
-
-  async listarHistoricoAluno(alunoId: string) {
-    return this.baseRegistroQuery()
-      .where("matricula.aluno_id", alunoId)
-      .select("turma.sigla as turma_sigla", "turma.descricao as turma_descricao")
-      .orderBy("aula.data", "desc");
-  }
-
-  async recalcularPercentualAlunoTurma(alunoId: string, turmaDisciplinaId: string) {
-    const matriculaTurmaDisciplina = await db("matricula_turma_disciplina")
-      .join("matricula", "matricula_turma_disciplina.matricula_id", "matricula.id")
-      .where("matricula.aluno_id", alunoId)
-      .where("matricula_turma_disciplina.turma_disciplina_id", turmaDisciplinaId)
-      .select("matricula_turma_disciplina.id")
-      .first();
-
-    if (!matriculaTurmaDisciplina) return 100;
-    return this.calcularPercentualMatriculaTurmaDisciplina(matriculaTurmaDisciplina.id);
-  }
-
-  async calcularPercentualMatriculaTurmaDisciplina(matriculaTurmaDisciplinaId: string) {
-    const [totais] = await db("frequencia")
-      .where({ matricula_turma_disciplina_id: matriculaTurmaDisciplinaId })
-      .count("id as total")
-      .sum({
-        presencas: db.raw("CASE WHEN status = 'PRESENTE' THEN 1 ELSE 0 END"),
-      });
-    const total = Number(totais.total || 0);
-    const presencas = Number(totais.presencas || 0);
-    return total === 0 ? 100 : Number(((presencas / total) * 100).toFixed(2));
-  }
-
-  private baseRegistroQuery() {
-    return db("frequencia")
-      .join("aula", "frequencia.aula_id", "aula.id")
-      .join(
-        "matricula_turma_disciplina",
-        "frequencia.matricula_turma_disciplina_id",
-        "matricula_turma_disciplina.id",
-      )
-      .join("matricula", "matricula_turma_disciplina.matricula_id", "matricula.id")
-      .join("aluno", "matricula.aluno_id", "aluno.id")
-      .join("pessoa", "aluno.pessoa_id", "pessoa.id")
-      .join(
-        "turma_disciplina",
-        "matricula_turma_disciplina.turma_disciplina_id",
-        "turma_disciplina.id",
-      )
-      .join("turma", "turma_disciplina.turma_id", "turma.id")
-      .join("curso_disciplina", "turma_disciplina.curso_disciplina_id", "curso_disciplina.id")
-      .join("disciplinas", "curso_disciplina.disciplina_id", "disciplinas.id")
-      .select(
-        "frequencia.*",
-        "aluno.id as aluno_id",
-        "aluno.matricula",
-        "pessoa.nome as aluno_nome",
-        "turma_disciplina.id as turma_disciplina_id",
-        "disciplinas.id as disciplina_id",
-        "disciplinas.nome as disciplina_nome",
-      );
+  private filtrarData(q: Knex.QueryBuilder, f: any, coluna: string) { if (f.dataInicio) q.whereRaw(`(${coluna} AT TIME ZONE 'America/Sao_Paulo')::date >= ?::date`, [f.dataInicio]); if (f.dataFim) q.whereRaw(`(${coluna} AT TIME ZONE 'America/Sao_Paulo')::date <= ?::date`, [f.dataFim]); }
+  private dataIso(v: any) { return v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10); }
+  private auditar(trx: Knex.Transaction, frequenciaId: string, ctx: any, acao: string, antes: any, depois: any) { return trx("frequencia_auditoria").insert({ frequencia_id: frequenciaId, usuario_id: ctx.usuarioId, perfil: ctx.perfil, acao, dados_anteriores: antes ? JSON.stringify(antes) : null, dados_novos: depois ? JSON.stringify(depois) : null }); }
+  private baseRegistro(executor: Knex | Knex.Transaction = db) {
+    return executor("frequencia").join("aula", "frequencia.aula_id", "aula.id").join("matricula_turma_disciplina as mtd", "frequencia.matricula_turma_disciplina_id", "mtd.id")
+      .join("matricula as m", "mtd.matricula_id", "m.id").join("aluno as al", "m.aluno_id", "al.id").join("pessoa as p", "al.pessoa_id", "p.id")
+      .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id").join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id").join("disciplinas as d", "cd.disciplina_id", "d.id")
+      .select("frequencia.*", "al.id as aluno_id", "p.nome as aluno_nome", "td.id as turma_disciplina_id", "d.id as disciplina_id", "d.nome as disciplina_nome");
   }
 }
