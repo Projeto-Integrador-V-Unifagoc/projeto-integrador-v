@@ -20,8 +20,10 @@ import { PeriodoLetivoController } from './Modules/modulo-estrutura-academica/co
 import { CursoDisciplinaController } from './Modules/modulo-estrutura-academica/controller/CursoDisciplinaController';
 import { TurmaController } from './Modules/modulo-estrutura-academica/controller/TurmaController';
 import { TurmaDisciplinaController } from './Modules/modulo-estrutura-academica/controller/TurmaDisciplinaController';
+import { obterJwtSecret } from './config/jwt';
 
 const PORT = process.env.PORT || 3000;
+obterJwtSecret();
 
 const app = express();
 

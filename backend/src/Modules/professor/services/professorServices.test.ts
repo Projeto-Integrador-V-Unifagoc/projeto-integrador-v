@@ -64,4 +64,11 @@ describe('professorService', () => {
     assert.deepEqual(await professorService.listarOpcoes(), []);
     assert.equal(chamou, true);
   });
+
+  it('aceita UUID canônico já persistido pelo PostgreSQL ao alterar status', async () => {
+    const idPersistido = '99999999-9999-9999-9999-999999999993';
+    professorRepository.buscarPorId = async () => ({ id: idPersistido } as any);
+    professorRepository.definirAtivo = async (id: string, ativo: boolean) => ({ id, ativo } as any);
+    assert.deepEqual(await professorService.definirAtivo(idPersistido, false), { id: idPersistido, ativo: false });
+  });
 });

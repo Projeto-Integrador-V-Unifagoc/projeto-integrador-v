@@ -2,7 +2,9 @@ import { professorRepository } from '../repository/professorRepository.js';
 import type { AtualizarProfessor, CriarProfessorDTO, FiltroProfessor } from '../models/professorModels.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/professorErrors.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// O PostgreSQL aceita UUIDs canônicos sem exigir bits RFC de versão/variante.
+// A validação deve aceitar os identificadores já persistidos no banco.
+const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const UFS = new Set(['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']);
 
 function cpfValido(cpf: string) {

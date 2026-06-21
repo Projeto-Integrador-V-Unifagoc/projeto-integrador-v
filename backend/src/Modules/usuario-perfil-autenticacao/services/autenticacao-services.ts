@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { UsuarioRepository } from '../repository/usuario-repository';
 import jwt from 'jsonwebtoken';
+import { obterJwtSecret } from '../../../config/jwt';
 
 class AutenticacaoService {
   private usuarioRepository = new UsuarioRepository();
@@ -100,7 +101,7 @@ class AutenticacaoService {
         id: usuario.id,
         tipo_usuario: usuario.tipo_usuario,
       },
-      process.env.JWT_SECRET || 'segredo',
+      obterJwtSecret(),
       {
         expiresIn: '1h',
       }

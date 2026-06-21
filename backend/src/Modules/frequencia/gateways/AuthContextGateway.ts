@@ -10,6 +10,7 @@ export interface ContextoFrequenciaGateway {
 }
 
 interface RepositorioContexto {
+  buscarUsuarioPorId(usuarioId: string): Promise<{ id?: string; tipo_usuario?: string } | null>;
   buscarProfessorPorUsuarioId(usuarioId: string): Promise<{ id?: string; ativo?: boolean } | null>;
   buscarAlunoPorUsuarioId(usuarioId: string): Promise<{ id?: string } | null>;
 }
@@ -23,6 +24,12 @@ export class AuthContextGateway {
     const tipo = String(user.tipo_usuario).trim().toLowerCase();
     const perfil: PerfilFrequencia = tipo === "administrador" ? "secretaria" : tipo as PerfilFrequencia;
     if (!["secretaria", "professor", "aluno"].includes(perfil)) throw erroFrequencia.proibido();
+
+    const usuario = await this.repository.buscarUsuarioPorId(String(user.id));
+    const tipoPersistido = String(usuario?.tipo_usuario || "").trim().toLowerCase();
+    if (!usuario?.id || tipoPersistido !== tipo) {
+      throw erroFrequencia.proibido("A identidade do token não corresponde a um usuário ativo.");
+    }
 
     const contexto: ContextoFrequenciaGateway = { usuarioId: String(user.id), perfil };
     if (perfil === "professor") {

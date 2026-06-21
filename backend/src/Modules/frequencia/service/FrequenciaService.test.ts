@@ -12,6 +12,7 @@ const reqProfessor = { user: { id: usuarioId, tipo_usuario: "professor" } } as a
 
 function criar(overrides: Record<string, any> = {}) {
   const repository = {
+    buscarUsuarioPorId: async () => ({ id: usuarioId, tipo_usuario: "professor" }),
     buscarProfessorPorUsuarioId: async () => ({ id: professorId, ativo: true }),
     buscarAlunoPorUsuarioId: async () => ({ id: alunoId }),
     professorPossuiTurma: async () => true,
@@ -48,6 +49,17 @@ describe("FrequenciaService", () => {
   it("rejeita data futura e fora do período real", async () => {
     await assert.rejects(() => criar().salvarChamada({ ...payload(), data: "2099-01-01" }, reqProfessor), /data futura/);
     await assert.rejects(() => criar().salvarChamada({ ...payload(), data: "2025-12-01" }, reqProfessor), /fora do período/);
+  });
+  it("aceita a data atual durante todo o dia local e rejeita datas inexistentes", async () => {
+    const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const service = criar({ buscarTurma: async () => ({ id: turmaId, data_inicio: "2020-01-01", data_fim: "2099-12-31", periodo_ativo: true, periodo_status: "ativo" }) });
+    await service.salvarChamada({ ...payload(), data: hoje }, reqProfessor);
+    await assert.rejects(() => service.salvarChamada({ ...payload(), data: "2026-02-31" }, reqProfessor), /Data inválida/);
+  });
+  it("rejeita secretaria inexistente ou com perfil divergente do token", async () => {
+    const reqSecretaria = { user: { id: usuarioId, tipo_usuario: "secretaria" } } as any;
+    await assert.rejects(() => criar({ buscarUsuarioPorId: async () => null }).listarOpcoes(reqSecretaria), /identidade do token/i);
+    await assert.rejects(() => criar({ buscarUsuarioPorId: async () => ({ id: usuarioId, tipo_usuario: "aluno" }) }).listarOpcoes(reqSecretaria), /identidade do token/i);
   });
   it("rejeita professor sem atribuição", async () => {
     await assert.rejects(() => criar({ professorPossuiTurma: async () => false }).salvarChamada(payload(), reqProfessor), /fora da atribuição/);

@@ -5,6 +5,7 @@ import { FrequenciaMapper, type StatusFrequencia } from "../models/Frequencia";
 const STATUS_ATIVO = ["ativa", "ATIVA", "ATIVO", "MATRICULADO", "REGULAR"];
 
 export class FrequenciaRepository {
+  buscarUsuarioPorId(usuarioId: string) { return db("usuario").select("id", "tipo_usuario").where({ id: usuarioId }).first(); }
   buscarProfessorPorUsuarioId(usuarioId: string) { return db("professor").where({ usuario_id: usuarioId }).first(); }
   buscarAlunoPorUsuarioId(usuarioId: string) { return db("aluno").where({ usuario_id: usuarioId }).first(); }
   professorPossuiTurma(professorId: string, turmaDisciplinaId: string) {

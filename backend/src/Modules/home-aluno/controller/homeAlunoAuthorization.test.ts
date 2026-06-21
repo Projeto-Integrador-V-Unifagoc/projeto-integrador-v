@@ -11,7 +11,8 @@ function resposta() {
   return estado;
 }
 
-const SECRET = process.env.JWT_SECRET || "segredo";
+const SECRET = "segredo-de-testes-com-mais-de-32-caracteres";
+process.env.JWT_SECRET = SECRET;
 
 describe("autenticação das rotas /me do aluno", () => {
   it("retorna 401 sem token", () => {
@@ -28,6 +29,13 @@ describe("autenticação das rotas /me do aluno", () => {
     autenticar({ headers: { authorization: "Bearer token-invalido" } } as any, res, () => { proximo = true; });
     assert.equal(res.statusCode, 401);
     assert.equal(proximo, false);
+  });
+
+  it("retorna 401 quando o esquema não é Bearer", () => {
+    const token = jwt.sign({ id: "aluno-1", tipo_usuario: "aluno" }, SECRET, { expiresIn: "1h" });
+    const res = resposta();
+    autenticar({ headers: { authorization: `Basic ${token}` } } as any, res, () => assert.fail("não deveria autorizar"));
+    assert.equal(res.statusCode, 401);
   });
 
   it("aceita token válido e popula req.user a partir do JWT", () => {
