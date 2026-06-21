@@ -32,6 +32,7 @@ const formInicial: FormState = { turma_disciplina_id: "", tipo_avaliacao: "PROVA
 const mensagemErro = (erro: unknown, fallback: string) => axios.isAxiosError(erro) && typeof erro.response?.data?.mensagem === "string" ? erro.response.data.mensagem : erro instanceof Error ? erro.message : fallback;
 const nomeAtribuicao = (item: AtribuicaoAvaliacao) => `${item.turma_sigla || item.turma_descricao} - ${item.disciplina_nome}`;
 const campoSx = { "& .MuiFormHelperText-root": { minHeight: 20, m: 0, mt: 0.5 } };
+const formatarNumeroIndicador = (valor: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(valor);
 
 export default function Avaliacoes() {
   const [atribuicoes, setAtribuicoes] = useState<AtribuicaoAvaliacao[]>([]);
@@ -125,9 +126,9 @@ export default function Avaliacoes() {
 
   const indicadores = [
     { label: "Provas", value: `${provas.length}/3`, icon: <ClipboardCheck size={22} aria-hidden="true" /> },
-    { label: "TPI", value: tpis.length ? "5,0/5 pts" : "0,0/5 pts", icon: <ShieldCheck size={22} aria-hidden="true" /> },
-    { label: "Trabalhos", value: `${pontosTrabalhos.toFixed(1).replace(".", ",")}/25 pts`, icon: <FileText size={22} aria-hidden="true" /> },
-    { label: "Total", value: `${total.toFixed(1).replace(".", ",")}/90 pts`, icon: null },
+    { label: "TPI", value: tpis.length ? "5/5 pts" : "0/5 pts", icon: <ShieldCheck size={22} aria-hidden="true" /> },
+    { label: "Trabalhos", value: `${formatarNumeroIndicador(pontosTrabalhos)}/25 pts`, icon: <FileText size={22} aria-hidden="true" /> },
+    { label: "Total", value: `${formatarNumeroIndicador(total)}/90 pts`, icon: null },
   ];
 
   return <Container><Stack gap={2} py={2}>
