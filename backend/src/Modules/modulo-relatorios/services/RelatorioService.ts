@@ -1,7 +1,3 @@
-import { ConsolidadoFrequencia } from "../../frequencia/models/Frequencia";
-import { FrequenciaService } from "../../frequencia/service/FrequenciaService";
-import { NotaMock, SituacaoNotaMock } from "../../notas/models/NotaMock";
-import { NotasMockService } from "../../notas/service/NotasMockService";
 import {
   ContextoRelatorioAcademico,
   DisciplinaRelatorio,
@@ -16,80 +12,21 @@ import {
 } from "../models/RelatorioAcademico";
 import { RelatorioRepository } from "../repository/RelatorioRepository";
 
-interface LinhaIntegrada extends RelatorioAcademicoLinha {
-  chaveNomeDisciplina: string;
-}
-
-const CURSO_POR_TURMA: Record<string, string> = {
-  "turma-ads-2026-1": "Analise e Desenvolvimento de Sistemas",
-  "turma-ads-bd-2026-1": "Analise e Desenvolvimento de Sistemas",
-  "turma-si-2026-1": "Sistemas de Informacao",
-};
-
-const FREQUENCIAS_MOCK: ConsolidadoFrequencia[] = [
-  {
-    alunoId: "aluno-001",
-    alunoNome: "Ana Clara Souza",
-    turmaDisciplinaId: "turma-ads-2026-1",
-    disciplinaId: "disciplina-pi-v",
-    disciplinaNome: "Projeto Integrador V",
-    totalAulas: 20,
-    presencas: 19,
-    faltas: 1,
-    percentual: 95,
-    situacao: "REGULAR",
-  },
-  {
-    alunoId: "aluno-002",
-    alunoNome: "Bruno Henrique Lima",
-    turmaDisciplinaId: "turma-ads-2026-1",
-    disciplinaId: "disciplina-pi-v",
-    disciplinaNome: "Projeto Integrador V",
-    totalAulas: 20,
-    presencas: 16,
-    faltas: 4,
-    percentual: 80,
-    situacao: "ALERTA",
-  },
-  {
-    alunoId: "aluno-003",
-    alunoNome: "Camila Rocha Alves",
-    turmaDisciplinaId: "turma-ads-bd-2026-1",
-    disciplinaId: "disciplina-bd-ii",
-    disciplinaNome: "Banco de Dados II",
-    totalAulas: 18,
-    presencas: 17,
-    faltas: 1,
-    percentual: 94.44,
-    situacao: "REGULAR",
-  },
-  {
-    alunoId: "aluno-004",
-    alunoNome: "Diego Martins Costa",
-    turmaDisciplinaId: "turma-si-2026-1",
-    disciplinaId: "disciplina-eng-soft",
-    disciplinaNome: "Engenharia de Software",
-    totalAulas: 16,
-    presencas: 11,
-    faltas: 5,
-    percentual: 68.75,
-    situacao: "RISCO_REPROVACAO",
-  },
-];
-
 export class RelatorioService {
   private repository = new RelatorioRepository();
-  private notasService = new NotasMockService();
-  private frequenciaService = new FrequenciaService();
 
   async listarRelatorios(filtros: FiltrosRelatorioAcademico, contexto?: ContextoRelatorioAcademico) {
     const filtrosSeguros = await this.aplicarContextoAutenticado(filtros, contexto);
-    const linhasIntegradas = await this.listarLinhasIntegradas(filtrosSeguros);
-    const linhas = linhasIntegradas.length
-      ? linhasIntegradas
-      : await this.repository.listarLinhasAcademicas(filtrosSeguros);
-
+    const linhas = await this.repository.listarLinhasAcademicas(filtrosSeguros);
     return this.montarRelatorios(linhas, filtrosSeguros);
+  }
+
+  async obterStatusFonteDados() {
+    return {
+      source: "database",
+      schema: "piv",
+      tabelas: await this.repository.contarFontesAcademicas(),
+    };
   }
 
   private async aplicarContextoAutenticado(
@@ -107,14 +44,8 @@ export class RelatorioService {
     };
 
     if (perfil === "Aluno") {
-      try {
-        const aluno = await this.comTempoLimite(
-          this.repository.buscarAlunoPorUsuarioId(contexto.usuarioId)
-        );
-        filtrosSeguros.alunoId = aluno?.id ?? "__sem_vinculo__";
-      } catch {
-        filtrosSeguros.alunoId = "aluno-001";
-      }
+      const aluno = await this.repository.buscarAlunoPorUsuarioId(contexto.usuarioId);
+      filtrosSeguros.alunoId = aluno?.id ?? "__sem_vinculo__";
       filtrosSeguros.turmaId = undefined;
       filtrosSeguros.turmaIdsPermitidos = undefined;
       return filtrosSeguros;
@@ -123,16 +54,7 @@ export class RelatorioService {
     if (perfil === "Professor") {
       let professor: any;
 
-      try {
-        professor = await this.comTempoLimite(
-          this.repository.buscarProfessorPorUsuarioId(contexto.usuarioId)
-        );
-      } catch {
-        return {
-          ...filtrosSeguros,
-          turmaIdsPermitidos: Object.keys(CURSO_POR_TURMA),
-        };
-      }
+      professor = await this.repository.buscarProfessorPorUsuarioId(contexto.usuarioId);
 
       if (!professor?.id) {
         return {
@@ -142,9 +64,7 @@ export class RelatorioService {
         };
       }
 
-      const turmas = await this.comTempoLimite(
-        this.repository.listarTurmasDisciplinaDoProfessor(professor.id)
-      );
+      const turmas = await this.repository.listarTurmasDisciplinaDoProfessor(professor.id);
       const turmaIdsPermitidos = turmas.map((turma: any) => turma.id).filter(Boolean);
 
       if (filtros.turmaId && !turmaIdsPermitidos.includes(filtros.turmaId)) {
@@ -174,156 +94,6 @@ export class RelatorioService {
     }
 
     return "Secretaria";
-  }
-
-  private async listarLinhasIntegradas(filtros: FiltrosRelatorioAcademico): Promise<LinhaIntegrada[]> {
-    const notas = this.filtrarNotas(this.notasService.listarTodos(), filtros);
-    const frequencias = await this.listarFrequenciasParaRelatorio(filtros);
-    const frequenciasPorChave = new Map<string, ConsolidadoFrequencia>();
-
-    frequencias.forEach((frequencia) => {
-      frequenciasPorChave.set(this.chaveFrequencia(frequencia), frequencia);
-      frequenciasPorChave.set(this.chaveNomeDisciplina(frequencia.alunoNome, frequencia.disciplinaNome), frequencia);
-    });
-
-    const linhas = notas.map((nota) => {
-      const frequencia =
-        frequenciasPorChave.get(this.chaveNota(nota)) ??
-        frequenciasPorChave.get(this.chaveNomeDisciplina(nota.alunoNome, nota.disciplinaNome));
-
-      return this.montarLinhaPorNota(nota, frequencia);
-    });
-
-    frequencias.forEach((frequencia) => {
-      const jaExiste = linhas.some(
-        (linha) =>
-          linha.alunoId === frequencia.alunoId &&
-          (linha.disciplinaId === frequencia.disciplinaId ||
-            linha.chaveNomeDisciplina === this.chaveNomeDisciplina(frequencia.alunoNome, frequencia.disciplinaNome))
-      );
-
-      if (!jaExiste) {
-        linhas.push(this.montarLinhaPorFrequencia(frequencia));
-      }
-    });
-
-    return linhas;
-  }
-
-  private async listarFrequenciasParaRelatorio(filtros: FiltrosRelatorioAcademico) {
-    const turmas = filtros.turmaId
-      ? [filtros.turmaId]
-      : filtros.turmaIdsPermitidos?.length
-        ? filtros.turmaIdsPermitidos
-        : await this.listarTurmasFrequencia();
-    const frequencias: ConsolidadoFrequencia[] = [];
-
-    for (const turmaDisciplinaId of turmas) {
-      try {
-        const relatorioFrequencia = await this.comTempoLimite(
-          this.frequenciaService.gerarRelatorio({
-            turmaDisciplinaId,
-          })
-        );
-
-        frequencias.push(...(relatorioFrequencia.alunos ?? []));
-      } catch (error) {
-        // Relatorios devem continuar disponiveis quando o banco ainda nao esta populado.
-      }
-    }
-
-    const base = frequencias.length ? frequencias : FREQUENCIAS_MOCK;
-    return this.filtrarFrequencias(base, filtros);
-  }
-
-  private async listarTurmasFrequencia() {
-    try {
-      const opcoes = await this.comTempoLimite(this.frequenciaService.listarOpcoes());
-      const turmas = opcoes?.turmas?.map((turma: any) => turma.turmaDisciplinaId || turma.id).filter(Boolean);
-
-      return turmas?.length ? turmas : Object.keys(CURSO_POR_TURMA);
-    } catch (error) {
-      return Object.keys(CURSO_POR_TURMA);
-    }
-  }
-
-  private async comTempoLimite<T>(promise: Promise<T>, ms = 1500): Promise<T> {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        setTimeout(() => reject(new Error("Tempo limite ao consultar dados academicos.")), ms);
-      }),
-    ]);
-  }
-
-  private filtrarNotas(notas: NotaMock[], filtros: FiltrosRelatorioAcademico) {
-    return notas.filter((nota) => {
-      const anoValido = !filtros.ano || filtros.ano === "Todos" || nota.periodoLetivo === filtros.ano;
-      const alunoValido = !filtros.alunoId || nota.alunoId === filtros.alunoId;
-      const turmaValida =
-        (!filtros.turmaId || nota.turmaId === filtros.turmaId) &&
-        (!filtros.turmaIdsPermitidos?.length || filtros.turmaIdsPermitidos.includes(nota.turmaId));
-      const disciplinaValida = !filtros.disciplinaId || nota.disciplinaId === filtros.disciplinaId;
-      return anoValido && alunoValido && turmaValida && disciplinaValida;
-    });
-  }
-
-  private filtrarFrequencias(frequencias: ConsolidadoFrequencia[], filtros: FiltrosRelatorioAcademico) {
-    return frequencias.filter((frequencia) => {
-      const alunoValido = !filtros.alunoId || frequencia.alunoId === filtros.alunoId;
-      const turmaValida =
-        (!filtros.turmaId || frequencia.turmaDisciplinaId === filtros.turmaId) &&
-        (!filtros.turmaIdsPermitidos?.length || filtros.turmaIdsPermitidos.includes(frequencia.turmaDisciplinaId));
-      const disciplinaValida = !filtros.disciplinaId || frequencia.disciplinaId === filtros.disciplinaId;
-      return alunoValido && turmaValida && disciplinaValida;
-    });
-  }
-
-  private montarLinhaPorNota(nota: NotaMock, frequencia?: ConsolidadoFrequencia): LinhaIntegrada {
-    const ano = nota.periodoLetivo;
-
-    return {
-      alunoId: nota.alunoId,
-      matricula: nota.alunoId.replace(/\D/g, "") || nota.alunoId,
-      aluno: nota.alunoNome,
-      cursoId: this.cursoIdPorTurma(nota.turmaId),
-      curso: CURSO_POR_TURMA[nota.turmaId] ?? "Curso nao informado",
-      periodo: nota.turmaNome,
-      turmaId: nota.turmaId,
-      disciplinaId: nota.disciplinaId,
-      disciplina: nota.disciplinaNome,
-      cargaHoraria: 80,
-      ano,
-      nota: nota.media,
-      frequencia: frequencia?.percentual,
-      totalAulas: frequencia?.totalAulas,
-      presencas: frequencia?.presencas,
-      faltas: frequencia?.faltas,
-      situacao: this.situacaoPorNotaEFrequencia(nota.situacao, frequencia),
-      chaveNomeDisciplina: this.chaveNomeDisciplina(nota.alunoNome, nota.disciplinaNome),
-    };
-  }
-
-  private montarLinhaPorFrequencia(frequencia: ConsolidadoFrequencia): LinhaIntegrada {
-    return {
-      alunoId: frequencia.alunoId,
-      matricula: frequencia.alunoId.replace(/\D/g, "") || frequencia.alunoId,
-      aluno: frequencia.alunoNome,
-      cursoId: this.cursoIdPorTurma(frequencia.turmaDisciplinaId),
-      curso: CURSO_POR_TURMA[frequencia.turmaDisciplinaId] ?? "Curso nao informado",
-      periodo: this.periodoPorTurma(frequencia.turmaDisciplinaId),
-      turmaId: frequencia.turmaDisciplinaId,
-      disciplinaId: frequencia.disciplinaId,
-      disciplina: frequencia.disciplinaNome,
-      cargaHoraria: 80,
-      ano: "2026/1",
-      frequencia: frequencia.percentual,
-      totalAulas: frequencia.totalAulas,
-      presencas: frequencia.presencas,
-      faltas: frequencia.faltas,
-      situacao: this.normalizarSituacaoFrequencia(frequencia.situacao),
-      chaveNomeDisciplina: this.chaveNomeDisciplina(frequencia.alunoNome, frequencia.disciplinaNome),
-    };
   }
 
   private montarRelatorios(
@@ -617,20 +387,6 @@ export class RelatorioService {
     return "Aprovado";
   }
 
-  private situacaoPorNotaEFrequencia(situacaoNota: SituacaoNotaMock, frequencia?: ConsolidadoFrequencia) {
-    if (frequencia?.situacao === "RISCO_REPROVACAO") return "Pendente";
-    if (frequencia?.situacao === "ALERTA") return "Atencao";
-    if (situacaoNota === "reprovado") return "Pendente";
-    if (situacaoNota === "recuperacao") return "Recuperacao";
-    return "Aprovado";
-  }
-
-  private normalizarSituacaoFrequencia(situacao: ConsolidadoFrequencia["situacao"]) {
-    if (situacao === "RISCO_REPROVACAO") return "Pendente";
-    if (situacao === "ALERTA") return "Atencao";
-    return "Regular";
-  }
-
   private formatarNota(nota: RelatorioAcademicoLinha["nota"]) {
     if (nota === null || nota === undefined || nota === "") {
       return undefined;
@@ -674,39 +430,4 @@ export class RelatorioService {
     return labels[situacao];
   }
 
-  private chaveNota(nota: NotaMock) {
-    return `${nota.alunoId}:${nota.disciplinaId}`;
-  }
-
-  private chaveFrequencia(frequencia: ConsolidadoFrequencia) {
-    return `${frequencia.alunoId}:${frequencia.disciplinaId}`;
-  }
-
-  private chaveNomeDisciplina(alunoNome: string, disciplinaNome: string) {
-    return `${this.normalizarTexto(alunoNome)}:${this.normalizarTexto(disciplinaNome)}`;
-  }
-
-  private normalizarTexto(texto: string) {
-    return texto
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
-  }
-
-  private cursoIdPorTurma(turmaId: string) {
-    if (turmaId.includes("si")) {
-      return "curso-si";
-    }
-
-    return "curso-ads";
-  }
-
-  private periodoPorTurma(turmaId: string) {
-    if (turmaId.includes("si")) {
-      return "SI 5o Periodo";
-    }
-
-    return "ADS 5o Periodo";
-  }
 }

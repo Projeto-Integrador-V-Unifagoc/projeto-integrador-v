@@ -4,17 +4,22 @@ import type { Knex } from "knex";
 require('dotenv').config({ path: '.env.development' });
 require('dotenv').config(); // fallback to .env if .env.development is absent
 
+const connection =
+  process.env.DATABASE_URL ||
+  process.env.DATABASE ||
+  {
+    host: process.env.DATABASE_HOST || "localhost",
+    port: Number(process.env.DATABASE_PORT) || 5432,
+    database: process.env.DATABASE_NAME || "projeto_integrador",
+    user: process.env.DATABASE_USERNAME || "postgres",
+    password: process.env.DATABASE_PASSWORD || "postgres"
+  };
+
 const config: { [key: string]: Knex.Config } = {
   development: {
     client: "pg",
-    connection: {
-      host: process.env.DATABASE_HOST || "localhost",
-      port: Number(process.env.DATABASE_PORT) || 5432,
-      database: String(process.env.DATABASE_NAME),
-      user: String(process.env.DATABASE_USERNAME),
-      password: String(process.env.DATABASE_PASSWORD)
-    },
-    searchPath: ['piv'],
+    connection,
+    searchPath: ['piv', 'public'],
     seeds: {
       directory: "./seeds"
     },

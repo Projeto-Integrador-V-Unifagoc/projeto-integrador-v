@@ -47,6 +47,7 @@ const turmaDisciplinaController = new TurmaDisciplinaController();
 const relatorioController = new RelatorioController();
 
 app.get('/relatorios/academicos', autenticar, (req, res) => relatorioController.listarRelatoriosAcademicos(req, res));
+app.get('/relatorios/academicos/status', autenticar, (req, res) => relatorioController.statusFonteDados(req, res));
 app.get('/relatorio-alunos', autenticar, (req, res) => relatorioController.listarRelatoriosAcademicos(req, res));
 
 app.post('/alunos', (req, res) => alunoController.criarAluno(req, res));
