@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Alert, Box, Chip, Grid, MenuItem, Select, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Box, Chip, Grid, MenuItem, Select, Stack, Tab, Tabs, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { CheckCheck, RefreshCw, Save, Search } from "lucide-react";
 import Button from "../../components/Button";
@@ -7,6 +7,7 @@ import { Card } from "../../components/Card";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
+import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
 import { useFrequencia } from "../../hooks/use-frequencia";
 import type {
   AlunoChamada,
@@ -17,7 +18,6 @@ import type {
 } from "../../models/frequencia-model";
 import { colunasConsolidado } from "./frequencia-columns";
 import {
-  type Aviso,
   corStatus,
   formatarPercentual,
   hojeSP,
@@ -28,6 +28,7 @@ import {
 
 export default function VisaoOperacional() {
   const api = useFrequencia();
+  const { notificar } = useNotificacao();
   const podeEditar = perfilLocal() === "professor";
 
   const [turmas, setTurmas] = useState<TurmaFrequencia[]>([]);
@@ -36,11 +37,9 @@ export default function VisaoOperacional() {
   const [localId, setLocalId] = useState("");
   const [data, setData] = useState(hojeSP());
   const [chamada, setChamada] = useState<AlunoChamada[]>([]);
-  const [irregulares, setIrregulares] = useState(0);
   const [alterado, setAlterado] = useState(false);
   const [consolidado, setConsolidado] = useState<ConsolidadoFrequencia[]>([]);
   const [aba, setAba] = useState(0);
-  const [aviso, setAviso] = useState<Aviso>();
 
   useEffect(() => {
     let ativo = true;
@@ -53,14 +52,14 @@ export default function VisaoOperacional() {
         setTurmaId(r.turmas[0]?.id || "");
         setLocalId(r.locais[0]?.id || "");
       } catch (e) {
-        if (ativo) setAviso({ tipo: "error", texto: mensagemErro(e) });
+        if (ativo) notificar(mensagemErro(e), "error");
       }
     })();
     return () => {
       ativo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [notificar]);
 
   useEffect(() => {
     const sair = (e: BeforeUnloadEvent) => {
@@ -76,36 +75,38 @@ export default function VisaoOperacional() {
     try {
       const r = await api.obterChamada({ turmaDisciplinaId: turmaId, data });
       setChamada(r.alunos);
-      setIrregulares(r.matriculasIrregulares);
+      if (r.matriculasIrregulares > 0) {
+        notificar(`${r.matriculasIrregulares} matrícula(s) irregular(es) foram omitidas.`, "info");
+      }
       setAlterado(false);
-      setAviso(
-        r.jaRegistrada && !r.chamadaCompleta
-          ? { tipo: "warning", texto: "A chamada existente está incompleta; salve para regularizá-la." }
-          : undefined,
-      );
+      if (r.jaRegistrada && !r.chamadaCompleta) {
+        notificar("A chamada existente está incompleta; salve para regularizá-la.", "warning");
+      }
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
-  function mudarStatus(id: string, status: StatusFrequencia) {
+  const mudarStatus = useCallback((id: string, status: StatusFrequencia) => {
     setChamada((xs) => xs.map((x) => (x.id === id ? { ...x, status } : x)));
+    if (!alterado) notificar("Existem alterações não salvas na chamada.", "warning");
     setAlterado(true);
-  }
+  }, [alterado, notificar]);
 
   function todosPresentes() {
     if (!confirm("Marcar todos os alunos elegíveis como presentes?")) return;
     setChamada((xs) => xs.map((x) => ({ ...x, status: "PRESENTE" })));
+    notificar("Todos os alunos elegíveis foram marcados como presentes. Salve a chamada para confirmar.", "info");
     setAlterado(true);
   }
 
   async function salvar() {
     if (!chamada.length || chamada.some((a) => !a.status)) {
-      setAviso({ tipo: "error", texto: "Marque presente ou ausente para todos os alunos." });
+      notificar("Marque presente ou ausente para todos os alunos.", "error");
       return;
     }
     if (!localId && chamada.some((a) => !a.frequenciaId)) {
-      setAviso({ tipo: "error", texto: "Selecione o local da aula." });
+      notificar("Selecione o local da aula.", "error");
       return;
     }
     try {
@@ -116,10 +117,10 @@ export default function VisaoOperacional() {
         registros: chamada.map((a) => ({ alunoId: a.id, status: a.status! })),
       });
       setAlterado(false);
-      setAviso({ tipo: "success", texto: "Chamada completa salva de forma atômica." });
+      notificar("Chamada completa salva com sucesso.", "success");
       await carregar();
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
@@ -127,11 +128,13 @@ export default function VisaoOperacional() {
     try {
       const r = await api.gerarRelatorio({ turmaDisciplinaId: turmaId });
       setConsolidado(r.alunos);
-      setIrregulares(r.matriculasIrregulares);
+      if (r.matriculasIrregulares > 0) {
+        notificar(`${r.matriculasIrregulares} matrícula(s) irregular(es) foram omitidas.`, "info");
+      }
       if (r.alunos.length && !r.alunosEmRisco.length && !r.alunosEmAlerta.length)
-        setAviso({ tipo: "info", texto: "Todos os alunos com frequência lançada estão regulares." });
+        notificar("Todos os alunos com frequência lançada estão regulares.", "info");
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
@@ -173,7 +176,7 @@ export default function VisaoOperacional() {
       },
       { field: "percentualAtual", headerName: "% atual", width: 110, valueFormatter: (v) => formatarPercentual(v as number) },
     ],
-    [podeEditar],
+    [mudarStatus, podeEditar],
   );
 
   const colunasRelatorio = useMemo(() => colunasConsolidado(true), []);
@@ -187,12 +190,6 @@ export default function VisaoOperacional() {
         <Typography component="h1" variant="h5" fontWeight={700}>
           Frequência
         </Typography>
-
-        {aviso && (
-          <Alert severity={aviso.tipo} onClose={() => setAviso(undefined)}>
-            {aviso.texto}
-          </Alert>
-        )}
 
         <Card.Root elevation={0} variant="outlined">
           <Card.Content>
@@ -247,8 +244,6 @@ export default function VisaoOperacional() {
           </Card.Content>
         </Card.Root>
 
-        {irregulares > 0 && <Alert severity="info">{irregulares} matrícula(s) irregular(es) foram omitidas.</Alert>}
-
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
             value={aba}
@@ -287,7 +282,6 @@ export default function VisaoOperacional() {
                   </Button>
                 </Stack>
               )}
-              {alterado && <Alert severity="warning">Existem alterações não salvas. Salve a chamada completa para registrá-las.</Alert>}
               <Card.Root elevation={0} variant="outlined">
                 <Card.Content sx={{ minHeight: 480 }}>
                   <DataTable
