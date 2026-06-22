@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { DocumentoService } from "../service/DocumentoService";
 
 const service = new DocumentoService();
@@ -38,6 +40,20 @@ export class DocumentoController {
             res.status(200).json(await service.listarPorAluno(req.params.alunoId));
         } catch (err: any) {
             res.status(500).json({ error: err.message });
+        }
+    }
+
+    async arquivo(req: any, res: any) {
+        try {
+            const doc = await service.buscarPorId(req.params.id);
+            const caminho = path.resolve(doc.caminho_arquivo);
+            if (!fs.existsSync(caminho)) {
+                return res.status(404).json({ error: "Arquivo não encontrado." });
+            }
+            res.sendFile(caminho);
+        } catch (err: any) {
+            const status = err.message.includes("não encontrado") ? 404 : 500;
+            res.status(status).json({ error: err.message });
         }
     }
 

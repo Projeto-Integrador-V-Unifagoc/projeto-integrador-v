@@ -22,7 +22,7 @@ import {
     Tooltip,
     Typography,
 } from "@mui/material";
-import { CheckCircle, FileText, RefreshCw, Search, Upload, User, XCircle } from "lucide-react";
+import { CheckCircle, Eye, FileText, RefreshCw, Search, Upload, User, XCircle } from "lucide-react";
 import Container from "../../components/Container";
 import TextField from "../../components/TextField";
 import Button from "../../components/Button";
@@ -166,6 +166,10 @@ export default function Documentos() {
         } finally {
             setCarregandoTodos(false);
         }
+    }
+
+    function handleVisualizar(docId: string) {
+        window.open(`${api.defaults.baseURL}/documentos/${docId}/arquivo`, "_blank", "noopener,noreferrer");
     }
 
     async function handleValidar(docId: string, status: "APROVADO" | "REPROVADO", observacao?: string) {
@@ -494,6 +498,15 @@ export default function Documentos() {
                                                                         </TableCell>
                                                                         <TableCell align="right">
                                                                             <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                                                <Button
+                                                                                    variant="outlined"
+                                                                                    size="small"
+                                                                                    sx={{ width: "auto", minWidth: 90 }}
+                                                                                    onClick={() => handleVisualizar(doc.id)}
+                                                                                >
+                                                                                    <Eye size={13} style={{ marginRight: 4 }} />
+                                                                                    Visualizar
+                                                                                </Button>
                                                                                 <Button
                                                                                     variant="outlined"
                                                                                     size="small"
