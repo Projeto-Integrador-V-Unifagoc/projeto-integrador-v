@@ -22,42 +22,18 @@ import {
   type AlunoFicha,
   type NotaAluno,
 } from "../../components/FichaAluno";
-import type { AlunoResponse } from "../../models/aluno-model";
-import type { ConsolidadoFrequencia } from "../../models/frequencia-model";
 import type { MatriculaDetalhada } from "../../models/matricula-model";
 import type { PeriodoLetivoResponse } from "../../models/periodo-letivo-model";
 import { alunoApi } from "../../services/aluno-api";
+import type { DocumentoAluno } from "../../services/documento-api";
 import {
-  documentoApi,
-  type DocumentoAluno,
-} from "../../services/documento-api";
-import { frequenciaApi } from "../../services/frequencia-api";
-import { matriculaApi } from "../../services/matricula-api";
-import { notasApi, type NotaMockApi } from "../../services/notas-api";
-import { periodoLetivoApi } from "../../services/periodo-letivo-api";
-import { cursoApi } from "../../services/curso-api";
-import usuarioApi from "../../services/usuario-api";
+  fichaApi,
+  type AlunoFicha as AlunoFichaApi,
+  type FrequenciaAluno as FrequenciaAlunoResponse,
+  type NotaFicha,
+} from "../../services/ficha-api";
 
 const VALOR_NAO_INFORMADO = "Nao informado";
-
-type FrequenciaAlunoResponse = {
-  alunoId: string;
-  consolidado: ConsolidadoFrequencia[];
-};
-
-type AlunoFichaApi = Omit<AlunoResponse, "curso" | "periodo"> & {
-  curso?:
-    | string
-    | {
-        id?: string;
-        nome?: string;
-      };
-  periodo?: string | number;
-  usuario?: {
-    id?: string;
-    email?: string;
-  };
-};
 
 type NotaComSemestre = NotaAluno & {
   semestre?: string;
@@ -157,7 +133,7 @@ function getMatriculaAtiva(matriculas: MatriculaDetalhada[]) {
 function getOpcoesSemestre(
   periodos: PeriodoLetivoResponse[],
   matriculas: MatriculaDetalhada[],
-  notas: NotaMockApi[],
+  notas: NotaFicha[],
 ) {
   const opcoes = [
     ...periodos.map((periodo) =>
@@ -193,11 +169,11 @@ function montarAlunoFicha(
     idade: calcularIdade(aluno.pessoa?.dataNascimento),
     responsavelFinanceiro: aluno.pessoa?.nome ?? VALOR_NAO_INFORMADO,
     email: aluno.usuario?.email ?? VALOR_NAO_INFORMADO,
-    semestre: normalizarSemestre((matriculaAtiva as any).semestre) || "",
+    semestre: normalizarSemestre((matriculaAtiva as any)?.semestre) || "",
   };
 }
 
-function getNotaPorNome(nota: NotaMockApi, nome: string) {
+function getNotaPorNome(nota: NotaFicha, nome: string) {
   return (
     nota.avaliacoes.find((avaliacao) =>
       avaliacao.nome.toLowerCase().includes(nome.toLowerCase()),
@@ -206,7 +182,7 @@ function getNotaPorNome(nota: NotaMockApi, nome: string) {
 }
 
 function montarNotasFicha(
-  notasApiResponse: NotaMockApi[],
+  notasApiResponse: NotaFicha[],
   frequencia?: FrequenciaAlunoResponse,
   matriculas: MatriculaDetalhada[] = [],
   semestre?: string,
@@ -337,7 +313,7 @@ export default function FichaAluno() {
   const [abaAtual, setAbaAtual] = useState<AbaFicha>("notas");
   const [aluno, setAluno] = useState<AlunoFichaApi | null>(null);
   const [matriculas, setMatriculas] = useState<MatriculaDetalhada[]>([]);
-  const [notas, setNotas] = useState<NotaMockApi[]>([]);
+  const [notas, setNotas] = useState<NotaFicha[]>([]);
   const [frequencia, setFrequencia] = useState<
     FrequenciaAlunoResponse | undefined
   >();
@@ -362,93 +338,26 @@ export default function FichaAluno() {
       setErro(null);
 
       try {
-        const alunoResponse: AlunoFichaApi = matricula
-          ? await alunoApi.buscarAlunoPorMatricula(matricula)
-          : await alunoApi.buscarAlunoPorId(identificador);
+        const alunoId = matricula
+          ? (await alunoApi.buscarAlunoPorMatricula(matricula)).id
+          : identificador;
 
-        const [
-          matriculasResponse,
-          notasResponse,
-          frequenciaResponse,
-          documentosResponse,
-          periodosResponse,
-        ] = await Promise.allSettled([
-          matriculaApi.listarPorAluno(alunoResponse.id),
-          notasApi.buscarPorAluno(alunoResponse.id),
-          frequenciaApi.consultarAluno(alunoResponse.id),
-          documentoApi.listarPorAluno(alunoResponse.id),
-          periodoLetivoApi.listarPeriodosLetivos(),
-        ]);
+        const ficha = await fichaApi.buscarFicha(alunoId);
 
         if (!deveAtualizarEstado) return;
 
-        const matriculasCarregadas =
-          matriculasResponse.status === "fulfilled"
-            ? matriculasResponse.value
-            : [];
-        const notasCarregadas =
-          notasResponse.status === "fulfilled" ? notasResponse.value : [];
-        const frequenciaCarregada =
-          frequenciaResponse.status === "fulfilled"
-            ? (frequenciaResponse.value as FrequenciaAlunoResponse)
-            : undefined;
-        const documentosCarregados =
-          documentosResponse.status === "fulfilled"
-            ? documentosResponse.value
-            : [];
-        const periodosCarregados =
-          periodosResponse.status === "fulfilled" ? periodosResponse.value : [];
+        const matriculasCarregadas = ficha.matriculas ?? [];
+        const notasCarregadas = ficha.notas ?? [];
+        const frequenciaCarregada = ficha.frequencia;
+        const documentosCarregados = ficha.documentos ?? [];
+        const periodosCarregados = ficha.periodos ?? [];
         const opcoesCarregadas = getOpcoesSemestre(
           periodosCarregados,
           matriculasCarregadas,
           notasCarregadas,
         );
 
-        // normalize aluno object and fetch extra info when available (curso, email)
-        const alunoInicial: AlunoFichaApi = alunoResponse;
-
-        // try to fetch usuario email if missing
-        try {
-          if (!alunoInicial.usuario?.email && alunoInicial.usuario?.id) {
-            const resp = await usuarioApi.get(
-              `/usuarios/${alunoInicial.usuario.id}`,
-            );
-            if (resp?.data?.email) {
-              alunoInicial.usuario = {
-                ...(alunoInicial.usuario ?? {}),
-                email: resp.data.email,
-              };
-            }
-          }
-        } catch (e) {
-          // ignore and continue
-        }
-
-        // determine active matricula to try fetch curso if possible
-        const matriculaAtivaLocal = getMatriculaAtiva(matriculasCarregadas);
-        try {
-          // backend may include curso_id on matricula; try to fetch course by id
-          const cursoId =
-            (matriculaAtivaLocal as any)?.curso_id ||
-            (matriculaAtivaLocal as any)?.cursoId;
-          if (!alunoInicial.curso && cursoId) {
-            const cursoResp = await cursoApi.buscarCursoPorId(cursoId);
-            if (cursoResp?.nome) alunoInicial.curso = cursoResp.nome;
-          }
-          // fallback to curso_nome from matricula
-          if (!alunoInicial.curso && matriculaAtivaLocal?.curso_nome) {
-            alunoInicial.curso = matriculaAtivaLocal.curso_nome;
-          }
-        } catch (e) {
-          // ignore and continue
-        }
-
-        // prefer periodo from matricula ativa when aluno.periodo is missing
-        if (!alunoInicial.periodo && (matriculaAtivaLocal as any)?.semestre) {
-          alunoInicial.periodo = (matriculaAtivaLocal as any).semestre;
-        }
-
-        setAluno(alunoInicial);
+        setAluno(ficha.aluno);
         setMatriculas(matriculasCarregadas);
         setNotas(notasCarregadas);
         setFrequencia(frequenciaCarregada);

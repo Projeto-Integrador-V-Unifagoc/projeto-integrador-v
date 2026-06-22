@@ -62,10 +62,11 @@ export class AlunoRepository {
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
             .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
             .leftJoin("cidade", "pessoa.cidade_id", "=", "cidade.ibge")
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
             .where("aluno.id", id)
             .select(
                 "aluno.*",
-                "pessoa.id as p_id", 
+                "pessoa.id as p_id",
                 "pessoa.nome as p_nome",
                 "pessoa.cpf as p_cpf",
                 "pessoa.data_nascimento as p_data_nascimento",
@@ -76,10 +77,13 @@ export class AlunoRepository {
                 "pessoa.cep as p_cep",
                 "usuario.id as u_id",
                 "usuario.email as u_email",
-                "cidade.id as c_id",          
-                "cidade.ibge as c_ibge",      
+                "cidade.id as c_id",
+                "cidade.ibge as c_ibge",
                 "cidade.nome as c_nome",
-                "cidade.uf as c_uf"
+                "cidade.uf as c_uf",
+                "curso.id as curso_id",
+                "curso.codigo as curso_codigo",
+                "curso.nome as curso_nome"
             )
             .first();
 

@@ -12,6 +12,7 @@ export class CidadeMapper {
     return {
         id: data.c_id || data.id,
         nome: data.c_nome || data.nome,
+        uf: data.c_uf || data.uf,
         ibge: data.c_ibge || data.ibge
     };
 }
