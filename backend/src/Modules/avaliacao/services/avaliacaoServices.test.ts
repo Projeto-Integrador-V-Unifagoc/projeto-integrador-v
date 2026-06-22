@@ -49,6 +49,20 @@ describe("avaliacaoService", () => {
     await assert.rejects(() => avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 5.01, turma_disciplina_id: TD1 }, ADMIN), /35 pontos/);
   });
 
+  it("ignora recuperacao no somatorio das avaliacoes regulares", async () => {
+    repo.buscarPorTurmaDisciplina = async () => [
+      { ...base, id: "p1", tipo_avaliacao: "PROVA", valor: 20 },
+      { ...base, id: "p2", tipo_avaliacao: "PROVA", valor: 20 },
+      { ...base, id: "p3", tipo_avaliacao: "PROVA", valor: 20 },
+      { ...base, id: "tpi", tipo_avaliacao: "TPI", valor: 5 },
+      { ...base, id: "trabalho", tipo_avaliacao: "TRABALHO", valor: 30 },
+      { ...base, id: "rec", tipo_avaliacao: "RECUPERACAO" as any, valor: 100 },
+    ];
+    // Regulares somam 95; a recuperacao (100) deve ser ignorada, entao um trabalho de 5 cabe nos 100.
+    const criada = await avaliacaoService.criar({ tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 5, turma_disciplina_id: TD1 }, ADMIN);
+    assert.equal(Number(criada.valor), 5);
+  });
+
   it("isola as regras por turma/disciplina no repositorio", async () => {
     const consultadas: string[] = [];
     repo.buscarPorTurmaDisciplina = async (id: string) => { consultadas.push(id); return []; };
