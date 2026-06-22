@@ -98,6 +98,62 @@ export class RelatorioRepository {
       .orderBy("pl.semestre")
       .orderBy("d.nome");
 
+    this.aplicarFiltrosAcademicos(query, filtros);
+
+    return query;
+  }
+
+  async listarNotasDetalhadas(filtros: FiltrosRelatorioAcademico) {
+    const query = db("nota as n")
+      .join("avaliacao as av", "av.id", "n.avaliacao_id")
+      .join("matricula_turma_disciplina as mtd", "mtd.id", "n.matricula_turma_disciplina_id")
+      .join("matricula as m", "m.id", "mtd.matricula_id")
+      .join("aluno as a", "a.id", "m.aluno_id")
+      .join("pessoa as p", "p.id", "a.pessoa_id")
+      .leftJoin("curso as c", "c.id", "m.curso_id")
+      .join("turma_disciplina as td", "td.id", "mtd.turma_disciplina_id")
+      .join("turma as t", "t.id", "td.turma_id")
+      .join("periodo_letivo as pl", "pl.id", "t.periodo_letivo_id")
+      .join("curso_disciplina as cd", "cd.id", "td.curso_disciplina_id")
+      .join("disciplinas as d", "d.id", "cd.disciplina_id")
+      .select(
+        "a.id as alunoId",
+        "a.matricula",
+        "p.nome as aluno",
+        "m.curso_id as cursoId",
+        db.raw("COALESCE(c.nome, 'Curso nao informado') as curso"),
+        db.raw("COALESCE(t.sigla, t.descricao, a.periodo, 'Periodo nao informado') as periodo"),
+        "td.id as turmaId",
+        "d.id as disciplinaId",
+        db.raw("COALESCE(d.nome, 'Sem disciplina vinculada') as disciplina"),
+        db.raw("COALESCE(cd.carga_horaria, d.carga_horaria, 0) as \"cargaHoraria\""),
+        db.raw("CONCAT(pl.ano, '/', pl.semestre) as ano"),
+        db.raw("COALESCE(NULLIF(av.descricao_avaliacao, ''), av.tipo_avaliacao) as avaliacao"),
+        "av.tipo_avaliacao as tipoAvaliacao",
+        "av.valor as valorAvaliacao",
+        "av.data_lancamento as dataAvaliacao",
+        "n.valor as nota",
+        db.raw(`
+          CASE
+            WHEN av.valor > 0 AND ((n.valor::numeric / av.valor::numeric) * 100) < 60 THEN 'recuperacao'
+            ELSE 'regular'
+          END as situacao
+        `)
+      )
+      .whereIn("mtd.status", ["ativa", "ATIVA", "MATRICULADO", "REGULAR"])
+      .whereIn("m.status", ["ativa", "ATIVA", "MATRICULADO", "REGULAR"])
+      .orderBy("p.nome")
+      .orderBy("pl.ano")
+      .orderBy("pl.semestre")
+      .orderBy("d.nome")
+      .orderBy("av.data_lancamento");
+
+    this.aplicarFiltrosAcademicos(query, filtros, true);
+
+    return query;
+  }
+
+  private aplicarFiltrosAcademicos(query: any, filtros: FiltrosRelatorioAcademico, incluirAvaliacao = false) {
     if (filtros.alunoId) {
       query.where("a.id", filtros.alunoId);
     }
@@ -124,17 +180,21 @@ export class RelatorioRepository {
 
     if (filtros.busca) {
       const termo = `%${filtros.busca}%`;
-      query.where((builder) => {
-        builder
+      query.where((builder: any) => {
+        const busca = builder
           .whereILike("p.nome", termo)
           .orWhereILike("d.nome", termo)
           .orWhereILike("c.nome", termo)
           .orWhereILike("t.sigla", termo)
           .orWhereILike("t.descricao", termo);
+
+        if (incluirAvaliacao) {
+          busca
+            .orWhereILike("av.descricao_avaliacao", termo)
+            .orWhereILike("av.tipo_avaliacao", termo);
+        }
       });
     }
-
-    return query;
   }
 
   async contarFontesAcademicas() {

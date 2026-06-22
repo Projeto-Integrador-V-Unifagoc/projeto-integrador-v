@@ -38,6 +38,10 @@ export interface RelatorioAcademicoLinha {
   disciplina: string;
   cargaHoraria: number;
   ano: string;
+  avaliacao?: string | null;
+  tipoAvaliacao?: string | null;
+  valorAvaliacao?: number | string | null;
+  dataAvaliacao?: string | Date | null;
   nota?: number | string | null;
   frequencia?: number | string | null;
   totalAulas?: number;
@@ -50,6 +54,10 @@ export interface DisciplinaRelatorio {
   nome: string;
   aluno?: string;
   cargaHoraria: string;
+  avaliacao?: string;
+  tipoAvaliacao?: string;
+  valorAvaliacao?: string;
+  dataAvaliacao?: string;
   nota?: string;
   frequencia?: string;
   totalAulas?: string;

@@ -50,8 +50,6 @@ type ContextoPerfil = {
   titulo: string;
   descricao: string;
   escopo: string;
-  cor: string;
-  fundo: string;
   icone: LucideIcon;
 };
 
@@ -145,24 +143,18 @@ function contextoPerfil(perfil: PerfilRelatorio): ContextoPerfil {
       titulo: "Relatorios do aluno",
       descricao: "Notas, frequencia e historico vinculados ao usuario logado.",
       escopo: "Meus dados",
-      cor: "#0E6F3F",
-      fundo: "#E6F4EA",
       icone: UserRound,
     },
     Professor: {
       titulo: "Relatorios do professor",
       descricao: "Turmas, alunos, notas e frequencia sob responsabilidade docente.",
       escopo: "Turmas vinculadas",
-      cor: "#0B5CAD",
-      fundo: "#EAF3FF",
       icone: UsersRound,
     },
     Secretaria: {
       titulo: "Relatorios da secretaria",
       descricao: "Visao administrativa dos dados academicos autorizados.",
       escopo: "Escopo administrativo",
-      cor: "#5B3E96",
-      fundo: "#F1ECFA",
       icone: ShieldCheck,
     },
   };
@@ -189,6 +181,69 @@ function criarFiltros(
     ano,
     tipo,
   };
+}
+
+function normalizarBusca(value?: unknown) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function valoresBuscaRelatorio(relatorio: RelatorioItem) {
+  const valores: unknown[] = [
+    relatorio.nome,
+    relatorio.descricao,
+    relatorio.tipo,
+    relatorio.ano,
+    relatorio.curso,
+    relatorio.matrizCurricular,
+  ];
+
+  relatorio.periodos.forEach((periodo) => {
+    valores.push(periodo.nome);
+    periodo.disciplinas.forEach((disciplina) => {
+      valores.push(
+        disciplina.nome,
+        disciplina.aluno,
+        disciplina.avaliacao,
+        disciplina.tipoAvaliacao,
+        disciplina.valorAvaliacao,
+        disciplina.dataAvaliacao,
+        disciplina.nota,
+        disciplina.frequencia,
+        disciplina.situacao
+      );
+    });
+  });
+
+  relatorio.pdf.linhas.forEach((linha) => {
+    valores.push(...Object.values(linha));
+  });
+
+  return valores;
+}
+
+function relatorioPassaNosFiltros(
+  relatorio: RelatorioItem,
+  filtros: { busca: string; ano: string; tipo: string }
+) {
+  const anoValido = filtros.ano === "Todos" || relatorio.ano === filtros.ano;
+  const tipoValido = filtros.tipo === "Todos" || relatorio.tipo === filtros.tipo;
+  const termo = normalizarBusca(filtros.busca);
+
+  if (!anoValido || !tipoValido) {
+    return false;
+  }
+
+  if (!termo) {
+    return true;
+  }
+
+  return valoresBuscaRelatorio(relatorio).some((valor) =>
+    normalizarBusca(valor).includes(termo)
+  );
 }
 
 function toAsciiBytes(value: string) {
@@ -297,6 +352,31 @@ function limitarTexto(value: string, maxChars: number) {
   return `${value.slice(0, Math.max(1, maxChars - 3))}...`;
 }
 
+function quebrarTexto(value: string, maxChars: number, maxLines = 2) {
+  const palavras = limparTextoPdf(value).split(" ");
+  const linhas: string[] = [""];
+
+  palavras.forEach((palavra) => {
+    const atual = linhas[linhas.length - 1] ?? "";
+    const proxima = atual ? `${atual} ${palavra}` : palavra;
+
+    if (proxima.length <= maxChars) {
+      linhas[linhas.length - 1] = proxima;
+      return;
+    }
+
+    if (linhas.length < maxLines) {
+      linhas.push(limitarTexto(palavra, maxChars));
+      return;
+    }
+
+    linhas[maxLines - 1] = limitarTexto(`${linhas[maxLines - 1]} ${palavra}`, maxChars);
+  });
+
+  const resultado = linhas.map((linha) => linha.trim()).filter(Boolean);
+  return resultado.length ? resultado.slice(0, maxLines) : ["-"];
+}
+
 function charsPorLargura(width: number, fontSize: number) {
   return Math.max(5, Math.floor(width / (fontSize * 0.54)));
 }
@@ -330,6 +410,12 @@ function renderCabecalhoPdf(
   const margin = 36;
   const titulo = limparTextoPdf(relatorio.pdf.titulo || relatorio.nome);
   const emissao = formatarDataEmissao();
+  const cursoLinhas = quebrarTexto(`Curso: ${limparTextoPdf(relatorio.curso)}`, 47, 2);
+  const matrizLinhas = quebrarTexto(
+    `Matriz curricular: ${limparTextoPdf(relatorio.matrizCurricular)}`,
+    47,
+    2
+  );
 
   return [
     pdfRect(0, 788, pageWidth, 54, "0.02 0.71 0.90"),
@@ -337,24 +423,19 @@ function renderCabecalhoPdf(
     pdfText(margin, 798, "Sistema academico", 9, "0.92 0.98 1"),
     pdfText(margin, 754, titulo, 17, "0.08 0.12 0.16"),
     pdfLine(margin, 742, pageWidth - margin, 742, 1.6, "0.02 0.71 0.90"),
-    pdfRect(margin, 654, pageWidth - margin * 2, 66, "0.97 0.98 0.99"),
+    pdfRect(margin, 640, pageWidth - margin * 2, 80, "0.97 0.98 0.99"),
     pdfLine(margin, 720, pageWidth - margin, 720, 0.7, "0.86 0.88 0.90"),
-    pdfLine(margin, 654, pageWidth - margin, 654, 0.7, "0.86 0.88 0.90"),
-    pdfText(margin + 14, 700, `Curso: ${limparTextoPdf(relatorio.curso)}`, 10),
-    pdfText(
-      margin + 14,
-      680,
-      `Matriz curricular: ${limparTextoPdf(relatorio.matrizCurricular)}`,
-      10
-    ),
+    pdfLine(margin, 640, pageWidth - margin, 640, 0.7, "0.86 0.88 0.90"),
+    ...cursoLinhas.map((linha, index) => pdfText(margin + 14, 702 - index * 12, linha, 9.5)),
+    ...matrizLinhas.map((linha, index) => pdfText(margin + 14, 672 - index * 12, linha, 9)),
     pdfText(
       356,
-      700,
+      702,
       `Ano: ${limparTextoPdf(relatorio.ano)}`,
       10
     ),
-    pdfText(356, 680, `Perfil: ${labelPerfil(perfil)}`, 10),
-    pdfText(356, 660, `Emissao: ${emissao}`, 10),
+    pdfText(356, 682, `Perfil: ${labelPerfil(perfil)}`, 10),
+    pdfText(356, 662, `Emissao: ${emissao}`, 10),
     pdfText(
       474,
       798,
@@ -555,7 +636,6 @@ export default function Relatorios() {
   const [ano, setAno] = useState("Todos");
   const [tipo, setTipo] = useState("Todos");
   const [relatoriosBase, setRelatoriosBase] = useState<RelatorioItem[]>([]);
-  const [relatorios, setRelatorios] = useState<RelatorioItem[]>([]);
   const [erro, setErro] = useState<string | null>(null);
 
   const anosDisponiveis = useMemo(
@@ -566,6 +646,14 @@ export default function Relatorios() {
   const tiposDisponiveis = useMemo(
     () => ["Todos", ...new Set(relatoriosBase.map((item) => item.tipo))],
     [relatoriosBase]
+  );
+
+  const relatorios = useMemo(
+    () =>
+      relatoriosBase.filter((relatorio) =>
+        relatorioPassaNosFiltros(relatorio, { busca, ano, tipo })
+      ),
+    [relatoriosBase, busca, ano, tipo]
   );
 
   const rowsTabela = useMemo<RelatorioTabelaRow[]>(
@@ -657,7 +745,6 @@ export default function Relatorios() {
       .catch(() => {
         if (consultaAtiva) {
           setRelatoriosBase([]);
-          setRelatorios([]);
           setErro(MENSAGEM_ERRO);
         }
       });
@@ -667,36 +754,14 @@ export default function Relatorios() {
     };
   }, [listarRelatorios, perfil]);
 
-  useEffect(() => {
-    let consultaAtiva = true;
-
-    listarRelatorios(criarFiltros(perfil, busca, ano, tipo))
-      .then((resultado) => {
-        if (consultaAtiva) {
-          setRelatorios(resultado);
-          setErro(null);
-        }
-      })
-      .catch(() => {
-        if (consultaAtiva) {
-          setRelatorios([]);
-          setErro(MENSAGEM_ERRO);
-        }
-      });
-
-    return () => {
-      consultaAtiva = false;
-    };
-  }, [listarRelatorios, perfil, busca, ano, tipo]);
-
   return (
     <Container
       maxWidth={false}
       sx={{
-        border: `1px solid ${theme.palette.grey[100]}`,
-        borderRadius: "8px",
-        backgroundColor: "#F4F4F4",
+        border: "none",
+        backgroundColor: "#FFF",
         py: 2,
+        px: { xs: 1.5, md: 2 },
       }}
     >
       <Stack spacing={2}>
@@ -720,16 +785,15 @@ export default function Relatorios() {
               icon={<IconePerfil size={15} />}
               label={labelPerfil(perfil)}
               sx={{
-                backgroundColor: contexto.fundo,
-                color: contexto.cor,
-                border: `1px solid ${contexto.cor}`,
+                backgroundColor: "#FFF",
+                color: "primary.main",
+                border: `1px solid ${theme.palette.primary.main}`,
                 fontWeight: 700,
                 "& .MuiChip-icon": {
-                  color: contexto.cor,
+                  color: "primary.main",
                 },
               }}
             />
-            {!erro ? <Chip size="small" label="API integrada" variant="outlined" /> : null}
           </Stack>
         </Stack>
 
@@ -753,8 +817,8 @@ export default function Relatorios() {
                   width: 38,
                   height: 38,
                   borderRadius: "8px",
-                  backgroundColor: contexto.fundo,
-                  color: contexto.cor,
+                  backgroundColor: "rgba(5, 181, 230, 0.12)",
+                  color: "primary.main",
                   display: { xs: "none", sm: "flex" },
                   alignItems: "center",
                   justifyContent: "center",
@@ -765,11 +829,10 @@ export default function Relatorios() {
               </Box>
 
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography fontWeight="bold" color={contexto.cor}>
+                <Typography fontWeight="bold" color="primary.main">
                   {contexto.escopo}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {usuarioLogado.nome ? `${usuarioLogado.nome} - ` : ""}
                   {contexto.descricao}
                 </Typography>
               </Box>
@@ -777,91 +840,139 @@ export default function Relatorios() {
 
             <Divider />
 
-            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-              <TextField
-                placeholder={
-                  perfil === "Aluno"
-                    ? "Buscar por relatorio, disciplina ou situacao"
-                    : "Buscar por relatorio, aluno, disciplina ou situacao"
-                }
-                value={busca}
-                onChange={(event) => setBusca(event.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search size={18} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  flex: 1,
-                  "& .MuiOutlinedInput-root": {
-                    backgroundColor: "#FFF",
-                  },
-                }}
-              />
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "minmax(0, 1fr) 140px 190px",
+                },
+                gap: 1.5,
+                alignItems: "end",
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="caption" fontWeight={700} color="text.secondary">
+                  Busca
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder={
+                    perfil === "Aluno"
+                      ? "Buscar por relatorio, disciplina ou situacao"
+                      : "Buscar por relatorio, aluno, disciplina ou situacao"
+                  }
+                  value={busca}
+                  onChange={(event) => setBusca(event.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search size={18} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    mt: 0.25,
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                />
+              </Box>
 
-              <TextField
-                select
-                label="Ano"
-                value={ano}
-                onChange={(event) => setAno(event.target.value)}
-                sx={{
-                  width: { xs: "100%", md: 140 },
-                  flexShrink: 0,
-                  "& .MuiInputLabel-root": {
-                    backgroundColor: "#FFF",
-                    px: 0.5,
-                  },
-                }}
-              >
-                {anosDisponiveis.map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Box>
+                <Typography variant="caption" fontWeight={700} color="text.secondary">
+                  Ano
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  value={ano}
+                  onChange={(event) => setAno(event.target.value)}
+                  sx={{
+                    mt: 0.25,
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                >
+                  {anosDisponiveis.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
 
-              <TextField
-                select
-                label="Tipo"
-                value={tipo}
-                onChange={(event) => setTipo(event.target.value)}
-                sx={{
-                  width: { xs: "100%", md: 190 },
-                  flexShrink: 0,
-                  "& .MuiInputLabel-root": {
-                    backgroundColor: "#FFF",
-                    px: 0.5,
-                  },
-                }}
-              >
-                {tiposDisponiveis.map((item) => (
-                  <MenuItem key={item} value={item}>
-                    {item === "Todos" ? item : labelTipo(item as TipoRelatorio)}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Stack>
+              <Box>
+                <Typography variant="caption" fontWeight={700} color="text.secondary">
+                  Tipo
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  value={tipo}
+                  onChange={(event) => setTipo(event.target.value)}
+                  sx={{
+                    mt: 0.25,
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                >
+                  {tiposDisponiveis.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item === "Todos" ? item : labelTipo(item as TipoRelatorio)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            </Box>
           </Stack>
         </Paper>
 
         {erro ? <Alert severity="error">{erro}</Alert> : null}
 
         {!mobile ? (
-          <Paper
-            elevation={0}
+          <Box
             sx={{
               border: `1px solid ${theme.palette.grey[100]}`,
               borderRadius: "8px",
               backgroundColor: "#FFF",
-              p: 1,
+              overflow: "hidden",
             }}
           >
             <Box sx={{ height: Math.max(300, rowsTabela.length * 34 + 118) }}>
-              <DataTable rows={rowsTabela} columns={columns} loading={carregando} />
+              <DataTable
+                rows={rowsTabela}
+                columns={columns}
+                loading={carregando}
+                emptyTitle="Nenhum relatorio encontrado"
+                emptyDescription="Revise a busca ou altere os filtros selecionados."
+                sx={{
+                  mt: 0,
+                  backgroundColor: "#FFF",
+                  border: "none",
+                  minHeight: 300,
+                  "& .MuiDataGrid-main": {
+                    backgroundColor: "#FFF",
+                  },
+                  "& .MuiDataGrid-virtualScroller": {
+                    backgroundColor: "#FFF",
+                  },
+                  "& .MuiDataGrid-overlayWrapper": {
+                    backgroundColor: "#FFF",
+                  },
+                  "& .MuiDataGrid-overlayWrapperInner": {
+                    backgroundColor: "#FFF",
+                  },
+                  "& .MuiDataGrid-footerContainer": {
+                    backgroundColor: "#FFF",
+                  },
+                }}
+              />
             </Box>
-          </Paper>
+          </Box>
         ) : (
           <Stack spacing={1.5}>
             {carregando ? (
@@ -950,7 +1061,7 @@ export default function Relatorios() {
           </Stack>
         )}
 
-        {!carregando && !erro && relatorios.length === 0 ? (
+        {mobile && !carregando && !erro && relatorios.length === 0 ? (
           <Box
             sx={{
               border: `1px dashed ${theme.palette.grey[200]}`,

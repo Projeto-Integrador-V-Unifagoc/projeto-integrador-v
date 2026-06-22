@@ -17,8 +17,12 @@ export class RelatorioService {
 
   async listarRelatorios(filtros: FiltrosRelatorioAcademico, contexto?: ContextoRelatorioAcademico) {
     const filtrosSeguros = await this.aplicarContextoAutenticado(filtros, contexto);
-    const linhas = await this.repository.listarLinhasAcademicas(filtrosSeguros);
-    return this.montarRelatorios(linhas, filtrosSeguros);
+    const filtrosConsulta = { ...filtrosSeguros, busca: undefined };
+    const [linhas, notasDetalhadas] = await Promise.all([
+      this.repository.listarLinhasAcademicas(filtrosConsulta),
+      this.repository.listarNotasDetalhadas(filtrosConsulta),
+    ]);
+    return this.montarRelatorios(linhas, filtrosSeguros, notasDetalhadas);
   }
 
   async obterStatusFonteDados() {
@@ -98,85 +102,120 @@ export class RelatorioService {
 
   private montarRelatorios(
     linhasOriginais: RelatorioAcademicoLinha[],
-    filtros: FiltrosRelatorioAcademico
+    filtros: FiltrosRelatorioAcademico,
+    notasOriginais: RelatorioAcademicoLinha[] = []
   ): RelatorioItem[] {
     const perfil = filtros.perfil ?? "Professor";
-    const termo = filtros.busca?.trim().toLowerCase() ?? "";
-    const linhas = linhasOriginais.filter((linha) => this.linhaPassaNosFiltros(linha, filtros, termo));
-    const anos = Array.from(new Set(linhas.map((linha) => String(linha.ano || "Atual"))));
+    const termo = this.normalizarBusca(filtros.busca).trim();
+    const linhas = linhasOriginais.filter((linha) => this.linhaPassaNoAno(linha, filtros));
+    const origemNotas = perfil === "Aluno" ? notasOriginais : linhasOriginais;
+    const notas = origemNotas.filter((linha) => this.linhaPassaNoAno(linha, filtros));
+    const chaves = Array.from(
+      new Set([...linhas, ...notas].map((linha) => this.chaveAnoCurso(linha)))
+    );
     const relatorios: RelatorioItem[] = [];
 
-    anos.forEach((ano, anoIndex) => {
-      const linhasDoAno = linhas.filter((linha) => String(linha.ano || "Atual") === ano);
-      const cursos = Array.from(new Set(linhasDoAno.map((linha) => linha.curso || "Curso nao informado")));
+    chaves.forEach((chave, index) => {
+      const [ano, curso] = chave.split("||");
+      const linhasDoCurso = linhas.filter((linha) => this.chaveAnoCurso(linha) === chave);
+      const notasDoCurso = notas.filter((linha) => this.chaveAnoCurso(linha) === chave);
+      const baseId = index * 10;
 
-      cursos.forEach((curso, cursoIndex) => {
-        const linhasDoCurso = linhasDoAno.filter((linha) => (linha.curso || "Curso nao informado") === curso);
-        const baseId = anoIndex * 100 + cursoIndex * 10;
+      relatorios.push(
+        this.criarRelatorio(baseId + 1, "Notas", perfil, ano, curso, this.montarPeriodos(notasDoCurso, perfil, "Notas")),
+        this.criarRelatorio(
+          baseId + 2,
+          "Frequencia",
+          perfil,
+          ano,
+          curso,
+          this.montarPeriodos(linhasDoCurso, perfil, "Frequencia")
+        ),
+        this.criarRelatorio(
+          baseId + 3,
+          "Historico",
+          perfil,
+          ano,
+          curso,
+          this.montarPeriodos(linhasDoCurso, perfil, "Historico")
+        )
+      );
 
+      if (perfil !== "Aluno") {
         relatorios.push(
-          this.criarRelatorio(baseId + 1, "Notas", perfil, ano, curso, this.montarPeriodos(linhasDoCurso, perfil, "Notas")),
           this.criarRelatorio(
-            baseId + 2,
-            "Frequencia",
+            baseId + 4,
+            "Consulta",
             perfil,
             ano,
             curso,
-            this.montarPeriodos(linhasDoCurso, perfil, "Frequencia")
-          ),
-          this.criarRelatorio(
-            baseId + 3,
-            "Historico",
-            perfil,
-            ano,
-            curso,
-            this.montarPeriodos(linhasDoCurso, perfil, "Historico")
+            this.montarPeriodos(linhasDoCurso, perfil, "Consulta")
           )
         );
-
-        if (perfil !== "Aluno") {
-          relatorios.push(
-            this.criarRelatorio(
-              baseId + 4,
-              "Consulta",
-              perfil,
-              ano,
-              curso,
-              this.montarPeriodos(linhasDoCurso, perfil, "Consulta")
-            )
-          );
-        }
-      });
+      }
     });
 
     return relatorios.filter((relatorio) => {
       const tipoValido = !filtros.tipo || filtros.tipo === "Todos" || relatorio.tipo === filtros.tipo;
-      return tipoValido && relatorio.periodos.some((periodo) => periodo.disciplinas.length > 0);
+      const possuiDados = relatorio.periodos.some((periodo) => periodo.disciplinas.length > 0);
+      const buscaValida = !termo || this.relatorioPassaNaBusca(relatorio, termo);
+      return tipoValido && possuiDados && buscaValida;
     });
   }
 
-  private linhaPassaNosFiltros(
+  private linhaPassaNoAno(
     linha: RelatorioAcademicoLinha,
-    filtros: FiltrosRelatorioAcademico,
-    termo: string
+    filtros: FiltrosRelatorioAcademico
   ) {
-    const anoValido = !filtros.ano || filtros.ano === "Todos" || String(linha.ano) === filtros.ano;
+    return !filtros.ano || filtros.ano === "Todos" || String(linha.ano) === filtros.ano;
+  }
 
-    if (!anoValido) {
-      return false;
-    }
+  private relatorioPassaNaBusca(relatorio: RelatorioItem, termo: string) {
+    const valores: unknown[] = [
+      relatorio.nome,
+      relatorio.descricao,
+      relatorio.tipo,
+      relatorio.ano,
+      relatorio.curso,
+      relatorio.matrizCurricular,
+    ];
 
-    if (!termo) {
-      return true;
-    }
+    relatorio.periodos.forEach((periodo) => {
+      valores.push(periodo.nome);
+      periodo.disciplinas.forEach((disciplina) => {
+        valores.push(
+          disciplina.nome,
+          disciplina.aluno,
+          disciplina.avaliacao,
+          disciplina.tipoAvaliacao,
+          disciplina.valorAvaliacao,
+          disciplina.dataAvaliacao,
+          disciplina.nota,
+          disciplina.frequencia,
+          disciplina.totalAulas,
+          disciplina.presencas,
+          disciplina.faltas,
+          disciplina.situacao
+        );
+      });
+    });
 
-    return [
-      linha.aluno,
-      linha.curso,
-      linha.periodo,
-      linha.disciplina,
-      linha.situacao ?? "",
-    ].some((campo) => String(campo).toLowerCase().includes(termo));
+    relatorio.pdf.linhas.forEach((linha) => {
+      valores.push(...Object.values(linha));
+    });
+
+    return valores.some((valor) => this.normalizarBusca(valor).includes(termo));
+  }
+
+  private normalizarBusca(valor: unknown) {
+    return String(valor ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  }
+
+  private chaveAnoCurso(linha: RelatorioAcademicoLinha) {
+    return `${String(linha.ano || "Atual")}||${linha.curso || "Curso nao informado"}`;
   }
 
   private montarPeriodos(
@@ -200,6 +239,10 @@ export class RelatorioService {
           nome: linha.disciplina || "Sem disciplina vinculada",
           aluno: perfil !== "Aluno" ? linha.aluno : undefined,
           cargaHoraria: `${linha.cargaHoraria ?? 0}h`,
+          avaliacao: this.nomeAvaliacao(linha),
+          tipoAvaliacao: this.labelTipoAvaliacao(linha.tipoAvaliacao),
+          valorAvaliacao: this.formatarNota(linha.valorAvaliacao),
+          dataAvaliacao: this.formatarData(linha.dataAvaliacao),
           nota: this.formatarNota(linha.nota),
           frequencia: this.formatarFrequencia(linha.frequencia),
           totalAulas: this.formatarInteiro(linha.totalAulas),
@@ -289,8 +332,13 @@ export class RelatorioService {
         ...(incluirAluno ? { Aluno: disciplina.aluno ?? "Aluno" } : {}),
         Periodo: periodo.nome,
         Disciplina: disciplina.nome,
+        Avaliacao: disciplina.avaliacao ?? "-",
+        Tipo: disciplina.tipoAvaliacao ?? "-",
         "Carga Horaria": disciplina.cargaHoraria,
         Nota: disciplina.nota ?? "-",
+        Media: disciplina.nota ?? "-",
+        Valor: disciplina.valorAvaliacao ?? "-",
+        Data: disciplina.dataAvaliacao ?? "-",
         Frequencia: disciplina.frequencia ?? "-",
         Aulas: disciplina.totalAulas ?? "-",
         Presencas: disciplina.presencas ?? "-",
@@ -303,11 +351,11 @@ export class RelatorioService {
   private pdfConfig(tipo: TipoRelatorio, incluirAluno: boolean, linhas: RelatorioLinhaPdf[]) {
     if (tipo === "Notas") {
       const colunas = incluirAluno
-        ? ["Aluno", "Periodo", "Disciplina", "Nota", "Situacao"]
-        : ["Periodo", "Disciplina", "Nota", "Situacao"];
+        ? ["Aluno", "Periodo", "Disciplina", "Media", "Situacao"]
+        : ["Periodo", "Disciplina", "Avaliacao", "Tipo", "Nota", "Valor", "Data"];
       return {
         colunas,
-        larguras: incluirAluno ? [130, 95, 175, 70, 110] : [110, 245, 80, 125],
+        larguras: incluirAluno ? [150, 80, 190, 70, 110] : [75, 140, 135, 65, 50, 50, 70],
         linhas: linhas.map((linha) => this.pick(linha, colunas)),
       };
     }
@@ -385,6 +433,45 @@ export class RelatorioService {
     }
 
     return "Aprovado";
+  }
+
+  private nomeAvaliacao(linha: RelatorioAcademicoLinha) {
+    const nome = String(linha.avaliacao ?? "").trim();
+
+    if (nome) {
+      return nome;
+    }
+
+    return this.labelTipoAvaliacao(linha.tipoAvaliacao) ?? "Avaliacao";
+  }
+
+  private labelTipoAvaliacao(tipo?: string | null) {
+    const labels: Record<string, string> = {
+      PROVA: "Prova",
+      TPI: "TPI",
+      TRABALHO: "Trabalho",
+      RECUPERACAO: "Recuperacao",
+    };
+
+    if (!tipo) {
+      return undefined;
+    }
+
+    return labels[String(tipo).toUpperCase()] ?? String(tipo);
+  }
+
+  private formatarData(data?: string | Date | null) {
+    if (!data) {
+      return undefined;
+    }
+
+    const valor = data instanceof Date ? data : new Date(String(data));
+
+    if (Number.isNaN(valor.getTime())) {
+      return String(data);
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(valor);
   }
 
   private formatarNota(nota: RelatorioAcademicoLinha["nota"]) {

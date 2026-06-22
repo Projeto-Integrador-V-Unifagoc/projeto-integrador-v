@@ -12,6 +12,10 @@ export interface DisciplinaRelatorio {
   nome: string;
   aluno?: string;
   cargaHoraria: string;
+  avaliacao?: string;
+  tipoAvaliacao?: string;
+  valorAvaliacao?: string;
+  dataAvaliacao?: string;
   nota?: string;
   frequencia?: string;
   situacao: SituacaoAcademica;
