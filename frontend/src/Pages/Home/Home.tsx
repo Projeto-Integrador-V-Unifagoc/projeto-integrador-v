@@ -629,7 +629,7 @@ export default function Home() {
                             <LinhaInfo rotulo="Carga horária" valor={`${disc.cargaHoraria}h`} />
                           </Stack>
                           <Divider />
-                          <Stack direction={{ xs: "column", sm: "row" }} gap={1.5} mt="auto">
+                          <Stack direction="column" gap={1.5} mt="auto">
                             <IndicadorPercentual
                               rotulo="Frequência atual"
                               valor={frequenciaPorDisciplina[disc.turmaDisciplinaId] ?? null}
