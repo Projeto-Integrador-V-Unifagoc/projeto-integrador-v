@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import {
   Alert,
   Box,
-  Checkbox,
   Chip,
   CircularProgress,
   Divider,
@@ -12,7 +11,6 @@ import {
   LinearProgress,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
   Paper,
   Skeleton,
@@ -687,18 +685,9 @@ export default function Home() {
                         sx={{
                           px: { xs: 1.5, sm: 2 },
                           py: 1.5,
-                          gap: 1,
                           "&:last-child": { borderBottom: 0 },
                         }}
                       >
-                        <ListItemIcon sx={{ minWidth: 40, pt: 0.25 }}>
-                          <Checkbox
-                            disabled
-                            checked={false}
-                            inputProps={{ "aria-label": `${task.titulo}: pendente` }}
-                            sx={{ p: 0.5 }}
-                          />
-                        </ListItemIcon>
                         <ListItemText
                           disableTypography
                           primary={
