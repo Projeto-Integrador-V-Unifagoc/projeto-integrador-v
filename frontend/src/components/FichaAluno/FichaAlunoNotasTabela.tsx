@@ -1,6 +1,4 @@
 import {
-  Box,
-  Divider,
   Paper,
   Stack,
   Table,
@@ -10,7 +8,6 @@ import {
   TableHead,
   TableRow,
   Typography,
-  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { GraduationCap } from "lucide-react";
@@ -26,7 +23,6 @@ interface FichaAlunoNotasTabelaProps {
 export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
   const { notas, semestre } = props;
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // collect unique evaluation names to create one column per evaluation
   const evalNames = Array.from(
