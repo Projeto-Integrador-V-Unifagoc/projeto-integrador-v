@@ -1,28 +1,15 @@
 import { useState } from "react";
 import { frequenciaApi } from "../services/frequencia-api";
-import type { RegistrarFrequenciaPayload, StatusFrequencia } from "../models/frequencia-model";
-
 export function useFrequencia() {
-  const [carregando, setCarregando] = useState(false);
-
-  async function executar<T>(callback: () => Promise<T>) {
-    setCarregando(true);
-    try {
-      return await callback();
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  return {
-    carregando,
-    listarOpcoes: () => executar(() => frequenciaApi.listarOpcoes()),
-    obterChamada: (params: { turmaDisciplinaId: string; data: string }) => executar(() => frequenciaApi.obterChamada(params)),
-    registrarFrequencia: (data: RegistrarFrequenciaPayload) => executar(() => frequenciaApi.registrarFrequencia(data)),
-    editarFrequencia: (id: string, status: StatusFrequencia) => executar(() => frequenciaApi.editarFrequencia(id, status)),
-    removerFrequencia: (id: string) => executar(() => frequenciaApi.removerFrequencia(id)),
-    consultarAluno: (alunoId: string) => executar(() => frequenciaApi.consultarAluno(alunoId)),
-    registrarJustificativa: (id: string, justificativa: string) => executar(() => frequenciaApi.registrarJustificativa(id, justificativa)),
-    gerarRelatorio: (params: { turmaDisciplinaId: string; dataInicio?: string; dataFim?: string }) => executar(() => frequenciaApi.gerarRelatorio(params)),
+  const [operacoes, setOperacoes] = useState<Record<string, boolean>>({});
+  async function executar<T>(nome: string, fn: () => Promise<T>) { setOperacoes((s) => ({ ...s, [nome]: true })); try { return await fn(); } finally { setOperacoes((s) => ({ ...s, [nome]: false })); } }
+  return { operacoes,
+    listarOpcoes: () => executar("opcoes", frequenciaApi.listarOpcoes),
+    obterChamada: (p: Parameters<typeof frequenciaApi.obterChamada>[0]) => executar("chamada", () => frequenciaApi.obterChamada(p)),
+    salvarChamada: (p: Parameters<typeof frequenciaApi.salvarChamada>[0]) => executar("salvamento", () => frequenciaApi.salvarChamada(p)),
+    consultarAluno: (id: string) => executar("consulta", () => frequenciaApi.consultarAluno(id)),
+    minhaFrequencia: () => executar("consulta", frequenciaApi.minhaFrequencia),
+    justificar: (id: string, d: Parameters<typeof frequenciaApi.justificar>[1]) => executar("justificativa", () => frequenciaApi.justificar(id, d)),
+    gerarRelatorio: (p: Parameters<typeof frequenciaApi.gerarRelatorio>[0]) => executar("relatorio", () => frequenciaApi.gerarRelatorio(p)),
   };
 }

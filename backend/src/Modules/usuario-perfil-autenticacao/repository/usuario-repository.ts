@@ -6,7 +6,7 @@ export interface Usuario {
   nome: string;
   email: string;
   senha: string;
-  tipo_usuario: 'aluno' | 'professor' | 'secretaria';
+  tipo_usuario: 'aluno' | 'professor' | 'secretaria' | 'administrador';
   created_at?: Date;
   updated_at?: Date;
 }
@@ -57,6 +57,7 @@ export class UsuarioRepository {
       .where('aluno.usuario_id', usuarioId)
       .select(
         'aluno.id as vinculo_id',
+        'aluno.matricula',
         'aluno.periodo',
         'pessoa.nome as pessoa_nome',
         'pessoa.cpf',
@@ -81,6 +82,7 @@ export class UsuarioRepository {
       .where('professor.usuario_id', usuarioId)
       .select(
         'professor.id as vinculo_id',
+        'professor.ativo',
         'pessoa.nome as pessoa_nome',
         'pessoa.cpf',
         'pessoa.data_nascimento',
@@ -125,6 +127,7 @@ export class UsuarioRepository {
     return await db('piv.professor')
       .leftJoin('piv.pessoa', 'professor.pessoa_id', 'pessoa.id')
       .whereNull('professor.usuario_id')
+      .where('professor.ativo', true)
       .select('professor.id', 'pessoa.nome as nome', 'pessoa.cpf as cpf')
       .orderBy('pessoa.nome');
   }
@@ -132,7 +135,7 @@ export class UsuarioRepository {
   // Busca enxuta do professor (id + usuario_id) para validar o vínculo.
   async buscarProfessorSimples(professorId: string) {
     return await db('piv.professor')
-      .select('id', 'usuario_id')
+      .select('id', 'usuario_id', 'ativo')
       .where({ id: professorId })
       .first();
   }

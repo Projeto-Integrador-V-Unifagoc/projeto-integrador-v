@@ -109,8 +109,13 @@ export default function Usuarios() {
     carregarProfessoresDisponiveis();
   };
 
+  // Secretaria e Administrador têm acesso total à gestão de usuários.
+  const podeGerenciarUsuarios =
+    usuarioLogado?.tipo_usuario === Perfil.SECRETARIA ||
+    usuarioLogado?.tipo_usuario === Perfil.ADMINISTRADOR;
+
   useEffect(() => {
-    if (usuarioLogado?.tipo_usuario === Perfil.SECRETARIA) {
+    if (podeGerenciarUsuarios) {
       carregarUsuarios();
       carregarVinculos();
     } else {
@@ -326,7 +331,7 @@ export default function Usuarios() {
     return <Navigate to="/login" replace />;
   }
 
-  if (usuarioLogado.tipo_usuario !== Perfil.SECRETARIA) {
+  if (!podeGerenciarUsuarios) {
     return <Navigate to="/" replace />;
   }
 
@@ -338,6 +343,7 @@ export default function Usuarios() {
         onSearchChange={setSearch}
         searchPlaceholder="Pesquisar por nome ou e-mail..."
         showFilters={false}
+        autoComplete="off"
       >
         Usuários
       </SearchTextField>
@@ -452,6 +458,7 @@ export default function Usuarios() {
                 <MenuItem value={Perfil.ALUNO}>Aluno</MenuItem>
                 <MenuItem value={Perfil.PROFESSOR}>Professor</MenuItem>
                 <MenuItem value={Perfil.SECRETARIA}>Secretaria</MenuItem>
+                <MenuItem value={Perfil.ADMINISTRADOR}>Administrador</MenuItem>
               </TextField>
 
               {usuarioForm.tipo_usuario === Perfil.ALUNO && (
@@ -512,6 +519,7 @@ export default function Usuarios() {
                 label={isEditing ? "Nova Senha (opcional)" : "Senha"}
                 required={!isEditing}
                 type={mostrarSenha ? "text" : "password"}
+                autoComplete="new-password"
                 fullWidth
                 helperText={
                   isEditing

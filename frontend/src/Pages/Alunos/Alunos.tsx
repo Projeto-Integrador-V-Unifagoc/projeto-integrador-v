@@ -12,6 +12,7 @@ import type { AlunoRequest, AlunoView } from "../../models/aluno-model";
 import { useAluno } from "../../hooks/use-aluno";
 import { useNavigate } from "react-router-dom";
 import type { GridColDef } from "@mui/x-data-grid";
+import type { SearchFilters } from "../../components/SearchTextField/SearchTextField";
 import { ClipboardList, Pencil } from "lucide-react";
 
 export default function Alunos() {
@@ -21,6 +22,12 @@ export default function Alunos() {
   const { listarAlunos, carregando } = useAluno()
   const navigate = useNavigate()
 
+  const [filters, setFilters] = useState<SearchFilters>({
+    cursoId: "",
+    periodo: "",
+  })
+
+  const [pesquisa, setPesquisa] = useState("")
 
   const columns: GridColDef<AlunoView>[] = [
     {
@@ -69,6 +76,11 @@ export default function Alunos() {
       flex: 1
     },
     {
+      field: "curso",
+      headerName: "Curso",
+      flex: 1
+    },
+    {
       field: "id",
       headerName: "Ações",
       flex: 1,
@@ -93,7 +105,11 @@ export default function Alunos() {
 
   useEffect(() => {
     async function buscarAlunos() {
-      const data = await listarAlunos()
+      const data = await listarAlunos({
+        cursoId: filters.cursoId,
+        periodo: filters.periodo,
+        nome: pesquisa
+      })
       const alunosMapeados = data.map((aluno: AlunoRequest) => ({
         id: aluno.id,
         matricula: aluno.matricula,
@@ -107,17 +123,24 @@ export default function Alunos() {
         estado: aluno.pessoa?.estado,
         cep: aluno.pessoa?.cep,
         periodo: aluno.periodo,
+        curso: aluno?.curso?.nome
       }))
       setAlunos(alunosMapeados)
     }
     buscarAlunos()
-  }, [])
-
+  }, [filters, pesquisa])
 
 
   return (
     <Container>
-      <SearchTextField>Alunos</SearchTextField>
+      <SearchTextField
+        filterValues={filters}
+        onFilterChange={(filters) => setFilters(filters)}
+        searchValue={pesquisa}
+        onSearchChange={setPesquisa}
+      >
+        Alunos
+      </SearchTextField>
 
       {isMobile ? (
         alunos.map((aluno) => (

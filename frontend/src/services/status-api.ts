@@ -40,4 +40,14 @@ export const statusApi = {
     const response = await api.post<StatusMatriculaDisciplina>("/statusDisciplina", data)
     return response.data
   },
+
+  async atualizarStatusMatriculaCurso(id: string, data: { descricao: string }) {
+    const response = await api.put<StatusMatriculaCurso>(`/statusCurso/${id}`, data)
+    return response.data
+  },
+
+  async atualizarStatusMatriculaDisciplina(id: string, data: { descricao: string }) {
+    const response = await api.put<StatusMatriculaDisciplina>(`/statusDisciplina/${id}`, data)
+    return response.data
+  },
 }

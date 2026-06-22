@@ -21,4 +21,8 @@ export class DisciplinaService {
     async buscarStatusMatriculaDisciplinaPorId(id: string) {
         return await this.disciplinaRepository.buscarStatusMatriculaDisciplinaPorId(id);
     }
+
+    async atualizarStatusMatriculaDisciplina(id: string, data: { descricao: string }) {
+        return await this.disciplinaRepository.atualizarStatusMatriculaDisciplina(id, data);
+    }
 }

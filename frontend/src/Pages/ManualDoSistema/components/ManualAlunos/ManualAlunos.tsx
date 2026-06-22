@@ -1,7 +1,7 @@
 import { Box, Divider, Stack, Typography } from "@mui/material";
 import Container from "../../../../components/Container";
 import { ManualStepCard } from "../../../../components/ManualStepCard";
-import { ClipboardList, Pencil, ScrollText, UserRoundPlus, Users } from "lucide-react";
+import { ClipboardList, Pencil, ScrollText, UserRoundPlus } from "lucide-react";
 
 export default function ManualAlunos() {
     return (

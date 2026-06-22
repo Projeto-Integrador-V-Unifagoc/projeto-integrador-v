@@ -1,370 +1,122 @@
-import {
-  ConsolidadoFrequencia,
-  EditarFrequenciaRequest,
-  RegistrarFrequenciaRequest,
-  StatusFrequencia,
-} from "../models/Frequencia";
+import type { Request } from "express";
 import { AuthContextGateway } from "../gateways/AuthContextGateway";
-import { PeriodoLetivoGateway } from "../gateways/PeriodoLetivoGateway";
-import { ProfessorTurmaGateway } from "../gateways/ProfessorTurmaGateway";
-import { AlunoTurmaGateway } from "../gateways/AlunoTurmaGateway";
+import { erroFrequencia, FrequenciaError } from "../errors/FrequenciaError";
+import type { ConsolidadoFrequencia, JustificativaRequest, RegistrarFrequenciaRequest, StatusFrequencia } from "../models/Frequencia";
 import { FrequenciaRepository } from "../repository/FrequenciaRepository";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DATA = /^\d{4}-\d{2}-\d{2}$/;
+
 export class FrequenciaService {
-  constructor(
-    private repository = new FrequenciaRepository(),
-    private authGateway = new AuthContextGateway(repository),
-    private periodoGateway = new PeriodoLetivoGateway(),
-    private professorTurmaGateway = new ProfessorTurmaGateway(repository),
-    private alunoTurmaGateway = new AlunoTurmaGateway(repository),
-  ) {}
+  constructor(private repository = new FrequenciaRepository(), private auth = new AuthContextGateway(repository)) {}
 
-  async listarOpcoes(req?: any) {
-    const contexto = await this.authGateway.obterContexto(req);
-    const turmas = await this.repository.listarTurmasDoProfessor(
-      contexto.perfil === "PROFESSOR" ? contexto.professorId : undefined,
-    );
-
+  async listarOpcoes(req: Request) {
+    const ctx = await this.auth.obterContexto(req);
+    const turmas = await this.repository.listarTurmas(ctx.professorId, ctx.alunoId);
     return {
-      contexto,
-      periodoLetivo: this.periodoGateway.obterDescricao(),
-      turmas: turmas.map((turma: any) => ({
-        id: turma.id,
-        turmaDisciplinaId: turma.id,
-        turmaId: turma.turma_id,
-        semestre: `${turma.ano}/${turma.semestre}`,
-        sigla: turma.turma_sigla,
-        descricao: turma.turma_descricao,
-        professorId: turma.professor_id,
-        disciplina: {
-          id: turma.disciplina_id,
-          codigo: turma.disciplina_codigo,
-          nome: turma.disciplina_nome,
-        },
-        curso: { id: turma.curso_id, nome: turma.curso_nome },
-      })),
+      contexto: { perfil: ctx.perfil },
+      turmas: turmas.map((t: any) => ({ id: t.id, turmaDisciplinaId: t.id, turmaId: t.turma_id, sigla: t.turma_sigla,
+        descricao: t.turma_descricao, periodoLetivo: { codigo: t.periodo_codigo, dataInicio: this.iso(t.data_inicio), dataFim: this.iso(t.data_fim), status: t.periodo_status },
+        disciplina: { id: t.disciplina_id, codigo: t.disciplina_codigo, nome: t.disciplina_nome }, curso: { id: t.curso_id, nome: t.curso_nome } })),
+      locais: ctx.perfil === "professor" ? await this.repository.listarLocais() : [],
     };
   }
 
-  async obterChamada(turmaDisciplinaId: string, data: string, req?: any) {
-    this.validarUuid(turmaDisciplinaId, "Turma/disciplina invalida.");
-    await this.validarAcessoTurma(turmaDisciplinaId, req);
-    this.validarDataLancamento(new Date(`${data}T00:00:00`));
-
-    const alunos = await this.alunoTurmaGateway.listarAlunosAtivos(turmaDisciplinaId);
-    const registros = await this.repository.listarRegistrosDaChamada(turmaDisciplinaId, data);
-
-    return {
-      turmaDisciplinaId,
-      data,
-      alunos: await Promise.all(
-        alunos.map(async (aluno: any) => {
-          const registro = registros.find(
-            (item: any) =>
-              item.matricula_turma_disciplina_id === aluno.matricula_turma_disciplina_id,
-          );
-          const percentualAtual = await this.repository.calcularPercentualMatriculaTurmaDisciplina(
-            aluno.matricula_turma_disciplina_id,
-          );
-
-          return {
-            id: aluno.aluno_id,
-            matriculaTurmaDisciplinaId: aluno.matricula_turma_disciplina_id,
-            matricula: aluno.matricula,
-            nome: aluno.nome,
-            statusMatricula: aluno.status,
-            percentualAtual,
-            frequenciaId: registro?.id,
-            status: registro?.status || "PRESENTE",
-            justificativa: registro?.justificativa || "",
-          };
-        }),
-      ),
-      jaRegistrada: registros.length > 0,
-    };
+  async obterChamada(turmaId: string, data: string, req: Request) {
+    this.uuid(turmaId, "Turma/disciplina inválida."); this.data(data);
+    const ctx = await this.auth.obterContexto(req);
+    if (ctx.perfil === "aluno") throw erroFrequencia.proibido();
+    await this.autorizarTurma(ctx, turmaId, ctx.perfil === "secretaria");
+    const turma = await this.validarPeriodo(turmaId, data, false);
+    const alunos = await this.repository.listarAlunosAtivosDaTurma(turmaId);
+    const registros = await this.repository.listarRegistrosDaChamada(turmaId, data);
+    const porMatricula = new Map(registros.map((r: any) => [String(r.matricula_turma_disciplina_id), r]));
+    return { turmaDisciplinaId: turmaId, data, periodoLetivo: turma.periodo_codigo, jaRegistrada: registros.length > 0,
+      chamadaCompleta: registros.length === alunos.length, matriculasIrregulares: await this.repository.contarMatriculasIrregulares(turmaId),
+      alunos: await Promise.all(alunos.map(async (a: any) => { const r: any = porMatricula.get(String(a.matricula_turma_disciplina_id)); return {
+        id: a.aluno_id, matriculaTurmaDisciplinaId: a.matricula_turma_disciplina_id, matricula: a.matricula, nome: a.nome,
+        statusMatricula: a.status, percentualAtual: await this.repository.calcularPercentualMatriculaTurmaDisciplina(a.matricula_turma_disciplina_id),
+        frequenciaId: r?.id, status: r?.status || null, motivoJustificativa: r?.justificativa_motivo || r?.justificativa || "", observacaoJustificativa: r?.justificativa_observacao || "",
+      }; })) };
   }
 
-  async registrarFrequencia(data: RegistrarFrequenciaRequest, req?: any) {
-    this.validarPayloadRegistro(data);
-    const contexto = await this.authGateway.obterContexto(req);
-    await this.validarAcessoTurma(data.turmaDisciplinaId, req);
-    if (!contexto.professorId) {
-      throw new Error("Professor responsavel nao identificado.");
-    }
-
-    const dataAula = new Date(`${data.data}T00:00:00`);
-    this.validarDataLancamento(dataAula);
-    const aula = data.aulaId
-      ? await this.repository.buscarAulaPorId(data.aulaId)
-      : await this.repository.obterOuCriarAula(
-          data.turmaDisciplinaId,
-          dataAula,
-          contexto.professorId,
-        );
-    if (!aula) throw new Error("Aula nao encontrada para registro de frequencia.");
-
-    const alunosAtivos = await this.alunoTurmaGateway.listarAlunosAtivos(data.turmaDisciplinaId);
-    const alunosPorId = new Map(alunosAtivos.map((aluno: any) => [aluno.aluno_id, aluno]));
-
-    for (const registro of data.registros) {
-      const aluno = alunosPorId.get(registro.alunoId) as any;
-      if (!aluno) {
-        throw new Error("Aluno sem matricula ativa nao pode receber frequencia nesta turma.");
-      }
-      if (
-        await this.repository.buscarRegistroPorAulaEMatricula(
-          aula.id,
-          aluno.matricula_turma_disciplina_id,
-        )
-      ) {
-        throw new Error("Frequencia ja registrada para esta aula. Utilize a edicao para alterar.");
-      }
-    }
-
-    const registrosCriados = await this.repository.criarRegistros(
-      data.registros.map((registro) => {
-        const aluno = alunosPorId.get(registro.alunoId) as any;
-        return {
-          aula_id: aula.id,
-          matricula_turma_disciplina_id: aluno.matricula_turma_disciplina_id,
-          status: registro.status,
-          data: data.data,
-        };
-      }),
-    );
-
-    const consolidados = [];
-    for (const registro of registrosCriados) {
-      const percentual = await this.repository.recalcularPercentualAlunoTurma(
-        registro.alunoId,
-        registro.turmaDisciplinaId,
-      );
-      consolidados.push({
-        alunoId: registro.alunoId,
-        percentual,
-        situacao: this.classificarSituacao(percentual),
-      });
-    }
-
-    return {
-      mensagem: "Frequencia registrada com sucesso!",
-      aulaId: aula.id,
-      registros: registrosCriados,
-      consolidados,
-    };
-  }
-
-  async editarFrequencia(id: string, data: EditarFrequenciaRequest, req?: any) {
-    this.validarStatus(data.status);
-    const registro = await this.repository.buscarRegistroPorId(id);
-    if (!registro) throw new Error("Registro de frequencia nao encontrado.");
-    await this.validarAcessoTurma(registro.turmaDisciplinaId, req);
-    this.validarPrazoEdicao(new Date(registro.criadoEm));
-    const atualizado = await this.repository.atualizarRegistro(id, data.status);
-    const percentual = await this.repository.recalcularPercentualAlunoTurma(
-      registro.alunoId,
-      registro.turmaDisciplinaId,
-    );
-    return {
-      mensagem: "Frequencia atualizada com sucesso!",
-      registro: atualizado,
-      consolidado: {
-        alunoId: registro.alunoId,
-        percentual,
-        situacao: this.classificarSituacao(percentual),
-      },
-    };
-  }
-
-  async removerFrequencia(id: string, req?: any) {
-    const registro = await this.repository.buscarRegistroPorId(id);
-    if (!registro) throw new Error("Registro de frequencia nao encontrado.");
-    await this.validarAcessoTurma(registro.turmaDisciplinaId, req);
-    this.validarPrazoEdicao(new Date(registro.criadoEm));
-
-    await this.repository.removerRegistro(id);
-    const percentual = await this.repository.recalcularPercentualAlunoTurma(
-      registro.alunoId,
-      registro.turmaDisciplinaId,
-    );
-
-    return {
-      mensagem: "Frequencia removida com sucesso!",
-      consolidado: {
-        alunoId: registro.alunoId,
-        percentual,
-        situacao: this.classificarSituacao(percentual),
-      },
-    };
-  }
-
-  async registrarJustificativa(id: string, justificativa: string, req?: any) {
-    const registro = await this.repository.buscarRegistroPorId(id);
-    if (!registro) throw new Error("Registro de frequencia nao encontrado.");
-    if (registro.status !== "AUSENTE") {
-      throw new Error("Nao e possivel registrar justificativa para aulas marcadas como presente.");
-    }
-    await this.validarAcessoTurma(registro.turmaDisciplinaId, req);
-    return {
-      mensagem: "Justificativa registrada com sucesso!",
-      registro: await this.repository.atualizarJustificativa(id, justificativa),
-    };
-  }
-
-  async consultarAluno(alunoId: string, req?: any) {
-    this.validarUuid(alunoId, "Aluno invalido. Selecione um aluno da lista de chamada.");
-    const contexto = await this.authGateway.obterContexto(req);
-    if (contexto.perfil === "ALUNO" && contexto.alunoId && contexto.alunoId !== alunoId) {
-      throw new Error("Aluno pode consultar apenas a propria frequencia.");
-    }
-    const historico = await this.repository.listarHistoricoAluno(alunoId);
-    const agrupado = new Map<string, any>();
-    for (const item of historico) {
-      const atual = agrupado.get(item.turma_disciplina_id) || {
-        turmaDisciplinaId: item.turma_disciplina_id,
-        disciplinaId: item.disciplina_id,
-        disciplinaNome: item.disciplina_nome,
-        totalAulas: 0,
-        presencas: 0,
-        faltas: 0,
-      };
-      atual.totalAulas += 1;
-      atual.presencas += item.status === "PRESENTE" ? 1 : 0;
-      atual.faltas += item.status === "AUSENTE" ? 1 : 0;
-      agrupado.set(item.turma_disciplina_id, atual);
-    }
-    const consolidado = Array.from(agrupado.values()).map((item) => {
-      const percentual = this.calcularPercentual(item.presencas, item.totalAulas);
-      return { ...item, percentual, situacao: this.classificarSituacao(percentual) };
-    });
-    return {
-      alunoId,
-      consolidado,
-      historico: historico.map((item: any) => ({
-        id: item.id,
-        aulaId: item.aula_id,
-        turmaDisciplinaId: item.turma_disciplina_id,
-        disciplinaId: item.disciplina_id,
-        disciplinaNome: item.disciplina_nome,
-        data: item.data,
-        status: item.status,
-        justificativa: item.justificativa,
-      })),
-    };
-  }
-
-  async consultarTurma(turmaDisciplinaId: string, req?: any, filtros?: { dataInicio?: string; dataFim?: string }) {
-    await this.validarAcessoTurma(turmaDisciplinaId, req);
-    const consolidado = await this.montarConsolidadoTurma(turmaDisciplinaId, filtros);
-    return {
-      turmaDisciplinaId,
-      alunos: consolidado,
-      alunosEmRisco: consolidado.filter((item) => item.situacao === "RISCO_REPROVACAO"),
-      alunosEmAlerta: consolidado.filter((item) => item.situacao === "ALERTA"),
-    };
-  }
-
-  async gerarRelatorio(filtros: any, req?: any) {
-    const turmaDisciplinaId = filtros.turmaDisciplinaId || filtros.turmaId;
-    if (!turmaDisciplinaId) throw new Error("Informe a turma/disciplina para gerar o relatorio.");
-    const turma = await this.repository.buscarTurma(turmaDisciplinaId);
-    if (!turma) throw new Error("Turma/disciplina nao encontrada.");
-    return {
-      filtros: {
-        turmaDisciplinaId,
-        disciplinaId: turma.disciplina_id,
-        disciplinaNome: turma.disciplina_nome,
-        dataInicio: filtros.dataInicio || null,
-        dataFim: filtros.dataFim || null,
-      },
-      ...(await this.consultarTurma(turmaDisciplinaId, req, {
-        dataInicio: filtros.dataInicio,
-        dataFim: filtros.dataFim,
-      })),
-    };
-  }
-
-  private async montarConsolidadoTurma(
-    turmaDisciplinaId: string,
-    filtros?: { dataInicio?: string; dataFim?: string },
-  ): Promise<ConsolidadoFrequencia[]> {
-    const { totalAulas, rows } = await this.repository.buscarConsolidadoTurma(
-      turmaDisciplinaId,
-      filtros,
-    );
-    return rows.map((row: any) => {
-      const presencas = Number(row.presencas || 0);
-      const percentual = this.calcularPercentual(presencas, totalAulas);
-      return {
-        alunoId: row.aluno_id,
-        alunoNome: row.aluno_nome,
-        turmaDisciplinaId: row.turma_disciplina_id,
-        disciplinaId: row.disciplina_id,
-        disciplinaNome: row.disciplina_nome,
-        totalAulas,
-        presencas,
-        faltas: Math.max(totalAulas - presencas, 0),
-        percentual,
-        situacao: this.classificarSituacao(percentual),
-      };
-    });
-  }
-
-  private async validarAcessoTurma(turmaDisciplinaId: string, req?: any) {
-    const contexto = await this.authGateway.obterContexto(req);
-    if (!(await this.professorTurmaGateway.validarVinculo(contexto, turmaDisciplinaId))) {
-      throw new Error("Voce nao possui permissao para acessar esta turma/disciplina.");
+  async salvarChamada(payload: RegistrarFrequenciaRequest, req: Request) {
+    this.validarPayload(payload); const ctx = await this.auth.obterContexto(req);
+    if (ctx.perfil !== "professor" || !ctx.professorId) throw erroFrequencia.proibido("Somente o professor responsável pode salvar a chamada.");
+    await this.autorizarTurma(ctx, payload.turmaDisciplinaId); await this.validarPeriodo(payload.turmaDisciplinaId, payload.data, true);
+    const elegiveis = await this.repository.listarAlunosAtivosDaTurma(payload.turmaDisciplinaId);
+    const elegiveisPorAluno = new Map(elegiveis.map((a: any) => [String(a.aluno_id), a]));
+    const recebidos = new Set(payload.registros.map((r) => r.alunoId));
+    if (recebidos.size !== payload.registros.length) throw erroFrequencia.invalido("A chamada contém aluno duplicado.");
+    if (recebidos.size !== elegiveis.length || [...recebidos].some((id) => !elegiveisPorAluno.has(id))) throw erroFrequencia.invalido("A chamada deve conter exatamente todos os alunos com matrícula ativa.");
+    try {
+      const salvo = await this.repository.salvarChamadaAtomica({ turmaDisciplinaId: payload.turmaDisciplinaId, aulaId: payload.aulaId,
+        localId: payload.localId, data: payload.data, professorId: ctx.professorId, usuarioId: ctx.usuarioId, perfil: ctx.perfil,
+        registros: payload.registros.map((r) => ({ matriculaId: (elegiveisPorAluno.get(r.alunoId) as any).matricula_turma_disciplina_id, status: r.status })) });
+      return { mensagem: "Chamada salva com sucesso.", ...salvo };
+    } catch (e: any) {
+      if (e instanceof FrequenciaError) throw e;
+      if (e?.code === "23505") throw erroFrequencia.conflito("Já existe uma chamada para esta turma e data.");
+      if (e?.codigoDominio === "PRAZO_EXPIRADO") throw erroFrequencia.conflito(e.message);
+      if (e?.codigoDominio) throw erroFrequencia.invalido(e.message);
+      throw e;
     }
   }
+  registrarFrequencia(payload: RegistrarFrequenciaRequest, req: Request) { return this.salvarChamada(payload, req); }
 
-  private validarPayloadRegistro(data: RegistrarFrequenciaRequest) {
-    if (
-      !data?.turmaDisciplinaId ||
-      !data?.data ||
-      !Array.isArray(data.registros) ||
-      data.registros.length === 0
-    ) {
-      throw new Error("Informe turma/disciplina, data e ao menos um registro de frequencia.");
-    }
-    data.registros.forEach((registro) => this.validarStatus(registro.status));
+  async registrarJustificativa(id: string, dados: JustificativaRequest, req: Request) {
+    this.uuid(id, "Frequência inválida."); const motivo = String(dados?.motivo || "").trim(); const observacao = String(dados?.observacao || "").trim();
+    if (motivo.length < 3 || motivo.length > 200) throw erroFrequencia.invalido("O motivo deve ter entre 3 e 200 caracteres.");
+    if (observacao.length > 1000) throw erroFrequencia.invalido("A observação deve ter no máximo 1000 caracteres.");
+    const ctx = await this.auth.obterContexto(req); if (ctx.perfil === "secretaria") throw erroFrequencia.proibido();
+    const registro: any = await this.repository.buscarRegistroPorId(id); if (!registro) throw erroFrequencia.naoEncontrado("Registro de frequência não encontrado.");
+    if (registro.status !== "AUSENTE") throw erroFrequencia.invalido("Justificativa só pode ser informada para ausência.");
+    if (ctx.perfil === "aluno" && registro.alunoId !== ctx.alunoId) throw erroFrequencia.proibido();
+    if (ctx.perfil === "professor") await this.autorizarTurma(ctx, registro.turmaDisciplinaId);
+    if (registro.motivoJustificativa && !dados.confirmarSubstituicao) throw erroFrequencia.conflito("Já existe justificativa. Confirme a substituição.");
+    return { mensagem: "Justificativa salva sem alterar o percentual de frequência.", registro: await this.repository.salvarJustificativa(id, { motivo, observacao, usuarioId: ctx.usuarioId, perfil: ctx.perfil }) };
   }
 
-  private validarStatus(status: StatusFrequencia) {
-    if (!["PRESENTE", "AUSENTE"].includes(status)) {
-      throw new Error("Status de frequencia invalido. Use PRESENTE ou AUSENTE.");
-    }
+  async minhaFrequencia(req: Request) {
+    const ctx = await this.auth.obterContexto(req); if (ctx.perfil !== "aluno" || !ctx.alunoId) throw erroFrequencia.proibido();
+    return this.consultarAlunoInterno(ctx.alunoId);
+  }
+  async consultarAluno(alunoId: string, req: Request) {
+    this.uuid(alunoId, "Aluno inválido."); const ctx = await this.auth.obterContexto(req);
+    if (ctx.perfil === "aluno" && ctx.alunoId !== alunoId) throw erroFrequencia.proibido();
+    if (ctx.perfil === "professor" && (!ctx.professorId || !(await this.repository.professorPossuiAluno(ctx.professorId, alunoId)))) throw erroFrequencia.proibido("Aluno fora das atribuições do professor.");
+    return this.consultarAlunoInterno(alunoId, ctx.perfil === "professor" ? ctx.professorId : undefined);
+  }
+  async consultarAlunoInterno(alunoId: string, professorId?: string) {
+    const historico: any[] = await this.repository.listarHistoricoAluno(alunoId, professorId);
+    const grupos = new Map<string, any>();
+    for (const r of historico) { const g = grupos.get(r.turma_disciplina_id) || { alunoId, alunoNome: r.aluno_nome, turmaDisciplinaId: r.turma_disciplina_id, disciplinaId: r.disciplina_id, disciplinaNome: r.disciplina_nome, totalAulas: 0, presencas: 0, faltas: 0, naoLancadas: 0 }; g.totalAulas++; g.presencas += r.status === "PRESENTE" ? 1 : 0; g.faltas += r.status === "AUSENTE" ? 1 : 0; grupos.set(r.turma_disciplina_id, g); }
+    const consolidado = [...grupos.values()].map((g) => this.consolidar(g));
+    return { alunoId, possuiAlerta: consolidado.some((c) => c.percentual !== null && c.percentual <= 80), consolidado,
+      historico: historico.map((r) => ({ id: r.id, aulaId: r.aula_id, turmaDisciplinaId: r.turma_disciplina_id, disciplinaId: r.disciplina_id, disciplinaNome: r.disciplina_nome, data: this.iso(r.data), status: r.status, motivoJustificativa: r.justificativa_motivo || r.justificativa, observacaoJustificativa: r.justificativa_observacao })) };
   }
 
-  private validarUuid(valor: string, mensagem: string) {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(valor)) throw new Error(mensagem);
+  async consultarTurma(id: string, req: Request, filtros: any = {}) {
+    this.uuid(id, "Turma/disciplina inválida."); const ctx = await this.auth.obterContexto(req); if (ctx.perfil === "aluno") throw erroFrequencia.proibido();
+    await this.autorizarTurma(ctx, id, ctx.perfil === "secretaria"); this.filtros(filtros);
+    const turma: any = await this.repository.buscarTurma(id);
+    if (!turma) throw erroFrequencia.naoEncontrado("Turma/disciplina não encontrada.");
+    if ((filtros.dataInicio && filtros.dataInicio < this.iso(turma.data_inicio)) || (filtros.dataFim && filtros.dataFim > this.iso(turma.data_fim))) throw erroFrequencia.invalido("O intervalo deve pertencer ao período letivo da turma.");
+    const { totalAulas, rows } = await this.repository.buscarConsolidadoTurma(id, filtros);
+    const alunos = rows.map((r: any) => this.consolidar({ alunoId: r.aluno_id, alunoNome: r.aluno_nome, turmaDisciplinaId: r.turma_disciplina_id, disciplinaId: r.disciplina_id, disciplinaNome: r.disciplina_nome, totalAulas, presencas: Number(r.presencas), faltas: Number(r.faltas), naoLancadas: Math.max(totalAulas - Number(r.registros), 0) }));
+    return { turmaDisciplinaId: id, totalAulas, matriculasIrregulares: await this.repository.contarMatriculasIrregulares(id), alunos,
+      alunosEmRisco: alunos.filter((a: any) => a.situacao === "RISCO_REPROVACAO"), alunosEmAlerta: alunos.filter((a: any) => a.situacao === "ALERTA") };
   }
+  async gerarRelatorio(f: any, req: Request) { const id = String(f.turmaDisciplinaId || ""); if (!id) throw erroFrequencia.invalido("Informe turma e disciplina."); return { filtros: { turmaDisciplinaId: id, dataInicio: f.dataInicio || null, dataFim: f.dataFim || null }, ...(await this.consultarTurma(id, req, f)) }; }
 
-  private validarDataLancamento(data: Date) {
-    const hoje = new Date();
-    hoje.setHours(23, 59, 59, 999);
-    if (data > hoje) throw new Error("Data invalida. Nao e possivel registrar frequencia para data futura.");
-    if (!this.periodoGateway.validarData(data)) {
-      throw new Error("Data invalida. Registro fora do periodo letivo vigente.");
-    }
-  }
-
-  private validarPrazoEdicao(dataCriacao: Date) {
-    const limite = new Date(dataCriacao);
-    limite.setDate(limite.getDate() + 7);
-    if (new Date() > limite) {
-      throw new Error("Prazo de edicao expirado. Nao e possivel alterar registros com mais de 7 dias.");
-    }
-  }
-
-  private calcularPercentual(presencas: number, totalAulas: number) {
-    if (totalAulas === 0) return 100;
-    return Number(((presencas / totalAulas) * 100).toFixed(2));
-  }
-
-  private classificarSituacao(percentual: number) {
-    if (percentual < 75) return "RISCO_REPROVACAO";
-    if (percentual <= 80) return "ALERTA";
-    return "REGULAR";
-  }
+  private async autorizarTurma(ctx: any, id: string, secretariaPode = false) { if (ctx.perfil === "secretaria" && secretariaPode) return; if (ctx.perfil !== "professor" || !ctx.professorId || !(await this.repository.professorPossuiTurma(ctx.professorId, id))) throw erroFrequencia.proibido("Turma fora da atribuição do professor."); }
+  private async validarPeriodo(id: string, data: string, escrita: boolean) { const t: any = await this.repository.buscarTurma(id); if (!t) throw erroFrequencia.naoEncontrado("Turma/disciplina não encontrada."); if (data > this.hojeLocal()) throw erroFrequencia.invalido("Não é permitido registrar data futura."); if (data < this.iso(t.data_inicio) || data > this.iso(t.data_fim)) throw erroFrequencia.invalido("Data fora do período letivo da turma."); if (escrita && (!t.periodo_ativo || !["ativo", "ATIVO", "em_andamento", "EM_ANDAMENTO"].includes(t.periodo_status))) throw erroFrequencia.conflito("O período letivo não está ativo para lançamentos."); return t; }
+  private validarPayload(p: any) { if (!p || !Array.isArray(p.registros) || !p.registros.length) throw erroFrequencia.invalido("Informe a chamada completa."); this.uuid(p.turmaDisciplinaId, "Turma/disciplina inválida."); this.data(p.data); if (p.aulaId) this.uuid(p.aulaId, "Aula inválida."); if (p.localId) this.uuid(p.localId, "Local inválido."); p.registros.forEach((r: any) => { this.uuid(r.alunoId, "Aluno inválido."); this.status(r.status); }); }
+  private filtros(f: any) { if (f.dataInicio) this.data(String(f.dataInicio)); if (f.dataFim) this.data(String(f.dataFim)); if (f.dataInicio && f.dataFim && f.dataInicio > f.dataFim) throw erroFrequencia.invalido("A data inicial deve ser anterior à final."); }
+  private uuid(v: string, msg: string) { if (!UUID.test(v)) throw erroFrequencia.invalido(msg); }
+  private data(v: string) { if (!DATA.test(v)) throw erroFrequencia.invalido("Data inválida. Use AAAA-MM-DD."); const [ano, mes, dia] = v.split("-").map(Number); const normalizada = new Date(Date.UTC(ano, mes - 1, dia)).toISOString().slice(0, 10); if (normalizada !== v) throw erroFrequencia.invalido("Data inválida. Use AAAA-MM-DD."); }
+  private status(v: StatusFrequencia) { if (!["PRESENTE", "AUSENTE"].includes(v)) throw erroFrequencia.invalido("Status de frequência inválido. Use PRESENTE ou AUSENTE."); }
+  private consolidar(g: any): ConsolidadoFrequencia { const contabilizadas = g.presencas + g.faltas; const percentual = contabilizadas ? Number((g.presencas / contabilizadas * 100).toFixed(2)) : null; return { ...g, percentual, situacao: percentual === null ? "NAO_LANCADO" : percentual < 75 ? "RISCO_REPROVACAO" : percentual <= 80 ? "ALERTA" : "REGULAR" }; }
+  private iso(v: any) { return v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10); }
+  private hojeLocal() { return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
 }

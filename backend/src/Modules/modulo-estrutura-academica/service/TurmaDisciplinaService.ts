@@ -3,13 +3,13 @@ import { TurmaDisciplinaCommand } from "../models/TurmaDisciplina";
 import { CursoDisciplinaRepository } from "../repository/CursoDisciplinaRepository";
 import { TurmaDisciplinaRepository } from "../repository/TurmaDisciplinaRepository";
 import { TurmaRepository } from "../repository/TurmaRepository";
-import { ProfessorRepository } from "../../modulo-professores/repository/ProfessorRepository";
+import { professorRepository } from "../../professor/repository/professorRepository";
 
 export class TurmaDisciplinaService {
     turmaDisciplinaRepository = new TurmaDisciplinaRepository();
     turmaRepository = new TurmaRepository();
     cursoDisciplinaRepository = new CursoDisciplinaRepository();
-    professorRepository = new ProfessorRepository();
+    professorRepository = professorRepository;
 
     async criarTurmaDisciplina(turmaId: string, data: any) {
         const turma = await this.turmaRepository.buscarTurmaPorId(turmaId);
@@ -28,7 +28,7 @@ export class TurmaDisciplinaService {
             throw new Error("A disciplina informada nao pertence a matriz curricular do curso da turma");
         }
 
-        const professor = await this.professorRepository.buscarProfessorRegistroPorId(data.professorId);
+        const professor = await this.professorRepository.buscarProfessorAtivoPorId(data.professorId);
 
         if (!professor) {
             throw new Error("Professor nao encontrado");
@@ -78,7 +78,7 @@ export class TurmaDisciplinaService {
         }
 
         if (data.professorId) {
-            const professor = await this.professorRepository.buscarProfessorRegistroPorId(data.professorId);
+            const professor = await this.professorRepository.buscarProfessorAtivoPorId(data.professorId);
 
             if (!professor) {
                 throw new Error("Professor nao encontrado");

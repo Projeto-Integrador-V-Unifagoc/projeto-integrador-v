@@ -79,4 +79,17 @@ export class DocumentoRepository {
         const count = await db("documento").where({ id }).delete();
         return count > 0;
     }
+
+    async contarDocumentosPendentesOuReprovados(alunoId: string): Promise<number> {
+        const result = await db("documento")
+            .where({ aluno_id: alunoId })
+            .whereIn("status", ["PENDENTE", "REPROVADO"])
+            .count("id as count")
+            .first();
+        return Number(result?.count ?? 0);
+    }
+
+    async atualizarStatusMatriculaAluno(alunoId: string, status: string): Promise<void> {
+        await db("matricula").where({ aluno_id: alunoId }).update({ status });
+    }
 }

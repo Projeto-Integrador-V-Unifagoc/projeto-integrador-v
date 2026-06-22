@@ -32,4 +32,16 @@ export class MatriculaController {
             res.status(500).json({ error: "Erro ao buscar status de matrícula do curso" });
         }
     }
+
+    async atualizarStatusMatriculaCurso(req: any, res: any) {
+        try {
+            const status = await this.matriculaService.atualizarStatusMatriculaCurso(req.params.id, req.body);
+            if (!status) {
+                return res.status(404).json({ error: "Status de matrícula do curso não encontrado" });
+            }
+            res.status(200).json(status);
+        } catch (error) {
+            res.status(500).json({ error: "Erro ao atualizar status de matrícula do curso" });
+        }
+    }
 }

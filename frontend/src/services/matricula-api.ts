@@ -7,13 +7,13 @@ export const matriculaApi = {
         return response.data;
     },
 
-    async listarTurmasDisponiveis(cursoId: string): Promise<TurmaDisponivel[]> {
-        const response = await api.get(`/turmas/disponiveis/${cursoId}`);
+    async listarTurmasDisponiveis(cursoId: string, alunoId: string): Promise<TurmaDisponivel[]> {
+        const response = await api.get(`/turmas/disponiveis/${cursoId}`, { params: { alunoId } });
         return response.data;
     },
 
-    async criarMatricula(alunoId: string, turmaId: string): Promise<MatriculaCriada> {
-        const response = await api.post("/matriculas", { alunoId, turmaId });
+    async criarMatricula(alunoId: string, turmaDisciplinaId: string): Promise<MatriculaCriada> {
+        const response = await api.post("/matriculas", { alunoId, turmaDisciplinaId });
         return response.data;
     },
 

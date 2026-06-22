@@ -14,19 +14,19 @@ export function useMatricula() {
         }
     };
 
-    const listarTurmasDisponiveis = async (cursoId: string): Promise<TurmaDisponivel[]> => {
+    const listarTurmasDisponiveis = async (cursoId: string, alunoId: string): Promise<TurmaDisponivel[]> => {
         setCarregando(true);
         try {
-            return await matriculaApi.listarTurmasDisponiveis(cursoId);
+            return await matriculaApi.listarTurmasDisponiveis(cursoId, alunoId);
         } finally {
             setCarregando(false);
         }
     };
 
-    const criarMatricula = async (alunoId: string, turmaId: string): Promise<MatriculaCriada> => {
+    const criarMatricula = async (alunoId: string, turmaDisciplinaId: string): Promise<MatriculaCriada> => {
         setCarregando(true);
         try {
-            return await matriculaApi.criarMatricula(alunoId, turmaId);
+            return await matriculaApi.criarMatricula(alunoId, turmaDisciplinaId);
         } finally {
             setCarregando(false);
         }

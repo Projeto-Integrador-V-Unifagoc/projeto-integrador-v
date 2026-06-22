@@ -66,7 +66,7 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
     }
 
     carregarDisciplina()
-  }, [buscarDisciplinaPorId, disciplinaId])
+  }, [disciplinaId])
 
   function handleChange<K extends keyof FormType>(name: K, value: FormType[K]) {
     setForm((prev) => ({

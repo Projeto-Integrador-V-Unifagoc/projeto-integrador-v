@@ -1,8 +1,10 @@
 node_modules/
 .env
 .env.*
+!.env.example
 *.log
 backend/build/
 backend/dist/
 frontend/dist/
 .DS_Store
+SPEC.md

@@ -9,7 +9,7 @@ import TextField from "../TextField";
 import Button from "../Button";
 
 import { useAluno } from "../../hooks/use-aluno";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { Card } from "../Card";
 import type { CidadeModel } from "../../models/cidade-model";
@@ -49,6 +49,7 @@ export default function EditFormCadastroAlunoDesktop() {
     tipo: "success" | "error";
     mensagem: string;
   } | null>(null);
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function carregarAluno() {
@@ -68,7 +69,7 @@ export default function EditFormCadastroAlunoDesktop() {
         cidade: data.pessoa?.cidade || null,
         estado: data.pessoa?.estado || "",
         cep: data.pessoa?.cep || "",
-        curso: data.curso || "",
+        curso: data?.curso || "",
         periodo: data.periodo || "",
       });
     }
@@ -95,6 +96,11 @@ export default function EditFormCadastroAlunoDesktop() {
         tipo: "success",
         mensagem: "Aluno atualizado com sucesso!",
       });
+
+      setTimeout(() => {
+        navigate("/alunos/lista")
+      }, 1500)
+
     } catch (error: any) {
       setAlerta({
         tipo: "error",
@@ -220,6 +226,7 @@ export default function EditFormCadastroAlunoDesktop() {
             <Grid container spacing={1}>
               <Grid size={4}>
                 <DropDownCursos
+                  optionValue="id"
                   value={form.curso}
                   onChange={(value) => handleChange("curso", value)}
                 />

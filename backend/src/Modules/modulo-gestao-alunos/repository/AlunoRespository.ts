@@ -12,12 +12,27 @@ export class AlunoRepository {
     return novoAluno;
 }
 
-    async listarAlunos() {
-        const rows = await db("aluno")
+    async listarAlunos(filtros?: any) {
+
+        const query = db("aluno")
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
             .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
             .leftJoin("cidade", "pessoa.cidade_id", "=", "cidade.ibge")
-            .select(
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
+
+            if (filtros?.cursoId) {
+                query.where("aluno.curso_id", filtros.cursoId)
+            }
+
+            if(filtros?.periodo){
+                query.where("aluno.periodo", filtros.periodo)
+            }
+
+            if(filtros?.nome) {
+                query.whereILike("pessoa.nome", `%${filtros.nome}%`)
+            }
+
+            const rows = await query.select(
                 "aluno.*",
                 "pessoa.id as p_id", 
                 "pessoa.nome as p_nome",
@@ -33,10 +48,13 @@ export class AlunoRepository {
                 "cidade.id as c_id",          
                 "cidade.ibge as c_ibge",      
                 "cidade.nome as c_nome",
-                "cidade.uf as c_uf"
-            );
+                "cidade.uf as c_uf",
+                "curso.id as curso_id",
+                "curso.codigo as curso_codigo",
+                "curso.nome as curso_nome",
+            )
 
-        return rows.map(AlunoMapper.toDomain);
+            return rows.map(AlunoMapper.toDomain);
     }
 
     async buscarAlunoPorId(id: string) {
@@ -44,10 +62,11 @@ export class AlunoRepository {
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
             .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
             .leftJoin("cidade", "pessoa.cidade_id", "=", "cidade.ibge")
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
             .where("aluno.id", id)
             .select(
                 "aluno.*",
-                "pessoa.id as p_id", 
+                "pessoa.id as p_id",
                 "pessoa.nome as p_nome",
                 "pessoa.cpf as p_cpf",
                 "pessoa.data_nascimento as p_data_nascimento",
@@ -58,10 +77,13 @@ export class AlunoRepository {
                 "pessoa.cep as p_cep",
                 "usuario.id as u_id",
                 "usuario.email as u_email",
-                "cidade.id as c_id",          
-                "cidade.ibge as c_ibge",      
+                "cidade.id as c_id",
+                "cidade.ibge as c_ibge",
                 "cidade.nome as c_nome",
-                "cidade.uf as c_uf"
+                "cidade.uf as c_uf",
+                "curso.id as curso_id",
+                "curso.codigo as curso_codigo",
+                "curso.nome as curso_nome"
             )
             .first();
 
@@ -96,6 +118,7 @@ export class AlunoRepository {
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
             .leftJoin("usuario", "aluno.usuario_id", "=", "usuario.id")
             .leftJoin("cidade", "pessoa.cidade_id", "=", "cidade.ibge")
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
             .where("aluno.matricula", matricula)
             .select(
                 "aluno.*",
@@ -113,7 +136,10 @@ export class AlunoRepository {
                 "cidade.id as c_id",          
                 "cidade.ibge as c_ibge",      
                 "cidade.nome as c_nome",
-                "cidade.uf as c_uf"
+                "cidade.uf as c_uf",
+                "curso.id as curso_id",
+                "curso.codigo as curso_codigo",
+                "curso.nome as curso_nome",
             )
             .first();
 
@@ -140,7 +166,7 @@ export class AlunoRepository {
         await db("aluno")
             .where("matricula", matricula)
             .update({
-                curso_id: null,
+                curso_id: dados.curso,
                 periodo: dados.periodo
             });
 

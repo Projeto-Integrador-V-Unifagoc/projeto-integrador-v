@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useId, useLayoutEffect } from 'react';
 import TextField from '../TextField';
-import { InputAdornment, CircularProgress, Paper, List, ListItemButton, ListItemText, Typography } from '@mui/material';
+import { InputAdornment, CircularProgress, Paper, List, ListItemButton, ListItemText } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 
 export interface SelectOption {
@@ -21,6 +21,7 @@ interface SearchableSelectProps {
     error?: boolean;
     helperText?: string;
     disabled?: boolean;
+    required?: boolean;
 }
 
 export default function SearchableSelect({
@@ -35,13 +36,19 @@ export default function SearchableSelect({
     error = false,
     helperText,
     disabled = false,
+    required = false,
 }: SearchableSelectProps) {
     const [inputText, setInputText] = useState(displayValue || '');
     const [open, setOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const inputId = useId();
+    const listboxId = `${inputId}-listbox`;
+    const [activeIndex, setActiveIndex] = useState(-1);
 
     // Sincroniza o texto exibido quando o valor externo muda
     useLayoutEffect(() => {
+        // O texto digitado e o identificador selecionado são estados distintos deste combobox.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setInputText(displayValue || '');
     }, [displayValue]);
 
@@ -76,17 +83,33 @@ export default function SearchableSelect({
         onSelect(option);
     };
 
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Escape') {
+            setOpen(false);
+            return;
+        }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            setOpen(true);
+            const direction = event.key === 'ArrowDown' ? 1 : -1;
+            setActiveIndex((current) => {
+                const next = current < 0 ? (direction > 0 ? 0 : options.length - 1) : current + direction;
+                return Math.max(0, Math.min(options.length - 1, next));
+            });
+            return;
+        }
+        if (event.key === 'Enter' && open && activeIndex >= 0 && options[activeIndex]) {
+            event.preventDefault();
+            handleSelect(options[activeIndex]);
+        }
+    };
+
     return (
         <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
-            {label && (
-                <Typography
-                    variant="caption"
-                    sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 0.5, display: 'block' }}
-                >
-                    {label}
-                </Typography>
-            )}
             <TextField
+                id={inputId}
+                label={label}
+                required={required}
                 placeholder={placeholder}
                 value={inputText}
                 onChange={(e) => handleInputChange(e.target.value)}
@@ -98,6 +121,14 @@ export default function SearchableSelect({
                 helperText={helperText}
                 disabled={disabled}
                 autoComplete="off"
+                onKeyDown={handleKeyDown}
+                inputProps={{
+                    role: 'combobox',
+                    'aria-expanded': open,
+                    'aria-controls': open ? listboxId : undefined,
+                    'aria-autocomplete': 'list',
+                    'aria-activedescendant': activeIndex >= 0 ? `${listboxId}-${activeIndex}` : undefined,
+                }}
                 InputProps={{
                     startAdornment: (
                         <InputAdornment position="start">
@@ -117,7 +148,7 @@ export default function SearchableSelect({
                     elevation={4}
                     sx={{
                         position: 'absolute',
-                        top: label ? 'calc(100% - 4px)' : 'calc(100% + 4px)',
+                        top: 'calc(100% - 18px)',
                         left: 0,
                         right: 0,
                         zIndex: 1300,
@@ -129,7 +160,7 @@ export default function SearchableSelect({
                     }}
                 >
                     {loading ? (
-                        <List dense disablePadding>
+                        <List dense disablePadding id={listboxId} role="listbox">
                             <ListItemButton disabled>
                                 <ListItemText
                                     primary="Buscando..."
@@ -138,7 +169,7 @@ export default function SearchableSelect({
                             </ListItemButton>
                         </List>
                     ) : options.length === 0 ? (
-                        <List dense disablePadding>
+                        <List dense disablePadding id={listboxId} role="listbox">
                             <ListItemButton disabled>
                                 <ListItemText
                                     primary={inputText ? 'Nenhum resultado encontrado' : 'Digite para buscar'}
@@ -147,11 +178,15 @@ export default function SearchableSelect({
                             </ListItemButton>
                         </List>
                     ) : (
-                        <List dense disablePadding>
-                            {options.map((option) => (
+                        <List dense disablePadding id={listboxId} role="listbox">
+                            {options.map((option, index) => (
                                 <ListItemButton
                                     key={option.id}
+                                    id={`${listboxId}-${index}`}
+                                    role="option"
+                                    aria-selected={option.id === value}
                                     selected={option.id === value}
+                                    onMouseEnter={() => setActiveIndex(index)}
                                     onClick={() => handleSelect(option)}
                                     sx={{
                                         py: 0.75,

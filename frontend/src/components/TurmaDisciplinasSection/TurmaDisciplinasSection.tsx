@@ -9,10 +9,10 @@ import TextField from "../TextField";
 import { Card } from "../Card";
 import { useTurma } from "../../hooks/use-turma";
 import { useCursoDisciplina } from "../../hooks/use-curso-disciplina";
-import { useProfessorAcademico } from "../../hooks/use-professor-academico";
+import { useProfessor } from "../../hooks/use-professor";
 import { turmaDisciplinaSchema } from "../../validators/turma-disciplina-schema";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
-import type { ProfessorAcademico } from "../../models/professor-academico-model";
+import type { ProfessorOpcao } from "../../models/professor-model";
 import type { TurmaDisciplinaResponse } from "../../models/turma-model";
 import type { GridColDef } from "@mui/x-data-grid";
 
@@ -36,16 +36,17 @@ const initialForm: FormType = {
 export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   const [disciplinasTurma, setDisciplinasTurma] = useState<TurmaDisciplinaResponse[]>([]);
   const [disciplinasMatriz, setDisciplinasMatriz] = useState<CursoDisciplinaResponse[]>([]);
-  const [professores, setProfessores] = useState<ProfessorAcademico[]>([]);
+  const [professores, setProfessores] = useState<ProfessorOpcao[]>([]);
   const [alerta, setAlerta] = useState<{ tipo: "success" | "error"; mensagem: string } | null>(null);
   const [dialogoAberto, setDialogoAberto] = useState(false);
   const [registroEdicao, setRegistroEdicao] = useState<TurmaDisciplinaResponse | null>(null);
   const [registroExclusao, setRegistroExclusao] = useState<TurmaDisciplinaResponse | null>(null);
   const [form, setForm] = useState<FormType>(initialForm);
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [filtroStatus, setFiltroStatus] = useState<"todas" | "ativa" | "planejada" | "encerrada">("todas");
   const { carregando, listarDisciplinasDaTurma, criarDisciplinaDaTurma, atualizarDisciplinaDaTurma, removerDisciplinaDaTurma } = useTurma();
   const { listarMatrizCurricularPorCursoId } = useCursoDisciplina();
-  const { listarProfessores } = useProfessorAcademico();
+  const { listarOpcoes } = useProfessor();
 
   async function carregarDados() {
     if (!cursoId) {
@@ -55,7 +56,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
     const [disciplinasTurmaResponse, matrizResponse, professoresResponse] = await Promise.all([
       listarDisciplinasDaTurma(turmaId),
       listarMatrizCurricularPorCursoId(cursoId),
-      listarProfessores(),
+      listarOpcoes(),
     ]);
 
     setDisciplinasTurma(disciplinasTurmaResponse);
@@ -73,6 +74,18 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
     const idsEmUso = new Set(disciplinasTurma.map((item) => item.curso_disciplina.id));
     return disciplinasMatriz.filter((item) => !idsEmUso.has(item.id) || item.id === form.cursoDisciplinaId);
   }, [disciplinasMatriz, disciplinasTurma, form.cursoDisciplinaId]);
+
+  const disciplinasTurmaOrdenadas = [...disciplinasTurma]
+    .filter((item) => filtroStatus === "todas" || item.status === filtroStatus)
+    .sort((a, b) => {
+      const comparacaoDisciplina = a.curso_disciplina.disciplina.nome.localeCompare(b.curso_disciplina.disciplina.nome);
+
+      if (comparacaoDisciplina !== 0) {
+        return comparacaoDisciplina;
+      }
+
+      return a.professor.nome.localeCompare(b.professor.nome);
+    });
 
   function abrirDialogoCriacao() {
     setRegistroEdicao(null);
@@ -176,12 +189,41 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
         </Card.Header>
         <Card.Content>
           <Stack gap={2}>
+            <Typography variant="body2" color="text.secondary">
+              Somente disciplinas da matriz curricular do curso da turma podem ser ofertadas. Cada disciplina pode ser vinculada apenas uma vez por turma.
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <TextField
+                  label="Filtrar por Status"
+                  select
+                  value={filtroStatus}
+                  onChange={(e) => setFiltroStatus(e.target.value as "todas" | "ativa" | "planejada" | "encerrada")}
+                >
+                  <MenuItem value="todas">Todas</MenuItem>
+                  <MenuItem value="ativa">Ativas</MenuItem>
+                  <MenuItem value="planejada">Planejadas</MenuItem>
+                  <MenuItem value="encerrada">Encerradas</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid size={{ xs: 12, md: 9 }}>
+                <Stack justifyContent="center" height="100%">
+                  <Typography variant="body2" color="text.secondary">
+                    {disciplinasTurmaOrdenadas.length} disciplina(s) exibida(s). {disciplinasDisponiveis.length} opcao(oes) disponivel(is) para nova oferta.
+                  </Typography>
+                </Stack>
+              </Grid>
+            </Grid>
             <Stack direction="row" justifyContent="flex-end">
-              <Button variant="contained" onClick={abrirDialogoCriacao}>
+              <Button
+                variant="contained"
+                onClick={abrirDialogoCriacao}
+                sx={{ width: "auto", minWidth: 170, whiteSpace: "nowrap" }}
+              >
                 Adicionar Disciplina
               </Button>
             </Stack>
-            <DataTable columns={columns} rows={disciplinasTurma} loading={carregando} />
+            <DataTable columns={columns} rows={disciplinasTurmaOrdenadas} loading={carregando} />
           </Stack>
         </Card.Content>
       </Card.Root>
@@ -193,6 +235,11 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
         </Dialog.Header>
         <Dialog.Content>
           <Grid container spacing={2}>
+            <Grid size={12}>
+              <Typography variant="body2" color="text.secondary">
+                Escolha uma disciplina disponivel da matriz curricular do curso e vincule um professor academico responsavel pela oferta.
+              </Typography>
+            </Grid>
             <Grid size={12}>
               <TextField
                 required
@@ -210,6 +257,11 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
                   </MenuItem>
                 ))}
               </TextField>
+              {!registroEdicao && (
+                <Typography variant="caption" color="text.secondary">
+                  {disciplinasDisponiveis.length} disciplina(s) disponivel(is) para vinculacao nesta turma.
+                </Typography>
+              )}
             </Grid>
             <Grid size={12}>
               <TextField
@@ -227,6 +279,9 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
                   </MenuItem>
                 ))}
               </TextField>
+              <Typography variant="caption" color="text.secondary">
+                O professor selecionado deve existir no cadastro academico para que a oferta seja salva.
+              </Typography>
             </Grid>
             <Grid size={12}>
               <TextField

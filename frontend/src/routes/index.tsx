@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
 
 import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import Perfil from "../Pages/Perfil/Perfil";
@@ -14,6 +15,7 @@ import NotFound from "../Pages/NotFound/NotFound";
 import Home from "../Pages/Home/Home";
 import Alunos from "../Pages/Alunos/Alunos";
 import StatusMatricula from "../Pages/Status/Status";
+import StatusMatriculaLista from "../Pages/Status/StatusListagem";
 
 import Cursos from "../Pages/Cursos/Cursos";
 import CadastroCursos from "../Pages/Cursos/CadastroCursos";
@@ -36,6 +38,8 @@ import Avaliacoes from "../Pages/Avaliacoes/Avaliacoes";
 import Professores from "../Pages/Professores/Professores";
 import CadastroProfessores from "../Pages/Professores/Cadastro";
 import Frequencia from "../Pages/Frequencia/Frequencia";
+import LancamentoNotas from "../Pages/Notas/LancamentoNotas";
+import MinhasNotas from "../Pages/Notas/MinhasNotas";
 import Documentos from "../Pages/Documentos/Documentos";
 import NovaMatricula from "../Pages/Matricula/NovaMatricula";
 import Inscricao from "../Pages/Inscricao/Inscricao";
@@ -43,12 +47,22 @@ import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
 import ManualUsuarioAutenticacao from "../Pages/ManualDoSistema/components/ManualUsuarioAutenticacao/ManualUsuarioAutenticacao";
 import ManualAlunos from "../Pages/ManualDoSistema/components/ManualAlunos/ManualAlunos";
 import ManualStatus from "../Pages/ManualDoSistema/components/ManualStatus/ManualStatus";
+import ManualCursos from "../Pages/ManualDoSistema/components/ManualCursos/ManualCursos";
+import ManualDisciplinas from "../Pages/ManualDoSistema/components/ManualDisciplinas/ManualDisciplinas";
+import ManualPeriodosLetivos from "../Pages/ManualDoSistema/components/ManualPeriodosLetivos/ManualPeriodosLetivos";
+import ManualTurmas from "../Pages/ManualDoSistema/components/ManualTurmas/ManualTurmas";
+
+// Secretaria e Administrador têm acesso total.
+const ACESSO_ADMIN = ["secretaria", "administrador"];
+const ACESSO_PROFESSOR = ["secretaria", "administrador", "professor"];
+const ACESSO_ALUNO = ["secretaria", "administrador", "aluno"];
+const ACESSO_TODOS = ["secretaria", "administrador", "professor", "aluno"];
 
 function RouteByRole({
   children,
   perfisPermitidos,
 }: {
-  children: any;
+  children: ReactNode;
   perfisPermitidos: string[];
 }) {
   const usuarioStorage = localStorage.getItem("@UniEduca:user");
@@ -61,7 +75,7 @@ function RouteByRole({
 
   try {
     usuario = JSON.parse(usuarioStorage);
-  } catch (error) {
+  } catch {
     localStorage.removeItem("@UniEduca:user");
     localStorage.removeItem("@UniEduca:token");
     return <Navigate to="/login" replace />;
@@ -99,16 +113,28 @@ export default function AppRoutes() {
         <Route path="/manual-do-sistema/usuarios-e-autenticacao" element={<ManualUsuarioAutenticacao />}/>
         <Route path="/manual-do-sistema/alunos" element={<ManualAlunos />}/>
         <Route path="/manual-do-sistema/status" element={<ManualStatus />}/>
+        <Route path="/manual-do-sistema/cursos" element={<ManualCursos />}/>
+        <Route path="/manual-do-sistema/disciplinas" element={<ManualDisciplinas />}/>
+        <Route path="/manual-do-sistema/periodos-letivos" element={<ManualPeriodosLetivos />}/>
+        <Route path="/manual-do-sistema/turmas" element={<ManualTurmas />}/>
 
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
-        <Route path="/tarefas/lista" element={<BuildingPage />} />
+
+        <Route
+          path="/tarefas/lista"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
+              <BuildingPage />
+            </RouteByRole>
+          }
+        />
 
         <Route
           path="/usuarios/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <Cadastro />
             </RouteByRole>
           }
@@ -117,7 +143,7 @@ export default function AppRoutes() {
         <Route
           path="/cadastro"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <Cadastro />
             </RouteByRole>
           }
@@ -126,7 +152,7 @@ export default function AppRoutes() {
         <Route
           path="/professores/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <Professores />
             </RouteByRole>
           }
@@ -135,7 +161,7 @@ export default function AppRoutes() {
         <Route
           path="/professores/cadastro"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <CadastroProfessores />
             </RouteByRole>
           }
@@ -144,7 +170,7 @@ export default function AppRoutes() {
         <Route
           path="/alunos/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <Alunos />
             </RouteByRole>
           }
@@ -153,7 +179,7 @@ export default function AppRoutes() {
         <Route
           path="/alunos/cadastro"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <CadastroAlunos />
             </RouteByRole>
           }
@@ -162,7 +188,7 @@ export default function AppRoutes() {
         <Route
           path="/alunos/:matricula"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <EditFormCadastroAluno />
             </RouteByRole>
           }
@@ -171,7 +197,7 @@ export default function AppRoutes() {
         <Route
           path="/alunos/editar/:id"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <EditFormCadastroAluno />
             </RouteByRole>
           }
@@ -180,7 +206,7 @@ export default function AppRoutes() {
         <Route
           path="/alunos/editar-aluno/:matricula"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <EditFormCadastroAluno />
             </RouteByRole>
           }
@@ -189,7 +215,7 @@ export default function AppRoutes() {
         <Route
           path="/alunos/ficha-do-aluno/:id"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <FichaAluno />
             </RouteByRole>
           }
@@ -198,8 +224,26 @@ export default function AppRoutes() {
         <Route
           path="/avaliacoes/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
               <Avaliacoes />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/notas/lancamento"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
+              <LancamentoNotas />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/minhas-notas"
+          element={
+            <RouteByRole perfisPermitidos={["aluno"]}>
+              <MinhasNotas />
             </RouteByRole>
           }
         />
@@ -207,7 +251,7 @@ export default function AppRoutes() {
         <Route
           path="/cursos/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <Cursos />
             </RouteByRole>
           }
@@ -216,7 +260,7 @@ export default function AppRoutes() {
         <Route
           path="/cursos/cadastro"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <CadastroCursos />
             </RouteByRole>
           }
@@ -225,7 +269,7 @@ export default function AppRoutes() {
         <Route
           path="/cursos/:id"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <EditCurso />
             </RouteByRole>
           }
@@ -234,7 +278,7 @@ export default function AppRoutes() {
         <Route
           path="/cursos/:id/matriz-curricular"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <MatrizCurricularCurso />
             </RouteByRole>
           }
@@ -243,7 +287,7 @@ export default function AppRoutes() {
         <Route
           path="/disciplinas/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <Disciplinas />
             </RouteByRole>
           }
@@ -252,7 +296,7 @@ export default function AppRoutes() {
         <Route
           path="/disciplinas/cadastro"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <CadastroDisciplinas />
             </RouteByRole>
           }
@@ -261,7 +305,7 @@ export default function AppRoutes() {
         <Route
           path="/disciplinas/:id"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <EditDisciplina />
             </RouteByRole>
           }
@@ -270,7 +314,7 @@ export default function AppRoutes() {
         <Route
           path="/periodos-letivos/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <PeriodosLetivos />
             </RouteByRole>
           }
@@ -279,7 +323,7 @@ export default function AppRoutes() {
         <Route
           path="/periodos-letivos/cadastro"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <CadastroPeriodosLetivos />
             </RouteByRole>
           }
@@ -288,7 +332,7 @@ export default function AppRoutes() {
         <Route
           path="/periodos-letivos/:id"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <EditPeriodoLetivo />
             </RouteByRole>
           }
@@ -297,7 +341,7 @@ export default function AppRoutes() {
         <Route
           path="/turmas/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <Turmas />
             </RouteByRole>
           }
@@ -306,7 +350,7 @@ export default function AppRoutes() {
         <Route
           path="/turmas/cadastro"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <CadastroTurmas />
             </RouteByRole>
           }
@@ -315,7 +359,7 @@ export default function AppRoutes() {
         <Route
           path="/turmas/:id"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <DetalheTurma />
             </RouteByRole>
           }
@@ -324,7 +368,15 @@ export default function AppRoutes() {
         <Route
           path="/frequencias/lista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
+              <Frequencia />
+            </RouteByRole>
+          }
+        />
+        <Route
+          path="/minha-frequencia"
+          element={
+            <RouteByRole perfisPermitidos={["aluno"]}>
               <Frequencia />
             </RouteByRole>
           }
@@ -333,7 +385,7 @@ export default function AppRoutes() {
         <Route
           path="/matricula/nova"
           element={
-            <RouteByRole perfisPermitidos={["secretaria"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ALUNO}>
               <NovaMatricula />
             </RouteByRole>
           }
@@ -342,17 +394,35 @@ export default function AppRoutes() {
         <Route
           path="/documentos/envio"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <Documentos />
             </RouteByRole>
           }
         />
 
         <Route
-          path="/status"
+          path="/statusLista"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
+              <StatusMatriculaLista />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/statusCadastro"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <StatusMatricula />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/relatorios/lista"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_TODOS}>
+              <BuildingPage />
             </RouteByRole>
           }
         />
@@ -360,7 +430,7 @@ export default function AppRoutes() {
         <Route
           path="/building"
           element={
-            <RouteByRole perfisPermitidos={["secretaria", "professor"]}>
+            <RouteByRole perfisPermitidos={ACESSO_TODOS}>
               <BuildingPage />
             </RouteByRole>
           }

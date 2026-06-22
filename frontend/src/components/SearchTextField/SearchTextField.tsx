@@ -16,18 +16,24 @@ import { FilterMenu } from "../FilterMenu/FilterMenu";
 import type { Cursos } from "../../enums/cursos";
 import TextField from "../TextField";
 import Button from "../Button";
-import type { Periodos } from "../../enums/periodos";
+
 
 import { ListFilter, Search } from "lucide-react";
+import type { PERIODOS } from "../../enums/periodos";
 
-type SearchFilters = {
+export type SearchFilters = {
   codigo?: string;
   matricula?: string;
-  curso?: Cursos | "";
+  cursoId?: Cursos | "";
   periodo?: string;
 };
 
-const EMPTY_FILTERS: SearchFilters = {};
+const EMPTY_FILTERS: SearchFilters = {
+  codigo: "",
+  matricula: "",
+  cursoId: "",
+  periodo: "",
+};
 
 interface SearchTextFieldProps {
   children: ReactNode;
@@ -45,6 +51,8 @@ interface SearchTextFieldProps {
   addPath?: string;
   placeholder?: string;
   showFilters?: boolean;
+  autoComplete?: string;
+  endContent?: ReactNode;
 }
 
 export default function SearchTextField(props: SearchTextFieldProps) {
@@ -64,6 +72,8 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     addPath,
     placeholder,
     showFilters = true,
+    autoComplete,
+    endContent,
   } = props;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -89,7 +99,9 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     }
   }
 
-  const ehSecretaria = tipoUsuario === "secretaria";
+  // Secretaria e Administrador têm acesso total (podem cadastrar).
+  const podeAdicionar =
+    tipoUsuario === "secretaria" || tipoUsuario === "administrador";
   const open = Boolean(anchorEl);
 
   const handleOpen = (event: MouseEvent<HTMLElement>) => {
@@ -107,7 +119,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
   };
 
   function handleAddClick() {
-    if (!ehSecretaria) return;
+    if (!podeAdicionar) return;
 
     if (buttonOnClick) {
       buttonOnClick();
@@ -115,6 +127,17 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     }
 
     navigate(addPath || defaultAddPath);
+  }
+
+  const handleSearch = () => {
+    onFilterChange?.(localFilters)
+    handleClose()
+  }
+
+  const handleReset = () => {
+    setLocalFilters(EMPTY_FILTERS)
+    onFilterChange?.(EMPTY_FILTERS)
+    setAnchorEl(null)
   }
 
   return (
@@ -135,6 +158,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
           placeholder={placeholder || searchPlaceholder}
           fullWidth
           value={searchValue}
+          autoComplete={autoComplete}
           onChange={(e) => onSearchChange?.(e.target.value)}
           InputProps={{
             endAdornment: showFilters ? (
@@ -160,7 +184,9 @@ export default function SearchTextField(props: SearchTextFieldProps) {
           }}
         />
 
-        {ehSecretaria && (
+        {endContent}
+
+        {podeAdicionar && (
           <Button
             variant="contained"
             onClick={handleAddClick}
@@ -193,13 +219,14 @@ export default function SearchTextField(props: SearchTextFieldProps) {
             />
 
             <DropDownCursos
-              value={localFilters.curso || ""}
-              onChange={(value) => handleFilterChange("curso", value)}
+              optionValue="id"
+              value={localFilters.cursoId || ""}
+              onChange={(value) => handleFilterChange("cursoId", value)}
             />
 
             {usePeriodFilter ? (
               <DropDownPeriodos
-                value={(localFilters.periodo as Periodos | "") || ""}
+                value={(localFilters.periodo as typeof PERIODOS[number]['value'] | "") || ""}
                 onChange={(value) => handleFilterChange("periodo", value)}
               />
             ) : (
@@ -214,7 +241,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
             )}
           </FilterMenu.Content>
 
-          <FilterMenu.Footer />
+          <FilterMenu.Footer onSearch={handleSearch} onReset={handleReset} />
         </FilterMenu.Root>
       )}
     </>
