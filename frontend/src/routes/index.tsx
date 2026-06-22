@@ -6,6 +6,7 @@ import Perfil from "../Pages/Perfil/Perfil";
 import Cadastro from "../Pages/Usuario/Usuario";
 import { Login } from "../Pages/Login/Login";
 import { PrivateRoute } from "../components/PrivateRoute";
+import Relatorios from "../Pages/Relatorios/Relatorios";
 
 import BuildingPage from "../Pages/BuildingPage/BuildingPage";
 import CadastroAlunos from "../Pages/Alunos/CadastroAlunos";
@@ -40,8 +41,8 @@ import CadastroProfessores from "../Pages/Professores/Cadastro";
 import Frequencia from "../Pages/Frequencia/Frequencia";
 import LancamentoNotas from "../Pages/Notas/LancamentoNotas";
 import MinhasNotas from "../Pages/Notas/MinhasNotas";
-import Documentos from "../Pages/Documentos/Documentos";
 import NovaMatricula from "../Pages/Matricula/NovaMatricula";
+import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
 import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
 import ManualUsuarioAutenticacao from "../Pages/ManualDoSistema/components/ManualUsuarioAutenticacao/ManualUsuarioAutenticacao";
@@ -52,7 +53,6 @@ import ManualDisciplinas from "../Pages/ManualDoSistema/components/ManualDiscipl
 import ManualPeriodosLetivos from "../Pages/ManualDoSistema/components/ManualPeriodosLetivos/ManualPeriodosLetivos";
 import ManualTurmas from "../Pages/ManualDoSistema/components/ManualTurmas/ManualTurmas";
 
-// Secretaria e Administrador têm acesso total.
 const ACESSO_ADMIN = ["secretaria", "administrador"];
 const ACESSO_PROFESSOR = ["secretaria", "administrador", "professor"];
 const ACESSO_ALUNO = ["secretaria", "administrador", "aluno"];
@@ -109,14 +109,14 @@ export default function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route path="/manual-do-sistema" element={<ManualDoSistema />}/>
-        <Route path="/manual-do-sistema/usuarios-e-autenticacao" element={<ManualUsuarioAutenticacao />}/>
-        <Route path="/manual-do-sistema/alunos" element={<ManualAlunos />}/>
-        <Route path="/manual-do-sistema/status" element={<ManualStatus />}/>
-        <Route path="/manual-do-sistema/cursos" element={<ManualCursos />}/>
-        <Route path="/manual-do-sistema/disciplinas" element={<ManualDisciplinas />}/>
-        <Route path="/manual-do-sistema/periodos-letivos" element={<ManualPeriodosLetivos />}/>
-        <Route path="/manual-do-sistema/turmas" element={<ManualTurmas />}/>
+        <Route path="/manual-do-sistema" element={<ManualDoSistema />} />
+        <Route path="/manual-do-sistema/usuarios-e-autenticacao" element={<ManualUsuarioAutenticacao />} />
+        <Route path="/manual-do-sistema/alunos" element={<ManualAlunos />} />
+        <Route path="/manual-do-sistema/status" element={<ManualStatus />} />
+        <Route path="/manual-do-sistema/cursos" element={<ManualCursos />} />
+        <Route path="/manual-do-sistema/disciplinas" element={<ManualDisciplinas />} />
+        <Route path="/manual-do-sistema/periodos-letivos" element={<ManualPeriodosLetivos />} />
+        <Route path="/manual-do-sistema/turmas" element={<ManualTurmas />} />
 
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
@@ -422,7 +422,7 @@ export default function AppRoutes() {
           path="/relatorios/lista"
           element={
             <RouteByRole perfisPermitidos={ACESSO_TODOS}>
-              <BuildingPage />
+              <Relatorios />
             </RouteByRole>
           }
         />

@@ -56,6 +56,7 @@ export default function EditFormCadastroAlunoDesktop() {
       if (!matricula) return;
 
       const data = await buscarAlunoPorMatricula(matricula);
+      const cursoId = typeof data.curso === "string" ? data.curso : data.curso?.id || "";
 
       setForm({
         nome: data.pessoa?.nome || "",
@@ -69,7 +70,7 @@ export default function EditFormCadastroAlunoDesktop() {
         cidade: data.pessoa?.cidade || null,
         estado: data.pessoa?.estado || "",
         cep: data.pessoa?.cep || "",
-        curso: data?.curso || "",
+        curso: cursoId,
         periodo: data.periodo || "",
       });
     }

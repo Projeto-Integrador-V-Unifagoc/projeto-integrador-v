@@ -43,6 +43,27 @@ export async function up(db: Knex): Promise<void> {
   await db.raw(`CREATE INDEX nota_matricula_idx ON ${SCHEMA}.nota (matricula_turma_disciplina_id)`);
   await db.raw(`CREATE INDEX nota_publicada_idx ON ${SCHEMA}.nota (publicada_em)`);
 
+  const hasNotaLegada = await db.schema.withSchema(SCHEMA).hasColumn("avaliacao", "nota");
+  const hasMatriculaLegada = await db.schema
+    .withSchema(SCHEMA)
+    .hasColumn("avaliacao", "matricula_turma_disciplina_id");
+
+  if (hasNotaLegada && hasMatriculaLegada) {
+    await db.raw(`
+      INSERT INTO ${SCHEMA}.nota (avaliacao_id, matricula_turma_disciplina_id, valor)
+      SELECT id, matricula_turma_disciplina_id, nota
+      FROM ${SCHEMA}.avaliacao
+      WHERE nota IS NOT NULL
+        AND matricula_turma_disciplina_id IS NOT NULL
+      ON CONFLICT (avaliacao_id, matricula_turma_disciplina_id) DO NOTHING
+    `);
+
+    await db.schema.withSchema(SCHEMA).alterTable("avaliacao", (table) => {
+      table.dropColumn("nota");
+      table.dropColumn("matricula_turma_disciplina_id");
+    });
+  }
+
   // 3. Auditoria de lancamentos e retificacoes (UC-03 / secao 5.7).
   await db.schema.withSchema(SCHEMA).createTable("nota_auditoria", (table) => {
     table.uuid("id").primary().defaultTo(db.raw("gen_random_uuid()"));

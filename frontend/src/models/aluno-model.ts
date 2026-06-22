@@ -46,6 +46,6 @@ export interface AlunoResponse {
   id: string
   matricula: number
   periodo: string
-  curso: string
+  curso: string | CursoResponse
   pessoa: PessoaV2
 }

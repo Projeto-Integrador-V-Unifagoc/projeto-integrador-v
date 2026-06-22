@@ -15,12 +15,14 @@ import { matriculaRouter } from "./Modules/routes/matriculaRoutes";
 import { documentoRouter } from "./Modules/routes/documentoRoutes";
 import { FichaController } from "./Modules/modulo-ficha/controller/FichaController";
 import authRoutes from "./Modules/usuario-perfil-autenticacao/routes/auth-routes";
+import { autenticar } from "./middlewares/autenticacao";
 import { StatusDisciplinaController } from "./Modules/modulo-status-matricula-disciplina/controller/DisciplinaController";
 import { MatriculaController } from "./Modules/modulo-status-matricula-disciplina/controller/MatriculaController";
 import { PeriodoLetivoController } from "./Modules/modulo-estrutura-academica/controller/PeriodoLetivoController";
 import { CursoDisciplinaController } from "./Modules/modulo-estrutura-academica/controller/CursoDisciplinaController";
 import { TurmaController } from "./Modules/modulo-estrutura-academica/controller/TurmaController";
 import { TurmaDisciplinaController } from "./Modules/modulo-estrutura-academica/controller/TurmaDisciplinaController";
+import { RelatorioController } from "./Modules/modulo-relatorios/controllers/RelatorioController";
 import { obterJwtSecret } from "./config/jwt";
 
 const PORT = process.env.PORT || 3000;
@@ -45,7 +47,18 @@ const periodoLetivoController = new PeriodoLetivoController();
 const cursoDisciplinaController = new CursoDisciplinaController();
 const turmaController = new TurmaController();
 const turmaDisciplinaController = new TurmaDisciplinaController();
+const relatorioController = new RelatorioController();
 const fichaController = new FichaController();
+
+app.get("/relatorios/academicos", autenticar, (req, res) =>
+  relatorioController.listarRelatoriosAcademicos(req, res),
+);
+app.get("/relatorios/academicos/status", autenticar, (req, res) =>
+  relatorioController.statusFonteDados(req, res),
+);
+app.get("/relatorio-alunos", autenticar, (req, res) =>
+  relatorioController.listarRelatoriosAcademicos(req, res),
+);
 
 app.post("/alunos", (req, res) => alunoController.criarAluno(req, res));
 app.put("/alunos/editar-aluno/:matricula", (req, res) =>
@@ -98,7 +111,6 @@ app.get("/statusCurso", (req, res) =>
 );
 
 app.get("/alunos", (req, res) => alunoController.listarAlunos(req, res));
-
 app.get("/alunos/id/:id", (req, res) =>
   alunoController.buscarAlunoPorId(req, res),
 );

@@ -4,6 +4,7 @@ import { FrequenciaController } from "../frequencia/controller/FrequenciaControl
 
 const controller = new FrequenciaController();
 export const frequenciaRouter = Router();
+
 frequenciaRouter.use(autenticar);
 frequenciaRouter.get("/opcoes", controller.listarOpcoes);
 frequenciaRouter.get("/chamada", controller.obterChamada);

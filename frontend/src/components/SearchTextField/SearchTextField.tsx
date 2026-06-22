@@ -17,7 +17,6 @@ import type { Cursos } from "../../enums/cursos";
 import TextField from "../TextField";
 import Button from "../Button";
 
-
 import { ListFilter, Search } from "lucide-react";
 import type { PERIODOS } from "../../enums/periodos";
 
@@ -64,9 +63,9 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     filterValues = EMPTY_FILTERS,
     onFilterChange,
     searchPlaceholder = "Pesquisar Alunos",
-    firstFilterLabel = "Código",
-    secondFilterLabel = "Matrícula",
-    fourthFilterLabel = "Período",
+    firstFilterLabel = "Codigo",
+    secondFilterLabel = "Matricula",
+    fourthFilterLabel = "Periodo",
     usePeriodFilter = true,
     defaultAddPath = "/alunos/cadastro",
     addPath,
@@ -99,7 +98,6 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     }
   }
 
-  // Secretaria e Administrador têm acesso total (podem cadastrar).
   const podeAdicionar =
     tipoUsuario === "secretaria" || tipoUsuario === "administrador";
   const open = Boolean(anchorEl);
@@ -130,15 +128,15 @@ export default function SearchTextField(props: SearchTextFieldProps) {
   }
 
   const handleSearch = () => {
-    onFilterChange?.(localFilters)
-    handleClose()
-  }
+    onFilterChange?.(localFilters);
+    handleClose();
+  };
 
   const handleReset = () => {
-    setLocalFilters(EMPTY_FILTERS)
-    onFilterChange?.(EMPTY_FILTERS)
-    setAnchorEl(null)
-  }
+    setLocalFilters(EMPTY_FILTERS);
+    onFilterChange?.(EMPTY_FILTERS);
+    setAnchorEl(null);
+  };
 
   return (
     <>
@@ -226,7 +224,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
 
             {usePeriodFilter ? (
               <DropDownPeriodos
-                value={(localFilters.periodo as typeof PERIODOS[number]['value'] | "") || ""}
+                value={(localFilters.periodo as typeof PERIODOS[number]["value"] | "") || ""}
                 onChange={(value) => handleFilterChange("periodo", value)}
               />
             ) : (

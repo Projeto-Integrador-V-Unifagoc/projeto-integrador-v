@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { autenticar } from "../../middlewares/autenticacao.js";
-import { NotaController } from "../notas/controller/NotaController.js";
+import { autenticar } from "../../middlewares/autenticacao";
+import { NotaController } from "../notas/controller/NotaController";
 
 const controller = new NotaController();
 export const notasRouter = Router();
