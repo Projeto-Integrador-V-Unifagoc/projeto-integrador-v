@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Box, Chip, Grid, MenuItem, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { Box, Chip, Grid, MenuItem, Stack, Tab, Tabs, Typography } from "@mui/material";
 import type { GridColDef, GridRowModel } from "@mui/x-data-grid";
 import { RefreshCw, Save, ShieldCheck } from "lucide-react";
 import Button from "../../components/Button";
@@ -7,6 +7,7 @@ import { Card } from "../../components/Card";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
+import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
 import { useNota } from "../../hooks/use-nota";
 import {
   SITUACAO_LABEL,
@@ -20,7 +21,7 @@ import {
   type SituacaoNota,
 } from "../../models/nota-model";
 import AutorizacaoDialog from "./AutorizacaoDialog";
-import { type Aviso, formatarMedia, formatarNotaValor, mensagemErro, perfilLocal } from "./notas-utils";
+import { formatarMedia, formatarNotaValor, mensagemErro, perfilLocal } from "./notas-utils";
 
 type LinhaLancamento = AlunoLancamento & { id: string };
 type LinhaRecuperacao = AlunoRecuperacao & { id: string; valor: number | null };
@@ -52,6 +53,7 @@ const renderNota = (valor: number | null | undefined, alterada: boolean) =>
 
 export default function LancamentoNotas() {
   const api = useNota();
+  const { notificar } = useNotificacao();
   const perfil = perfilLocal();
   const ehSecretaria = perfil === "secretaria" || perfil === "administrador";
 
@@ -59,8 +61,6 @@ export default function LancamentoNotas() {
   const [turmaId, setTurmaId] = useState("");
   const [avaliacaoId, setAvaliacaoId] = useState("");
   const [aba, setAba] = useState(0);
-  const [aviso, setAviso] = useState<Aviso>();
-
   const [lancamento, setLancamento] = useState<Lancamento>();
   const [linhas, setLinhas] = useState<LinhaLancamento[]>([]);
   const [alterado, setAlterado] = useState(false);
@@ -90,14 +90,20 @@ export default function LancamentoNotas() {
           setAvaliacaoId(r.atribuicoes[0].avaliacoes[0]?.id || "");
         }
       } catch (e) {
-        if (ativo) setAviso({ tipo: "error", texto: mensagemErro(e) });
+        if (ativo) notificar(mensagemErro(e), "error");
       }
     })();
     return () => {
       ativo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [notificar]);
+
+  useEffect(() => {
+    if (periodoFechado) {
+      notificar("Período letivo fechado: as notas estão em modo somente leitura.", "info");
+    }
+  }, [notificar, periodoFechado]);
 
   useEffect(() => {
     const sair = (e: BeforeUnloadEvent) => {
@@ -116,9 +122,19 @@ export default function LancamentoNotas() {
       setLinhas(r.alunos.map((a) => ({ ...a, id: a.matriculaTurmaDisciplinaId })));
       setAlterado(false);
       setAlteradasLanc(new Set());
-      setAviso(undefined);
+      if (r.matriculasIrregulares > 0) {
+        notificar(`${r.matriculasIrregulares} matrícula(s) irregular(es) foram omitidas.`, "info");
+      }
+      if (r.alunos.some((aluno) => aluno.prazoExpirado)) {
+        notificar(
+          ehSecretaria
+            ? "Há notas com prazo expirado. Você pode autorizar uma retificação excepcional."
+            : "Há notas com prazo expirado. Solicite autorização excepcional à secretaria.",
+          "warning",
+        );
+      }
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
@@ -127,7 +143,7 @@ export default function LancamentoNotas() {
     try {
       setRendimento(await api.obterRendimento(turmaId));
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
@@ -141,7 +157,7 @@ export default function LancamentoNotas() {
       setAlteradoRec(false);
       setAlteradasRec(new Set());
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
@@ -170,10 +186,12 @@ export default function LancamentoNotas() {
       setLinhas((rs) => rs.map((r) => (r.id === nova.id ? (atualizada as LinhaLancamento) : r)));
       setAlteradasLanc((s) => new Set(s).add(id));
       setAlterado(true);
+      if (!alterado) notificar("Existem alterações não salvas no lançamento de notas.", "warning");
     } else {
       setLinhasRec((rs) => rs.map((r) => (r.id === nova.id ? (atualizada as LinhaRecuperacao) : r)));
       setAlteradasRec((s) => new Set(s).add(id));
       setAlteradoRec(true);
+      if (!alteradoRec) notificar("Existem alterações não salvas nas notas de recuperação.", "warning");
     }
     return atualizada;
   };
@@ -183,7 +201,7 @@ export default function LancamentoNotas() {
       .filter((r) => r.valor !== null && r.valor !== undefined)
       .map((r) => ({ alunoId: r.alunoId, valor: Number(r.valor) }));
     if (!itens.length) {
-      setAviso({ tipo: "warning", texto: "Informe ao menos uma nota antes de salvar." });
+      notificar("Informe ao menos uma nota antes de salvar.", "warning");
       return;
     }
     try {
@@ -192,9 +210,9 @@ export default function LancamentoNotas() {
       setLinhas(r.alunos.map((a) => ({ ...a, id: a.matriculaTurmaDisciplinaId })));
       setAlterado(false);
       setAlteradasLanc(new Set());
-      setAviso({ tipo: "success", texto: "Notas salvas com sucesso em uma única transação." });
+      notificar("Notas salvas com sucesso.", "success");
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
@@ -204,17 +222,17 @@ export default function LancamentoNotas() {
       .filter((r) => r.valor !== null && r.valor !== undefined)
       .map((r) => ({ alunoId: r.alunoId, valor: Number(r.valor) }));
     if (!itens.length) {
-      setAviso({ tipo: "warning", texto: "Informe ao menos uma nota de recuperação." });
+      notificar("Informe ao menos uma nota de recuperação.", "warning");
       return;
     }
     try {
       await api.salvarLote(recuperacao.recuperacaoAvaliacaoId, itens);
       setAlteradoRec(false);
       setAlteradasRec(new Set());
-      setAviso({ tipo: "success", texto: "Notas de recuperação salvas e média final recalculada." });
+      notificar("Notas de recuperação salvas e média final recalculada.", "success");
       await carregarRecuperacao();
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
@@ -223,10 +241,10 @@ export default function LancamentoNotas() {
       await api.criarAutorizacao({ avaliacaoId, motivo: motivoAutorizacao });
       setAutorizar(false);
       setMotivoAutorizacao("");
-      setAviso({ tipo: "success", texto: "Autorização excepcional registrada e auditada. A retificação fora do prazo está liberada." });
+      notificar("Autorização excepcional registrada. A retificação fora do prazo está liberada.", "success");
       await carregarLancamento();
     } catch (e) {
-      setAviso({ tipo: "error", texto: mensagemErro(e) });
+      notificar(mensagemErro(e), "error");
     }
   }
 
@@ -311,18 +329,6 @@ export default function LancamentoNotas() {
           Lançamento de Notas
         </Typography>
 
-        {aviso && (
-          <Alert severity={aviso.tipo} onClose={() => setAviso(undefined)}>
-            {aviso.texto}
-          </Alert>
-        )}
-        {periodoFechado && <Alert severity="info">Período letivo fechado: as notas estão em modo somente leitura.</Alert>}
-        {ehSecretaria && !periodoFechado && (
-          <Alert severity="info">
-            Perfil de secretaria: acesso de consulta e autorização excepcional. O lançamento e a edição das notas são feitos pelo professor.
-          </Alert>
-        )}
-
         <Card.Root elevation={0} variant="outlined">
           <Card.Content>
             <Grid container spacing={1.5} alignItems="flex-start">
@@ -383,32 +389,18 @@ export default function LancamentoNotas() {
                   {lancamento.avaliacao.disciplina.nome} · {lancamento.avaliacao.tipo} · máximo {formatarNotaValor(max)} pontos
                 </Typography>
               )}
-              {lancamento && lancamento.matriculasIrregulares > 0 && (
-                <Alert severity="info">{lancamento.matriculasIrregulares} matrícula(s) irregular(es) foram omitidas.</Alert>
+              {linhas.some((l) => l.prazoExpirado) && ehSecretaria && (
+                <Stack direction="row" justifyContent="flex-end">
+                  <Button
+                    variant="outlined"
+                    onClick={() => setAutorizar(true)}
+                    startIcon={<ShieldCheck size={16} aria-hidden="true" />}
+                    sx={{ height: 30, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
+                  >
+                    Autorizar retificação
+                  </Button>
+                </Stack>
               )}
-              {linhas.some((l) => l.prazoExpirado) && (
-                <Alert
-                  severity="warning"
-                  action={
-                    ehSecretaria ? (
-                      <Button
-                        variant="outlined"
-                        onClick={() => setAutorizar(true)}
-                        startIcon={<ShieldCheck size={16} aria-hidden="true" />}
-                        sx={{ height: 30, width: "auto", minWidth: 200 }}
-                      >
-                        Autorizar retificação
-                      </Button>
-                    ) : undefined
-                  }
-                >
-                  Há notas com prazo de retificação expirado.{" "}
-                  {ehSecretaria
-                    ? "Como secretaria, você pode autorizar a retificação excepcional."
-                    : "Solicite autorização excepcional à secretaria."}
-                </Alert>
-              )}
-              {alterado && <Alert severity="warning">Existem alterações não salvas. Salve o lote para registrá-las.</Alert>}
               {podeEditar && (
                 <Stack direction="row" justifyContent="flex-end">
                   <Button
@@ -430,7 +422,7 @@ export default function LancamentoNotas() {
                     columns={colunasLancamento}
                     loading={api.carregando}
                     processRowUpdate={processarLinha("linhas", max)}
-                    onProcessRowUpdateError={(e) => setAviso({ tipo: "error", texto: (e as Error).message })}
+                    onProcessRowUpdateError={(e) => notificar((e as Error).message, "error")}
                     emptyTitle="Nenhum aluno para lançamento"
                     emptyDescription="Selecione a turma e a avaliação para carregar os alunos."
                   />
@@ -477,7 +469,6 @@ export default function LancamentoNotas() {
                 Alunos elegíveis (média parcial abaixo de 60% com etapa regular concluída). Recuperação de 0 a 100; a média final é o maior
                 valor entre a média parcial e a recuperação.
               </Typography>
-              {alteradoRec && <Alert severity="warning">Existem alterações não salvas. Salve a recuperação para registrá-las.</Alert>}
               {!periodoFechado && (
                 <Stack direction="row" justifyContent="flex-end">
                   <Button
@@ -499,7 +490,7 @@ export default function LancamentoNotas() {
                     columns={colunasRecuperacao}
                     loading={api.carregando}
                     processRowUpdate={processarLinha("recuperacao", 100)}
-                    onProcessRowUpdateError={(e) => setAviso({ tipo: "error", texto: (e as Error).message })}
+                    onProcessRowUpdateError={(e) => notificar((e as Error).message, "error")}
                     emptyTitle="Nenhum aluno elegível para recuperação"
                     emptyDescription="Apenas alunos com média parcial abaixo de 60% e etapa regular concluída aparecem aqui."
                   />
