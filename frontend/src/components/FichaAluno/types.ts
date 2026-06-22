@@ -11,7 +11,14 @@ export type NotaAluno = {
   disciplina: string;
   mediaFinal: number;
   avaliacao: number;
-  avaliacoes?: Array<{ id: string; nome: string; nota: number; peso: number }>;
+  avaliacoes?: Array<{
+    id: string;
+    nome: string;
+    nota: number;
+    peso: number;
+    matricula_turma_disciplina_id?: string | null;
+  }>;
+  matriculaTurmaDisciplinaId?: string | null;
   provaFinal: number;
   provaInova: number;
   provaSegundaChamada: number;
