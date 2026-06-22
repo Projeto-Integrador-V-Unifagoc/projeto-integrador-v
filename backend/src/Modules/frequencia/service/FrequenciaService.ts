@@ -87,7 +87,7 @@ export class FrequenciaService {
     if (ctx.perfil === "professor" && (!ctx.professorId || !(await this.repository.professorPossuiAluno(ctx.professorId, alunoId)))) throw erroFrequencia.proibido("Aluno fora das atribuições do professor.");
     return this.consultarAlunoInterno(alunoId, ctx.perfil === "professor" ? ctx.professorId : undefined);
   }
-  private async consultarAlunoInterno(alunoId: string, professorId?: string) {
+  async consultarAlunoInterno(alunoId: string, professorId?: string) {
     const historico: any[] = await this.repository.listarHistoricoAluno(alunoId, professorId);
     const grupos = new Map<string, any>();
     for (const r of historico) { const g = grupos.get(r.turma_disciplina_id) || { alunoId, alunoNome: r.aluno_nome, turmaDisciplinaId: r.turma_disciplina_id, disciplinaId: r.disciplina_id, disciplinaNome: r.disciplina_nome, totalAulas: 0, presencas: 0, faltas: 0, naoLancadas: 0 }; g.totalAulas++; g.presencas += r.status === "PRESENTE" ? 1 : 0; g.faltas += r.status === "AUSENTE" ? 1 : 0; grupos.set(r.turma_disciplina_id, g); }
