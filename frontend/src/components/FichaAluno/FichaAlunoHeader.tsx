@@ -1,30 +1,15 @@
-import { Filter, Search } from "lucide-react";
-import {
-  IconButton,
-  InputAdornment,
-  MenuItem,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { MenuItem, Stack, Typography } from "@mui/material";
 
 import TextField from "../TextField";
 
 interface FichaAlunoHeaderProps {
-  busca: string;
   semestre: string;
   opcoesSemestre: string[];
-  onBuscaChange: (value: string) => void;
   onSemestreChange: (value: string) => void;
 }
 
 export function FichaAlunoHeader(props: FichaAlunoHeaderProps) {
-  const {
-    busca,
-    semestre,
-    opcoesSemestre,
-    onBuscaChange,
-    onSemestreChange,
-  } = props;
+  const { semestre, opcoesSemestre, onSemestreChange } = props;
 
   return (
     <Stack spacing={2.5}>
@@ -39,51 +24,25 @@ export function FichaAlunoHeader(props: FichaAlunoHeaderProps) {
           alignItems={{ xs: "stretch", md: "center" }}
         >
           <TextField
-            fullWidth
-            placeholder="Digite um RA ou nome do aluno para pesquisar."
-            value={busca}
-            onChange={(e) => onBuscaChange(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={18} />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton size="small">
-                    <Filter size={18} />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "12px",
-                backgroundColor: "#fff",
-              },
-              "& .MuiInputBase-input": {
-                fontSize: { xs: 14, md: 16 },
-              },
-            }}
-          />
-
-          <TextField
             select
             value={semestre}
             onChange={(e) => onSemestreChange(e.target.value)}
             sx={{
-              minWidth: { xs: "100%", md: 140 },
+              minWidth: { xs: "100%", md: 240 },
               "& .MuiInputBase-input": {
                 fontSize: { xs: 14, md: 16 },
               },
             }}
           >
-            {opcoesSemestre.map((opcao) => (
-              <MenuItem key={opcao} value={opcao}>
-                {opcao}
-              </MenuItem>
-            ))}
+            {opcoesSemestre.length === 0 ? (
+              <MenuItem value="">Sem periodos</MenuItem>
+            ) : (
+              opcoesSemestre.map((opcao) => (
+                <MenuItem key={opcao} value={opcao}>
+                  {opcao}
+                </MenuItem>
+              ))
+            )}
           </TextField>
         </Stack>
       </Stack>

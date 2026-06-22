@@ -4,5 +4,5 @@ export { FichaAlunoTabs } from "./FichaAlunoTabs";
 export { FichaAlunoNotasTabela } from "./FichaAlunoNotasTabela";
 export { FichaAlunoNotasReais } from "./FichaAlunoNotasReais";
 export { FichaAlunoConteudoAba } from "./FichaAlunoConteudoAba";
-export { abasFicha, alunoMock, opcoesSemestre } from "./mock";
+export { abasFicha } from "./constantes";
 export type { AbaFicha, AlunoFicha, NotaAluno } from "./types";

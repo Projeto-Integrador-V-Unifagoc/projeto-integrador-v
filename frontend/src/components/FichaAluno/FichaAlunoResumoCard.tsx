@@ -12,16 +12,9 @@ import {
 } from "@mui/material";
 import { CalendarDays, Mail, ShieldUser } from "lucide-react";
 
-import Button from "../Button";
 import type { AlunoFicha } from "./types";
 
-function LinhaInfo({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function LinhaInfo({ label, value }: { label: string; value: string }) {
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
@@ -63,11 +56,7 @@ function BlocoContato({
       alignItems="flex-start"
       sx={{ width: "100%" }}
     >
-      <Box
-        color="primary.main"
-        display="flex"
-        sx={{ mt: 0.25, flexShrink: 0 }}
-      >
+      <Box color="primary.main" display="flex" sx={{ mt: 0.25, flexShrink: 0 }}>
         {icon}
       </Box>
       <Stack minWidth={0}>
@@ -94,6 +83,12 @@ interface FichaAlunoResumoCardProps {
 export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const iniciais = aluno.nome
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join("");
 
   return (
     <Paper
@@ -102,7 +97,7 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 3,
         p: { xs: 2, md: 3 },
-        bgcolor: `${theme.palette.background.default}`
+        bgcolor: `${theme.palette.background.default}`,
       }}
     >
       <Stack spacing={2.5}>
@@ -123,7 +118,11 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
             >
               {aluno.nome}
             </Typography>
-            <Typography variant="subtitle1" color="textSecondary" fontWeight={600}>
+            <Typography
+              variant="subtitle1"
+              color="textSecondary"
+              fontWeight={600}
+            >
               RA: {aluno.ra}
             </Typography>
           </Box>
@@ -159,16 +158,13 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
                 alignSelf: { xs: "center", sm: "flex-start" },
               }}
             >
-              JP
+              {iniciais || "AL"}
             </Avatar>
 
             <Stack spacing={1.1} minWidth={0}>
-              <LinhaInfo label="Unidade:" value={aluno.unidade} />
               <LinhaInfo label="Curso:" value={aluno.curso} />
               <LinhaInfo label="Campus/Polo:" value={aluno.campusPolo} />
               <LinhaInfo label="Periodo:" value={aluno.periodo} />
-              <LinhaInfo label="Turno:" value={aluno.turno} />
-              <LinhaInfo label="Turma:" value={aluno.turma} />
               <LinhaInfo label="Status:" value={aluno.status} />
             </Stack>
           </Stack>
@@ -182,7 +178,7 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
             <Divider />
             <BlocoContato
               icon={<ShieldUser size={20} />}
-              label="Resp. Fin."
+              label="Responsável"
               value={aluno.responsavelFinanceiro}
             />
             <Divider />
@@ -194,19 +190,7 @@ export function FichaAlunoResumoCard({ aluno }: FichaAlunoResumoCardProps) {
           </Stack>
         </Stack>
 
-        <Stack direction="row" justifyContent="flex-end">
-          <Button
-            variant="contained"
-            sx={{
-              width: { xs: "100%", sm: 160 },
-              minWidth: { xs: 0, sm: 160 },
-              height: 40,
-              alignSelf: "flex-end",
-            }}
-          >
-            Mais detalhes
-          </Button>
-        </Stack>
+        <Stack direction="row" justifyContent="flex-end"></Stack>
       </Stack>
     </Paper>
   );

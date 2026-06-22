@@ -261,6 +261,40 @@ export class NotaRepository {
       );
   }
 
+  // Avaliacoes (com nota do aluno, se ja publicada) das turmas-disciplina informadas, para montar a ficha.
+  buscarAvaliacoesParaFicha(matriculaTurmaDisciplinaIds: string[], executor: Executor = db) {
+    if (!matriculaTurmaDisciplinaIds || matriculaTurmaDisciplinaIds.length === 0) {
+      return Promise.resolve([]);
+    }
+    return executor("piv.matricula_turma_disciplina as mtd")
+      .join("piv.avaliacao as av", "av.turma_disciplina_id", "mtd.turma_disciplina_id")
+      .join("piv.turma_disciplina as td", "av.turma_disciplina_id", "td.id")
+      .join("piv.turma as t", "td.turma_id", "t.id")
+      .join("piv.curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
+      .join("piv.disciplinas as d", "cd.disciplina_id", "d.id")
+      .join("piv.professor as pr", "td.professor_id", "pr.id")
+      .join("piv.pessoa as pp", "pr.pessoa_id", "pp.id")
+      .leftJoin("piv.nota as n", (join) =>
+        join.on("n.avaliacao_id", "av.id").andOn("n.matricula_turma_disciplina_id", "mtd.id"),
+      )
+      .whereIn("mtd.id", matriculaTurmaDisciplinaIds)
+      .select(
+        "av.id",
+        "av.tipo_avaliacao",
+        "av.descricao_avaliacao",
+        "av.valor",
+        "n.valor as nota",
+        "mtd.id as matricula_turma_disciplina_id",
+        "t.id as turma_id",
+        "t.sigla as turma_sigla",
+        "t.descricao as turma_descricao",
+        "d.id as disciplina_id",
+        "d.nome as disciplina_nome",
+        "pr.id as professor_id",
+        "pp.nome as professor_nome",
+      );
+  }
+
   buscarAlunoDono(matriculaTurmaDisciplinaId: string, executor: Executor = db) {
     return executor("piv.matricula_turma_disciplina as mtd")
       .join("piv.matricula as m", "mtd.matricula_id", "m.id")
