@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Chip, Grid, MenuItem, Select, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { Box, Chip, FormControlLabel, Grid, MenuItem, Stack, Switch, Tab, Tabs, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { CheckCheck, RefreshCw, Save, Search } from "lucide-react";
 import Button from "../../components/Button";
@@ -150,20 +150,32 @@ export default function VisaoOperacional() {
         renderCell: ({ row }) => (
           <Box sx={{ display: "flex", alignItems: "center", width: "100%", height: "100%" }}>
             {podeEditar ? (
-              <Select
-                size="small"
-                value={row.status || ""}
-                displayEmpty
-                onChange={(e) => mudarStatus(row.id, e.target.value as StatusFrequencia)}
-                aria-label={`Frequência de ${row.nome}`}
-                sx={{ height: 30, minWidth: 150 }}
-              >
-                <MenuItem value="" disabled>
-                  Selecione
-                </MenuItem>
-                <MenuItem value="PRESENTE">Presente</MenuItem>
-                <MenuItem value="AUSENTE">Ausente</MenuItem>
-              </Select>
+              <FormControlLabel
+                sx={{ m: 0, gap: 1 }}
+                control={
+                  <Switch
+                    size="small"
+                    color="success"
+                    checked={row.status === "PRESENTE"}
+                    onChange={(e) => mudarStatus(row.id, e.target.checked ? "PRESENTE" : "AUSENTE")}
+                    inputProps={{ "aria-label": `Frequência de ${row.nome}` }}
+                  />
+                }
+                label={
+                  <Typography
+                    variant="body2"
+                    color={
+                      row.status === "PRESENTE"
+                        ? "success.main"
+                        : row.status === "AUSENTE"
+                          ? "error.main"
+                          : "text.disabled"
+                    }
+                  >
+                    {row.status ? rotuloStatus(row.status) : "Não lançada"}
+                  </Typography>
+                }
+              />
             ) : row.status ? (
               <Chip size="small" variant="outlined" color={corStatus(row.status)} label={rotuloStatus(row.status)} />
             ) : (

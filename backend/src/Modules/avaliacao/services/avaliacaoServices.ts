@@ -8,6 +8,7 @@ const VALOR_PROVA = 20;
 const VALOR_TPI = 5;
 const LIMITE_TRABALHOS = 35;
 const LIMITE_AVALIACOES_REGULARES = 100;
+const TIPOS_REGULARES: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
 
 const ehGestor = (tipo: string) => ["secretaria", "administrador"].includes(tipo.toLowerCase());
 
@@ -23,8 +24,7 @@ function normalizarPayload(dados: CriarAvaliacaoDTO): CriarAvaliacaoDTO {
 }
 
 function validarDados(dados: CriarAvaliacaoDTO) {
-  const tipos: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
-  if (!tipos.includes(dados.tipo_avaliacao)) throw new AvaliacaoValidationError("Tipo de avaliacao invalido. Use PROVA, TPI ou TRABALHO.");
+  if (!TIPOS_REGULARES.includes(dados.tipo_avaliacao)) throw new AvaliacaoValidationError("Tipo de avaliacao invalido. Use PROVA, TPI ou TRABALHO.");
   validarUuid(dados.turma_disciplina_id, "turma_disciplina_id");
   if (typeof dados.valor !== "number" || !Number.isFinite(dados.valor) || dados.valor <= 0) throw new AvaliacaoValidationError("Valor da avaliacao invalido.");
   if (!dados.data_lancamento || Number.isNaN(Date.parse(String(dados.data_lancamento)))) throw new AvaliacaoValidationError("Data de lancamento invalida.");
@@ -46,7 +46,8 @@ function validarRegras(candidato: CriarAvaliacaoDTO, avaliacoes: Avaliacao[], id
   if (candidato.tipo_avaliacao === "TRABALHO" && totalTrabalhos + candidato.valor > LIMITE_TRABALHOS) {
     throw new AvaliacaoValidationError("Os trabalhos podem somar no maximo 35 pontos.");
   }
-  const totalRegular = outras.reduce((soma, item) => soma + Number(item.valor), 0);
+  // Recuperacao e substitutiva: nao entra no somatorio das avaliacoes regulares (limite de 100).
+  const totalRegular = outras.filter((item) => TIPOS_REGULARES.includes(item.tipo_avaliacao)).reduce((soma, item) => soma + Number(item.valor), 0);
   if (totalRegular + candidato.valor > LIMITE_AVALIACOES_REGULARES) {
     throw new AvaliacaoValidationError("As avaliacoes regulares podem somar no maximo 100 pontos.");
   }

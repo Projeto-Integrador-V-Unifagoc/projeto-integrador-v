@@ -24,7 +24,7 @@ import { Dialog } from "../../components/Dialog";
 import TextField from "../../components/TextField";
 import type { AtribuicaoAvaliacao, Avaliacao, CriarAvaliacaoDTO, TipoAvaliacao } from "../../models/avaliacao-model";
 import { avaliacaoApi } from "../../services/avaliacao-api";
-import { COR_TIPO_AVALIACAO, formatarDataPtBr, formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
+import { COR_TIPO_AVALIACAO, formatarDataPtBr, formatarPontos, ROTULO_TIPO_AVALIACAO, type TipoAvaliacaoVisual } from "../../utils/avaliacao";
 import { avaliacaoSchema } from "../../validators/avaliacao-schema";
 
 const tipos: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
@@ -76,15 +76,17 @@ export default function Avaliacoes() {
   useEffect(() => { void carregarAtribuicoes(); }, [carregarAtribuicoes]);
   useEffect(() => { void carregarAvaliacoes(contextoId); }, [carregarAvaliacoes, contextoId]);
 
+  // Recupera\u00e7\u00e3o \u00e9 avalia\u00e7\u00e3o substitutiva: n\u00e3o comp\u00f5e o somat\u00f3rio nem a listagem dos 100 pontos regulares.
+  const avaliacoesRegulares = useMemo(() => avaliacoes.filter((a) => (a.tipo_avaliacao as TipoAvaliacaoVisual) !== "RECUPERACAO"), [avaliacoes]);
   const provas = useMemo(() => avaliacoes.filter((a) => a.tipo_avaliacao === "PROVA"), [avaliacoes]);
   const tpis = useMemo(() => avaliacoes.filter((a) => a.tipo_avaliacao === "TPI"), [avaliacoes]);
   const pontosProvas = useMemo(() => provas.reduce((s, a) => s + Number(a.valor), 0), [provas]);
   const pontosTrabalhos = useMemo(() => avaliacoes.filter((a) => a.tipo_avaliacao === "TRABALHO").reduce((s, a) => s + Number(a.valor), 0), [avaliacoes]);
-  const total = useMemo(() => avaliacoes.reduce((s, a) => s + Number(a.valor), 0), [avaliacoes]);
+  const total = useMemo(() => avaliacoesRegulares.reduce((s, a) => s + Number(a.valor), 0), [avaliacoesRegulares]);
   const rows = useMemo(() => {
     const termo = busca.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    return avaliacoes.filter((a) => [a.tipo_avaliacao, a.descricao_avaliacao ?? "", a.valor, formatarDataPtBr(a.data_lancamento), formatarDataPtBr(a.data_devolucao)].some((v) => String(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(termo)));
-  }, [avaliacoes, busca]);
+    return avaliacoesRegulares.filter((a) => [a.tipo_avaliacao, a.descricao_avaliacao ?? "", a.valor, formatarDataPtBr(a.data_lancamento), formatarDataPtBr(a.data_devolucao)].some((v) => String(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(termo)));
+  }, [avaliacoesRegulares, busca]);
 
   const abrirCadastro = () => { setEditingId(null); setForm({ ...formInicial, turma_disciplina_id: contextoId }); setFormErro(null); setFormErrors({}); setDialogOpen(true); };
   const abrirEdicao = (a: Avaliacao) => { setEditingId(a.id); setForm({ turma_disciplina_id: a.turma_disciplina_id, tipo_avaliacao: a.tipo_avaliacao, descricao_avaliacao: a.descricao_avaliacao ?? "", valor: Number(a.valor), data_lancamento: a.data_lancamento.slice(0, 10), data_devolucao: a.data_devolucao?.slice(0, 10) ?? "" }); setFormErro(null); setFormErrors({}); setDialogOpen(true); };
@@ -162,7 +164,7 @@ export default function Avaliacoes() {
 
     {contextoId && <>
       <Grid container spacing={2}>{indicadores.map(({ label, value, detail, icon }) => <Grid key={label} size={{ xs: 12, sm: 6, md: 3 }}><Card.Root elevation={0} variant="outlined" sx={{ height: "100%" }}><Card.Content sx={{ height: "100%", minHeight: 104, p: 2, "&:last-child": { pb: 2 } }}><Stack direction="row" alignItems="center" justifyContent="space-between" height="100%"><Stack gap={0.5}><Typography color="text.secondary" variant="body2">{label}</Typography><Stack direction="row" alignItems="baseline" gap={1}><Typography variant="h5" fontWeight={700}>{value}</Typography>{detail && <Typography variant="body2" fontWeight={700} color="text.secondary">{detail}</Typography>}</Stack></Stack><Box color="primary.main">{icon}</Box></Stack></Card.Content></Card.Root></Grid>)}</Grid>
-      <Card.Root elevation={0} variant="outlined"><Card.Header><Card.Title>Avaliações do contexto selecionado</Card.Title></Card.Header><Card.Content sx={{ minHeight: 480 }}><DataTable rows={rows} columns={columns} loading={loading} emptyTitle="Nenhuma avaliação encontrada" emptyDescription={avaliacoes.length === 0 ? "Adicione uma avaliação para começar." : "Revise o termo informado na pesquisa."} /></Card.Content></Card.Root>
+      <Card.Root elevation={0} variant="outlined"><Card.Header><Card.Title>Avaliações do contexto selecionado</Card.Title></Card.Header><Card.Content sx={{ minHeight: 480 }}><DataTable rows={rows} columns={columns} loading={loading} emptyTitle="Nenhuma avaliação encontrada" emptyDescription={avaliacoesRegulares.length === 0 ? "Adicione uma avaliação para começar." : "Revise o termo informado na pesquisa."} /></Card.Content></Card.Root>
     </>}
   </Stack>
 
