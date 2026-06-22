@@ -1,4 +1,4 @@
-import { avaliacaoRepository } from "../../avaliacao/repository/avaliacaoRepository.js";
+import { NotaRepository } from "../../notas/repository/NotaRepository.js";
 import { MatriculaService } from "../../modulo-matricula/service/MatriculaService.js";
 import { AlunoService } from "../../modulo-gestao-alunos/service/AlunoService.js";
 import { FrequenciaService } from "../../frequencia/service/FrequenciaService.js";
@@ -17,6 +17,7 @@ export class FichaService {
   private periodoService = new PeriodoLetivoService();
   private alunoService = new AlunoService();
   private frequenciaService = new FrequenciaService();
+  private notaRepository = new NotaRepository();
 
   async montarFicha(alunoId: string) {
     const aluno = await this.alunoService.buscarAlunoPorId(alunoId);
@@ -37,8 +38,8 @@ export class FichaService {
         .filter(Boolean) as string[]
     ).filter(Boolean);
 
-    const avaliacoes = await avaliacaoRepository
-      .buscarPorMatriculaTurmaDisciplinaIds(mtdIds)
+    const avaliacoes = await this.notaRepository
+      .buscarAvaliacoesParaFicha(mtdIds)
       .catch(() => []);
 
     // Agrupar avaliacoes por disciplina
@@ -99,7 +100,10 @@ export class FichaService {
           const n = av.nota == null ? NaN : Number(av.nota);
           return Number.isFinite(n) ? n : 0;
         })(),
-        peso: av.valor ?? 0,
+        peso: (() => {
+          const p = av.valor == null ? NaN : Number(av.valor);
+          return Number.isFinite(p) ? p : 0;
+        })(),
         matricula_turma_disciplina_id: av.matricula_turma_disciplina_id ?? null,
       });
     }
