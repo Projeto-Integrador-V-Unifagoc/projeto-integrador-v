@@ -50,6 +50,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://unieduca.artifaetech.com.br:3000}
     container_name: pi_frontend
     restart: always
     ports:
