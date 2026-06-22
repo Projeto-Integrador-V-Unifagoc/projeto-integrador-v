@@ -23,7 +23,7 @@ export class FichaService {
     const aluno = await this.alunoService.buscarAlunoPorId(alunoId);
     const matriculas = await this.matriculaService.listarPorAluno(alunoId);
     const frequencia = await this.frequenciaService
-      .consultarAluno(alunoId)
+      .consultarAlunoInterno(alunoId)
       .catch(() => undefined);
     const documentos = await this.documentoService
       .listarPorAluno(alunoId)

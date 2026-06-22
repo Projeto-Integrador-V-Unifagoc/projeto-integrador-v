@@ -101,14 +101,15 @@ export const avaliacaoRepository = {
     turmaDisciplinaId?: string,
     executor: Executor = db,
   ): Promise<Avaliacao[]> => {
-    const query = baseQuery(executor);
-    if (professorId) {
+    const query = baseQuery(executor).orderBy(
+      "piv.avaliacao.data_lancamento",
+      "desc",
+    );
+    if (professorId)
       query.where("piv.turma_disciplina.professor_id", professorId);
-    }
-    if (turmaDisciplinaId) {
+    if (turmaDisciplinaId)
       query.where("piv.avaliacao.turma_disciplina_id", turmaDisciplinaId);
-    }
-    return query.orderBy("piv.avaliacao.data_lancamento", "desc");
+    return query;
   },
 
   buscarPorId: async (

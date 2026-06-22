@@ -49,8 +49,11 @@ export interface MatriculaDetalhada extends MatriculaVinculo {
 }
 
 export class MatriculaRepository {
-  async listarTurmasDisponiveis(cursoId: string, alunoId?: string): Promise<TurmaDisponivel[]> {
-    const rows = await db("turma_disciplina as td")
+  async listarTurmasDisponiveis(
+    cursoId: string,
+    alunoId?: string,
+  ): Promise<TurmaDisponivel[]> {
+    const query = db("turma_disciplina as td")
       .join("turma as t", "td.turma_id", "t.id")
       .join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
       .join("disciplinas as d", "cd.disciplina_id", "d.id")
@@ -59,17 +62,6 @@ export class MatriculaRepository {
       .join("curso as c", "t.curso_id", "c.id")
       .leftJoin("matricula as m", "m.turma_id", "t.id")
       .where("t.curso_id", cursoId)
-      .modify((query) => {
-        if (alunoId) {
-          query.whereNotExists(function () {
-            this.select(db.raw("1"))
-              .from("matricula as ma")
-              .whereRaw("ma.turma_id = t.id")
-              .where("ma.aluno_id", alunoId)
-              .whereIn("ma.status", ["ativa", "ATIVA", "MATRICULADO", "REGULAR"]);
-          });
-        }
-      })
       .groupBy("t.id", "td.id", "d.id", "pes.id", "c.id", "t.capacidade_alunos")
       .havingRaw("t.capacidade_alunos > COUNT(DISTINCT m.id)")
       .select(
@@ -87,7 +79,15 @@ export class MatriculaRepository {
           "(t.capacidade_alunos - COUNT(DISTINCT m.id)) as vagas_disponiveis",
         ),
       );
-    return rows;
+    if (alunoId) {
+      query.whereNotExists(
+        db("matricula as ma")
+          .whereRaw("ma.turma_id = t.id")
+          .andWhere("ma.aluno_id", alunoId)
+          .whereNot("ma.status", "CANCELADO"),
+      );
+    }
+    return query;
   }
 
   async alunoJaMatriculado(alunoId: string, turmaId: string): Promise<boolean> {
