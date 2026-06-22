@@ -1,6 +1,4 @@
 import {
-  Box,
-  Divider,
   Paper,
   Stack,
   Table,
@@ -10,7 +8,6 @@ import {
   TableHead,
   TableRow,
   Typography,
-  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { GraduationCap } from "lucide-react";
@@ -26,7 +23,19 @@ interface FichaAlunoNotasTabelaProps {
 export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
   const { notas, semestre } = props;
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  // collect unique evaluation names to create one column per evaluation
+  const evalNames = Array.from(
+    new Set(
+      notas.flatMap((n) => (n.avaliacoes ?? []).map((a) => a.nome || a.id)),
+    ),
+  );
+
+  // short labels for headers (remove descriptive suffixes like " - Excelente desempenho")
+  const evalLabels = evalNames.map((n) => ({
+    name: n,
+    label: (n || "").split(" - ")[0].trim(),
+  }));
 
   return (
     <Stack spacing={1.5}>
@@ -47,92 +56,20 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
         </Stack>
       </Stack>
 
-      {isMobile ? (
-        <Stack spacing={1.5}>
-          {notas.map((nota) => (
-            <Paper
-              key={nota.disciplina}
-              elevation={0}
-              sx={{
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 3,
-                p: 2,
-              }}
-            >
-              <Stack spacing={1.25}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  {nota.disciplina}
-                </Typography>
-
-                <Divider />
-
-                <Stack direction="row" justifyContent="space-between" spacing={2}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Media Final
-                    </Typography>
-                    <Typography variant="body2">
-                      {formatarNota(nota.mediaFinal)}
-                    </Typography>
-                  </Box>
-                  <Box textAlign="right">
-                    <Typography variant="caption" color="text.secondary">
-                      % Faltas
-                    </Typography>
-                    <Typography variant="body2">
-                      {nota.percentualFaltas.toFixed(2).replace(".", ",")}%
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                <Stack direction="row" justifyContent="space-between" spacing={2}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Avaliacoes
-                    </Typography>
-                    <Typography variant="body2" color="error.main">
-                      {formatarNota(nota.avaliacao)}
-                    </Typography>
-                  </Box>
-                  <Box textAlign="right">
-                    <Typography variant="caption" color="text.secondary">
-                      Prova Inova
-                    </Typography>
-                    <Typography variant="body2" color="error.main">
-                      {formatarNota(nota.provaInova)}
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                <Stack direction="row" justifyContent="space-between" spacing={2}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Segunda Chamada
-                    </Typography>
-                    <Typography variant="body2">
-                      {formatarNota(nota.provaSegundaChamada)}
-                    </Typography>
-                  </Box>
-                  <Box textAlign="right">
-                    <Typography variant="caption" color="text.secondary">
-                      Faltas
-                    </Typography>
-                    <Typography variant="body2">{nota.faltas}</Typography>
-                  </Box>
-                </Stack>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Conhecimentos Gerais
-                  </Typography>
-                  <Typography variant="body2" color="error.main">
-                    {formatarNota(nota.conhecimentosGerais)}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          ))}
-        </Stack>
+      {notas.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            border: `1px dashed ${theme.palette.divider}`,
+            borderRadius: 3,
+            p: 4,
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Nenhuma nota ou falta encontrada para o semestre selecionado.
+          </Typography>
+        </Paper>
       ) : (
         <TableContainer
           component={Paper}
@@ -143,7 +80,10 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
             overflowX: "auto",
           }}
         >
-          <Table size="small" sx={{ minWidth: 980 }}>
+          <Table
+            size="small"
+            sx={{ minWidth: Math.max(980, 240 + evalNames.length * 120) }}
+          >
             <TableHead>
               <TableRow
                 sx={{
@@ -156,7 +96,9 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
               >
                 <TableCell>Disciplina</TableCell>
                 <TableCell>Media Final</TableCell>
-                <TableCell>Avaliacoes</TableCell>
+                {evalLabels.map(({ name, label }) => (
+                  <TableCell key={name}>{label}</TableCell>
+                ))}
                 <TableCell>Prova Final</TableCell>
                 <TableCell>Prova Inova</TableCell>
                 <TableCell>Segunda Chamada</TableCell>
@@ -168,16 +110,39 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
             <TableBody>
               {notas.map((nota) => (
                 <TableRow key={nota.disciplina} hover>
-                  <TableCell sx={{ minWidth: 260 }}>{nota.disciplina}</TableCell>
-                  <TableCell>{formatarNota(nota.mediaFinal)}</TableCell>
-                  <TableCell sx={{ color: "error.main" }}>
-                    {formatarNota(nota.avaliacao)}
+                  <TableCell sx={{ minWidth: 260 }}>
+                    {nota.disciplina}
                   </TableCell>
+                  <TableCell>{formatarNota(nota.mediaFinal)}</TableCell>
+                  {evalNames.map((name) => {
+                    const a = (nota.avaliacoes ?? []).find((x) => {
+                      const matchesName = x.nome === name || x.id === name;
+                      // if nota has a matriculaTurmaDisciplinaId, prefer the avaliacao with same mtd id
+                      if ((nota as any).matriculaTurmaDisciplinaId) {
+                        return (
+                          matchesName &&
+                          x.matricula_turma_disciplina_id ===
+                            (nota as any).matriculaTurmaDisciplinaId
+                        );
+                      }
+                      return matchesName;
+                    });
+                    return (
+                      <TableCell
+                        key={name}
+                        sx={{ color: a ? "error.main" : "inherit" }}
+                      >
+                        {a ? formatarNota(a.nota) : "-"}
+                      </TableCell>
+                    );
+                  })}
                   <TableCell>{formatarNota(nota.provaFinal)}</TableCell>
                   <TableCell sx={{ color: "error.main" }}>
                     {formatarNota(nota.provaInova)}
                   </TableCell>
-                  <TableCell>{formatarNota(nota.provaSegundaChamada)}</TableCell>
+                  <TableCell>
+                    {formatarNota(nota.provaSegundaChamada)}
+                  </TableCell>
                   <TableCell sx={{ color: "error.main" }}>
                     {formatarNota(nota.conhecimentosGerais)}
                   </TableCell>

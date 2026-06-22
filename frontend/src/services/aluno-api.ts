@@ -30,5 +30,10 @@ export const alunoApi = {
     async buscarAlunoPorMatricula(matricula: string) {
         const response = await api.get(`/alunos/${matricula}`)
         return response.data
+    },
+
+    async buscarAlunoPorId(id: string) {
+        const response = await api.get(`/alunos/id/${id}`)
+        return response.data
     }
 }

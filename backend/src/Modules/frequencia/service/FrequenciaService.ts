@@ -81,7 +81,9 @@ export class FrequenciaService {
     const ctx = await this.auth.obterContexto(req); if (ctx.perfil !== "aluno" || !ctx.alunoId) throw erroFrequencia.proibido();
     return this.consultarAlunoInterno(ctx.alunoId);
   }
-  async consultarAluno(alunoId: string, req: Request) {
+  async consultarAluno(alunoId: string, req?: Request) {
+    this.uuid(alunoId, "Aluno invalido.");
+    if (!req) return this.consultarAlunoInterno(alunoId);
     this.uuid(alunoId, "Aluno inválido."); const ctx = await this.auth.obterContexto(req);
     if (ctx.perfil === "aluno" && ctx.alunoId !== alunoId) throw erroFrequencia.proibido();
     if (ctx.perfil === "professor" && (!ctx.professorId || !(await this.repository.professorPossuiAluno(ctx.professorId, alunoId)))) throw erroFrequencia.proibido("Aluno fora das atribuições do professor.");

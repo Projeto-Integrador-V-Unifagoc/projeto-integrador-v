@@ -1,8 +1,8 @@
 import type { Knex } from "knex";
 
-// Load .env.development for local dev; in Docker the env vars come from docker-compose
-require('dotenv').config({ path: '.env.development' });
-require('dotenv').config(); // fallback to .env if .env.development is absent
+// Load .env.development for local dev; in Docker the env vars come from docker-compose.
+require("dotenv").config({ path: ".env.development" });
+require("dotenv").config();
 
 const connection =
   process.env.DATABASE_URL ||
@@ -12,28 +12,27 @@ const connection =
     port: Number(process.env.DATABASE_PORT) || 5432,
     database: process.env.DATABASE_NAME || "projeto_integrador",
     user: process.env.DATABASE_USERNAME || "postgres",
-    password: process.env.DATABASE_PASSWORD || "postgres"
+    password: process.env.DATABASE_PASSWORD || "postgres",
   };
 
 const config: { [key: string]: Knex.Config } = {
   development: {
     client: "pg",
     connection,
-    // As tabelas da aplicação ficam em `piv`, enquanto o histórico do Knex
-    // existente fica em `public`. Ambos precisam estar visíveis no startup.
-    searchPath: ['piv', 'public'],
+    // Application tables live in `piv`; existing Knex metadata lives in `public`.
+    searchPath: ["piv", "public"],
     seeds: {
-      directory: "./seeds"
+      directory: "./seeds",
     },
     pool: {
       min: 2,
-      max: 10
+      max: 10,
     },
     migrations: {
       tableName: "knex_migrations",
       schemaName: "public",
-      directory: "./migrations"
-    }
+      directory: "./migrations",
+    },
   },
 
   staging: {
@@ -41,17 +40,17 @@ const config: { [key: string]: Knex.Config } = {
     connection: {
       database: String(process.env.DATABASE_NAME),
       user: String(process.env.DATABASE_USERNAME),
-      password: String(process.env.DATABASE_PASSWORD)
+      password: String(process.env.DATABASE_PASSWORD),
     },
     pool: {
       min: 2,
-      max: 10
+      max: 10,
     },
     migrations: {
       tableName: "knex_migrations",
       schemaName: "public",
-      directory: "./migrations"
-    }
+      directory: "./migrations",
+    },
   },
 
   production: {
@@ -59,18 +58,17 @@ const config: { [key: string]: Knex.Config } = {
     connection: {
       database: "my_db",
       user: "username",
-      password: "password"
+      password: "password",
     },
     pool: {
       min: 2,
-      max: 10
+      max: 10,
     },
     migrations: {
       tableName: "knex_migrations",
-      directory: "./migrations"
-    }
-  }
-
+      directory: "./migrations",
+    },
+  },
 };
 
 module.exports = config;
