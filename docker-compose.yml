@@ -40,6 +40,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET deve ser definido no arquivo .env}
     ports:
       - "127.0.0.1:3000:3000"
+    volumes:
+      - ./backend/uploads:/app/uploads
     networks:
       - app-network
     depends_on:
