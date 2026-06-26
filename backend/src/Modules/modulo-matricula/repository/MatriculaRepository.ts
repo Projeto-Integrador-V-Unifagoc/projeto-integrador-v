@@ -99,10 +99,36 @@ export class MatriculaRepository {
   }
 
   async criar(alunoId: string, turmaId: string): Promise<MatriculaVinculo> {
-    const turma = await db("turma").where({ id: turmaId }).first();
-    if (!turma) throw new Error(`Turma ${turmaId} não encontrada.`);
-
     return db.transaction(async (trx) => {
+      // Bloqueia a turma para serializar matrículas concorrentes na última vaga
+      // (spec §12.2). A contagem de ocupação passa a ser consistente sob corrida.
+      const turma = await trx("turma").where({ id: turmaId }).forUpdate().first();
+      if (!turma) {
+        throw Object.assign(new Error(`Turma ${turmaId} não encontrada.`), { codigo: "NAO_ENCONTRADO" });
+      }
+
+      const aluno = await trx("aluno").where({ id: alunoId }).first();
+      if (!aluno) {
+        throw Object.assign(new Error(`Aluno ${alunoId} não encontrado.`), { codigo: "NAO_ENCONTRADO" });
+      }
+
+      // Curso divergente: o curso do aluno deve coincidir com o da turma (spec §11.4).
+      if (aluno.curso_id && turma.curso_id && String(aluno.curso_id) !== String(turma.curso_id)) {
+        throw Object.assign(
+          new Error("O curso do aluno é diferente do curso da turma."),
+          { codigo: "CURSO_DIVERGENTE" },
+        );
+      }
+
+      // Capacidade: matrículas ativas não podem exceder a capacidade (spec §11.4).
+      const [{ ocupadas }] = await trx("matricula")
+        .where({ turma_id: turmaId })
+        .whereNot("status", "CANCELADO")
+        .count("id as ocupadas");
+      if (Number(ocupadas) >= Number(turma.capacidade_alunos)) {
+        throw Object.assign(new Error("Turma sem vagas disponíveis."), { codigo: "SEM_VAGAS" });
+      }
+
       const [matricula] = await trx("matricula")
         .insert({
           aluno_id: alunoId,

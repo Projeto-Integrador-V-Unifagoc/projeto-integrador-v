@@ -1,0 +1,27 @@
+# Ambiente isolado para a suíte E2E (spec §5.1).
+# Postgres exclusivo, publicado em porta de host própria (5433) para não
+# colidir com o ambiente de desenvolvimento. O nome do banco termina em
+# `_e2e`, condição exigida pelos guards de limpeza dos helpers.
+services:
+  postgres_e2e:
+    image: postgres:15
+    container_name: pi_postgres_e2e
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: projeto_integrador_e2e
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_e2e_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d projeto_integrador_e2e"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres_e2e_data:

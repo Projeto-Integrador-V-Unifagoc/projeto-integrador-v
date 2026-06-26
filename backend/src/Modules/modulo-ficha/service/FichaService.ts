@@ -4,11 +4,16 @@ import { AlunoService } from "../../modulo-gestao-alunos/service/AlunoService.js
 import { FrequenciaService } from "../../frequencia/service/FrequenciaService.js";
 import { DocumentoService } from "../../modulo-documentos/service/DocumentoService.js";
 import { PeriodoLetivoService } from "../../modulo-estrutura-academica/service/PeriodoLetivoService.js";
+import { calcularBoletim, type AvaliacaoResumo } from "../../notas/models/Nota.js";
 
-const NOTA_SITUACAO = (media: number) => {
-  if (media >= 7) return "aprovado";
-  if (media >= 5) return "recuperacao";
-  return "reprovado";
+// Mapeia a situação canônica (regra §9, escala 0–100, aprovação >= 60) para o
+// vocabulário exibido na ficha. Substitui a regra legada 0–10 (defeito §17.1).
+const SITUACAO_FICHA: Record<string, string> = {
+  APROVADO: "aprovado",
+  REPROVADO: "reprovado",
+  EM_RECUPERACAO: "recuperacao",
+  EM_ANDAMENTO: "em_andamento",
+  NAO_LANCADA: "nao_lancada",
 };
 
 export class FichaService {
@@ -96,10 +101,10 @@ export class FichaService {
       entry.avaliacoes.push({
         id: av.id,
         nome: av.descricao_avaliacao || av.tipo_avaliacao,
-        nota: (() => {
-          const n = av.nota == null ? NaN : Number(av.nota);
-          return Number.isFinite(n) ? n : 0;
-        })(),
+        tipo: av.tipo_avaliacao,
+        // `nota` é null quando ainda não lançada — distinção necessária para a
+        // regra §9 (apenas avaliações com nota entram no denominador).
+        nota: av.nota == null ? null : Number(av.nota),
         peso: (() => {
           const p = av.valor == null ? NaN : Number(av.valor);
           return Number.isFinite(p) ? p : 0;
@@ -111,18 +116,24 @@ export class FichaService {
     const notas = [] as any[];
 
     for (const [_, item] of notasPorDisciplinaMap.entries()) {
-      const totalPeso = item.avaliacoes.reduce(
-        (s: number, a: any) => s + (a.peso || 0),
-        0,
-      );
-      const totalNota = item.avaliacoes.reduce(
-        (s: number, a: any) => s + (a.nota || 0) * (a.peso || 0),
-        0,
-      );
-      const media =
-        totalPeso > 0 ? Number((totalNota / totalPeso).toFixed(1)) : 0;
-      item.media = media;
-      item.situacao = NOTA_SITUACAO(media);
+      // Regra institucional única (spec §9): média percentual dos pontos obtidos
+      // sobre os pontos máximos das avaliações regulares lançadas; situação
+      // derivada do mesmo cálculo usado por notas/boletim/rendimento.
+      const avaliacoesResumo: AvaliacaoResumo[] = item.avaliacoes.map((a: any) => ({
+        id: a.id,
+        tipo: a.tipo,
+        descricao: a.nome ?? null,
+        valor: Number(a.peso) || 0,
+      }));
+      const notasPorAvaliacao = new Map<string, number>();
+      for (const a of item.avaliacoes) {
+        if (a.nota !== null && a.nota !== undefined) {
+          notasPorAvaliacao.set(a.id, Number(a.nota));
+        }
+      }
+      const boletim = calcularBoletim(avaliacoesResumo, notasPorAvaliacao);
+      item.media = boletim.mediaFinal ?? boletim.mediaParcial ?? 0;
+      item.situacao = SITUACAO_FICHA[boletim.situacao] ?? "em_andamento";
       notas.push(item);
     }
 
