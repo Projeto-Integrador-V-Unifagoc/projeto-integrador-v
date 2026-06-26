@@ -43,7 +43,7 @@ export default function EditFormCadastroAlunoMobile() {
     }
     const [form, setForm] = useState<FormType>(initialForm)
     const { matricula } = useParams()
-    const { buscarAlunoPorMatricula } = useAluno()
+    const { buscarAlunoPorMatricula, atualizarAluno } = useAluno()
     const [alerta, setAlerta] = useState<{
     tipo: "success" | "error";
     mensagem: string;
@@ -87,31 +87,26 @@ export default function EditFormCadastroAlunoMobile() {
         }))
     }
 
-    function salvarAlunoEditado(aluno: FormType) {
-    try {
-      fetch(`http://localhost:3000/alunos/editar-aluno/${matricula}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(aluno),
-      });
-      setAlerta({
-        tipo: "success",
-        mensagem: "Aluno atualizado com sucesso!",
-      });
+    async function salvarAlunoEditado(aluno: FormType) {
+        if (!matricula) return;
+        try {
+            await atualizarAluno(matricula, aluno);
+            setAlerta({
+                tipo: "success",
+                mensagem: "Aluno atualizado com sucesso!",
+            });
 
-      setTimeout(() => {
-        navigate("/alunos/lista")
-      }, 1500)
+            setTimeout(() => {
+                navigate("/alunos/lista")
+            }, 1500)
 
-    } catch (error: any) {
-      setAlerta({
-        tipo: "error",
-        mensagem: error.message || "Erro ao atualizar aluno",
-      });
+        } catch (error: any) {
+            setAlerta({
+                tipo: "error",
+                mensagem: error.message || "Erro ao atualizar aluno",
+            });
+        }
     }
-  }
 
     return (
         <>

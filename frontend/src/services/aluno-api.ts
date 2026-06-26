@@ -35,5 +35,10 @@ export const alunoApi = {
     async buscarAlunoPorId(id: string) {
         const response = await api.get(`/alunos/id/${id}`)
         return response.data
+    },
+
+    async atualizarAluno(matricula: string, data: any) {
+        const response = await api.put(`/alunos/editar-aluno/${matricula}`, data)
+        return response.data
     }
 }

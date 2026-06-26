@@ -44,7 +44,7 @@ export default function EditFormCadastroAlunoDesktop() {
 
   const [form, setForm] = useState<FormType>(initialForm);
   const { matricula } = useParams();
-  const { buscarAlunoPorMatricula } = useAluno();
+  const { buscarAlunoPorMatricula, atualizarAluno } = useAluno();
   const [alerta, setAlerta] = useState<{
     tipo: "success" | "error";
     mensagem: string;
@@ -84,15 +84,10 @@ export default function EditFormCadastroAlunoDesktop() {
     }));
   }
 
-  function salvarAlunoEditado(aluno: FormType) {
+  async function salvarAlunoEditado(aluno: FormType) {
+    if (!matricula) return;
     try {
-      fetch(`http://localhost:3000/alunos/editar-aluno/${matricula}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(aluno),
-      });
+      await atualizarAluno(matricula, aluno);
       setAlerta({
         tipo: "success",
         mensagem: "Aluno atualizado com sucesso!",

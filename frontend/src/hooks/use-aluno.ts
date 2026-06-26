@@ -38,10 +38,22 @@ export function useAluno() {
         }
     }
 
+    const atualizarAluno = async (matricula: string, data: any) => {
+        setCarregando(true)
+
+        try {
+            const response = await alunoApi.atualizarAluno(matricula, data)
+            return response
+        } finally {
+            setCarregando(false)
+        }
+    }
+
     return {
         buscarAlunoPorMatricula,
         listarAlunos,
         criarAluno,
+        atualizarAluno,
         carregando
     }
 }
