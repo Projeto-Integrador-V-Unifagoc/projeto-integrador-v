@@ -277,7 +277,7 @@ Antes do próximo deploy:
 - [x] Emitir certificado TLS com Certbot.
 - [x] Executar testes funcionais pelo domínio.
 - [ ] Configurar e testar backup do PostgreSQL.
-- [ ] Excluir a instalação legada após validação e confirmação final.
+- [x] Excluir a instalação legada após validação e confirmação final.
 
 ## 12. Registro de decisões
 
