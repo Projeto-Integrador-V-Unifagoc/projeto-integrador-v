@@ -174,7 +174,7 @@ const criarAlunos = (): AlunoAuditoria[] =>
   cursos.flatMap((curso, turmaIndex) =>
     Array.from({ length: 25 }, (_, alunoTurmaIndex) => {
       const globalIndex = turmaIndex * 25 + alunoTurmaIndex;
-      const nome = `${primeirosNomes[alunoTurmaIndex]} ${sobrenomes[(globalIndex + turmaIndex) % sobrenomes.length]} Auditoria`;
+      const nome = `${primeirosNomes[alunoTurmaIndex]} ${sobrenomes[(globalIndex + turmaIndex) % sobrenomes.length]}`;
       const sufixo = `${curso.codigo.replace("-AUD", "").toLowerCase()}${String(alunoTurmaIndex + 1).padStart(2, "0")}`;
 
       return {
@@ -292,7 +292,7 @@ export async function seed(knex: Knex): Promise<void> {
       [
         {
           id: ids.faculdade,
-          nome: "Faculdade UniEduca Auditoria",
+          nome: "Faculdade UniEduca",
           cidade_id: CIDADE_IBGE,
           logradouro: "Avenida Academica",
           numero: "2026",
@@ -306,7 +306,7 @@ export async function seed(knex: Knex): Promise<void> {
     await inserir(
       trx,
       "departamento",
-      [{ id: ids.departamento, codigo: "DEP-AUD", nome: "Departamento Academico de Auditoria", faculdade_id: ids.faculdade }],
+      [{ id: ids.departamento, codigo: "DEP-AUD", nome: "Departamento Academico", faculdade_id: ids.faculdade }],
       "codigo"
     );
 
@@ -460,7 +460,7 @@ export async function seed(knex: Knex): Promise<void> {
         periodo_letivo_id: ids.periodoLetivo,
         curso_id: auditId(200 + index),
         periodo_curricular: curso.periodo,
-        descricao: `${curso.nome} - 1 periodo - Auditoria`,
+        descricao: `${curso.nome} - 1 periodo`,
         sigla: curso.turma,
         capacidade_alunos: 40,
         turno: "Noturno",
@@ -542,7 +542,7 @@ export async function seed(knex: Knex): Promise<void> {
       ].map((avaliacao, avaliacaoIndex) => ({
         id: auditId(5000 + tdIndex * 10 + avaliacaoIndex),
         tipo_avaliacao: avaliacao.tipo,
-        descricao_avaliacao: `${avaliacao.descricao} - Auditoria`,
+        descricao_avaliacao: avaliacao.descricao,
         valor: avaliacao.valor,
         data_lancamento: avaliacao.data,
         data_devolucao: avaliacao.devolucao,
@@ -553,7 +553,7 @@ export async function seed(knex: Knex): Promise<void> {
     const avaliacoesRecuperacao = turmaDisciplinas.map((turmaDisciplina, tdIndex) => ({
       id: auditId(5000 + tdIndex * 10 + 5),
       tipo_avaliacao: "RECUPERACAO",
-      descricao_avaliacao: "Recuperacao semestral - Auditoria",
+      descricao_avaliacao: "Recuperacao semestral",
       valor: 100,
       data_lancamento: "2026-12-01T12:00:00.000Z",
       data_devolucao: "2026-12-10",
@@ -636,7 +636,7 @@ export async function seed(knex: Knex): Promise<void> {
             responsavel_lancamento_usuario_id: auditId(300 + ((vinculo.aluno.turmaIndex * 2 + vinculo.disciplinaIndex) % professores.length)),
             alterada_por_usuario_id: justificar ? ids.secretariaSaulo : null,
             justificativa_motivo: justificar ? "Atestado apresentado" : null,
-            justificativa_observacao: justificar ? "Ausencia justificada para cenario de auditoria." : null,
+            justificativa_observacao: justificar ? "Ausencia justificada." : null,
             justificada_por_usuario_id: justificar ? ids.secretariaSaulo : null,
             justificada_por_perfil: justificar ? "secretaria" : null,
             justificada_em: justificar ? "2026-10-20T12:00:00.000Z" : null,
@@ -673,7 +673,7 @@ export async function seed(knex: Knex): Promise<void> {
         acao: "LANCAMENTO",
         valor_anterior: null,
         valor_novo: nota.valor,
-        motivo: "Lancamento inicial criado pelo seed de auditoria.",
+        motivo: "Lancamento inicial.",
         criado_em: "2026-11-20T12:00:00.000Z",
       };
 
@@ -689,7 +689,7 @@ export async function seed(knex: Knex): Promise<void> {
           acao: "RETIFICACAO",
           valor_anterior: Math.max(0, Number(nota.valor) - 1),
           valor_novo: nota.valor,
-          motivo: "Retificacao amostral para validar trilha de auditoria.",
+          motivo: "Retificacao amostral.",
           criado_em: "2026-11-22T12:00:00.000Z",
         },
       ];
@@ -722,8 +722,8 @@ export async function seed(knex: Knex): Promise<void> {
           id: auditId(48000 + index),
           matricula_id: aluno.matriculaId,
           tipo_documento: status === 0 ? "RG" : status === 1 ? "HISTORICO_ESCOLAR" : "COMPROVANTE_RESIDENCIA",
-          nome_arquivo: status === 0 ? "documento-valido-auditoria.pdf" : status === 1 ? "documento-pendente-auditoria.pdf" : "documento-invalido-auditoria.pdf",
-          caminho_arquivo: `/uploads/auditoria/${aluno.matriculaId}.pdf`,
+          nome_arquivo: status === 0 ? "documento-valido.pdf" : status === 1 ? "documento-pendente.pdf" : "documento-invalido.pdf",
+          caminho_arquivo: `/uploads/documentos/${aluno.matriculaId}.pdf`,
           documento: null,
           valido: status === 0,
         },
