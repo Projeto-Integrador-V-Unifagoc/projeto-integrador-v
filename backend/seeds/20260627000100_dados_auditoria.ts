@@ -237,16 +237,16 @@ const deveLancarFrequencia = (cenario: CenarioAluno, aulaIndex: number): boolean
 };
 
 const datasAulas = [
-  "2026-08-10",
-  "2026-08-17",
-  "2026-08-24",
-  "2026-08-31",
-  "2026-09-07",
-  "2026-09-14",
-  "2026-09-21",
-  "2026-09-28",
-  "2026-10-05",
-  "2026-10-12",
+  "2026-02-10",
+  "2026-02-17",
+  "2026-02-24",
+  "2026-03-03",
+  "2026-03-10",
+  "2026-03-17",
+  "2026-03-24",
+  "2026-03-31",
+  "2026-04-07",
+  "2026-04-14",
 ];
 
 const statusFrequencia = (cenario: CenarioAluno, alunoIndex: number, aulaIndex: number): "PRESENTE" | "AUSENTE" => {
@@ -429,8 +429,8 @@ export async function seed(knex: Knex): Promise<void> {
           codigo: "2026/2-AUD",
           ano: 2026,
           semestre: 2,
-          data_inicio: "2026-08-03",
-          data_fim: "2026-12-18",
+          data_inicio: "2026-02-02",
+          data_fim: "2026-06-30",
           ativo: true,
           status: "ativo",
         },
@@ -503,7 +503,7 @@ export async function seed(knex: Knex): Promise<void> {
         curso_id: auditId(200 + aluno.turmaIndex),
         turma_id: auditId(800 + aluno.turmaIndex),
         status: "ativa",
-        data_matricula: "2026-08-03",
+        data_matricula: "2026-02-03",
       })),
       ["aluno_id", "turma_id"]
     );
@@ -527,18 +527,18 @@ export async function seed(knex: Knex): Promise<void> {
         turma_disciplina_id: vinculo.turmaDisciplinaId,
         matricula_id: vinculo.matriculaId,
         status: "ativa",
-        data_vinculo: "2026-08-03",
+        data_vinculo: "2026-02-03",
       })),
       ["matricula_id", "turma_disciplina_id"]
     );
 
     const avaliacoesRegulares = turmaDisciplinas.flatMap((turmaDisciplina, tdIndex) =>
       [
-        { tipo: "PROVA", descricao: "Prova 1", valor: 20, data: "2026-09-01T12:00:00.000Z", devolucao: "2026-09-08" },
-        { tipo: "PROVA", descricao: "Prova 2", valor: 20, data: "2026-10-01T12:00:00.000Z", devolucao: "2026-10-08" },
-        { tipo: "PROVA", descricao: "Prova 3", valor: 20, data: "2026-11-03T12:00:00.000Z", devolucao: "2026-11-10" },
-        { tipo: "TPI", descricao: "Trabalho Pratico Integrador", valor: 5, data: "2026-09-15T12:00:00.000Z", devolucao: "2026-09-22" },
-        { tipo: "TRABALHO", descricao: "Trabalho Semestral", valor: 35, data: "2026-11-17T12:00:00.000Z", devolucao: "2026-11-25" },
+        { tipo: "PROVA", descricao: "Prova 1", valor: 20, data: "2026-02-24T12:00:00.000Z", devolucao: "2026-03-03" },
+        { tipo: "PROVA", descricao: "Prova 2", valor: 20, data: "2026-03-24T12:00:00.000Z", devolucao: "2026-03-31" },
+        { tipo: "PROVA", descricao: "Prova 3", valor: 20, data: "2026-04-28T12:00:00.000Z", devolucao: "2026-05-05" },
+        { tipo: "TPI", descricao: "Trabalho Pratico Integrador", valor: 5, data: "2026-03-10T12:00:00.000Z", devolucao: "2026-03-17" },
+        { tipo: "TRABALHO", descricao: "Trabalho Semestral", valor: 35, data: "2026-05-12T12:00:00.000Z", devolucao: "2026-05-19" },
       ].map((avaliacao, avaliacaoIndex) => ({
         id: auditId(5000 + tdIndex * 10 + avaliacaoIndex),
         tipo_avaliacao: avaliacao.tipo,
@@ -555,8 +555,8 @@ export async function seed(knex: Knex): Promise<void> {
       tipo_avaliacao: "RECUPERACAO",
       descricao_avaliacao: "Recuperacao semestral",
       valor: 100,
-      data_lancamento: "2026-12-01T12:00:00.000Z",
-      data_devolucao: "2026-12-10",
+      data_lancamento: "2026-06-02T12:00:00.000Z",
+      data_devolucao: "2026-06-10",
       turma_disciplina_id: turmaDisciplina.id,
     }));
 
@@ -639,7 +639,7 @@ export async function seed(knex: Knex): Promise<void> {
             justificativa_observacao: justificar ? "Ausencia justificada." : null,
             justificada_por_usuario_id: justificar ? ids.secretariaSaulo : null,
             justificada_por_perfil: justificar ? "secretaria" : null,
-            justificada_em: justificar ? "2026-10-20T12:00:00.000Z" : null,
+            justificada_em: justificar ? "2026-04-20T12:00:00.000Z" : null,
           };
         })
         .filter(Boolean);
@@ -674,7 +674,7 @@ export async function seed(knex: Knex): Promise<void> {
         valor_anterior: null,
         valor_novo: nota.valor,
         motivo: "Lancamento inicial.",
-        criado_em: "2026-11-20T12:00:00.000Z",
+        criado_em: "2026-05-20T12:00:00.000Z",
       };
 
       if (index % 37 !== 0) return [lancamento];
@@ -690,7 +690,7 @@ export async function seed(knex: Knex): Promise<void> {
           valor_anterior: Math.max(0, Number(nota.valor) - 1),
           valor_novo: nota.valor,
           motivo: "Retificacao amostral.",
-          criado_em: "2026-11-22T12:00:00.000Z",
+          criado_em: "2026-05-22T12:00:00.000Z",
         },
       ];
     });
@@ -710,7 +710,7 @@ export async function seed(knex: Knex): Promise<void> {
           status: frequencia.status,
           justificada: Boolean(frequencia.justificada_por_usuario_id),
         },
-        criado_em: "2026-10-21T12:00:00.000Z",
+        criado_em: "2026-04-21T12:00:00.000Z",
       }));
 
     await inserir(trx, "frequencia_auditoria", auditoriasFrequencia, "id");
