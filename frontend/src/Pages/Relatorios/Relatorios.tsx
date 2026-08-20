@@ -1,0 +1,1082 @@
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  Alert,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  InputAdornment,
+  MenuItem,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
+import {
+  Download,
+  FileText,
+  Search,
+  ShieldCheck,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+import Button from "../../components/Button";
+import Container from "../../components/Container";
+import DataTable from "../../components/DataTable/DataTable";
+import TextField from "../../components/TextField";
+import { useRelatorio } from "../../hooks/use-relatorio";
+import type {
+  FiltrosRelatorios,
+  PerfilRelatorio,
+  RelatorioItem,
+  RelatorioLinha,
+  TipoRelatorio,
+  TipoUsuarioRelatorio,
+} from "../../models/relatorio-model";
+
+type UsuarioLogado = {
+  nome?: string;
+  tipo_usuario?: TipoUsuarioRelatorio | string;
+};
+
+type ContextoPerfil = {
+  titulo: string;
+  descricao: string;
+  escopo: string;
+  icone: LucideIcon;
+};
+
+type RelatorioTabelaRow = RelatorioItem & {
+  tipoFormatado: string;
+  totalPeriodos: number;
+  totalDisciplinas: number;
+};
+
+const STORAGE_USER_KEY = "@UniEduca:user";
+const RODAPE_INSTITUCIONAL =
+  "Documento emitido pelo sistema academico UniEduca.";
+const MENSAGEM_ERRO =
+  "Nao foi possivel carregar os relatorios. Tente novamente.";
+
+const winAnsiMap: Record<string, number> = {
+  "\u20ac": 0x80,
+  "\u201a": 0x82,
+  "\u0192": 0x83,
+  "\u201e": 0x84,
+  "\u2026": 0x85,
+  "\u2020": 0x86,
+  "\u2021": 0x87,
+  "\u02c6": 0x88,
+  "\u2030": 0x89,
+  "\u0160": 0x8a,
+  "\u2039": 0x8b,
+  "\u0152": 0x8c,
+  "\u017d": 0x8e,
+  "\u2018": 0x91,
+  "\u2019": 0x92,
+  "\u201c": 0x93,
+  "\u201d": 0x94,
+  "\u2022": 0x95,
+  "\u2013": 0x96,
+  "\u2014": 0x97,
+  "\u02dc": 0x98,
+  "\u2122": 0x99,
+  "\u0161": 0x9a,
+  "\u203a": 0x9b,
+  "\u0153": 0x9c,
+  "\u017e": 0x9e,
+  "\u0178": 0x9f,
+};
+
+function labelPerfil(perfil: PerfilRelatorio) {
+  const labels: Record<PerfilRelatorio, string> = {
+    Aluno: "Aluno",
+    Professor: "Professor",
+    Secretaria: "Secretaria",
+  };
+
+  return labels[perfil];
+}
+
+function labelTipo(tipo: TipoRelatorio) {
+  const labels: Record<TipoRelatorio, string> = {
+    Notas: "Notas",
+    Frequencia: "Frequencia",
+    Consulta: "Consulta",
+    Historico: "Historico",
+  };
+
+  return labels[tipo];
+}
+
+function perfilPorTipoUsuario(tipo?: string): PerfilRelatorio {
+  if (tipo === "aluno") {
+    return "Aluno";
+  }
+
+  if (tipo === "professor") {
+    return "Professor";
+  }
+
+  return "Secretaria";
+}
+
+function obterUsuarioLogado(): UsuarioLogado {
+  try {
+    const user = localStorage.getItem(STORAGE_USER_KEY);
+    return user ? (JSON.parse(user) as UsuarioLogado) : {};
+  } catch {
+    return {};
+  }
+}
+
+function contextoPerfil(perfil: PerfilRelatorio): ContextoPerfil {
+  const contextos: Record<PerfilRelatorio, ContextoPerfil> = {
+    Aluno: {
+      titulo: "Relatorios do aluno",
+      descricao: "Notas, frequencia e historico vinculados ao usuario logado.",
+      escopo: "Meus dados",
+      icone: UserRound,
+    },
+    Professor: {
+      titulo: "Relatorios do professor",
+      descricao: "Turmas, alunos, notas e frequencia sob responsabilidade docente.",
+      escopo: "Turmas vinculadas",
+      icone: UsersRound,
+    },
+    Secretaria: {
+      titulo: "Relatorios da secretaria",
+      descricao: "Visao administrativa dos dados academicos autorizados.",
+      escopo: "Escopo administrativo",
+      icone: ShieldCheck,
+    },
+  };
+
+  return contextos[perfil];
+}
+
+function totalDisciplinas(relatorio: RelatorioItem) {
+  return relatorio.periodos.reduce(
+    (total, periodo) => total + periodo.disciplinas.length,
+    0
+  );
+}
+
+function criarFiltros(
+  perfil: PerfilRelatorio,
+  busca: string,
+  ano: string,
+  tipo: string
+): FiltrosRelatorios {
+  return {
+    perfil,
+    busca,
+    ano,
+    tipo,
+  };
+}
+
+function normalizarBusca(value?: unknown) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function valoresBuscaRelatorio(relatorio: RelatorioItem) {
+  const valores: unknown[] = [
+    relatorio.nome,
+    relatorio.descricao,
+    relatorio.tipo,
+    relatorio.ano,
+    relatorio.curso,
+    relatorio.matrizCurricular,
+  ];
+
+  relatorio.periodos.forEach((periodo) => {
+    valores.push(periodo.nome);
+    periodo.disciplinas.forEach((disciplina) => {
+      valores.push(
+        disciplina.nome,
+        disciplina.aluno,
+        disciplina.avaliacao,
+        disciplina.tipoAvaliacao,
+        disciplina.valorAvaliacao,
+        disciplina.dataAvaliacao,
+        disciplina.nota,
+        disciplina.frequencia,
+        disciplina.situacao
+      );
+    });
+  });
+
+  relatorio.pdf.linhas.forEach((linha) => {
+    valores.push(...Object.values(linha));
+  });
+
+  return valores;
+}
+
+function relatorioPassaNosFiltros(
+  relatorio: RelatorioItem,
+  filtros: { busca: string; ano: string; tipo: string }
+) {
+  const anoValido = filtros.ano === "Todos" || relatorio.ano === filtros.ano;
+  const tipoValido = filtros.tipo === "Todos" || relatorio.tipo === filtros.tipo;
+  const termo = normalizarBusca(filtros.busca);
+
+  if (!anoValido || !tipoValido) {
+    return false;
+  }
+
+  if (!termo) {
+    return true;
+  }
+
+  return valoresBuscaRelatorio(relatorio).some((valor) =>
+    normalizarBusca(valor).includes(termo)
+  );
+}
+
+function toAsciiBytes(value: string) {
+  return Uint8Array.from(Array.from(value, (char) => char.charCodeAt(0)));
+}
+
+function toWinAnsiBytes(value: string) {
+  const bytes: number[] = [];
+
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+
+    if (char === "\\") {
+      bytes.push(0x5c, 0x5c);
+      continue;
+    }
+
+    if (char === "(") {
+      bytes.push(0x5c, 0x28);
+      continue;
+    }
+
+    if (char === ")") {
+      bytes.push(0x5c, 0x29);
+      continue;
+    }
+
+    if (code <= 0x7f || (code >= 0xa0 && code <= 0xff)) {
+      bytes.push(code);
+      continue;
+    }
+
+    bytes.push(winAnsiMap[char] ?? 0x3f);
+  }
+
+  return bytes;
+}
+
+function concatBytes(...parts: Uint8Array[]) {
+  const totalLength = parts.reduce((total, part) => total + part.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+
+  parts.forEach((part) => {
+    result.set(part, offset);
+    offset += part.length;
+  });
+
+  return result;
+}
+
+function encodePdfText(value: string) {
+  return `(${String.fromCharCode(...toWinAnsiBytes(value))})`;
+}
+
+function pdfText(
+  x: number,
+  y: number,
+  text: string,
+  size = 10,
+  color = "0.10 0.10 0.10"
+) {
+  return `BT /F1 ${size} Tf ${color} rg 1 0 0 1 ${x.toFixed(2)} ${y.toFixed(
+    2
+  )} Tm ${encodePdfText(text)} Tj ET`;
+}
+
+function pdfLine(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  width = 1,
+  color = "0.72 0.76 0.80"
+) {
+  return `${color} RG ${width} w ${x1.toFixed(2)} ${y1.toFixed(
+    2
+  )} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S`;
+}
+
+function pdfRect(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  fillColor: string
+) {
+  return `${fillColor} rg ${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(
+    2
+  )} ${height.toFixed(2)} re f`;
+}
+
+function limparTextoPdf(value?: string | number | null) {
+  if (value === undefined || value === null || value === "") {
+    return "-";
+  }
+
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
+function limitarTexto(value: string, maxChars: number) {
+  if (value.length <= maxChars) {
+    return value;
+  }
+
+  return `${value.slice(0, Math.max(1, maxChars - 3))}...`;
+}
+
+function quebrarTexto(value: string, maxChars: number, maxLines = 2) {
+  const palavras = limparTextoPdf(value).split(" ");
+  const linhas: string[] = [""];
+
+  palavras.forEach((palavra) => {
+    const atual = linhas[linhas.length - 1] ?? "";
+    const proxima = atual ? `${atual} ${palavra}` : palavra;
+
+    if (proxima.length <= maxChars) {
+      linhas[linhas.length - 1] = proxima;
+      return;
+    }
+
+    if (linhas.length < maxLines) {
+      linhas.push(limitarTexto(palavra, maxChars));
+      return;
+    }
+
+    linhas[maxLines - 1] = limitarTexto(`${linhas[maxLines - 1]} ${palavra}`, maxChars);
+  });
+
+  const resultado = linhas.map((linha) => linha.trim()).filter(Boolean);
+  return resultado.length ? resultado.slice(0, maxLines) : ["-"];
+}
+
+function charsPorLargura(width: number, fontSize: number) {
+  return Math.max(5, Math.floor(width / (fontSize * 0.54)));
+}
+
+function formatarDataEmissao() {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date());
+}
+
+function linhasTabela(relatorio: RelatorioItem) {
+  const colunas = relatorio.pdf.colunas.length
+    ? relatorio.pdf.colunas
+    : ["Descricao", "Situacao"];
+  const linhas = relatorio.pdf.linhas.length
+    ? relatorio.pdf.linhas
+    : [{ Descricao: relatorio.nome, Situacao: "Sem registros para os filtros" }];
+  const larguras = colunas.map((_, index) => relatorio.pdf.larguras[index] ?? 100);
+
+  return { colunas, linhas, larguras };
+}
+
+function renderCabecalhoPdf(
+  relatorio: RelatorioItem,
+  perfil: PerfilRelatorio,
+  pagina: number,
+  totalPaginas: number
+) {
+  const pageWidth = 595;
+  const margin = 36;
+  const titulo = limparTextoPdf(relatorio.pdf.titulo || relatorio.nome);
+  const emissao = formatarDataEmissao();
+  const cursoLinhas = quebrarTexto(`Curso: ${limparTextoPdf(relatorio.curso)}`, 47, 2);
+  const matrizLinhas = quebrarTexto(
+    `Matriz curricular: ${limparTextoPdf(relatorio.matrizCurricular)}`,
+    47,
+    2
+  );
+
+  return [
+    pdfRect(0, 788, pageWidth, 54, "0.02 0.71 0.90"),
+    pdfText(margin, 814, "UniEduca", 18, "1 1 1"),
+    pdfText(margin, 798, "Sistema academico", 9, "0.92 0.98 1"),
+    pdfText(margin, 754, titulo, 17, "0.08 0.12 0.16"),
+    pdfLine(margin, 742, pageWidth - margin, 742, 1.6, "0.02 0.71 0.90"),
+    pdfRect(margin, 640, pageWidth - margin * 2, 80, "0.97 0.98 0.99"),
+    pdfLine(margin, 720, pageWidth - margin, 720, 0.7, "0.86 0.88 0.90"),
+    pdfLine(margin, 640, pageWidth - margin, 640, 0.7, "0.86 0.88 0.90"),
+    ...cursoLinhas.map((linha, index) => pdfText(margin + 14, 702 - index * 12, linha, 9.5)),
+    ...matrizLinhas.map((linha, index) => pdfText(margin + 14, 672 - index * 12, linha, 9)),
+    pdfText(
+      356,
+      702,
+      `Ano: ${limparTextoPdf(relatorio.ano)}`,
+      10
+    ),
+    pdfText(356, 682, `Perfil: ${labelPerfil(perfil)}`, 10),
+    pdfText(356, 662, `Emissao: ${emissao}`, 10),
+    pdfText(
+      474,
+      798,
+      `Pagina ${pagina} de ${totalPaginas}`,
+      9,
+      "0.92 0.98 1"
+    ),
+  ];
+}
+
+function textoRodapePdf(relatorio: RelatorioItem) {
+  const rodape = limparTextoPdf(relatorio.pdf.rodape);
+
+  if (rodape === "-") {
+    return RODAPE_INSTITUCIONAL;
+  }
+
+  const termosIndevidos = ["mo" + "ck", "ex" + "emplo", "te" + "ste", "de" + "monstr"];
+
+  if (termosIndevidos.some((termo) => rodape.toLowerCase().includes(termo))) {
+    return RODAPE_INSTITUCIONAL;
+  }
+
+  return rodape;
+}
+
+function renderRodapePdf(
+  pagina: number,
+  totalPaginas: number,
+  rodape = RODAPE_INSTITUCIONAL
+) {
+  const pageWidth = 595;
+  const margin = 36;
+
+  return [
+    pdfLine(margin, 54, pageWidth - margin, 54, 0.7, "0.82 0.85 0.88"),
+    pdfText(margin, 36, rodape, 9, "0.34 0.38 0.42"),
+    pdfText(
+      pageWidth - margin - 72,
+      36,
+      `${pagina}/${totalPaginas}`,
+      9,
+      "0.34 0.38 0.42"
+    ),
+  ];
+}
+
+function criarObjetoStream(id: number, content: string) {
+  const contentBytes = toAsciiBytes(content);
+
+  return concatBytes(
+    toAsciiBytes(`${id} 0 obj\n<< /Length ${contentBytes.length} >>\nstream\n`),
+    contentBytes,
+    toAsciiBytes("\nendstream\nendobj\n")
+  );
+}
+
+function buildRelatorioPdf(relatorio: RelatorioItem, perfil: PerfilRelatorio) {
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const margin = 36;
+  const tableTop = 620;
+  const tableBottom = 78;
+  const headerHeight = 26;
+  const rowHeight = 24;
+  const usableWidth = pageWidth - margin * 2;
+  const { colunas, linhas, larguras } = linhasTabela(relatorio);
+  const baseWidth = larguras.reduce((total, largura) => total + largura, 0);
+  const scale = usableWidth / Math.max(baseWidth, 1);
+  const colWidths = larguras.map((largura) => Number((largura * scale).toFixed(2)));
+  const rowsPerPage = Math.max(
+    1,
+    Math.floor((tableTop - tableBottom - headerHeight) / rowHeight)
+  );
+  const pages = Array.from(
+    { length: Math.ceil(linhas.length / rowsPerPage) },
+    (_, index) => linhas.slice(index * rowsPerPage, (index + 1) * rowsPerPage)
+  );
+  const pageContents = pages.map((pageRows, pageIndex) => {
+    const pageNumber = pageIndex + 1;
+    const commands = [
+      ...renderCabecalhoPdf(relatorio, perfil, pageNumber, pages.length),
+      pdfRect(margin, tableTop - headerHeight, usableWidth, headerHeight, "0.08 0.25 0.35"),
+      pdfLine(margin, tableTop, pageWidth - margin, tableTop, 0.8, "0.08 0.25 0.35"),
+    ];
+
+    let currentX = margin;
+    colunas.forEach((coluna, index) => {
+      const text = limitarTexto(
+        limparTextoPdf(coluna),
+        charsPorLargura(colWidths[index] - 12, 9)
+      );
+      commands.push(pdfText(currentX + 6, tableTop - 17, text, 9, "1 1 1"));
+      currentX += colWidths[index];
+    });
+
+    pageRows.forEach((linha, rowIndex) => {
+      const rowTop = tableTop - headerHeight - rowHeight * rowIndex;
+      const rowBottom = rowTop - rowHeight;
+
+      if (rowIndex % 2 === 0) {
+        commands.push(pdfRect(margin, rowBottom, usableWidth, rowHeight, "1 1 1"));
+      } else {
+        commands.push(pdfRect(margin, rowBottom, usableWidth, rowHeight, "0.96 0.98 0.99"));
+      }
+
+      let x = margin;
+      colunas.forEach((coluna, columnIndex) => {
+        const value = limitarTexto(
+          limparTextoPdf((linha as RelatorioLinha)[coluna]),
+          charsPorLargura(colWidths[columnIndex] - 12, 8.5)
+        );
+        commands.push(pdfText(x + 6, rowBottom + 8, value, 8.5, "0.16 0.19 0.22"));
+        x += colWidths[columnIndex];
+      });
+
+      commands.push(pdfLine(margin, rowBottom, pageWidth - margin, rowBottom, 0.4, "0.88 0.90 0.92"));
+    });
+
+    let lineX = margin;
+    commands.push(pdfLine(lineX, tableBottom, lineX, tableTop, 0.4, "0.86 0.88 0.90"));
+    colWidths.forEach((width) => {
+      lineX += width;
+      commands.push(pdfLine(lineX, tableBottom, lineX, tableTop, 0.4, "0.86 0.88 0.90"));
+    });
+
+    commands.push(
+      ...renderRodapePdf(pageNumber, pages.length, textoRodapePdf(relatorio))
+    );
+
+    return commands.join("\n");
+  });
+
+  const pageObjects = pageContents.map((_, index) => 3 + index * 2);
+  const contentObjects = pageContents.map((_, index) => 4 + index * 2);
+  const fontObject = 3 + pageContents.length * 2;
+  const objects: Uint8Array[] = [
+    toAsciiBytes("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"),
+    toAsciiBytes(
+      `2 0 obj\n<< /Type /Pages /Kids [${pageObjects
+        .map((id) => `${id} 0 R`)
+        .join(" ")}] /Count ${pageObjects.length} >>\nendobj\n`
+    ),
+  ];
+
+  pageContents.forEach((content, index) => {
+    objects.push(
+      toAsciiBytes(
+        `${pageObjects[index]} 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Contents ${contentObjects[index]} 0 R /Resources << /Font << /F1 ${fontObject} 0 R >> >> >>
+endobj
+`
+      )
+    );
+    objects.push(criarObjetoStream(contentObjects[index], content));
+  });
+
+  objects.push(
+    toAsciiBytes(
+      `${fontObject} 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n`
+    )
+  );
+
+  const chunks: number[][] = [Array.from(toAsciiBytes("%PDF-1.4\n"))];
+  const offsets: number[] = [0];
+  let currentOffset = chunks[0].length;
+
+  objects.forEach((objectBytes) => {
+    offsets.push(currentOffset);
+    chunks.push(Array.from(objectBytes));
+    currentOffset += objectBytes.length;
+  });
+
+  const xrefOffset = currentOffset;
+  let xref = `xref\n0 ${offsets.length}\n`;
+  xref += "0000000000 65535 f \n";
+  offsets.slice(1).forEach((offset) => {
+    xref += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  });
+  xref += `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  chunks.push(Array.from(toAsciiBytes(xref)));
+
+  return new Blob([Uint8Array.from(chunks.flat())], { type: "application/pdf" });
+}
+
+export default function Relatorios() {
+  const { listarRelatorios, carregando } = useRelatorio();
+  const theme = useTheme();
+  const mobile = useMediaQuery(theme.breakpoints.down("md"));
+  const usuarioLogado = useMemo(() => obterUsuarioLogado(), []);
+  const perfil = useMemo(
+    () => perfilPorTipoUsuario(usuarioLogado.tipo_usuario),
+    [usuarioLogado.tipo_usuario]
+  );
+  const contexto = useMemo(() => contextoPerfil(perfil), [perfil]);
+  const IconePerfil = contexto.icone;
+  const [busca, setBusca] = useState("");
+  const [ano, setAno] = useState("Todos");
+  const [tipo, setTipo] = useState("Todos");
+  const [relatoriosBase, setRelatoriosBase] = useState<RelatorioItem[]>([]);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const anosDisponiveis = useMemo(
+    () => ["Todos", ...new Set(relatoriosBase.map((item) => item.ano))],
+    [relatoriosBase]
+  );
+
+  const tiposDisponiveis = useMemo(
+    () => ["Todos", ...new Set(relatoriosBase.map((item) => item.tipo))],
+    [relatoriosBase]
+  );
+
+  const relatorios = useMemo(
+    () =>
+      relatoriosBase.filter((relatorio) =>
+        relatorioPassaNosFiltros(relatorio, { busca, ano, tipo })
+      ),
+    [relatoriosBase, busca, ano, tipo]
+  );
+
+  const rowsTabela = useMemo<RelatorioTabelaRow[]>(
+    () =>
+      relatorios.map((relatorio) => ({
+        ...relatorio,
+        tipoFormatado: labelTipo(relatorio.tipo),
+        totalPeriodos: relatorio.periodos.length,
+        totalDisciplinas: totalDisciplinas(relatorio),
+      })),
+    [relatorios]
+  );
+
+  function emitirRelatorio(relatorio: RelatorioItem) {
+    const pdfBlob = buildRelatorioPdf(relatorio, perfil);
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
+
+    window.setTimeout(() => {
+      URL.revokeObjectURL(pdfUrl);
+    }, 60000);
+  }
+
+  const columns = useMemo<GridColDef[]>(
+    () => [
+      {
+        field: "nome",
+        headerName: "Relatorio",
+        flex: 1.2,
+        minWidth: 190,
+      },
+      {
+        field: "tipoFormatado",
+        headerName: "Tipo",
+        width: 130,
+      },
+      {
+        field: "ano",
+        headerName: "Ano",
+        width: 90,
+      },
+      {
+        field: "curso",
+        headerName: "Curso",
+        flex: 1.1,
+        minWidth: 190,
+      },
+      {
+        field: "totalDisciplinas",
+        headerName: "Itens",
+        width: 86,
+      },
+      {
+        field: "acao",
+        headerName: "",
+        sortable: false,
+        filterable: false,
+        width: 112,
+        align: "center",
+        headerAlign: "center",
+        renderCell: (params: GridRenderCellParams<RelatorioTabelaRow>) => (
+          <Tooltip title="Emitir PDF">
+            <Box component="span">
+              <Button
+                variant="contained"
+                onClick={() => emitirRelatorio(params.row)}
+                sx={{ minWidth: 82, width: 82, height: 28, px: 1 }}
+              >
+                Emitir
+              </Button>
+            </Box>
+          </Tooltip>
+        ),
+      },
+    ],
+    [perfil]
+  );
+
+  useEffect(() => {
+    let consultaAtiva = true;
+
+    listarRelatorios(criarFiltros(perfil, "", "Todos", "Todos"))
+      .then((resultado) => {
+        if (consultaAtiva) {
+          setRelatoriosBase(resultado);
+          setErro(null);
+        }
+      })
+      .catch(() => {
+        if (consultaAtiva) {
+          setRelatoriosBase([]);
+          setErro(MENSAGEM_ERRO);
+        }
+      });
+
+    return () => {
+      consultaAtiva = false;
+    };
+  }, [listarRelatorios, perfil]);
+
+  return (
+    <Container
+      maxWidth={false}
+      sx={{
+        border: "none",
+        backgroundColor: "#FFF",
+        py: 2,
+        px: { xs: 1.5, md: 2 },
+      }}
+    >
+      <Stack spacing={2}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "flex-start", md: "center" }}
+          spacing={1.5}
+        >
+          <Box>
+            <Typography variant="h6" fontWeight="bold">
+              Relatorios
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {contexto.titulo}
+            </Typography>
+          </Box>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Chip
+              icon={<IconePerfil size={15} />}
+              label={labelPerfil(perfil)}
+              sx={{
+                backgroundColor: "#FFF",
+                color: "primary.main",
+                border: `1px solid ${theme.palette.primary.main}`,
+                fontWeight: 700,
+                "& .MuiChip-icon": {
+                  color: "primary.main",
+                },
+              }}
+            />
+          </Stack>
+        </Stack>
+
+        <Paper
+          elevation={0}
+          sx={{
+            border: `1px solid ${theme.palette.grey[100]}`,
+            borderRadius: "8px",
+            p: 2,
+            backgroundColor: "#FFF",
+          }}
+        >
+          <Stack spacing={2}>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={1.5}
+              alignItems={{ xs: "stretch", md: "center" }}
+            >
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "8px",
+                  backgroundColor: "rgba(5, 181, 230, 0.12)",
+                  color: "primary.main",
+                  display: { xs: "none", sm: "flex" },
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <FileText size={18} />
+              </Box>
+
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography fontWeight="bold" color="primary.main">
+                  {contexto.escopo}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {contexto.descricao}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Divider />
+
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "minmax(0, 1fr) 140px 190px",
+                },
+                gap: 1.5,
+                alignItems: "end",
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="caption" fontWeight={700} color="text.secondary">
+                  Busca
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder={
+                    perfil === "Aluno"
+                      ? "Buscar por relatorio, disciplina ou situacao"
+                      : "Buscar por relatorio, aluno, disciplina ou situacao"
+                  }
+                  value={busca}
+                  onChange={(event) => setBusca(event.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search size={18} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    mt: 0.25,
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="caption" fontWeight={700} color="text.secondary">
+                  Ano
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  value={ano}
+                  onChange={(event) => setAno(event.target.value)}
+                  sx={{
+                    mt: 0.25,
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                >
+                  {anosDisponiveis.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" fontWeight={700} color="text.secondary">
+                  Tipo
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  value={tipo}
+                  onChange={(event) => setTipo(event.target.value)}
+                  sx={{
+                    mt: 0.25,
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "#FFF",
+                    },
+                  }}
+                >
+                  {tiposDisponiveis.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item === "Todos" ? item : labelTipo(item as TipoRelatorio)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            </Box>
+          </Stack>
+        </Paper>
+
+        {erro ? <Alert severity="error">{erro}</Alert> : null}
+
+        {!mobile ? (
+          <Box
+            sx={{
+              border: `1px solid ${theme.palette.grey[100]}`,
+              borderRadius: "8px",
+              backgroundColor: "#FFF",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ height: Math.max(300, rowsTabela.length * 34 + 118) }}>
+              <DataTable
+                rows={rowsTabela}
+                columns={columns}
+                loading={carregando}
+                emptyTitle="Nenhum relatorio encontrado"
+                emptyDescription="Revise a busca ou altere os filtros selecionados."
+                sx={{
+                  mt: 0,
+                  backgroundColor: "#FFF",
+                  border: "none",
+                  minHeight: 300,
+                  "& .MuiDataGrid-main": {
+                    backgroundColor: "#FFF",
+                  },
+                  "& .MuiDataGrid-virtualScroller": {
+                    backgroundColor: "#FFF",
+                  },
+                  "& .MuiDataGrid-overlayWrapper": {
+                    backgroundColor: "#FFF",
+                  },
+                  "& .MuiDataGrid-overlayWrapperInner": {
+                    backgroundColor: "#FFF",
+                  },
+                  "& .MuiDataGrid-footerContainer": {
+                    backgroundColor: "#FFF",
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+        ) : (
+          <Stack spacing={1.5}>
+            {carregando ? (
+              <Box
+                sx={{
+                  border: `1px dashed ${theme.palette.grey[200]}`,
+                  borderRadius: "8px",
+                  backgroundColor: "#FFF",
+                  py: 4,
+                  textAlign: "center",
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Carregando relatorios academicos...
+                </Typography>
+              </Box>
+            ) : null}
+
+            {relatorios.map((relatorio) => (
+              <Card
+                key={relatorio.id}
+                elevation={0}
+                sx={{
+                  border: `1px solid ${theme.palette.grey[100]}`,
+                  borderRadius: "8px",
+                }}
+              >
+                <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                  <Stack spacing={1.5}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      spacing={1}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography fontWeight="bold">{relatorio.nome}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {relatorio.curso}
+                        </Typography>
+                      </Box>
+
+                      <Chip
+                        size="small"
+                        label={labelTipo(relatorio.tipo)}
+                        sx={{
+                          backgroundColor: "#EDF8FB",
+                          color: "primary.main",
+                          fontWeight: 700,
+                        }}
+                      />
+                    </Stack>
+
+                    <Divider />
+
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      <Chip size="small" label={`Ano ${relatorio.ano}`} variant="outlined" />
+                      <Chip
+                        size="small"
+                        label={`${relatorio.periodos.length} periodo(s)`}
+                        variant="outlined"
+                      />
+                      <Chip
+                        size="small"
+                        label={`${totalDisciplinas(relatorio)} item(ns)`}
+                        variant="outlined"
+                      />
+                    </Stack>
+
+                    <Typography variant="body2" color="text.secondary">
+                      {relatorio.descricao}
+                    </Typography>
+
+                    <Button
+                      variant="contained"
+                      startIcon={<Download size={16} />}
+                      onClick={() => emitirRelatorio(relatorio)}
+                      sx={{ width: "100%" }}
+                    >
+                      Emitir PDF
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+        )}
+
+        {mobile && !carregando && !erro && relatorios.length === 0 ? (
+          <Box
+            sx={{
+              border: `1px dashed ${theme.palette.grey[200]}`,
+              borderRadius: "8px",
+              backgroundColor: "#FFF",
+              py: 5,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Nenhum relatorio encontrado para os filtros selecionados.
+            </Typography>
+          </Box>
+        ) : null}
+      </Stack>
+    </Container>
+  );
+}

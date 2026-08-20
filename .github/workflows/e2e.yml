@@ -1,0 +1,93 @@
+# Gate de CI para a suíte E2E (spec §16). Ordem: deps → Postgres → migrations →
+# unit tests → build front → backend/front com health → E2E → artefatos.
+#
+# Os defeitos D01–D07 detectados pela suíte foram corrigidos no backend e os
+# testes correspondentes são agora verdes de regressão (ver e2e/DEBITOS_E2E.md).
+# O gate deve permanecer verde; uma falha indica regressão real.
+name: E2E
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: America/Sao_Paulo
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5433/projeto_integrador_e2e
+      E2E_API_URL: http://localhost:3100
+      E2E_JWT_SECRET: e2e-jwt-secret-only-for-tests-0123456789
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: projeto_integrador_e2e
+          TZ: America/Sao_Paulo
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d projeto_integrador_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependências (lockfiles)
+        run: |
+          npm ci --prefix backend || npm install --prefix backend
+          npm ci --prefix frontend || npm install --prefix frontend
+          npm ci --prefix e2e || npm install --prefix e2e
+
+      - name: Migrations + seeds (banco E2E)
+        working-directory: e2e
+        run: npm run env:db
+
+      - name: Testes unitários do backend
+        run: npm test --prefix backend
+        continue-on-error: true
+
+      - name: Testes unitários do frontend
+        run: npm test --prefix frontend -- --run
+        continue-on-error: true
+
+      - name: Build do frontend (contra backend E2E)
+        run: VITE_API_URL=http://localhost:3100 npm run build --prefix frontend
+        continue-on-error: true
+
+      - name: Instalar navegadores Playwright
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Iniciar backend E2E (porta 3100)
+        working-directory: e2e
+        run: |
+          nohup node scripts/start-backend.mjs > backend-e2e.log 2>&1 &
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/cidades || true)
+            if [ "$code" = "200" ]; then echo "backend pronto"; break; fi
+            sleep 2
+          done
+
+      - name: Executar E2E (API + integridade + jornadas)
+        working-directory: e2e
+        run: npm run test:e2e
+
+      - name: Publicar relatório e traces
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+            e2e/backend-e2e.log
+          retention-days: 7

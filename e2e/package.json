@@ -1,0 +1,26 @@
+{
+  "name": "unieduca-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Suíte de validação sistêmica e testes E2E da aplicação UniEduca (spec SPEC_VALIDACAO_SISTEMA_E2E.md).",
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:api": "playwright test api integrity",
+    "test:e2e:ui": "playwright test ui journeys",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
+    "env:up": "docker compose -f ../docker-compose.e2e.yml up -d",
+    "env:down": "docker compose -f ../docker-compose.e2e.yml down -v",
+    "env:db": "node scripts/setup-db.mjs",
+    "backend:e2e": "node scripts/start-backend.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.5",
+    "dotenv": "^16.4.7",
+    "knex": "^3.1.0",
+    "pg": "^8.13.1",
+    "uuid": "^11.0.5"
+  }
+}
