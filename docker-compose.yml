@@ -47,7 +47,7 @@ services:
       SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
       SMTP_FROM_NAME: "${SMTP_FROM_NAME:-UniEduca}"
       SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL:-}"
-      FRONTEND_URL: "${FRONTEND_URL:-http://localhost:8080}"
+      FRONTEND_URL: "${FRONTEND_URL:?FRONTEND_URL deve ser definida no arquivo .env}"
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
