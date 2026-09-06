@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { UsuarioRepository } from '../repository/usuario-repository';
 import jwt from 'jsonwebtoken';
 import { obterJwtSecret } from '../../../config/jwt';
+import { validarSenha } from './senha-policy';
 
 class AutenticacaoService {
   private usuarioRepository = new UsuarioRepository();
@@ -12,6 +13,8 @@ class AutenticacaoService {
     if (!nome || !email || !senha || !tipo_usuario) {
       throw new Error('Preencha todos os campos obrigatórios.');
     }
+
+    validarSenha(senha);
 
     const tipoUsuarioFormatado = tipo_usuario.toLowerCase();
 
@@ -190,7 +193,8 @@ class AutenticacaoService {
     if (tipo_usuario !== undefined) {
       dadosParaAtualizar.tipo_usuario = tipo_usuario.toLowerCase();
     }
-    if (senha && senha.trim() !== '') {
+    if (senha !== undefined && senha !== '') {
+      validarSenha(senha);
       dadosParaAtualizar.senha = await bcrypt.hash(senha, 10);
     }
 

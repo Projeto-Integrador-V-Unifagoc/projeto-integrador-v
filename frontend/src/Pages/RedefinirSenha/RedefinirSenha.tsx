@@ -17,6 +17,10 @@ import {
 import Container from '../../components/Container';
 import FavIcon from '../../../public/assets/favIcon.svg';
 import { authService } from '../../services/auth-services';
+import {
+  MENSAGEM_REQUISITOS_SENHA,
+  obterErroSenha,
+} from '../../utils/senha';
 
 export default function RedefinirSenha() {
   const [searchParams] = useSearchParams();
@@ -45,10 +49,9 @@ export default function RedefinirSenha() {
       return;
     }
 
-    if (novaSenha.length < 8) {
-      setErro(
-        'A nova senha deve possuir pelo menos 8 caracteres.'
-      );
+    const erroSenha = obterErroSenha(novaSenha);
+    if (erroSenha) {
+      setErro(erroSenha);
       return;
     }
 
@@ -189,7 +192,8 @@ export default function RedefinirSenha() {
                 required
                 fullWidth
                 disabled={enviando || !token}
-                helperText="A senha deve possuir pelo menos 8 caracteres."
+                error={novaSenha.length > 0 && obterErroSenha(novaSenha) !== null}
+                helperText={MENSAGEM_REQUISITOS_SENHA}
               />
 
               <TextField

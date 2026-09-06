@@ -5,6 +5,7 @@ import { db } from '../../../database/connection';
 import { UsuarioRepository } from '../repository/usuario-repository';
 import { RecuperacaoSenhaRepository } from '../repository/recuperacao-senha-repository';
 import EmailService from './email-service';
+import { validarSenha } from './senha-policy';
 
 const TEMPO_EXPIRACAO_MINUTOS = 30;
 
@@ -71,15 +72,7 @@ class RecuperacaoSenhaService {
       );
     }
 
-    if (!novaSenha) {
-      throw new Error('A nova senha é obrigatória.');
-    }
-
-    if (novaSenha.length < 8) {
-      throw new Error(
-        'A nova senha deve possuir pelo menos 8 caracteres.'
-      );
-    }
+    validarSenha(novaSenha);
 
     const tokenHash = this.gerarHashToken(token);
 
