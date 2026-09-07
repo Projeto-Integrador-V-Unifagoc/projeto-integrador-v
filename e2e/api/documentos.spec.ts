@@ -62,10 +62,22 @@ test.describe("Documentos @api", () => {
       multipart: {
         aluno_id: aluno.id,
         tipo_documento: "RG",
-        arquivo: { name: "malicioso.pdf", mimeType: "text/plain", buffer: Buffer.from("not a pdf") },
-      },
+          arquivo: {
+            name: "rg.pdf",
+            mimeType: "application/pdf",
+            buffer: PDF,
+          },
+    },
     });
-    expect(upload.status).not.toBe(201);
+
+    expect(upload.status, JSON.stringify(upload.body)).toBe(201);
+    expect(upload.body.id).toBeTruthy();
+
+    const download = await apiSecretaria.get(
+      `/documentos/${upload.body.id}/arquivo`
+    );
+
+    expect(download.status, JSON.stringify(download.body)).toBe(200);
   });
 
   test("arquivo acima de 10MB é rejeitado", async ({ apiSecretaria, runId }) => {
