@@ -30,6 +30,10 @@ import usuarioApi from "../../services/usuario-api";
 import { Perfil } from "../../enums/perfil";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
+import {
+  MENSAGEM_REQUISITOS_SENHA,
+  obterErroSenha,
+} from "../../utils/senha";
 
 export default function Usuarios() {
   const [open, setOpen] = useState(false);
@@ -230,6 +234,14 @@ export default function Usuarios() {
     if (!isEditing && !usuarioForm.senha) {
       notificar('Defina uma senha ou clique em "Gerar senha".', "warning");
       return;
+    }
+
+    if (usuarioForm.senha) {
+      const erroSenha = obterErroSenha(usuarioForm.senha);
+      if (erroSenha) {
+        notificar(erroSenha, "warning");
+        return;
+      }
     }
 
     try {
@@ -521,10 +533,16 @@ export default function Usuarios() {
                 type={mostrarSenha ? "text" : "password"}
                 autoComplete="new-password"
                 fullWidth
+                error={
+                  usuarioForm.senha.length > 0 &&
+                  obterErroSenha(usuarioForm.senha) !== null
+                }
                 helperText={
-                  isEditing
-                    ? "Deixe em branco para não alterar"
-                    : 'Defina uma senha ou clique em "Gerar senha".'
+                  usuarioForm.senha
+                    ? MENSAGEM_REQUISITOS_SENHA
+                    : isEditing
+                      ? "Deixe em branco para não alterar"
+                      : 'Defina uma senha ou clique em "Gerar senha".'
                 }
                 value={usuarioForm.senha}
                 onChange={(e) =>

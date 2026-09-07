@@ -38,6 +38,16 @@ services:
       DATABASE_NAME: ${DATABASE_NAME:?DATABASE_NAME deve ser definido no arquivo .env}
       NODE_ENV: ${NODE_ENV:-production}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET deve ser definido no arquivo .env}
+
+      EMAIL_MODO_TESTE: "${EMAIL_MODO_TESTE:-false}"
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_SECURE: "${SMTP_SECURE:-false}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_FROM_NAME: "${SMTP_FROM_NAME:-UniEduca}"
+      SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL:-}"
+      FRONTEND_URL: "${FRONTEND_URL:?FRONTEND_URL deve ser definida no arquivo .env}"
     ports:
       - "127.0.0.1:3000:3000"
     volumes:

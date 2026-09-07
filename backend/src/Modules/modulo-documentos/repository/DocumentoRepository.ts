@@ -134,4 +134,9 @@ export class DocumentoRepository {
             tem_matricula: Boolean(linha.tem_matricula),
         }));
     }
+
+    async buscarAlunoPorUsuarioId(usuarioId: string): Promise<{ id: string } | null> {
+        const aluno = await db("aluno").where({ usuario_id: usuarioId }).first();
+        return aluno ?? null;
+    }
 }

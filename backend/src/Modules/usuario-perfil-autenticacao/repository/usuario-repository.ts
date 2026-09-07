@@ -1,5 +1,5 @@
+import type { Knex } from 'knex';
 import { db } from '../../../database/connection';
-import knex from 'knex';
 
 export interface Usuario {
   id?: number;
@@ -162,10 +162,15 @@ export class UsuarioRepository {
   }
 
   // Atualiza os dados básicos do usuário (nome, email, senha, tipo_usuario).
-  async update(id: string, dados: Partial<Usuario>) {
-    return await db('piv.usuario')
-      .where({ id })
-      .update(dados);
+  async update(
+    id: string,
+    dados: Partial<Usuario>,
+    transacao?: Knex.Transaction
+  ) { 
+    const conexao = transacao ?? db;
+        return await conexao('piv.usuario')
+        .where({ id })
+        .update(dados);
   }
 
   async findAll(): Promise<any[]> {
