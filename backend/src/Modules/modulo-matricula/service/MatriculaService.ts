@@ -10,6 +10,15 @@ import {
 import { MatriculaError } from "../errors/MatriculaError";
 
 const PG_UNIQUE_VIOLATION = "23505";
+const FORMATO_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function exigirUuid(valor: string, campo: string): string {
+    if (!valor) throw MatriculaError.dadosInvalidos(`${campo} é obrigatório.`);
+    if (!FORMATO_UUID.test(String(valor).trim())) {
+        throw MatriculaError.dadosInvalidos(`${campo} inválido: informe um identificador no formato UUID.`);
+    }
+    return String(valor).trim();
+}
 
 export interface ResultadoMatricula {
     id: string;
@@ -28,12 +37,12 @@ export class MatriculaService {
     constructor(private readonly repository: MatriculaRepository = new MatriculaRepository()) {}
 
     async listarTurmasDisponiveis(cursoId: string): Promise<TurmaDisponivel[]> {
-        if (!cursoId) throw MatriculaError.dadosInvalidos("cursoId é obrigatório.");
+        exigirUuid(cursoId, "cursoId");
         return this.repository.listarTurmasDisponiveis(cursoId);
     }
 
     async listarDisciplinasDaTurma(turmaId: string): Promise<DisciplinaDaTurma[]> {
-        if (!turmaId) throw MatriculaError.dadosInvalidos("turmaId é obrigatório.");
+        exigirUuid(turmaId, "turmaId");
 
         const turma = await this.repository.buscarTurma(turmaId);
         if (!turma) throw MatriculaError.naoEncontrado(`Turma ${turmaId} não encontrada.`);
@@ -46,9 +55,8 @@ export class MatriculaService {
         turmaId: string,
         turmaDisciplinaIds?: string[]
     ): Promise<ResultadoMatricula> {
-        if (!alunoId || !turmaId) {
-            throw MatriculaError.dadosInvalidos("alunoId e turmaId são obrigatórios.");
-        }
+        exigirUuid(alunoId, "alunoId");
+        exigirUuid(turmaId, "turmaId");
 
         try {
             return await this.repository.transacao(async (trx) => {
@@ -130,11 +138,12 @@ export class MatriculaService {
     }
 
     async listarPorAluno(alunoId: string): Promise<MatriculaDetalhada[]> {
-        if (!alunoId) throw MatriculaError.dadosInvalidos("alunoId é obrigatório.");
+        exigirUuid(alunoId, "alunoId");
         return this.repository.listarPorAluno(alunoId);
     }
 
     async listarVinculos(matriculaId: string): Promise<VinculoDetalhado[]> {
+        exigirUuid(matriculaId, "matriculaId");
         const matricula = await this.repository.buscarPorId(matriculaId);
         if (!matricula) throw MatriculaError.naoEncontrado(`Matrícula ${matriculaId} não encontrada.`);
         return this.repository.listarVinculos(matriculaId);
@@ -152,6 +161,7 @@ export class MatriculaService {
     }
 
     async cancelar(id: string) {
+        exigirUuid(id, "id");
         const matricula = await this.repository.buscarPorId(id);
         if (!matricula) throw MatriculaError.naoEncontrado(`Matrícula ${id} não encontrada.`);
         if (String(matricula.status).toLowerCase() === "cancelada") {
@@ -180,6 +190,7 @@ export class MatriculaService {
     }
 
     async aprovar(id: string) {
+        exigirUuid(id, "id");
         const matricula = await this.repository.buscarPorId(id);
         if (!matricula) throw MatriculaError.naoEncontrado(`Matrícula ${id} não encontrada.`);
 
@@ -202,6 +213,7 @@ export class MatriculaService {
     }
 
     async atualizarStatus(id: string, status: string) {
+        exigirUuid(id, "id");
         const normalizado = String(status).toLowerCase();
         if (!STATUS_MATRICULA.includes(normalizado as any)) {
             throw MatriculaError.dadosInvalidos(`Status inválido. Use: ${STATUS_MATRICULA.join(", ")}.`);
@@ -222,9 +234,11 @@ export class MatriculaService {
     }
 
     async adicionarDisciplinas(matriculaId: string, turmaDisciplinaIds: string[]) {
+        exigirUuid(matriculaId, "matriculaId");
         if (!Array.isArray(turmaDisciplinaIds) || turmaDisciplinaIds.length === 0) {
             throw MatriculaError.dadosInvalidos("Informe ao menos uma disciplina.");
         }
+        turmaDisciplinaIds.forEach((id) => exigirUuid(id, "turmaDisciplinaId"));
 
         const matricula = await this.repository.buscarPorId(matriculaId);
         if (!matricula) throw MatriculaError.naoEncontrado(`Matrícula ${matriculaId} não encontrada.`);
@@ -245,6 +259,8 @@ export class MatriculaService {
     }
 
     async cancelarVinculo(matriculaId: string, vinculoId: string) {
+        exigirUuid(matriculaId, "matriculaId");
+        exigirUuid(vinculoId, "vinculoId");
         const vinculo = await this.repository.buscarVinculo(vinculoId);
         if (!vinculo) throw MatriculaError.naoEncontrado(`Vínculo ${vinculoId} não encontrado.`);
         if (vinculo.matricula_id !== matriculaId) {

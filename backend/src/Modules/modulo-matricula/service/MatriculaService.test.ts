@@ -61,6 +61,23 @@ describe("MatriculaService", () => {
         await assert.rejects(criarService().criarMatricula(alunoId, ""), (e) => statusDoErro(e) === 400);
     });
 
+    it("rejeita identificador fora do formato UUID com 400, sem consultar o banco", async () => {
+        let consultou = false;
+        const marcar = async () => {
+            consultou = true;
+            return null;
+        };
+        const service = criarService({ buscarAluno: marcar, buscarPorId: marcar });
+
+        await assert.rejects(service.criarMatricula("x", turmaId), (e) => statusDoErro(e) === 400);
+        await assert.rejects(service.criarMatricula(alunoId, "y"), (e) => statusDoErro(e) === 400);
+        await assert.rejects(service.listarPorAluno("x"), (e) => statusDoErro(e) === 400);
+        await assert.rejects(service.aprovar("x"), (e) => statusDoErro(e) === 400);
+        await assert.rejects(service.cancelar("x"), (e) => statusDoErro(e) === 400);
+
+        assert.equal(consultou, false);
+    });
+
     it("rejeita turma inexistente e aluno inexistente com 404", async () => {
         await assert.rejects(
             criarService({ buscarAluno: async () => null }).criarMatricula(alunoId, turmaId),
