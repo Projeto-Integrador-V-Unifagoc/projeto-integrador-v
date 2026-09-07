@@ -16,9 +16,8 @@ import {
   GraduationCap,
   Info,
   Layers,
+  Menu,
   NotebookPen,
-  PanelLeftClose,
-  PanelLeftOpen,
   Users,
   UserStar,
 } from "lucide-react";
@@ -184,7 +183,7 @@ export default function Sidebar({ expandido, onAlternar }: SidebarProps) {
                   justifyContent: "center",
                 }}
               >
-                {expandido ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+                <Menu size={17} />
               </ListItemIcon>
 
               <ListItemText
