@@ -50,24 +50,15 @@ test.describe("Documentos @api", () => {
     );
     const aluno = await alunoBase(apiSecretaria, runId);
     const upload = await apiSecretaria.post("/documentos", {
-      multipart: { aluno_id: aluno.id, tipo_documento: "RG", arquivo: { name: "rg.pdf", mimeType: "application/pdf", buffer: PDF } },
-    });
-    const download = await apiSecretaria.get(`/documentos/${upload.body.id}/arquivo`);
-    expect(download.status).toBe(200);
-  });
-
-  test("extensão enganosa com MIME inválido é rejeitada", async ({ apiSecretaria, runId }) => {
-    const aluno = await alunoBase(apiSecretaria, runId);
-    const upload = await apiSecretaria.post("/documentos", {
       multipart: {
         aluno_id: aluno.id,
         tipo_documento: "RG",
-          arquivo: {
-            name: "rg.pdf",
-            mimeType: "application/pdf",
-            buffer: PDF,
-          },
-    },
+        arquivo: {
+          name: "rg.pdf",
+          mimeType: "application/pdf",
+          buffer: PDF,
+        },
+      },
     });
 
     expect(upload.status, JSON.stringify(upload.body)).toBe(201);
@@ -78,6 +69,24 @@ test.describe("Documentos @api", () => {
     );
 
     expect(download.status, JSON.stringify(download.body)).toBe(200);
+  });
+
+  test("extensão enganosa com MIME inválido é rejeitada", async ({ apiSecretaria, runId }) => {
+    const aluno = await alunoBase(apiSecretaria, runId);
+
+    const upload = await apiSecretaria.post("/documentos", {
+      multipart: {
+        aluno_id: aluno.id,
+        tipo_documento: "RG",
+        arquivo: {
+          name: "rg.pdf",
+          mimeType: "text/plain",
+          buffer: Buffer.from("arquivo inválido"),
+        },
+      },
+    });
+
+    expect(upload.status).not.toBe(201);
   });
 
   test("arquivo acima de 10MB é rejeitado", async ({ apiSecretaria, runId }) => {
