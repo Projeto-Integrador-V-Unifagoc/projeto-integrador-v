@@ -1,6 +1,5 @@
 import {
-  Box,
-  IconButton,
+  Divider,
   List,
   ListItemButton,
   ListItemIcon,
@@ -165,39 +164,45 @@ export default function Sidebar({ expandido, onAlternar }: SidebarProps) {
   ];
 
   return (
-    <>
+    <List component="nav">
       {onAlternar && (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: expandido ? "flex-end" : "center",
-            px: expandido ? 1.5 : 0,
-            pb: 0.5,
-          }}
-        >
-          <Tooltip title={expandido ? "Recolher menu" : "Expandir menu"} placement="right">
-            <IconButton
-              size="small"
+        <>
+          <Tooltip
+            title={expandido ? "" : "Expandir menu"}
+            placement="right"
+            disableHoverListener={expandido}
+          >
+            <ListItemButton
               onClick={onAlternar}
               aria-label={expandido ? "Recolher menu" : "Expandir menu"}
-              sx={(t) => ({
-                border: `1px solid ${t.palette.grey[300]}`,
-                borderRadius: 1.5,
-                color: t.palette.text.secondary,
-                "&:hover": {
-                  borderColor: t.palette.primary.main,
-                  color: t.palette.primary.main,
-                },
-              })}
+              sx={{ justifyContent: expandido ? "initial" : "center" }}
             >
-              {expandido ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-            </IconButton>
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: expandido ? 2 : "auto",
+                  justifyContent: "center",
+                }}
+              >
+                {expandido ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+              </ListItemIcon>
+
+              <ListItemText
+                primary="Recolher menu"
+                sx={{
+                  opacity: expandido ? 1 : 0,
+                  transition: "opacity 0.2s",
+                }}
+                primaryTypographyProps={{ fontSize: 14, noWrap: true }}
+              />
+            </ListItemButton>
           </Tooltip>
-        </Box>
+
+          <Divider sx={{ my: 0.5 }} />
+        </>
       )}
 
-      <List component="nav">
-        {itens
+      {itens
           .filter((item) => item.podeVer)
           .map(({ label, href, icon: Icon }) => (
             <Tooltip
@@ -231,7 +236,6 @@ export default function Sidebar({ expandido, onAlternar }: SidebarProps) {
               </ListItemButton>
             </Tooltip>
           ))}
-      </List>
-    </>
+    </List>
   );
 }

@@ -160,6 +160,25 @@ export class MatriculaService {
         return (await this.repository.cancelarComVinculos(id))!;
     }
 
+    async matricularAutomaticamente(alunoId: string) {
+        if (!alunoId) return null;
+
+        const emAberto = await this.repository.buscarMatriculaAtivaDoAluno(alunoId);
+        if (emAberto) return null;
+
+        const aluno = await this.repository.buscarAluno(alunoId);
+        if (!aluno?.curso_id) return null;
+
+        const turmas = await this.repository.listarTurmasDisponiveis(aluno.curso_id);
+        const doPeriodo = turmas.filter(
+            (turma) => String(turma.periodo_curricular) === String(aluno.periodo)
+        );
+
+        if (doPeriodo.length !== 1) return null;
+
+        return this.criarMatricula(alunoId, doPeriodo[0].id);
+    }
+
     async aprovar(id: string) {
         const matricula = await this.repository.buscarPorId(id);
         if (!matricula) throw MatriculaError.naoEncontrado(`Matrícula ${id} não encontrada.`);

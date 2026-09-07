@@ -109,6 +109,20 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
     const enviar = (tipo: string, arquivo: File) =>
         executar(tipo, () => documentoApi.enviar(alunoId as string, tipo, arquivo));
 
+    async function visualizar(id: string) {
+        const janela = window.open("", "_blank");
+        setErro("");
+        try {
+            const url = await documentoApi.abrirArquivo(id);
+            if (janela) janela.location.href = url;
+            else window.open(url, "_blank", "noopener,noreferrer");
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (err) {
+            janela?.close();
+            setErro(mensagemErro(err, "Não foi possível abrir o arquivo."));
+        }
+    }
+
     const enviados = documentos.length;
     const pendentes = documentos.filter((d) => String(d.status).toUpperCase() === "PENDENTE").length;
     const reprovados = documentos.filter((d) => String(d.status).toUpperCase() === "REPROVADO").length;
@@ -216,13 +230,7 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
                                                                     <IconButton
                                                                         color="primary"
                                                                         disabled={!doc}
-                                                                        onClick={() =>
-                                                                            doc && window.open(
-                                                                                documentoApi.urlArquivo(doc.id),
-                                                                                "_blank",
-                                                                                "noopener,noreferrer",
-                                                                            )
-                                                                        }
+                                                                        onClick={() => doc && void visualizar(doc.id)}
                                                                     >
                                                                         <Eye size={17} />
                                                                     </IconButton>

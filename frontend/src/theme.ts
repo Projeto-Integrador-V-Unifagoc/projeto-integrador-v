@@ -23,7 +23,10 @@ export const theme = createTheme({
             main: "#008000"
         },
         warning: {
-            main: "#080808"
+            main: "#C77700",
+            light: "#FFB74D",
+            dark: "#8A5200",
+            contrastText: "#FFFFFF"
         },
         grey: {
             50: "#f5f5f5f8",
@@ -61,6 +64,10 @@ export const theme = createTheme({
                     height: 36,
                     color: "#080808",
 
+                    "&.MuiInputBase-multiline": {
+                        height: "auto",
+                    },
+
                     "& .MuiOutlinedInput-notchedOutline": {
                         borderColor: "#B2AFB6",
                     },
@@ -79,7 +86,7 @@ export const theme = createTheme({
 
                     "&::placeholder": {
                         fontSize: 13,
-                        opaciy: 0.6,
+                        opacity: 0.6,
                     }
                 }
             },

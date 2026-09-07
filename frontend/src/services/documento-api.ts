@@ -53,7 +53,8 @@ export const documentoApi = {
     return response.data;
   },
 
-  urlArquivo(id: string): string {
-    return `${api.defaults.baseURL}/documentos/${id}/arquivo`;
+  async abrirArquivo(id: string): Promise<string> {
+    const response = await api.get(`/documentos/${id}/arquivo`, { responseType: "blob" });
+    return URL.createObjectURL(response.data as Blob);
   },
 };
