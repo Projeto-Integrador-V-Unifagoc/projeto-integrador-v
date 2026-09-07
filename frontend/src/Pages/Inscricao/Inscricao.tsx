@@ -83,11 +83,17 @@ interface DocumentoUpload {
     arquivo: File;
 }
 
+const PADRAO_ERRO_TECNICO = /insert into|select |update |delete from|constraint|restrição de unicidade|violates|duplicar valor|relation |column /i;
+
 function getMensagemErro(err: unknown, fallback: string): string {
-    const axiosErr = err as { response?: { data?: { error?: string } } };
-    if (axiosErr?.response?.data?.error) return axiosErr.response.data.error;
-    if (err instanceof Error) return err.message;
-    return fallback;
+    const axiosErr = err as { response?: { data?: { error?: string; mensagem?: string } } };
+    const bruta =
+        axiosErr?.response?.data?.error ??
+        axiosErr?.response?.data?.mensagem ??
+        (err instanceof Error ? err.message : "");
+
+    if (!bruta || PADRAO_ERRO_TECNICO.test(bruta)) return fallback;
+    return bruta;
 }
 
 function formatCpf(value: string): string {
@@ -119,6 +125,7 @@ export default function Inscricao() {
     const [carregandoMatriz, setCarregandoMatriz] = useState(false);
     const [documentos, setDocumentos] = useState<DocumentoUpload[]>([]);
     const [enviando, setEnviando] = useState(false);
+    const [verificandoCpf, setVerificandoCpf] = useState(false);
     const [erros, setErros] = useState<Record<string, string>>({});
     const [snackbar, setSnackbar] = useState<{ aberto: boolean; mensagem: string; severidade: "success" | "error" }>({
         aberto: false, mensagem: "", severidade: "success",
@@ -180,9 +187,29 @@ export default function Inscricao() {
         return e;
     }
 
-    function avancar() {
+    async function cpfJaCadastrado(cpf: string): Promise<boolean> {
+        try {
+            const { data } = await api.get("/alunos/buscar", { params: { q: cpf.replace(/\D/g, "") } });
+            return Array.isArray(data) && data.length > 0;
+        } catch {
+            return false;
+        }
+    }
+
+    async function avancar() {
         const e = validarStep(activeStep);
         if (Object.keys(e).length > 0) { setErros(e); return; }
+
+        if (activeStep === 0) {
+            setVerificandoCpf(true);
+            const existe = await cpfJaCadastrado(dados.cpf);
+            setVerificandoCpf(false);
+            if (existe) {
+                setErros({ cpf: "Já existe uma matrícula ativa ou pendente para este CPF." });
+                return;
+            }
+        }
+
         setErros({});
         setActiveStep((s) => s + 1);
     }
@@ -255,7 +282,17 @@ export default function Inscricao() {
             setMatriculaGerada(alunoCreated.matricula ? String(alunoCreated.matricula) : null);
             setActiveStep(5);
         } catch (err) {
-            setSnackbar({ aberto: true, mensagem: getMensagemErro(err, "Erro ao realizar inscrição."), severidade: "error" });
+            const mensagem = getMensagemErro(
+                err,
+                "Não foi possível concluir a inscrição. Confira os dados e tente novamente.",
+            );
+
+            if (/cpf/i.test(mensagem)) {
+                setErros({ cpf: mensagem });
+                setActiveStep(0);
+            }
+
+            setSnackbar({ aberto: true, mensagem, severidade: "error" });
         } finally {
             setEnviando(false);
         }
@@ -760,7 +797,12 @@ export default function Inscricao() {
                                 <Box />
                             )}
                             {activeStep < 4 && (
-                                <Button variant="contained" sx={{ width: "auto", minWidth: 140 }} onClick={avancar}>
+                                <Button
+                                    variant="contained"
+                                    sx={{ width: "auto", minWidth: 140 }}
+                                    isLoading={verificandoCpf}
+                                    onClick={() => void avancar()}
+                                >
                                     Próximo →
                                 </Button>
                             )}

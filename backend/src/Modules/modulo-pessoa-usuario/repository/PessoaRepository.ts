@@ -8,6 +8,12 @@ export class PessoaRepository {
     return novaPessoa;
 }
 
+    async buscarPessoaPorCpf(cpf: string, transaction?: any) {
+        const query = transaction || db;
+        const pessoa = await query("pessoa").where({ cpf }).first();
+        return pessoa ?? null;
+    }
+
     async listarPessoas() {
         const rows = await db("pessoa")
             .join("cidade", "pessoa.cidade_id", "=", "cidade.ibge")
