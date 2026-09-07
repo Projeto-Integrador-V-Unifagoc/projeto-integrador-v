@@ -58,7 +58,7 @@ export class DocumentoController {
             if (!fs.existsSync(caminho)) {
                 return res.status(404).json({ error: "Arquivo não encontrado." });
             }
-            res.sendFile(caminho);
+            res.sendFile(caminho, { dotfiles: "allow" });
         } catch (err: any) {
             const status = err.message.includes("não encontrado") ? 404 : 500;
             res.status(status).json({ error: err.message });
