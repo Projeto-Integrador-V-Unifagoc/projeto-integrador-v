@@ -55,6 +55,7 @@ export async function fecharDb(): Promise<void> {
 // irrelevante porque desativamos as checagens de FK na transação de limpeza,
 // mas a lista documenta o grafo de dependências (spec §7.1).
 export const TABELAS_DADOS = [
+  "recuperacao_senha",
   "matricula_documento",
   "documento",
   "nota_auditoria",

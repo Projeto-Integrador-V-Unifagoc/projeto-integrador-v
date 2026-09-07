@@ -1,6 +1,12 @@
 import api from './conexao-api';
 import type { Usuario } from '../models/usuario';
 
+interface DadosRedefinicaoSenha {
+  token: string;
+  novaSenha: string;
+  confirmarSenha: string;
+}
+
 export const authService = {
   async cadastrar(dados: Usuario) {
     const response = await api.post('/cadastro', dados); 
@@ -19,5 +25,22 @@ export const authService = {
       }
     });
     return response.data;
-  }
+  },
+
+  async solicitarRecuperacaoSenha(email: string) {
+    const response = await api.post('/recuperacao-senha', {
+      email,
+    });
+
+    return response.data;
+  },
+
+  async redefinirSenha(dados: DadosRedefinicaoSenha) {
+    const response = await api.post(
+      '/redefinir-senha',
+      dados
+    );
+
+    return response.data;
+  },
 };

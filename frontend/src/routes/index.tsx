@@ -5,6 +5,8 @@ import EditFormCadastroAluno from "../Pages/Alunos/EditFormCadastroAluno";
 import Perfil from "../Pages/Perfil/Perfil";
 import Cadastro from "../Pages/Usuario/Usuario";
 import { Login } from "../Pages/Login/Login";
+import EsqueceuSenha from "../Pages/EsqueceuSenha/EsqueceuSenha";
+import RedefinirSenha from "../Pages/RedefinirSenha/RedefinirSenha"
 import { PrivateRoute } from "../components/PrivateRoute";
 import Relatorios from "../Pages/Relatorios/Relatorios";
 
@@ -99,16 +101,12 @@ function RouteByRole({
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/inscricao" element={<Inscricao />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/inscricao" element={<Inscricao />} />
+        <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
-      <Route
-        element={
-          <PrivateRoute>
-            <MainLayout />
-          </PrivateRoute>
-        }
-      >
+        <Route element={ <PrivateRoute><MainLayout /></PrivateRoute> }>
         <Route path="/manual-do-sistema" element={<ManualDoSistema />} />
         <Route path="/manual-do-sistema/usuarios-e-autenticacao" element={<ManualUsuarioAutenticacao />} />
         <Route path="/manual-do-sistema/alunos" element={<ManualAlunos />} />

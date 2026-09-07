@@ -1,13 +1,25 @@
 import { Router } from 'express';
 import AutenticacaoController from '../controller/autenticacao-controller';
+import RecuperacaoSenhaController from '../controller/recuperacao-senha-controller';
 import { autenticar } from '../../../middlewares/autenticacao';
 import { soSecretaria } from '../../../middlewares/autorizacao';
+
 
 const router = Router();
 
 // LOGIN
 router.post('/login', (req, res) => {
   return AutenticacaoController.login(req, res);
+});
+
+// SOLICITAR RECUPERAÇÃO DE SENHA
+router.post('/recuperacao-senha', (req, res) => {
+  return RecuperacaoSenhaController.solicitar(req, res);
+});
+
+// REDEFINIR SENHA USANDO O TOKEN
+router.post('/redefinir-senha', (req, res) => {
+  return RecuperacaoSenhaController.redefinir(req, res);
 });
 
 // CADASTRO - SOMENTE SECRETARIA
