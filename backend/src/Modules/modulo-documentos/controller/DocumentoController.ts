@@ -1,20 +1,19 @@
 import fs from "fs";
 import path from "path";
 import { DocumentoService } from "../service/DocumentoService";
-
+import { DocumentoAuthContext, ErroAutorizacaoDocumento } from "../service/DocumentoAuthContext";
 const service = new DocumentoService();
-
+const authContext = new DocumentoAuthContext();
 export class DocumentoController {
-
     async upload(req: any, res: any) {
         try {
+            const contexto = await authContext.obterContexto(req);
             const arquivo = req.file;
-            const { aluno_id, tipo_documento } = req.body;
-
+            const { tipo_documento } = req.body;
+            const aluno_id = contexto.perfil === "aluno" ? contexto.alunoId : req.body.aluno_id;
             if (!arquivo) return res.status(400).json({ error: "Arquivo é obrigatório." });
             if (!aluno_id) return res.status(400).json({ error: "aluno_id é obrigatório." });
             if (!tipo_documento) return res.status(400).json({ error: "tipo_documento é obrigatório." });
-
             const doc = await service.criar({
                 aluno_id,
                 tipo_documento,
@@ -23,10 +22,12 @@ export class DocumentoController {
             });
             res.status(201).json(doc);
         } catch (err: any) {
+            if (err instanceof ErroAutorizacaoDocumento) {
+                return res.status(err.status).json({ error: err.message });
+            }
             res.status(400).json({ error: err.message });
         }
     }
-
     async listarTodos(_req: any, res: any) {
         try {
             res.status(200).json(await service.listarTodos());
@@ -34,29 +35,40 @@ export class DocumentoController {
             res.status(500).json({ error: err.message });
         }
     }
-
     async listarPorAluno(req: any, res: any) {
         try {
+            const contexto = await authContext.obterContexto(req);
+            if (contexto.perfil === "aluno" && contexto.alunoId !== req.params.alunoId) {
+                return res.status(403).json({ error: "Acesso negado. Você só pode consultar seus próprios documentos." });
+            }
             res.status(200).json(await service.listarPorAluno(req.params.alunoId));
         } catch (err: any) {
+            if (err instanceof ErroAutorizacaoDocumento) {
+                return res.status(err.status).json({ error: err.message });
+            }
             res.status(500).json({ error: err.message });
         }
     }
-
     async arquivo(req: any, res: any) {
         try {
+            const contexto = await authContext.obterContexto(req);
             const doc = await service.buscarPorId(req.params.id);
+            if (contexto.perfil === "aluno" && contexto.alunoId !== doc.aluno_id) {
+                return res.status(403).json({ error: "Acesso negado. Este documento não pertence a você." });
+            }
             const caminho = path.resolve(doc.caminho_arquivo);
             if (!fs.existsSync(caminho)) {
                 return res.status(404).json({ error: "Arquivo não encontrado." });
             }
             res.sendFile(caminho);
         } catch (err: any) {
+            if (err instanceof ErroAutorizacaoDocumento) {
+                return res.status(err.status).json({ error: err.message });
+            }
             const status = err.message.includes("não encontrado") ? 404 : 500;
             res.status(status).json({ error: err.message });
         }
     }
-
     async validar(req: any, res: any) {
         try {
             const { status, observacao } = req.body;
@@ -68,7 +80,6 @@ export class DocumentoController {
             res.status(status).json({ error: err.message });
         }
     }
-
     async deletar(req: any, res: any) {
         try {
             await service.deletar(req.params.id);

@@ -89,7 +89,11 @@ export class DocumentoRepository {
         return Number(result?.count ?? 0);
     }
 
-    async atualizarStatusMatriculaAluno(alunoId: string, status: string): Promise<void> {
+      async atualizarStatusMatriculaAluno(alunoId: string, status: string): Promise<void> {
         await db("matricula").where({ aluno_id: alunoId }).update({ status });
+    }
+    async buscarAlunoPorUsuarioId(usuarioId: string): Promise<{ id: string } | null> {
+        const aluno = await db("aluno").where({ usuario_id: usuarioId }).first();
+        return aluno ?? null;
     }
 }
