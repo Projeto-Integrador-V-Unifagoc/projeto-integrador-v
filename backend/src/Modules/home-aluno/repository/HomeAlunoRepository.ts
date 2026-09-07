@@ -4,6 +4,7 @@ import db from "../../../database/index.js";
 type Executor = Knex | Knex.Transaction;
 
 const STATUS_ATIVO = ["ativa", "ATIVA", "ATIVO", "MATRICULADO", "REGULAR"];
+const STATUS_MATRICULA_EM_CURSO = [...STATUS_ATIVO, "pendente", "PENDENTE"];
 
 export class HomeAlunoRepository {
   buscarAlunoPorUsuarioId(usuarioId: string, executor: Executor = db) {
@@ -24,7 +25,7 @@ export class HomeAlunoRepository {
       .where("m.aluno_id", alunoId)
       .where("pl.ativo", true)
       .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
       .whereIn("td.status", STATUS_ATIVO)
       .select(
         "td.id as turma_disciplina_id",
@@ -53,7 +54,7 @@ export class HomeAlunoRepository {
       .where("m.aluno_id", alunoId)
       .where("pl.ativo", true)
       .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
       .whereIn("td.status", STATUS_ATIVO)
       .whereNotNull("a.data_devolucao")
       .whereRaw("a.data_devolucao >= CURRENT_DATE")

@@ -1,5 +1,6 @@
 import { NotaRepository } from "../../notas/repository/NotaRepository.js";
 import { MatriculaService } from "../../modulo-matricula/service/MatriculaService.js";
+import type { MatriculaDetalhada } from "../../modulo-matricula/repository/MatriculaRepository.js";
 import { AlunoService } from "../../modulo-gestao-alunos/service/AlunoService.js";
 import { FrequenciaService } from "../../frequencia/service/FrequenciaService.js";
 import { DocumentoService } from "../../modulo-documentos/service/DocumentoService.js";
@@ -24,9 +25,54 @@ export class FichaService {
   private frequenciaService = new FrequenciaService();
   private notaRepository = new NotaRepository();
 
+  private async expandirPorDisciplina(matriculas: MatriculaDetalhada[]) {
+    const porMatricula = await Promise.all(
+      matriculas.map(async (matricula) => {
+        const vinculos = await this.matriculaService
+          .listarVinculos(matricula.id)
+          .catch(() => []);
+
+        const base = {
+          ...matricula,
+          matricula_id: matricula.id,
+          periodo_codigo: matricula.periodo_letivo_codigo,
+          semestre: matricula.turma_sigla,
+        };
+
+        if (vinculos.length === 0) {
+          return [
+            {
+              ...base,
+              matricula_turma_disciplina_id: null as string | null,
+              turma_disciplina_id: null as string | null,
+              disciplina_id: null as string | null,
+              disciplina_nome: null as string | null,
+              professor_nome: null as string | null,
+              vinculo_status: null as string | null,
+            },
+          ];
+        }
+
+        return vinculos.map((vinculo) => ({
+          ...base,
+          matricula_turma_disciplina_id: vinculo.id as string | null,
+          turma_disciplina_id: vinculo.turma_disciplina_id as string | null,
+          disciplina_id: vinculo.disciplina_id as string | null,
+          disciplina_nome: vinculo.disciplina_nome as string | null,
+          professor_nome: vinculo.professor_nome as string | null,
+          vinculo_status: vinculo.status as string | null,
+        }));
+      }),
+    );
+
+    return porMatricula.flat();
+  }
+
   async montarFicha(alunoId: string) {
     const aluno = await this.alunoService.buscarAlunoPorId(alunoId);
-    const matriculas = await this.matriculaService.listarPorAluno(alunoId);
+    const matriculas = await this.expandirPorDisciplina(
+      await this.matriculaService.listarPorAluno(alunoId),
+    );
     const frequencia = await this.frequenciaService
       .consultarAlunoInterno(alunoId)
       .catch(() => undefined);

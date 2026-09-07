@@ -42,6 +42,7 @@ import Frequencia from "../Pages/Frequencia/Frequencia";
 import LancamentoNotas from "../Pages/Notas/LancamentoNotas";
 import MinhasNotas from "../Pages/Notas/MinhasNotas";
 import NovaMatricula from "../Pages/Matricula/NovaMatricula";
+import Matriculas from "../Pages/Matricula/Matriculas";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
 import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
@@ -378,6 +379,15 @@ export default function AppRoutes() {
           element={
             <RouteByRole perfisPermitidos={["aluno"]}>
               <Frequencia />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/matricula/lista"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
+              <Matriculas />
             </RouteByRole>
           }
         />

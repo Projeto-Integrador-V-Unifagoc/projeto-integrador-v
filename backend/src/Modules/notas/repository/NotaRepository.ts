@@ -4,6 +4,7 @@ import db from "../../../database/index.js";
 type Executor = Knex | Knex.Transaction;
 
 const STATUS_ATIVO = ["ativa", "ATIVA", "ATIVO", "MATRICULADO", "REGULAR"];
+const STATUS_MATRICULA_EM_CURSO = [...STATUS_ATIVO, "pendente", "PENDENTE"];
 const REGULARES = ["PROVA", "TPI", "TRABALHO"];
 
 export interface SalvarLoteArgs {
@@ -39,7 +40,7 @@ export class NotaRepository {
       .where("m.aluno_id", alunoId)
       .whereIn("td.status", STATUS_ATIVO)
       .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
       .first()
       .then(Boolean);
   }
@@ -161,7 +162,7 @@ export class NotaRepository {
       .join("piv.pessoa as p", "a.pessoa_id", "p.id")
       .where("mtd.turma_disciplina_id", turmaDisciplinaId)
       .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
       .select(
         "mtd.id as matricula_turma_disciplina_id",
         "mtd.status as status_matricula",
@@ -176,7 +177,7 @@ export class NotaRepository {
     const [{ total }] = await executor("piv.matricula_turma_disciplina as mtd")
       .join("piv.matricula as m", "mtd.matricula_id", "m.id")
       .where("mtd.turma_disciplina_id", turmaDisciplinaId)
-      .where((q) => q.whereNotIn("mtd.status", STATUS_ATIVO).orWhereNotIn("m.status", STATUS_ATIVO))
+      .where((q) => q.whereNotIn("mtd.status", STATUS_ATIVO).orWhereNotIn("m.status", STATUS_MATRICULA_EM_CURSO))
       .count("mtd.id as total");
     return Number(total || 0);
   }
@@ -206,7 +207,7 @@ export class NotaRepository {
       .join("piv.pessoa as p", "prof.pessoa_id", "p.id")
       .where("m.aluno_id", alunoId)
       .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
       .select(
         "mtd.id as matricula_turma_disciplina_id",
         "mtd.status as status_matricula",
@@ -232,7 +233,7 @@ export class NotaRepository {
       .join("piv.periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
       .where("m.aluno_id", alunoId)
       .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
       .distinct("pl.id as periodo_id", "pl.codigo as periodo_codigo", "pl.status as periodo_status")
       .orderBy("pl.codigo", "desc");
   }
@@ -247,7 +248,7 @@ export class NotaRepository {
       )
       .where("m.aluno_id", alunoId)
       .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
       .select(
         "mtd.id as matricula_turma_disciplina_id",
         "mtd.turma_disciplina_id",

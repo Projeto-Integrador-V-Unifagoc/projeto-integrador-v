@@ -30,6 +30,7 @@ export const documentoRouter = Router();
 
 documentoRouter.post("/documentos", upload.single("arquivo"), (req, res) => controller.upload(req, res));
 documentoRouter.get("/documentos", (req, res) => controller.listarTodos(req, res));
+documentoRouter.get("/documentos/inscritos", (req, res) => controller.listarInscritos(req, res));
 documentoRouter.get("/documentos/aluno/:alunoId", (req, res) => controller.listarPorAluno(req, res));
 documentoRouter.get("/documentos/:id/arquivo", (req, res) => controller.arquivo(req, res));
 documentoRouter.patch("/documentos/:id/validar", (req, res) => controller.validar(req, res));

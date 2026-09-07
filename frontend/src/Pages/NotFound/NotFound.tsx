@@ -1,6 +1,7 @@
 import { Box, Stack, Typography } from "@mui/material"
-import notFoundImage from "../../../public/assets/notfound.svg"
 import Container from "../../components/Container"
+
+const notFoundImage = "/assets/notfound.svg"
 
 export default function NotFound() {
   return (

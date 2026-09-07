@@ -21,7 +21,6 @@ import {
   type AbaFicha,
   type AlunoFicha,
 } from "../../components/FichaAluno";
-import type { MatriculaDetalhada } from "../../models/matricula-model";
 import type { PeriodoLetivoResponse } from "../../models/periodo-letivo-model";
 import { alunoApi } from "../../services/aluno-api";
 import type { DocumentoAluno } from "../../services/documento-api";
@@ -29,6 +28,7 @@ import {
   fichaApi,
   type AlunoFicha as AlunoFichaApi,
   type FrequenciaAluno as FrequenciaAlunoResponse,
+  type MatriculaDisciplinaFicha,
   type NotaFicha,
 } from "../../services/ficha-api";
 import { montarNotasFicha, normalizarSemestre } from "./notasFicha.utils";
@@ -92,7 +92,7 @@ function calcularIdade(data?: string | null) {
 
 function getCursoAluno(
   aluno: AlunoFichaApi,
-  matriculaAtiva?: MatriculaDetalhada,
+  matriculaAtiva?: MatriculaDisciplinaFicha,
 ) {
   if (typeof aluno.curso === "string" && aluno.curso) return aluno.curso;
   if (typeof aluno.curso === "object" && aluno.curso?.nome)
@@ -111,7 +111,7 @@ function getCampusPolo(aluno: AlunoFichaApi) {
   return VALOR_NAO_INFORMADO;
 }
 
-function getMatriculaAtiva(matriculas: MatriculaDetalhada[]) {
+function getMatriculaAtiva(matriculas: MatriculaDisciplinaFicha[]) {
   return (
     matriculas.find((matricula) =>
       ["MATRICULADO", "ATIVO", "ATIVA", "REGULAR"].includes(
@@ -123,7 +123,7 @@ function getMatriculaAtiva(matriculas: MatriculaDetalhada[]) {
 
 function getOpcoesSemestre(
   periodos: PeriodoLetivoResponse[],
-  matriculas: MatriculaDetalhada[],
+  matriculas: MatriculaDisciplinaFicha[],
   notas: NotaFicha[],
 ) {
   const opcoes = [
@@ -143,7 +143,7 @@ function getOpcoesSemestre(
 
 function montarAlunoFicha(
   aluno: AlunoFichaApi,
-  matriculaAtiva?: MatriculaDetalhada,
+  matriculaAtiva?: MatriculaDisciplinaFicha,
 ): AlunoFicha {
   return {
     nome:
@@ -170,7 +170,7 @@ export default function FichaAluno() {
   const [semestre, setSemestre] = useState("");
   const [abaAtual, setAbaAtual] = useState<AbaFicha>("notas");
   const [aluno, setAluno] = useState<AlunoFichaApi | null>(null);
-  const [matriculas, setMatriculas] = useState<MatriculaDetalhada[]>([]);
+  const [matriculas, setMatriculas] = useState<MatriculaDisciplinaFicha[]>([]);
   const [notas, setNotas] = useState<NotaFicha[]>([]);
   const [frequencia, setFrequencia] = useState<
     FrequenciaAlunoResponse | undefined

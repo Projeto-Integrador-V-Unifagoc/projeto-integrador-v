@@ -1,8 +1,11 @@
 import {
+  Box,
+  IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Tooltip,
 } from "@mui/material";
 import {
   CalendarCheck,
@@ -15,6 +18,8 @@ import {
   Info,
   Layers,
   NotebookPen,
+  PanelLeftClose,
+  PanelLeftOpen,
   Users,
   UserStar,
 } from "lucide-react";
@@ -22,6 +27,7 @@ import type { LucideIcon } from "lucide-react";
 
 interface SidebarProps {
   expandido: boolean;
+  onAlternar?: () => void;
 }
 
 interface MenuItem {
@@ -31,7 +37,7 @@ interface MenuItem {
   podeVer: boolean;
 }
 
-export default function Sidebar({ expandido }: SidebarProps) {
+export default function Sidebar({ expandido, onAlternar }: SidebarProps) {
   const tipoUsuario = (() => {
     const usuarioStorage = localStorage.getItem("@UniEduca:user");
     if (usuarioStorage) {
@@ -98,7 +104,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
     },
     {
       label: "Matrícula",
-      href: "/matricula/nova",
+      href: ehAdmin ? "/matricula/lista" : "/matricula/nova",
       icon: ClipboardCheck,
       podeVer: ehAdmin || ehAluno,
     },
@@ -159,35 +165,73 @@ export default function Sidebar({ expandido }: SidebarProps) {
   ];
 
   return (
-    <List component="nav">
-      {itens
-        .filter((item) => item.podeVer)
-        .map(({ label, href, icon: Icon }) => (
-          <ListItemButton
-            key={href}
-            href={href}
-            sx={{ justifyContent: expandido ? "initial" : "center" }}
-          >
-            <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: expandido ? 2 : "auto",
-                justifyContent: "center",
-              }}
+    <>
+      {onAlternar && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: expandido ? "flex-end" : "center",
+            px: expandido ? 1.5 : 0,
+            pb: 0.5,
+          }}
+        >
+          <Tooltip title={expandido ? "Recolher menu" : "Expandir menu"} placement="right">
+            <IconButton
+              size="small"
+              onClick={onAlternar}
+              aria-label={expandido ? "Recolher menu" : "Expandir menu"}
+              sx={(t) => ({
+                border: `1px solid ${t.palette.grey[300]}`,
+                borderRadius: 1.5,
+                color: t.palette.text.secondary,
+                "&:hover": {
+                  borderColor: t.palette.primary.main,
+                  color: t.palette.primary.main,
+                },
+              })}
             >
-              <Icon size={17} />
-            </ListItemIcon>
+              {expandido ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
 
-            <ListItemText
-              primary={label}
-              sx={{
-                opacity: expandido ? 1 : 0,
-                transition: "opacity 0.2s",
-              }}
-              primaryTypographyProps={{ fontSize: 14, noWrap: true }}
-            />
-          </ListItemButton>
-        ))}
-    </List>
+      <List component="nav">
+        {itens
+          .filter((item) => item.podeVer)
+          .map(({ label, href, icon: Icon }) => (
+            <Tooltip
+              key={href}
+              title={expandido ? "" : label}
+              placement="right"
+              disableHoverListener={expandido}
+            >
+              <ListItemButton
+                href={href}
+                sx={{ justifyContent: expandido ? "initial" : "center" }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: expandido ? 2 : "auto",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={17} />
+                </ListItemIcon>
+
+                <ListItemText
+                  primary={label}
+                  sx={{
+                    opacity: expandido ? 1 : 0,
+                    transition: "opacity 0.2s",
+                  }}
+                  primaryTypographyProps={{ fontSize: 14, noWrap: true }}
+                />
+              </ListItemButton>
+            </Tooltip>
+          ))}
+      </List>
+    </>
   );
 }
