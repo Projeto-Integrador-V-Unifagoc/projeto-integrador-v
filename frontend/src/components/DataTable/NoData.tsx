@@ -4,7 +4,7 @@ import {
     Typography 
 } from "@mui/material";
 
-import NoDataImage from '../../../public/assets/nodata.svg'
+const NoDataImage = '/assets/nodata.svg'
 
 
 interface NoDataProps {

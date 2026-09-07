@@ -7,5 +7,7 @@ node_modules/
 backend/build/
 backend/dist/
 frontend/dist/
+backend/uploads/*
+!backend/uploads/.gitkeep
 .DS_Store
 SPEC.md

@@ -31,14 +31,15 @@ import { cursoApi } from "../../services/curso-api";
 import { api } from "../../lib/axios";
 import TextField from "../../components/TextField";
 import Button from "../../components/Button";
+import { cpfValido } from "../../utils/cpf";
 
 const TIPOS_DOCUMENTO = [
     { tipo: "RG", label: "RG (Registro Geral)", obrigatorio: true },
-    { tipo: "CPF", label: "CPF (Cadastro de Pessoa Física)", obrigatorio: true },
+    { tipo: "CPF", label: "CPF (Cadastro de Pessoa Física)", obrigatorio: false },
     { tipo: "HISTORICO", label: "Histórico Escolar do Ensino Médio", obrigatorio: true },
     { tipo: "COMPROVANTE_RESIDENCIA", label: "Comprovante de Residência", obrigatorio: true },
     { tipo: "NOTAS_ENEM", label: "Boletim de Desempenho do ENEM", obrigatorio: true },
-    { tipo: "COMPROVANTE_INSCRICAO_ENEM", label: "Comprovante de Inscrição no ENEM", obrigatorio: false },
+    { tipo: "COMPROVANTE_INSCRICAO_ENEM", label: "Comprovante de Inscrição no ENEM", obrigatorio: true },
 ];
 
 const STEPS = ["Dados pessoais", "Endereço", "Curso e ingresso", "Documentos", "Confirmar", "Concluído"];
@@ -82,11 +83,17 @@ interface DocumentoUpload {
     arquivo: File;
 }
 
+const PADRAO_ERRO_TECNICO = /insert into|select |update |delete from|constraint|restrição de unicidade|violates|duplicar valor|relation |column /i;
+
 function getMensagemErro(err: unknown, fallback: string): string {
-    const axiosErr = err as { response?: { data?: { error?: string } } };
-    if (axiosErr?.response?.data?.error) return axiosErr.response.data.error;
-    if (err instanceof Error) return err.message;
-    return fallback;
+    const axiosErr = err as { response?: { data?: { error?: string; mensagem?: string } } };
+    const bruta =
+        axiosErr?.response?.data?.error ??
+        axiosErr?.response?.data?.mensagem ??
+        (err instanceof Error ? err.message : "");
+
+    if (!bruta || PADRAO_ERRO_TECNICO.test(bruta)) return fallback;
+    return bruta;
 }
 
 function formatCpf(value: string): string {
@@ -118,6 +125,7 @@ export default function Inscricao() {
     const [carregandoMatriz, setCarregandoMatriz] = useState(false);
     const [documentos, setDocumentos] = useState<DocumentoUpload[]>([]);
     const [enviando, setEnviando] = useState(false);
+    const [verificandoCpf, setVerificandoCpf] = useState(false);
     const [erros, setErros] = useState<Record<string, string>>({});
     const [snackbar, setSnackbar] = useState<{ aberto: boolean; mensagem: string; severidade: "success" | "error" }>({
         aberto: false, mensagem: "", severidade: "success",
@@ -155,7 +163,7 @@ export default function Inscricao() {
         const e: Record<string, string> = {};
         if (step === 0) {
             if (!dados.nome.trim()) e.nome = "Nome obrigatório.";
-            if (dados.cpf.replace(/\D/g, "").length !== 11) e.cpf = "CPF inválido.";
+            if (!cpfValido(dados.cpf)) e.cpf = "Informe um CPF válido.";
             if (!dados.dataNascimento) e.dataNascimento = "Data de nascimento obrigatória.";
         }
         if (step === 1) {
@@ -168,12 +176,40 @@ export default function Inscricao() {
         if (step === 2) {
             if (!cursoId) e.cursoId = "Selecione um curso.";
         }
+        if (step === 3) {
+            const faltando = TIPOS_DOCUMENTO
+                .filter(({ tipo, obrigatorio }) => obrigatorio && !docDeTipo(tipo))
+                .map(({ label }) => label);
+            if (faltando.length > 0) {
+                e.documentos = `Envie os documentos obrigatórios: ${faltando.join(", ")}.`;
+            }
+        }
         return e;
     }
 
-    function avancar() {
+    async function cpfJaCadastrado(cpf: string): Promise<boolean> {
+        try {
+            const { data } = await api.get("/alunos/buscar", { params: { q: cpf.replace(/\D/g, "") } });
+            return Array.isArray(data) && data.length > 0;
+        } catch {
+            return false;
+        }
+    }
+
+    async function avancar() {
         const e = validarStep(activeStep);
         if (Object.keys(e).length > 0) { setErros(e); return; }
+
+        if (activeStep === 0) {
+            setVerificandoCpf(true);
+            const existe = await cpfJaCadastrado(dados.cpf);
+            setVerificandoCpf(false);
+            if (existe) {
+                setErros({ cpf: "Já existe uma matrícula ativa ou pendente para este CPF." });
+                return;
+            }
+        }
+
         setErros({});
         setActiveStep((s) => s + 1);
     }
@@ -201,6 +237,20 @@ export default function Inscricao() {
     }
 
     async function handleEnviar() {
+        const pendencias = [validarStep(0), validarStep(1), validarStep(2), validarStep(3)]
+            .reduce((acc, atual) => ({ ...acc, ...atual }), {});
+
+        if (Object.keys(pendencias).length > 0) {
+            setErros(pendencias);
+            setSnackbar({
+                aberto: true,
+                mensagem: pendencias.documentos ?? "Revise os dados da inscrição antes de confirmar.",
+                severidade: "error",
+            });
+            setActiveStep(pendencias.documentos ? 3 : 0);
+            return;
+        }
+
         setEnviando(true);
         try {
             const payload = {
@@ -232,7 +282,17 @@ export default function Inscricao() {
             setMatriculaGerada(alunoCreated.matricula ? String(alunoCreated.matricula) : null);
             setActiveStep(5);
         } catch (err) {
-            setSnackbar({ aberto: true, mensagem: getMensagemErro(err, "Erro ao realizar inscrição."), severidade: "error" });
+            const mensagem = getMensagemErro(
+                err,
+                "Não foi possível concluir a inscrição. Confira os dados e tente novamente.",
+            );
+
+            if (/cpf/i.test(mensagem)) {
+                setErros({ cpf: mensagem });
+                setActiveStep(0);
+            }
+
+            setSnackbar({ aberto: true, mensagem, severidade: "error" });
         } finally {
             setEnviando(false);
         }
@@ -497,9 +557,11 @@ export default function Inscricao() {
         <Stack spacing={2.5}>
             <Typography variant="h6" fontWeight={700}>Documentos</Typography>
             <Alert severity="info">
-                Para ingresso via ENEM, envie os documentos abaixo. Os marcados com <strong>*</strong> são obrigatórios.
-                Formatos aceitos: PDF, JPG ou PNG (máx. 10 MB cada).
+                Para ingresso via ENEM, envie os documentos abaixo. Os marcados com <strong>*</strong> são obrigatórios
+                para concluir a inscrição. Formatos aceitos: PDF, JPG ou PNG (máx. 10 MB cada).
             </Alert>
+
+            {erros.documentos && <Alert severity="error">{erros.documentos}</Alert>}
             <Box sx={{ overflowX: "auto" }}>
                 <Table size="small">
                     <TableHead>
@@ -735,7 +797,12 @@ export default function Inscricao() {
                                 <Box />
                             )}
                             {activeStep < 4 && (
-                                <Button variant="contained" sx={{ width: "auto", minWidth: 140 }} onClick={avancar}>
+                                <Button
+                                    variant="contained"
+                                    sx={{ width: "auto", minWidth: 140 }}
+                                    isLoading={verificandoCpf}
+                                    onClick={() => void avancar()}
+                                >
                                     Próximo →
                                 </Button>
                             )}

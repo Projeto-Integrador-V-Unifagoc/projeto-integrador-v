@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Stack, Paper, useTheme } from "@mui/material";
 import Container from "../../components/Container";
-import FavIcon from '../../../public/assets/favIcon.svg';
 import { authService } from '../../services/auth-services';
 import { useNotificacao } from '../../components/Notificacao/NotificationProvider';
+
+const FavIcon = '/assets/favIcon.svg';
 
 export const Login = () => {
     const [email, setEmail] = useState('');

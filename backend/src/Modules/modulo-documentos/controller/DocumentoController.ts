@@ -76,6 +76,14 @@ export class DocumentoController {
         }
     }
 
+    async listarInscritos(_req: any, res: any) {
+        try {
+            res.status(200).json(await service.listarInscritos());
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     async listarPorAluno(req: any, res: any) {
         try {
             const contexto = await authContext.obterContexto(req);

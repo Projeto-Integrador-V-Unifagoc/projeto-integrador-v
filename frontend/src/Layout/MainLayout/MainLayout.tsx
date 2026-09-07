@@ -4,31 +4,55 @@ import { Box, CssBaseline, Drawer, useMediaQuery, useTheme } from "@mui/material
 
 import Sidebar from "../Sidebar/Sidebar";
 import Header from "../Header/Header";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const CHAVE_MENU_EXPANDIDO = "@UniEduca:menuExpandido";
+
+function lerMenuExpandido(): boolean {
+  try {
+    const salvo = localStorage.getItem(CHAVE_MENU_EXPANDIDO);
+    return salvo === null ? true : salvo === "true";
+  } catch {
+    return true;
+  }
+}
 
 export default function MainLayout() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const [abrirSidebar, setAbrirSidebar] = useState(false);
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false);
+  const [menuExpandido, setMenuExpandido] = useState(lerMenuExpandido);
 
-  const sidebarWidthDesktop = abrirSidebar ? 260 : 70;
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAVE_MENU_EXPANDIDO, String(menuExpandido));
+    } catch {
+      return;
+    }
+  }, [menuExpandido]);
+
+  const sidebarWidthDesktop = menuExpandido ? 260 : 70;
   const headerHeight = 49;
 
-  const clicarSidebar = () => setAbrirSidebar((aberto) => !aberto);
-  const fecharSidebar = () => setAbrirSidebar(false);
+  const alternarMenu = () => {
+    if (isMobile) setMenuMobileAberto((aberto) => !aberto);
+    else setMenuExpandido((expandido) => !expandido);
+  };
+
+  const fecharMenuMobile = () => setMenuMobileAberto(false);
 
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
 
-      <Header clicarMenu={clicarSidebar} />
+      <Header clicarMenu={alternarMenu} />
 
       {isMobile ? (
         <Drawer
           variant="temporary"
-          open={abrirSidebar}
-          onClose={fecharSidebar}
+          open={menuMobileAberto}
+          onClose={fecharMenuMobile}
           ModalProps={{ keepMounted: true }}
           sx={{
             "& .MuiDrawer-paper": {
@@ -39,7 +63,7 @@ export default function MainLayout() {
             },
           }}
         >
-          <Box onClick={fecharSidebar}>
+          <Box onClick={fecharMenuMobile}>
             <Sidebar expandido />
           </Box>
         </Drawer>
@@ -57,7 +81,7 @@ export default function MainLayout() {
             paddingLeft: 1,
           })}
         >
-          <Sidebar expandido={abrirSidebar} />
+          <Sidebar expandido={menuExpandido} />
         </Box>
       )}
 

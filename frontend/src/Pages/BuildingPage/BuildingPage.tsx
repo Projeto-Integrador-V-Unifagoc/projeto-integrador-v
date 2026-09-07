@@ -1,6 +1,7 @@
 import { Box, Stack, Typography } from "@mui/material"
-import buildingImage from "../../../public/assets/building.svg"
 import Container from "../../components/Container"
+
+const buildingImage = "/assets/building.svg"
 
 function obterNomeUsuario(): string {
   const usuarioStorage = localStorage.getItem("@UniEduca:user")

@@ -3,6 +3,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Tooltip,
 } from "@mui/material";
 import {
   CalendarCheck,
@@ -98,7 +99,7 @@ export default function Sidebar({ expandido }: SidebarProps) {
     },
     {
       label: "Matrícula",
-      href: "/matricula/nova",
+      href: ehAdmin ? "/matricula/lista" : "/matricula/nova",
       icon: ClipboardCheck,
       podeVer: ehAdmin || ehAluno,
     },
@@ -161,33 +162,39 @@ export default function Sidebar({ expandido }: SidebarProps) {
   return (
     <List component="nav">
       {itens
-        .filter((item) => item.podeVer)
-        .map(({ label, href, icon: Icon }) => (
-          <ListItemButton
-            key={href}
-            href={href}
-            sx={{ justifyContent: expandido ? "initial" : "center" }}
-          >
-            <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: expandido ? 2 : "auto",
-                justifyContent: "center",
-              }}
+          .filter((item) => item.podeVer)
+          .map(({ label, href, icon: Icon }) => (
+            <Tooltip
+              key={href}
+              title={expandido ? "" : label}
+              placement="right"
+              disableHoverListener={expandido}
             >
-              <Icon size={17} />
-            </ListItemIcon>
+              <ListItemButton
+                href={href}
+                sx={{ justifyContent: expandido ? "initial" : "center" }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: expandido ? 2 : "auto",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={17} />
+                </ListItemIcon>
 
-            <ListItemText
-              primary={label}
-              sx={{
-                opacity: expandido ? 1 : 0,
-                transition: "opacity 0.2s",
-              }}
-              primaryTypographyProps={{ fontSize: 14, noWrap: true }}
-            />
-          </ListItemButton>
-        ))}
+                <ListItemText
+                  primary={label}
+                  sx={{
+                    opacity: expandido ? 1 : 0,
+                    transition: "opacity 0.2s",
+                  }}
+                  primaryTypographyProps={{ fontSize: 14, noWrap: true }}
+                />
+              </ListItemButton>
+            </Tooltip>
+          ))}
     </List>
   );
 }

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { MatriculaDetalhada } from "../../models/matricula-model";
 import type {
   FrequenciaAluno,
+  MatriculaDisciplinaFicha,
   NotaFicha,
 } from "../../services/ficha-api";
 import {
@@ -31,21 +31,35 @@ function criarNota(overrides: Partial<NotaFicha> = {}): NotaFicha {
 }
 
 function criarMatricula(
-  overrides: Partial<MatriculaDetalhada> = {},
-): MatriculaDetalhada {
+  overrides: Partial<MatriculaDisciplinaFicha> = {},
+): MatriculaDisciplinaFicha {
   return {
     id: "matricula-1",
+    matricula_id: "matricula-1",
     aluno_id: "aluno-1",
+    curso_id: "curso-1",
     turma_id: "turma-1",
-    turma_disciplina_id: "td-1",
-    matricula_turma_disciplina_id: "mtd-1",
     status: "ativa",
+    data_matricula: "2026-02-03T03:00:00.000Z",
     aluno_nome: "Aluno Teste",
+    aluno_cpf: "000.000.000-00",
     aluno_matricula: 1,
-    disciplina_nome: "Calculo I",
-    periodo_letivo: "2026/1",
     curso_nome: "Curso Teste",
+    turma_sigla: "TURMA-A",
+    turma_descricao: "Turma A",
+    turno: "Noturno",
+    periodo_curricular: 1,
+    periodo_letivo_codigo: "2026/1",
+    periodo_codigo: "2026/1",
+    semestre: null,
+    ano: 2026,
+    total_disciplinas: 1,
+    matricula_turma_disciplina_id: "mtd-1",
+    turma_disciplina_id: "td-1",
+    disciplina_id: "disc-1",
+    disciplina_nome: "Calculo I",
     professor_nome: "Professor Teste",
+    vinculo_status: "ativa",
     ...overrides,
   };
 }

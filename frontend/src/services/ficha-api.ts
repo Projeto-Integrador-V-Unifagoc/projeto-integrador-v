@@ -1,6 +1,5 @@
 import { api } from "../lib/axios";
 import type { ConsolidadoFrequencia } from "../models/frequencia-model";
-import type { MatriculaDetalhada } from "../models/matricula-model";
 import type { PeriodoLetivoResponse } from "../models/periodo-letivo-model";
 import type { CidadeModel } from "../models/cidade-model";
 import type { DocumentoAluno } from "./documento-api";
@@ -55,9 +54,38 @@ export interface FrequenciaAluno {
   consolidado: ConsolidadoFrequencia[];
 }
 
+export interface MatriculaDisciplinaFicha {
+  id: string;
+  matricula_id: string;
+  aluno_id: string;
+  curso_id: string;
+  turma_id: string;
+  status: string;
+  data_matricula: string;
+  aluno_nome: string;
+  aluno_cpf: string;
+  aluno_matricula: number;
+  curso_nome: string;
+  turma_sigla: string;
+  turma_descricao: string;
+  turno: string;
+  periodo_curricular: number;
+  periodo_letivo_codigo: string;
+  periodo_codigo: string | null;
+  semestre: string | null;
+  ano: number;
+  total_disciplinas: number;
+  matricula_turma_disciplina_id: string | null;
+  turma_disciplina_id: string | null;
+  disciplina_id: string | null;
+  disciplina_nome: string | null;
+  professor_nome: string | null;
+  vinculo_status: string | null;
+}
+
 export interface FichaAlunoResponse {
   aluno: AlunoFicha;
-  matriculas: MatriculaDetalhada[];
+  matriculas: MatriculaDisciplinaFicha[];
   notas: NotaFicha[];
   frequencia?: FrequenciaAluno;
   documentos: DocumentoAluno[];

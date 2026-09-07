@@ -1,9 +1,11 @@
-import { DocumentoRepository, CriarDocumentoDTO, Documento, DocumentoComAluno, TIPOS_DOCUMENTO } from "../repository/DocumentoRepository";
+import { DocumentoRepository, CriarDocumentoDTO, Documento, DocumentoComAluno, InscritoComDocumentos, TIPOS_DOCUMENTO } from "../repository/DocumentoRepository";
+import { MatriculaService } from "../../modulo-matricula/service/MatriculaService";
 
 const STATUS_VALIDOS = ["PENDENTE", "APROVADO", "REPROVADO"];
 
 export class DocumentoService {
     private repository = new DocumentoRepository();
+    private matriculaService = new MatriculaService();
 
     async criar(dados: CriarDocumentoDTO): Promise<Documento> {
         if (!TIPOS_DOCUMENTO.includes(dados.tipo_documento as any)) {
@@ -33,18 +35,22 @@ export class DocumentoService {
         const doc = await this.repository.buscarPorId(id);
         if (!doc) throw new Error(`Documento ${id} não encontrado.`);
 
-        const documentoAtualizado = (await this.repository.validar(id, status, observacao))!;
+        const documento = (await this.repository.validar(id, status, observacao))!;
 
-        if (status === "REPROVADO") {
-            await this.repository.atualizarStatusMatriculaAluno(doc.aluno_id, "CANCELADO");
-        } else if (status === "APROVADO") {
+        if (status === "APROVADO") {
             const pendentes = await this.repository.contarDocumentosPendentesOuReprovados(doc.aluno_id);
             if (pendentes === 0) {
-                await this.repository.atualizarStatusMatriculaAluno(doc.aluno_id, "MATRICULADO");
+                await this.matriculaService
+                    .matricularAutomaticamente(doc.aluno_id)
+                    .catch(() => null);
             }
         }
 
-        return documentoAtualizado;
+        return documento;
+    }
+
+    async listarInscritos(): Promise<InscritoComDocumentos[]> {
+        return this.repository.listarInscritos();
     }
 
     async deletar(id: string): Promise<void> {

@@ -3,6 +3,7 @@ import db from "../../../database/index.js";
 import { FrequenciaMapper, type StatusFrequencia } from "../models/Frequencia";
 
 const STATUS_ATIVO = ["ativa", "ATIVA", "ATIVO", "MATRICULADO", "REGULAR"];
+const STATUS_MATRICULA_EM_CURSO = [...STATUS_ATIVO, "pendente", "PENDENTE"];
 
 export class FrequenciaRepository {
   buscarUsuarioPorId(usuarioId: string) { return db("usuario").select("id", "tipo_usuario").where({ id: usuarioId }).first(); }
@@ -14,13 +15,13 @@ export class FrequenciaRepository {
   alunoPertenceATurma(alunoId: string, turmaDisciplinaId: string) {
     return db("matricula_turma_disciplina as mtd").join("matricula as m", "mtd.matricula_id", "m.id")
       .where("m.aluno_id", alunoId).where("mtd.turma_disciplina_id", turmaDisciplinaId)
-      .whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_ATIVO).first().then(Boolean);
+      .whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_MATRICULA_EM_CURSO).first().then(Boolean);
   }
   professorPossuiAluno(professorId: string, alunoId: string) {
     return db("turma_disciplina as td").join("matricula_turma_disciplina as mtd", "mtd.turma_disciplina_id", "td.id")
       .join("matricula as m", "mtd.matricula_id", "m.id").where("td.professor_id", professorId)
       .where("m.aluno_id", alunoId).whereIn("td.status", STATUS_ATIVO).whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_ATIVO).first().then(Boolean);
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO).first().then(Boolean);
   }
 
   listarTurmas(professorId?: string, alunoId?: string) {
@@ -35,7 +36,7 @@ export class FrequenciaRepository {
     if (professorId) q.where("td.professor_id", professorId);
     if (alunoId) q.join("matricula_turma_disciplina as mtd", "mtd.turma_disciplina_id", "td.id")
       .join("matricula as m", "mtd.matricula_id", "m.id").where("m.aluno_id", alunoId)
-      .whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_ATIVO);
+      .whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_MATRICULA_EM_CURSO);
     return q;
   }
   listarLocais() { return db("local").select("id", "codigo").orderBy("codigo"); }
@@ -51,12 +52,12 @@ export class FrequenciaRepository {
   listarAlunosAtivosDaTurma(id: string) {
     return db("matricula_turma_disciplina as mtd").join("matricula as m", "mtd.matricula_id", "m.id")
       .join("aluno as a", "m.aluno_id", "a.id").join("pessoa as p", "a.pessoa_id", "p.id")
-      .where("mtd.turma_disciplina_id", id).whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_ATIVO)
+      .where("mtd.turma_disciplina_id", id).whereIn("mtd.status", STATUS_ATIVO).whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
       .select("mtd.id as matricula_turma_disciplina_id", "a.id as aluno_id", "a.matricula", "p.nome", "mtd.status").orderBy("p.nome");
   }
   async contarMatriculasIrregulares(id: string) {
     const [{ total }] = await db("matricula_turma_disciplina as mtd").join("matricula as m", "mtd.matricula_id", "m.id")
-      .where("mtd.turma_disciplina_id", id).where((q) => q.whereNotIn("mtd.status", STATUS_ATIVO).orWhereNotIn("m.status", STATUS_ATIVO)).count("mtd.id as total");
+      .where("mtd.turma_disciplina_id", id).where((q) => q.whereNotIn("mtd.status", STATUS_ATIVO).orWhereNotIn("m.status", STATUS_MATRICULA_EM_CURSO)).count("mtd.id as total");
     return Number(total || 0);
   }
   listarRegistrosDaChamada(id: string, data: string) {

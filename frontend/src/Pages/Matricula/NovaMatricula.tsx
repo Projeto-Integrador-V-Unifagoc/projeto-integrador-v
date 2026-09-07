@@ -22,22 +22,27 @@ import {
     TableRow,
     Typography,
 } from "@mui/material";
-import { CheckCircle, GraduationCap, Search, User } from "lucide-react";
+import { BookOpen, CheckCircle, GraduationCap, Search, User } from "lucide-react";
 import Container from "../../components/Container";
 import TextField from "../../components/TextField";
 import Button from "../../components/Button";
 import { useMatricula } from "../../hooks/use-matricula";
-import type { AlunoParaMatricula, TurmaDisponivel, MatriculaCriada } from "../../models/matricula-model";
+import type {
+    AlunoParaMatricula,
+    DisciplinaDaTurma,
+    MatriculaCriada,
+    TurmaDisponivel,
+} from "../../models/matricula-model";
 
 const STEPS = ["Identificar aluno", "Selecionar turma", "Confirmar matrícula", "Concluído"];
 
+// O banco grava o status em minúsculas ("ativa"); normalizamos antes de consultar.
 const STATUS_COR: Record<string, string> = {
+    pendente: "#ed6c02",
     ativa: "#2e7d32",
-    MATRICULADO: "#1976d2",
-    CURSANDO: "#2e7d32",
-    TRANCADO: "#ed6c02",
-    CANCELADO: "#d32f2f",
-    CONCLUIDO: "#00695c",
+    trancada: "#ed6c02",
+    cancelada: "#d32f2f",
+    concluida: "#00695c",
 };
 
 function getMensagemErro(err: unknown, fallback: string): string {
@@ -48,20 +53,29 @@ function getMensagemErro(err: unknown, fallback: string): string {
 }
 
 export default function NovaMatricula() {
-    const { buscarAluno, listarTurmasDisponiveis, criarMatricula, carregando } = useMatricula();
+    const {
+        buscarAluno,
+        listarTurmasDisponiveis,
+        listarDisciplinasDaTurma,
+        criarMatricula,
+        carregando,
+    } = useMatricula();
 
     const [activeStep, setActiveStep] = useState(0);
     const [query, setQuery] = useState("");
     const [aluno, setAluno] = useState<AlunoParaMatricula | null>(null);
     const [erroAluno, setErroAluno] = useState("");
     const [turmas, setTurmas] = useState<TurmaDisponivel[]>([]);
-    const [turmaDisciplinaId, setTurmaDisciplinaId] = useState("");
+    const [erroTurmas, setErroTurmas] = useState("");
+    const [turmaId, setTurmaId] = useState("");
+    const [disciplinas, setDisciplinas] = useState<DisciplinaDaTurma[]>([]);
     const [matricula, setMatricula] = useState<MatriculaCriada | null>(null);
     const [snackbar, setSnackbar] = useState<{ aberto: boolean; mensagem: string; severidade: "success" | "error" }>({
         aberto: false, mensagem: "", severidade: "success",
     });
 
-    const turmaSelecionada = turmas.find((t) => t.id === turmaDisciplinaId);
+    const turmaSelecionada = turmas.find((t) => t.id === turmaId);
+    const cargaHorariaTotal = disciplinas.reduce((total, d) => total + Number(d.carga_horaria ?? 0), 0);
 
     function resetar() {
         setActiveStep(0);
@@ -69,7 +83,9 @@ export default function NovaMatricula() {
         setAluno(null);
         setErroAluno("");
         setTurmas([]);
-        setTurmaDisciplinaId("");
+        setErroTurmas("");
+        setTurmaId("");
+        setDisciplinas([]);
         setMatricula(null);
     }
 
@@ -91,21 +107,39 @@ export default function NovaMatricula() {
 
     async function handleAvancarParaTurmas() {
         if (!aluno?.curso_id) return;
-        setTurmaDisciplinaId("");
+        setErroTurmas("");
+        setTurmaId("");
         try {
-            const resultado = await listarTurmasDisponiveis(aluno.curso_id, aluno.id);
-            setTurmas(resultado);
+            setTurmas(await listarTurmasDisponiveis(aluno.curso_id));
             setActiveStep(1);
         } catch (err) {
+            // Falha de carregamento não pode ser exibida como "não há turmas":
+            // são situações diferentes e levam o operador a conclusões opostas.
             setTurmas([]);
-            setSnackbar({ aberto: true, mensagem: getMensagemErro(err, "Erro ao carregar as turmas disponíveis."), severidade: "error" });
+            setErroTurmas(getMensagemErro(err, "Não foi possível carregar as turmas disponíveis."));
+            setActiveStep(1);
+        }
+    }
+
+    async function handleAvancarParaConfirmacao() {
+        if (!turmaId) return;
+        try {
+            setDisciplinas(await listarDisciplinasDaTurma(turmaId));
+            setActiveStep(2);
+        } catch (err) {
+            setSnackbar({
+                aberto: true,
+                mensagem: getMensagemErro(err, "Erro ao carregar as disciplinas da turma."),
+                severidade: "error",
+            });
         }
     }
 
     async function handleConfirmar() {
-        if (!aluno || !turmaDisciplinaId) return;
+        if (!aluno || !turmaId) return;
         try {
-            const resultado = await criarMatricula(aluno.id, turmaDisciplinaId);
+            // Sem seleção parcial, o backend vincula todas as disciplinas da turma.
+            const resultado = await criarMatricula(aluno.id, turmaId);
             setMatricula(resultado);
             setActiveStep(3);
         } catch (err) {
@@ -175,6 +209,11 @@ export default function NovaMatricula() {
                             <Box flex={1}><Typography variant="caption" color="text.secondary">Curso</Typography><Typography variant="body2">{aluno.curso_nome ?? "—"}</Typography></Box>
                             <Box flex={1}><Typography variant="caption" color="text.secondary">Período</Typography><Typography variant="body2">{aluno.periodo}</Typography></Box>
                         </Stack>
+                        {!aluno.curso_id && (
+                            <Alert severity="warning">
+                                Este aluno não possui curso vinculado. Defina o curso no cadastro do aluno antes de matriculá-lo.
+                            </Alert>
+                        )}
                     </Stack>
                 </Paper>
             )}
@@ -189,46 +228,55 @@ export default function NovaMatricula() {
 
     const step1 = (
         <Stack spacing={2.5} alignItems="center" width="100%">
-            <Paper elevation={0} sx={(t) => ({ width: "100%", maxWidth: 900, border: `1px solid ${t.palette.grey[100]}`, borderRadius: 2, p: 3 })}>
+            <Paper elevation={0} sx={(t) => ({ width: "100%", maxWidth: 940, border: `1px solid ${t.palette.grey[100]}`, borderRadius: 2, p: 3 })}>
                 <Typography variant="subtitle1" fontWeight={700} mb={1.5}>
                     Turmas disponíveis — {aluno?.curso_nome}
                 </Typography>
 
                 {carregando && <LinearProgress sx={{ mb: 1 }} />}
 
-                {!carregando && turmas.length === 0 && (
+                {erroTurmas && <Alert severity="error" sx={{ mb: 1 }}>{erroTurmas}</Alert>}
+
+                {!carregando && !erroTurmas && turmas.length === 0 && (
                     <Alert severity="warning">Não há turmas com vagas disponíveis para o curso deste aluno.</Alert>
                 )}
 
                 {turmas.length > 0 && (
                     <FormControl fullWidth>
-                        <FormLabel sx={{ mb: 1, fontSize: 14 }}>Selecione a disciplina / turma:</FormLabel>
-                        <RadioGroup value={turmaDisciplinaId} onChange={(e) => setTurmaDisciplinaId(e.target.value)}>
+                        <FormLabel sx={{ mb: 1, fontSize: 14 }}>Selecione a turma:</FormLabel>
+                        <RadioGroup value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
                             <Box sx={{ overflowX: "auto" }}>
-                                <Table size="small" sx={{ minWidth: 580 }}>
+                                <Table size="small" sx={{ minWidth: 720 }}>
                                     <TableHead>
                                         <TableRow>
                                             <TableCell padding="checkbox" />
-                                            <TableCell>Disciplina</TableCell>
-                                            <TableCell>Código</TableCell>
-                                            <TableCell>Turma / período</TableCell>
-                                            <TableCell>Professor</TableCell>
+                                            <TableCell>Turma</TableCell>
+                                            <TableCell>Período letivo</TableCell>
+                                            <TableCell>Período</TableCell>
+                                            <TableCell>Turno</TableCell>
+                                            <TableCell>Disciplinas</TableCell>
                                             <TableCell>Vagas</TableCell>
-                                            <TableCell>C.H.</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         {turmas.map((turma) => (
-                                            <TableRow key={turma.id} hover selected={turmaDisciplinaId === turma.id} onClick={() => setTurmaDisciplinaId(turma.id)} sx={{ cursor: "pointer" }}>
+                                            <TableRow key={turma.id} hover selected={turmaId === turma.id} onClick={() => setTurmaId(turma.id)} sx={{ cursor: "pointer" }}>
                                                 <TableCell padding="checkbox"><Radio value={turma.id} size="small" /></TableCell>
-                                                <TableCell>{turma.disciplina_nome}</TableCell>
-                                                <TableCell>{turma.disciplina_codigo}</TableCell>
-                                                <TableCell>{turma.turma_sigla} · {turma.periodo_letivo}</TableCell>
-                                                <TableCell>{turma.professor_nome}</TableCell>
                                                 <TableCell>
-                                                    <Chip label={`${turma.vagas_disponiveis}/${turma.capacidade_alunos}`} size="small" color={Number(turma.vagas_disponiveis) > 5 ? "success" : "warning"} />
+                                                    <Typography variant="body2" fontWeight={600}>{turma.sigla}</Typography>
+                                                    <Typography variant="caption" color="text.secondary">{turma.descricao}</Typography>
                                                 </TableCell>
-                                                <TableCell>{turma.carga_horaria}h</TableCell>
+                                                <TableCell>{turma.ano}/{turma.semestre}</TableCell>
+                                                <TableCell>{turma.periodo_curricular}º</TableCell>
+                                                <TableCell>{turma.turno}</TableCell>
+                                                <TableCell>{turma.total_disciplinas}</TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={`${turma.vagas_disponiveis}/${turma.capacidade_alunos}`}
+                                                        size="small"
+                                                        color={Number(turma.vagas_disponiveis) > 5 ? "success" : "warning"}
+                                                    />
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -239,40 +287,104 @@ export default function NovaMatricula() {
                 )}
             </Paper>
 
-            <Stack direction="row" justifyContent="space-between" sx={{ width: "100%", maxWidth: 900 }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ width: "100%", maxWidth: 940 }}>
                 <Button variant="outlined" sx={{ width: "auto", minWidth: 120 }} onClick={() => setActiveStep(0)}>← Anterior</Button>
-                <Button variant="contained" sx={{ width: "auto", minWidth: 140 }} disabled={!turmaDisciplinaId} onClick={() => setActiveStep(2)}>Próximo →</Button>
+                <Button variant="contained" sx={{ width: "auto", minWidth: 140 }} disabled={!turmaId} isLoading={carregando} onClick={() => void handleAvancarParaConfirmacao()}>
+                    Próximo →
+                </Button>
             </Stack>
         </Stack>
     );
 
     const step2 = (
         <Stack spacing={2.5} alignItems="center" width="100%">
-            <Paper elevation={0} sx={(t) => ({ width: "100%", maxWidth: 680, border: `1px solid ${t.palette.grey[100]}`, borderRadius: 2, p: 3 })}>
+            <Paper elevation={0} sx={(t) => ({ width: "100%", maxWidth: 820, border: `1px solid ${t.palette.grey[100]}`, borderRadius: 2, p: 3 })}>
                 <Typography variant="subtitle1" fontWeight={700} mb={2}>Resumo da matrícula</Typography>
                 <Stack spacing={2}>
                     <Box>
                         <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>Aluno</Typography>
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                            <Box flex={1}><Typography variant="body2" fontWeight={600}>{aluno?.nome}</Typography><Typography variant="caption" color="text.secondary">Matrícula: {aluno?.matricula}</Typography></Box>
-                            <Box flex={1}><Typography variant="body2">{aluno?.curso_nome}</Typography><Typography variant="caption" color="text.secondary">Período: {aluno?.periodo}</Typography></Box>
+                            <Box flex={1}>
+                                <Typography variant="body2" fontWeight={600}>{aluno?.nome}</Typography>
+                                <Typography variant="caption" color="text.secondary">Matrícula: {aluno?.matricula}</Typography>
+                            </Box>
+                            <Box flex={1}>
+                                <Typography variant="body2">{aluno?.curso_nome}</Typography>
+                                <Typography variant="caption" color="text.secondary">Período: {aluno?.periodo}</Typography>
+                            </Box>
                         </Stack>
                     </Box>
                     <Divider />
                     <Box>
                         <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>Turma selecionada</Typography>
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
-                            <Box flex={1}><Typography variant="body2" fontWeight={600}>{turmaSelecionada?.disciplina_nome}</Typography><Typography variant="caption" color="text.secondary">Código: {turmaSelecionada?.disciplina_codigo} · {turmaSelecionada?.carga_horaria}h</Typography></Box>
-                            <Box flex={1}><Typography variant="body2">{turmaSelecionada?.turma_sigla} · {turmaSelecionada?.periodo_letivo}</Typography><Typography variant="caption" color="text.secondary">Prof. {turmaSelecionada?.professor_nome}</Typography></Box>
-                            <Chip label={`${turmaSelecionada?.vagas_disponiveis}/${turmaSelecionada?.capacidade_alunos} vagas`} size="small" color={Number(turmaSelecionada?.vagas_disponiveis) > 5 ? "success" : "warning"} />
+                            <Box flex={1}>
+                                <Typography variant="body2" fontWeight={600}>{turmaSelecionada?.sigla}</Typography>
+                                <Typography variant="caption" color="text.secondary">{turmaSelecionada?.descricao}</Typography>
+                            </Box>
+                            <Box flex={1}>
+                                <Typography variant="body2">{turmaSelecionada?.ano}/{turmaSelecionada?.semestre} · {turmaSelecionada?.turno}</Typography>
+                                <Typography variant="caption" color="text.secondary">{turmaSelecionada?.periodo_curricular}º período curricular</Typography>
+                            </Box>
+                            <Chip
+                                label={`${turmaSelecionada?.vagas_disponiveis}/${turmaSelecionada?.capacidade_alunos} vagas`}
+                                size="small"
+                                color={Number(turmaSelecionada?.vagas_disponiveis) > 5 ? "success" : "warning"}
+                            />
                         </Stack>
+                    </Box>
+                    <Divider />
+                    <Box>
+                        <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                            <BookOpen size={16} />
+                            <Typography variant="caption" color="text.secondary">
+                                Vínculos que serão criados ({disciplinas.length} disciplinas · {cargaHorariaTotal}h)
+                            </Typography>
+                        </Stack>
+
+                        {disciplinas.length === 0 ? (
+                            <Alert severity="warning">
+                                Esta turma não possui disciplinas ofertadas. Vincule as disciplinas à turma antes de matricular o aluno.
+                            </Alert>
+                        ) : (
+                            <Box sx={{ overflowX: "auto" }}>
+                                <Table size="small" sx={{ minWidth: 560 }}>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Disciplina</TableCell>
+                                            <TableCell>Código</TableCell>
+                                            <TableCell>Professor</TableCell>
+                                            <TableCell>C.H.</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {disciplinas.map((disciplina) => (
+                                            <TableRow key={disciplina.turma_disciplina_id}>
+                                                <TableCell>{disciplina.disciplina_nome}</TableCell>
+                                                <TableCell>{disciplina.disciplina_codigo}</TableCell>
+                                                <TableCell>{disciplina.professor_nome}</TableCell>
+                                                <TableCell>{disciplina.carga_horaria}h</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        )}
                     </Box>
                 </Stack>
             </Paper>
 
-            <Stack direction="row" justifyContent="space-between" sx={{ width: "100%", maxWidth: 680 }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ width: "100%", maxWidth: 820 }}>
                 <Button variant="outlined" sx={{ width: "auto", minWidth: 120 }} onClick={() => setActiveStep(1)}>← Anterior</Button>
-                <Button variant="contained" sx={{ width: "auto", minWidth: 200 }} isLoading={carregando} onClick={() => void handleConfirmar()}>Confirmar matrícula</Button>
+                <Button
+                    variant="contained"
+                    sx={{ width: "auto", minWidth: 200 }}
+                    isLoading={carregando}
+                    disabled={disciplinas.length === 0}
+                    onClick={() => void handleConfirmar()}
+                >
+                    Confirmar matrícula
+                </Button>
             </Stack>
         </Stack>
     );
@@ -282,13 +394,28 @@ export default function NovaMatricula() {
             <Paper elevation={0} sx={(t) => ({ width: "100%", maxWidth: 680, border: `1px solid ${t.palette.success.light}`, borderRadius: 2, p: 4, textAlign: "center" })}>
                 <Stack spacing={2} alignItems="center">
                     <CheckCircle size={56} color="#2e7d32" />
-                    <Typography variant="h5" fontWeight={700} color="success.dark">Matrícula realizada!</Typography>
+                    <Typography variant="h5" fontWeight={700} color="success.dark">Matrícula registrada!</Typography>
                     <Typography variant="body2" color="text.secondary">
-                        {aluno?.nome} foi matriculado(a) com sucesso em{" "}
-                        <strong>{turmaSelecionada?.disciplina_nome}</strong> — {turmaSelecionada?.turma_sigla}.
+                        {aluno?.nome} foi vinculado(a) à turma <strong>{turmaSelecionada?.sigla}</strong>
+                        {" "}({turmaSelecionada?.ano}/{turmaSelecionada?.semestre}) com{" "}
+                        <strong>{matricula?.disciplinas_vinculadas ?? 0}</strong> disciplina(s) vinculada(s).
                     </Typography>
+                    {String(matricula?.status ?? "").toLowerCase() === "pendente" && (
+                        <Alert severity="info" sx={{ textAlign: "left" }}>
+                            A matrícula fica pendente até que os documentos do aluno sejam validados na tela de
+                            Documentos. Depois disso, aprove a matrícula na tela de Matrículas.
+                        </Alert>
+                    )}
                     {matricula?.status && (
-                        <Chip label={matricula.status} sx={{ backgroundColor: STATUS_COR[matricula.status] ?? "#757575", color: "#fff", fontWeight: 600 }} />
+                        <Chip
+                            label={matricula.status}
+                            sx={{
+                                backgroundColor: STATUS_COR[String(matricula.status).toLowerCase()] ?? "#757575",
+                                color: "#fff",
+                                fontWeight: 600,
+                                textTransform: "capitalize",
+                            }}
+                        />
                     )}
                     <Button variant="outlined" sx={{ width: "auto", minWidth: 200, mt: 1 }} onClick={resetar}>
                         Nova matrícula
@@ -309,7 +436,7 @@ export default function NovaMatricula() {
             </Snackbar>
 
             <Stack spacing={4} alignItems="center">
-                <Box sx={{ width: "100%", maxWidth: 900 }}>
+                <Box sx={{ width: "100%", maxWidth: 940 }}>
                     <Stepper activeStep={activeStep} alternativeLabel>
                         {STEPS.map((label) => (
                             <Step key={label}><StepLabel>{label}</StepLabel></Step>

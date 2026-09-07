@@ -9,6 +9,17 @@ export class AlunoService {
     pessoaRepository = new PessoaRepository();
 
     async criarAluno(data: any) {
+        try {
+            return await this.inserirAluno(data);
+        } catch (erro: any) {
+            if (erro?.code === "23505" && String(erro?.constraint ?? "").includes("cpf")) {
+                throw new Error("Já existe uma matrícula ativa ou pendente para este CPF.");
+            }
+            throw erro;
+        }
+    }
+
+    private async inserirAluno(data: any) {
         return await db.transaction(async (trx) => {
             
             let pessoa: PessoaCommand = {
@@ -22,6 +33,11 @@ export class AlunoService {
                 estado: data.pessoa.estado,
                 cep: data.pessoa.cep
             };
+
+            const jaCadastrada = await this.pessoaRepository.buscarPessoaPorCpf(pessoa.cpf, trx);
+            if (jaCadastrada) {
+                throw new Error("Já existe uma matrícula ativa ou pendente para este CPF.");
+            }
 
             const pessoaCriada = await this.pessoaRepository.criarPessoa(pessoa, trx);
 

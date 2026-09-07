@@ -1,7 +1,7 @@
 import type { NotaAluno } from "../../components/FichaAluno";
-import type { MatriculaDetalhada } from "../../models/matricula-model";
 import type {
   FrequenciaAluno as FrequenciaAlunoResponse,
+  MatriculaDisciplinaFicha,
   NotaFicha,
 } from "../../services/ficha-api";
 
@@ -25,7 +25,7 @@ export function getNotaPorNome(nota: NotaFicha, nome: string) {
 export function montarNotasFicha(
   notasApiResponse: NotaFicha[],
   frequencia?: FrequenciaAlunoResponse,
-  matriculas: MatriculaDetalhada[] = [],
+  matriculas: MatriculaDisciplinaFicha[] = [],
   semestre?: string,
 ): NotaAluno[] {
   const semestreNormalizado = normalizarSemestre(semestre);
@@ -106,9 +106,13 @@ export function montarNotasFicha(
     ...notasPorFrequencia.map((nota) => nota.disciplina),
   ]);
   const notasPorMatricula: NotaComSemestre[] = matriculas
-    .filter((matricula) => !disciplinasConhecidas.has(matricula.disciplina_nome))
+    .filter(
+      (matricula) =>
+        !!matricula.disciplina_nome &&
+        !disciplinasConhecidas.has(matricula.disciplina_nome),
+    )
     .map((matricula) => ({
-      disciplina: matricula.disciplina_nome,
+      disciplina: matricula.disciplina_nome as string,
       mediaFinal: 0,
       avaliacao: 0,
       avaliacoes: [],
@@ -118,7 +122,7 @@ export function montarNotasFicha(
       conhecimentosGerais: 0,
       faltas: 0,
       percentualFaltas: 0,
-      semestre: normalizarSemestre((matricula as any).semestre),
+      semestre: normalizarSemestre(matricula.semestre),
       matriculaTurmaDisciplinaId: matricula.matricula_turma_disciplina_id ?? null,
     }));
 
