@@ -1,5 +1,4 @@
 import {
-  Divider,
   List,
   ListItemButton,
   ListItemIcon,
@@ -16,7 +15,6 @@ import {
   GraduationCap,
   Info,
   Layers,
-  Menu,
   NotebookPen,
   Users,
   UserStar,
@@ -25,7 +23,6 @@ import type { LucideIcon } from "lucide-react";
 
 interface SidebarProps {
   expandido: boolean;
-  onAlternar?: () => void;
 }
 
 interface MenuItem {
@@ -35,7 +32,7 @@ interface MenuItem {
   podeVer: boolean;
 }
 
-export default function Sidebar({ expandido, onAlternar }: SidebarProps) {
+export default function Sidebar({ expandido }: SidebarProps) {
   const tipoUsuario = (() => {
     const usuarioStorage = localStorage.getItem("@UniEduca:user");
     if (usuarioStorage) {
@@ -164,43 +161,6 @@ export default function Sidebar({ expandido, onAlternar }: SidebarProps) {
 
   return (
     <List component="nav">
-      {onAlternar && (
-        <>
-          <Tooltip
-            title={expandido ? "" : "Expandir menu"}
-            placement="right"
-            disableHoverListener={expandido}
-          >
-            <ListItemButton
-              onClick={onAlternar}
-              aria-label={expandido ? "Recolher menu" : "Expandir menu"}
-              sx={{ justifyContent: expandido ? "initial" : "center" }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: expandido ? 2 : "auto",
-                  justifyContent: "center",
-                }}
-              >
-                <Menu size={17} />
-              </ListItemIcon>
-
-              <ListItemText
-                primary="Recolher menu"
-                sx={{
-                  opacity: expandido ? 1 : 0,
-                  transition: "opacity 0.2s",
-                }}
-                primaryTypographyProps={{ fontSize: 14, noWrap: true }}
-              />
-            </ListItemButton>
-          </Tooltip>
-
-          <Divider sx={{ my: 0.5 }} />
-        </>
-      )}
-
       {itens
           .filter((item) => item.podeVer)
           .map(({ label, href, icon: Icon }) => (

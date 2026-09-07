@@ -81,7 +81,7 @@ export default function MainLayout() {
             paddingLeft: 1,
           })}
         >
-          <Sidebar expandido={menuExpandido} onAlternar={alternarMenu} />
+          <Sidebar expandido={menuExpandido} />
         </Box>
       )}
 
