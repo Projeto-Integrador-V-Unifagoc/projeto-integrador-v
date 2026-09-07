@@ -31,14 +31,15 @@ import { cursoApi } from "../../services/curso-api";
 import { api } from "../../lib/axios";
 import TextField from "../../components/TextField";
 import Button from "../../components/Button";
+import { cpfValido } from "../../utils/cpf";
 
 const TIPOS_DOCUMENTO = [
     { tipo: "RG", label: "RG (Registro Geral)", obrigatorio: true },
-    { tipo: "CPF", label: "CPF (Cadastro de Pessoa Física)", obrigatorio: true },
+    { tipo: "CPF", label: "CPF (Cadastro de Pessoa Física)", obrigatorio: false },
     { tipo: "HISTORICO", label: "Histórico Escolar do Ensino Médio", obrigatorio: true },
     { tipo: "COMPROVANTE_RESIDENCIA", label: "Comprovante de Residência", obrigatorio: true },
     { tipo: "NOTAS_ENEM", label: "Boletim de Desempenho do ENEM", obrigatorio: true },
-    { tipo: "COMPROVANTE_INSCRICAO_ENEM", label: "Comprovante de Inscrição no ENEM", obrigatorio: false },
+    { tipo: "COMPROVANTE_INSCRICAO_ENEM", label: "Comprovante de Inscrição no ENEM", obrigatorio: true },
 ];
 
 const STEPS = ["Dados pessoais", "Endereço", "Curso e ingresso", "Documentos", "Confirmar", "Concluído"];
@@ -155,7 +156,7 @@ export default function Inscricao() {
         const e: Record<string, string> = {};
         if (step === 0) {
             if (!dados.nome.trim()) e.nome = "Nome obrigatório.";
-            if (dados.cpf.replace(/\D/g, "").length !== 11) e.cpf = "CPF inválido.";
+            if (!cpfValido(dados.cpf)) e.cpf = "Informe um CPF válido.";
             if (!dados.dataNascimento) e.dataNascimento = "Data de nascimento obrigatória.";
         }
         if (step === 1) {
@@ -167,6 +168,14 @@ export default function Inscricao() {
         }
         if (step === 2) {
             if (!cursoId) e.cursoId = "Selecione um curso.";
+        }
+        if (step === 3) {
+            const faltando = TIPOS_DOCUMENTO
+                .filter(({ tipo, obrigatorio }) => obrigatorio && !docDeTipo(tipo))
+                .map(({ label }) => label);
+            if (faltando.length > 0) {
+                e.documentos = `Envie os documentos obrigatórios: ${faltando.join(", ")}.`;
+            }
         }
         return e;
     }
@@ -201,6 +210,20 @@ export default function Inscricao() {
     }
 
     async function handleEnviar() {
+        const pendencias = [validarStep(0), validarStep(1), validarStep(2), validarStep(3)]
+            .reduce((acc, atual) => ({ ...acc, ...atual }), {});
+
+        if (Object.keys(pendencias).length > 0) {
+            setErros(pendencias);
+            setSnackbar({
+                aberto: true,
+                mensagem: pendencias.documentos ?? "Revise os dados da inscrição antes de confirmar.",
+                severidade: "error",
+            });
+            setActiveStep(pendencias.documentos ? 3 : 0);
+            return;
+        }
+
         setEnviando(true);
         try {
             const payload = {
@@ -497,9 +520,11 @@ export default function Inscricao() {
         <Stack spacing={2.5}>
             <Typography variant="h6" fontWeight={700}>Documentos</Typography>
             <Alert severity="info">
-                Para ingresso via ENEM, envie os documentos abaixo. Os marcados com <strong>*</strong> são obrigatórios.
-                Formatos aceitos: PDF, JPG ou PNG (máx. 10 MB cada).
+                Para ingresso via ENEM, envie os documentos abaixo. Os marcados com <strong>*</strong> são obrigatórios
+                para concluir a inscrição. Formatos aceitos: PDF, JPG ou PNG (máx. 10 MB cada).
             </Alert>
+
+            {erros.documentos && <Alert severity="error">{erros.documentos}</Alert>}
             <Box sx={{ overflowX: "auto" }}>
                 <Table size="small">
                     <TableHead>
