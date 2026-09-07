@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { randomUUID } from "crypto";
 import { DocumentoController } from "../modulo-documentos/controller/DocumentoController.js";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.resolve(process.cwd(), "uploads");
@@ -11,7 +12,7 @@ const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
     filename: (_req, file, cb) => {
         const ext = path.extname(file.originalname);
-        cb(null, `${Date.now()}${ext}`);
+        cb(null, `${Date.now()}-${randomUUID()}${ext}`);
     },
 });
 
