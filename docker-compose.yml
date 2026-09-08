@@ -75,8 +75,7 @@ services:
     networks:
       - app-network
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "wget --spider http://127.0.0.1/ || exit 1"]
       interval: 10s
