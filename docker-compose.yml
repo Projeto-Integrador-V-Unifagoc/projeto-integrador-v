@@ -49,7 +49,7 @@ services:
       SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL:-}"
       FRONTEND_URL: "${FRONTEND_URL:?FRONTEND_URL deve ser definida no arquivo .env}"
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     volumes:
       - ./backend/uploads:/app/uploads
     networks:
@@ -73,7 +73,7 @@ services:
     container_name: pi_frontend
     restart: always
     ports:
-      - "127.0.0.1:8080:80"
+      - "8080:80"
     networks:
       - app-network
     depends_on:
