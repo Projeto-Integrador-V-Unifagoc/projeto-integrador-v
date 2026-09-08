@@ -1,10 +1,8 @@
 networks:
   app-network:
     driver: bridge
-
 volumes:
   postgres_data:
-
 services:
   postgres:
     image: postgres:15
@@ -23,8 +21,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
-  backend:
+  backend:    
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -38,7 +35,6 @@ services:
       DATABASE_NAME: ${DATABASE_NAME:?DATABASE_NAME deve ser definido no arquivo .env}
       NODE_ENV: ${NODE_ENV:-production}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET deve ser definido no arquivo .env}
-
       EMAIL_MODO_TESTE: "${EMAIL_MODO_TESTE:-false}"
       SMTP_HOST: "${SMTP_HOST:-}"
       SMTP_PORT: "${SMTP_PORT:-587}"
@@ -49,22 +45,20 @@ services:
       SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL:-}"
       FRONTEND_URL: "${FRONTEND_URL:?FRONTEND_URL deve ser definida no arquivo .env}"
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     volumes:
       - ./backend/uploads:/app/uploads
     networks:
       - app-network
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     healthcheck:
       test: ["CMD-SHELL", "wget --spider http://127.0.0.1:3000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
-
-  frontend:
+  frontend:   # ← 2 espaços também
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -73,12 +67,11 @@ services:
     container_name: pi_frontend
     restart: always
     ports:
-      - "127.0.0.1:8080:80"
+      - "8080:80"
     networks:
       - app-network
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "wget --spider http://127.0.0.1/ || exit 1"]
       interval: 10s
