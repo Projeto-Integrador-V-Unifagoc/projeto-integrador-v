@@ -70,7 +70,7 @@ export class CursoRepository {
 
     async buscarCursoPorCodigo(codigo: string) {
         return await db("curso")
-            .where({ codigo })
+            .whereRaw("lower(codigo) = lower(?)", [codigo])
             .first();
     }
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Grid, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { ValidationError } from "yup";
 import Container from "../Container";
 import { Card } from "../Card";
 import TextField from "../TextField";
@@ -8,6 +9,7 @@ import Button from "../Button";
 import DropDownDepartamentos from "../DropDownDepartamentos/DropDownDepartamentos";
 import { useCurso } from "../../hooks/use-curso";
 import { cursoSchema } from "../../validators/curso-schema";
+import { mensagemErroApi } from "../../utils/api-error";
 
 type FormCursoProps = {
   cursoId?: string
@@ -54,10 +56,10 @@ export default function FormCurso({ cursoId }: FormCursoProps) {
           nome: curso.nome,
           departamentoId: curso.departamento.id,
         })
-      } catch {
+      } catch (error) {
         setAlerta({
           tipo: "error",
-          mensagem: "Não foi possível carregar o curso.",
+          mensagem: mensagemErroApi(error, "Não foi possível carregar o curso."),
         })
       }
     }
@@ -76,10 +78,15 @@ export default function FormCurso({ cursoId }: FormCursoProps) {
     try {
       await cursoSchema.validate(form, { abortEarly: false })
       setErros({})
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errosFormatados: Record<string, string> = {}
-      error.inner.forEach((err: any) => {
-        errosFormatados[err.path] = err.message
+      if (!(error instanceof ValidationError)) {
+        return
+      }
+      error.inner.forEach((err) => {
+        if (err.path) {
+          errosFormatados[err.path] = err.message
+        }
       })
       setErros(errosFormatados)
       return
@@ -104,12 +111,12 @@ export default function FormCurso({ cursoId }: FormCursoProps) {
       setTimeout(() => {
         navigate("/cursos/lista")
       }, 1500)
-    } catch {
+    } catch (error) {
       setAlerta({
         tipo: "error",
-        mensagem: cursoId
+        mensagem: mensagemErroApi(error, cursoId
           ? "Não foi possível atualizar o curso."
-          : "Não foi possível cadastrar o curso.",
+          : "Não foi possível cadastrar o curso."),
       })
     }
   }

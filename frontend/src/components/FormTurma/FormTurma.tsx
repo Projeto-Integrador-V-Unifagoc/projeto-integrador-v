@@ -13,6 +13,7 @@ import { turmaSchema } from "../../validators/turma-schema";
 import type { CursoResponse } from "../../models/curso-model";
 import type { PeriodoLetivoResponse } from "../../models/periodo-letivo-model";
 import { TurmaDisciplinasSection } from "../TurmaDisciplinasSection/TurmaDisciplinasSection";
+import { mensagemErroApi } from "../../utils/api-error";
 
 type FormTurmaProps = {
   turmaId?: string
@@ -46,6 +47,8 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
   const [alerta, setAlerta] = useState<{ tipo: "success" | "error"; mensagem: string } | null>(null);
   const [cursos, setCursos] = useState<CursoResponse[]>([]);
   const [periodosLetivos, setPeriodosLetivos] = useState<PeriodoLetivoResponse[]>([]);
+  const [estruturaBloqueada, setEstruturaBloqueada] = useState(false);
+  const [motivoBloqueio, setMotivoBloqueio] = useState<string | null>(null);
   const navigate = useNavigate();
   const { carregando, buscarTurmaPorId, criarTurma, atualizarTurma } = useTurma();
   const { listarCursos } = useCurso();
@@ -85,10 +88,12 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
           turno: turma.turno,
           status: turma.status,
         });
-      } catch {
+        setEstruturaBloqueada(Boolean(turma.estrutura_bloqueada));
+        setMotivoBloqueio(turma.motivo_bloqueio_estrutura ?? null);
+      } catch (error) {
         setAlerta({
           tipo: "error",
-          mensagem: "Nao foi possivel carregar a turma.",
+          mensagem: mensagemErroApi(error, "Nao foi possivel carregar a turma."),
         });
       }
     }
@@ -156,15 +161,24 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
         }, 1200);
         return;
       }
-    } catch {
+    } catch (error) {
       setAlerta({
         tipo: "error",
-        mensagem: turmaId
+        mensagem: mensagemErroApi(error, turmaId
           ? "Nao foi possivel atualizar a turma."
-          : "Nao foi possivel cadastrar a turma.",
+          : "Nao foi possivel cadastrar a turma."),
       });
     }
   }
+
+  const periodosDisponiveis = periodosLetivos.filter((periodo) => {
+    if (periodo.id === form.periodoLetivoId) {
+      return true;
+    }
+
+    const status = String(periodo.status).toLowerCase();
+    return periodo.ativo && ["planejado", "aberto", "ativo"].includes(status);
+  });
 
   return (
     <Container>
@@ -180,9 +194,10 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
                   required
                   label="Curso"
                   select
+                  disabled={Boolean(turmaId && estruturaBloqueada)}
                   value={form.cursoId}
                   error={!!erros.cursoId}
-                  helperText={erros.cursoId}
+                  helperText={erros.cursoId ?? (estruturaBloqueada ? motivoBloqueio : undefined)}
                   onChange={(e) => handleChange("cursoId", e.target.value)}
                 >
                   {cursos.map((curso) => (
@@ -195,12 +210,13 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
                   required
                   label="Periodo Letivo"
                   select
+                  disabled={Boolean(turmaId && estruturaBloqueada)}
                   value={form.periodoLetivoId}
                   error={!!erros.periodoLetivoId}
-                  helperText={erros.periodoLetivoId}
+                  helperText={erros.periodoLetivoId ?? (estruturaBloqueada ? motivoBloqueio : undefined)}
                   onChange={(e) => handleChange("periodoLetivoId", e.target.value)}
                 >
-                  {periodosLetivos.map((periodo) => (
+                  {periodosDisponiveis.map((periodo) => (
                     <MenuItem key={periodo.id} value={periodo.id}>{periodo.codigo}</MenuItem>
                   ))}
                 </TextField>
@@ -275,7 +291,10 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
                 >
                   <MenuItem value="ativa">Ativa</MenuItem>
                   <MenuItem value="planejada">Planejada</MenuItem>
-                  <MenuItem value="encerrada">Encerrada</MenuItem>
+                  <MenuItem value="em_andamento">Em andamento</MenuItem>
+                  <MenuItem value="concluida">Concluida</MenuItem>
+                  <MenuItem value="cancelada">Cancelada</MenuItem>
+                  {form.status === "encerrada" && <MenuItem value="encerrada">Encerrada (legado)</MenuItem>}
                 </TextField>
               </Grid>
             </Grid>
@@ -327,7 +346,14 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
         {turmaId && (
           <>
             <Typography variant="h6">Disciplinas da Turma</Typography>
-            <TurmaDisciplinasSection turmaId={turmaId} cursoId={form.cursoId} />
+            <TurmaDisciplinasSection
+              turmaId={turmaId}
+              cursoId={form.cursoId}
+              onEstruturaUtilizada={() => {
+                setEstruturaBloqueada(true);
+                setMotivoBloqueio("Curso e periodo letivo nao podem ser alterados porque a turma possui disciplinas.");
+              }}
+            />
           </>
         )}
       </Stack>

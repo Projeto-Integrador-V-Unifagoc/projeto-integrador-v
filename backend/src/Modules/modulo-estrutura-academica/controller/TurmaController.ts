@@ -1,4 +1,5 @@
 import { TurmaService } from "../service/TurmaService";
+import { responderErroEstruturaAcademica } from "../errors/EstruturaAcademicaError";
 
 export class TurmaController {
     turmaService = new TurmaService();
@@ -8,7 +9,7 @@ export class TurmaController {
             const turma = await this.turmaService.criarTurma(req.body);
             res.status(201).json(turma);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -17,7 +18,7 @@ export class TurmaController {
             const turmas = await this.turmaService.listarTurmas();
             res.status(200).json(turmas);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -31,7 +32,7 @@ export class TurmaController {
 
             res.status(200).json(turma);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -45,7 +46,7 @@ export class TurmaController {
 
             res.status(200).json(turma);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -59,7 +60,7 @@ export class TurmaController {
 
             res.status(204).send();
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 }

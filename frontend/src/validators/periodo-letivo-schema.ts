@@ -25,5 +25,8 @@ export const periodoLetivoSchema = yup.object({
 
       return new Date(value) >= new Date(dataInicio);
     }),
-  status: yup.string().required("Informe o status"),
+  status: yup
+    .string()
+    .oneOf(["planejado", "aberto", "ativo", "em_andamento", "encerrado", "cancelado"], "Informe um status valido")
+    .required("Informe o status"),
 });

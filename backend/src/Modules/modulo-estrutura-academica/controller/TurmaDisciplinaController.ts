@@ -1,4 +1,5 @@
 import { TurmaDisciplinaService } from "../service/TurmaDisciplinaService";
+import { responderErroEstruturaAcademica } from "../errors/EstruturaAcademicaError";
 
 export class TurmaDisciplinaController {
     turmaDisciplinaService = new TurmaDisciplinaService();
@@ -8,7 +9,7 @@ export class TurmaDisciplinaController {
             const turmaDisciplina = await this.turmaDisciplinaService.criarTurmaDisciplina(req.params.id, req.body);
             res.status(201).json(turmaDisciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -17,7 +18,7 @@ export class TurmaDisciplinaController {
             const turmaDisciplinas = await this.turmaDisciplinaService.listarTurmaDisciplinasPorTurmaId(req.params.id);
             res.status(200).json(turmaDisciplinas);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -35,7 +36,24 @@ export class TurmaDisciplinaController {
 
             res.status(200).json(turmaDisciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
+        }
+    }
+
+    async obterDependencias(req: any, res: any) {
+        try {
+            const dependencias = await this.turmaDisciplinaService.obterDependencias(
+                req.params.id,
+                req.params.turmaDisciplinaId
+            );
+
+            if (!dependencias) {
+                return res.status(404).json({ error: "Disciplina da turma nao encontrada" });
+            }
+
+            res.status(200).json(dependencias);
+        } catch (error) {
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -52,7 +70,7 @@ export class TurmaDisciplinaController {
 
             res.status(204).send();
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 }

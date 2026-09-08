@@ -95,6 +95,16 @@ export function useTurma() {
     }
   };
 
+  const obterDependenciasDisciplinaDaTurma = async (id: string, turmaDisciplinaId: string) => {
+    setCarregando(true);
+
+    try {
+      return await turmaApi.obterDependenciasDisciplinaDaTurma(id, turmaDisciplinaId);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
   return {
     carregando,
     listarTurmas,
@@ -105,6 +115,7 @@ export function useTurma() {
     listarDisciplinasDaTurma,
     criarDisciplinaDaTurma,
     atualizarDisciplinaDaTurma,
+    obterDependenciasDisciplinaDaTurma,
     removerDisciplinaDaTurma,
   };
 }

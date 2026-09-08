@@ -3,6 +3,7 @@ import { CursoRepository } from "../../modulo-facul-dp-curso/repository/CursoRep
 import { DisciplinaRepository } from "../../modulo-disciplinas/repository/DisciplinaRepository";
 import { CursoDisciplinaCommand } from "../models/CursoDisciplina";
 import { CursoDisciplinaRepository } from "../repository/CursoDisciplinaRepository";
+import { erroEstruturaAcademica } from "../errors/EstruturaAcademicaError";
 
 export class CursoDisciplinaService {
     cursoDisciplinaRepository = new CursoDisciplinaRepository();
@@ -13,21 +14,35 @@ export class CursoDisciplinaService {
         const periodo = Number(periodoIdeal);
 
         if (!Number.isInteger(periodo) || periodo < 1 || periodo > 12) {
-            throw new Error("Periodo ideal deve estar entre 1 e 12");
+            throw erroEstruturaAcademica.invalido("Periodo ideal deve estar entre 1 e 12");
         }
+    }
+
+    private validarCargaHoraria(cargaHoraria: unknown) {
+        const carga = Number(cargaHoraria);
+
+        if (!Number.isInteger(carga) || carga <= 0) {
+            throw erroEstruturaAcademica.invalido("Carga horaria deve ser um numero inteiro maior que zero");
+        }
+
+        return carga;
     }
 
     async criarCursoDisciplina(data: any) {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(data.cursoId);
 
         if (!curso) {
-            throw new Error("Curso nao encontrado");
+            throw erroEstruturaAcademica.naoEncontrado("Curso nao encontrado");
         }
 
         const disciplina = await this.disciplinaRepository.buscarDisciplinaPorId(data.disciplinaId);
 
         if (!disciplina) {
-            throw new Error("Disciplina nao encontrada");
+            throw erroEstruturaAcademica.naoEncontrado("Disciplina nao encontrada");
+        }
+
+        if (!disciplina.ativo) {
+            throw erroEstruturaAcademica.conflito("Disciplina inativa nao pode ser adicionada a matriz curricular");
         }
 
         const associacaoExistente = await this.cursoDisciplinaRepository.buscarCursoDisciplinaPorCursoEDisciplina(
@@ -36,10 +51,11 @@ export class CursoDisciplinaService {
         );
 
         if (associacaoExistente) {
-            throw new Error("Disciplina ja associada a este curso");
+            throw erroEstruturaAcademica.conflito("Disciplina ja associada a este curso");
         }
 
         this.validarPeriodoIdeal(data.periodoIdeal);
+        const cargaHoraria = this.validarCargaHoraria(data.cargaHoraria ?? disciplina.carga_horaria);
 
         const cursoDisciplina: CursoDisciplinaCommand = {
             id: uuidv4(),
@@ -47,7 +63,7 @@ export class CursoDisciplinaService {
             disciplina_id: data.disciplinaId,
             periodo_ideal: data.periodoIdeal !== undefined && data.periodoIdeal !== "" ? Number(data.periodoIdeal) : undefined,
             obrigatoria: data.obrigatoria ?? true,
-            carga_horaria: Number(data.cargaHoraria ?? disciplina.carga_horaria),
+            carga_horaria: cargaHoraria,
             ativo: data.ativo ?? true
         };
 
@@ -62,7 +78,7 @@ export class CursoDisciplinaService {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(cursoId);
 
         if (!curso) {
-            throw new Error("Curso nao encontrado");
+            throw erroEstruturaAcademica.naoEncontrado("Curso nao encontrado");
         }
 
         return await this.cursoDisciplinaRepository.listarMatrizCurricularPorCursoId(cursoId, periodo);
@@ -77,6 +93,10 @@ export class CursoDisciplinaService {
 
         if (data.periodoIdeal !== undefined && data.periodoIdeal !== "") {
             this.validarPeriodoIdeal(data.periodoIdeal);
+        }
+
+        if (data.cargaHoraria !== undefined) {
+            this.validarCargaHoraria(data.cargaHoraria);
         }
 
         return await this.cursoDisciplinaRepository.atualizarCursoDisciplina(id, {

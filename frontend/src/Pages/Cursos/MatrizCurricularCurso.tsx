@@ -17,6 +17,7 @@ import { cursoDisciplinaSchema } from "../../validators/curso-disciplina-schema"
 import type { CursoResponse } from "../../models/curso-model";
 import type { DisciplinaResponse } from "../../models/disciplina-model";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
+import { mensagemErroApi } from "../../utils/api-error";
 
 type FormType = {
   disciplinaId: string
@@ -148,8 +149,8 @@ export default function MatrizCurricularCurso() {
       setDialogoAberto(false);
       setForm(initialForm);
       void carregarDados();
-    } catch {
-      setAlerta({ tipo: "error", mensagem: "Nao foi possivel salvar a matriz curricular." });
+    } catch (error) {
+      setAlerta({ tipo: "error", mensagem: mensagemErroApi(error, "Nao foi possivel salvar a matriz curricular.") });
     }
   }
 
@@ -163,12 +164,16 @@ export default function MatrizCurricularCurso() {
       setAlerta({ tipo: "success", mensagem: "Disciplina removida da matriz com sucesso!" });
       setRegistroExclusao(null);
       void carregarDados();
-    } catch {
-      setAlerta({ tipo: "error", mensagem: "Nao foi possivel remover a disciplina da matriz." });
+    } catch (error) {
+      setAlerta({ tipo: "error", mensagem: mensagemErroApi(error, "Nao foi possivel remover a disciplina da matriz.") });
     }
   }
 
   const disciplinasDisponiveis = disciplinas.filter((disciplina) => {
+    if (!disciplina.ativo && registroEdicao?.disciplina.id !== disciplina.id) {
+      return false;
+    }
+
     if (registroEdicao?.disciplina.id === disciplina.id) {
       return true;
     }

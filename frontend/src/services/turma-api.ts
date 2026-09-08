@@ -1,5 +1,5 @@
 import { api } from "../lib/axios";
-import type { TurmaDisciplinaRequest, TurmaRequest } from "../models/turma-model";
+import type { TurmaDisciplinaDependencias, TurmaDisciplinaRequest, TurmaRequest } from "../models/turma-model";
 
 export const turmaApi = {
   async listarTurmas() {
@@ -39,6 +39,11 @@ export const turmaApi = {
 
   async atualizarDisciplinaDaTurma(id: string, turmaDisciplinaId: string, data: TurmaDisciplinaRequest) {
     const response = await api.put(`/turmas/${id}/disciplinas/${turmaDisciplinaId}`, data);
+    return response.data;
+  },
+
+  async obterDependenciasDisciplinaDaTurma(id: string, turmaDisciplinaId: string): Promise<TurmaDisciplinaDependencias> {
+    const response = await api.get(`/turmas/${id}/disciplinas/${turmaDisciplinaId}/dependencias`);
     return response.data;
   },
 

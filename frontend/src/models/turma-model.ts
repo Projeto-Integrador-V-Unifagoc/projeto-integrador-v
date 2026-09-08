@@ -6,6 +6,9 @@ export interface TurmaResponse {
   capacidade_alunos: number
   turno: string
   status: string
+  ocupacao_alunos?: number
+  estrutura_bloqueada?: boolean
+  motivo_bloqueio_estrutura?: string | null
   periodo_letivo: {
     id: string
     codigo: string
@@ -61,4 +64,14 @@ export interface TurmaDisciplinaRequest {
   cursoDisciplinaId: string
   professorId: string
   status?: string
+}
+
+export interface TurmaDisciplinaDependencias {
+  alunos: number
+  avaliacoes: number
+  aulas: number
+  notas: number
+  frequencias: number
+  lancamentos: number
+  emUso: boolean
 }

@@ -55,6 +55,24 @@ export class TurmaRepository {
             .first();
     }
 
+    async obterUsoDaTurma(id: string) {
+        const [disciplinas, matriculas, ocupacao] = await Promise.all([
+            db("turma_disciplina").where({ turma_id: id }).count("id as total").first(),
+            db("matricula").where({ turma_id: id }).count("id as total").first(),
+            db("matricula")
+                .where({ turma_id: id })
+                .whereRaw("lower(status) not in (?, ?, ?, ?)", ["cancelada", "cancelado", "concluida", "concluido"])
+                .count("id as total")
+                .first()
+        ]);
+
+        return {
+            disciplinas: Number(disciplinas?.total ?? 0),
+            matriculas: Number(matriculas?.total ?? 0),
+            ocupacao: Number(ocupacao?.total ?? 0)
+        };
+    }
+
     async atualizarTurma(id: string, data: Partial<TurmaCommand>) {
         const [turma] = await db("turma")
             .where({ id })

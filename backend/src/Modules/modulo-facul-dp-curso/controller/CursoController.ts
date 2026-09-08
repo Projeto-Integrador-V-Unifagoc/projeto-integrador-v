@@ -1,4 +1,5 @@
 import { CursoService } from "../service/CursoService";
+import { responderErroEstruturaAcademica } from "../../modulo-estrutura-academica/errors/EstruturaAcademicaError";
 
 export default class CursoController {
     cursoService = new CursoService();
@@ -8,7 +9,7 @@ export default class CursoController {
             const curso = await this.cursoService.criarCurso(req.body);
             res.status(201).json(curso);
         } catch (error) {
-            res.status(500).json({ error: "Erro ao criar curso" });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -17,7 +18,7 @@ export default class CursoController {
             const cursos = await this.cursoService.listarCursos();
             res.status(200).json(cursos);
         } catch (error) {
-            res.status(500).json({ error: "Erro ao listar cursos" });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -29,7 +30,7 @@ export default class CursoController {
             }
             res.status(200).json(curso);
         } catch (error) {
-            res.status(500).json({ error: "Erro ao buscar curso" });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -41,7 +42,7 @@ export default class CursoController {
             }
             res.status(200).json(curso);
         } catch (error) {
-            res.status(500).json({ error: "Erro ao atualizar curso" });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -53,10 +54,7 @@ export default class CursoController {
             }
             res.status(204).send();
         } catch (error) {
-            const mensagem = (error as Error).message;
-            const status = mensagem.startsWith("Nao e possivel remover o curso") ? 400 : 500;
-
-            res.status(status).json({ error: mensagem });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 }

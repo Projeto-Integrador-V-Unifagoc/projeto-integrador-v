@@ -1,4 +1,5 @@
 import { CursoDisciplinaService } from "../service/CursoDisciplinaService";
+import { responderErroEstruturaAcademica } from "../errors/EstruturaAcademicaError";
 
 export class CursoDisciplinaController {
     cursoDisciplinaService = new CursoDisciplinaService();
@@ -8,7 +9,7 @@ export class CursoDisciplinaController {
             const cursoDisciplina = await this.cursoDisciplinaService.criarCursoDisciplina(req.body);
             res.status(201).json(cursoDisciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -17,7 +18,7 @@ export class CursoDisciplinaController {
             const cursoDisciplinas = await this.cursoDisciplinaService.listarCursoDisciplinas();
             res.status(200).json(cursoDisciplinas);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -27,7 +28,7 @@ export class CursoDisciplinaController {
             const matrizCurricular = await this.cursoDisciplinaService.listarMatrizCurricularPorCursoId(req.params.id, periodo);
             res.status(200).json(matrizCurricular);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -41,7 +42,7 @@ export class CursoDisciplinaController {
 
             res.status(200).json(cursoDisciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -55,7 +56,7 @@ export class CursoDisciplinaController {
 
             res.status(204).send();
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 }

@@ -227,6 +227,9 @@ app.get("/turmas/:id/disciplinas", autenticar, (req, res) =>
 app.put("/turmas/:id/disciplinas/:turmaDisciplinaId", autenticar, soSecretaria, (req, res) =>
   turmaDisciplinaController.atualizarTurmaDisciplina(req, res),
 );
+app.get("/turmas/:id/disciplinas/:turmaDisciplinaId/dependencias", autenticar, soSecretaria, (req, res) =>
+  turmaDisciplinaController.obterDependencias(req, res),
+);
 app.delete("/turmas/:id/disciplinas/:turmaDisciplinaId", autenticar, soSecretaria, (req, res) =>
   turmaDisciplinaController.removerTurmaDisciplina(req, res),
 );

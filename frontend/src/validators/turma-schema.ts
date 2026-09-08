@@ -18,6 +18,9 @@ export const turmaSchema = yup.object({
     .integer("A capacidade deve ser inteira")
     .positive("A capacidade deve ser maior que zero")
     .required("Informe a capacidade de alunos"),
-  turno: yup.string().required("Informe o turno"),
-  status: yup.string().required("Informe o status"),
+  turno: yup.string().oneOf(["matutino", "vespertino", "noturno", "integral"], "Informe um turno valido").required("Informe o turno"),
+  status: yup
+    .string()
+    .oneOf(["planejada", "ativa", "em_andamento", "concluida", "cancelada", "encerrada"], "Informe um status valido")
+    .required("Informe o status"),
 });

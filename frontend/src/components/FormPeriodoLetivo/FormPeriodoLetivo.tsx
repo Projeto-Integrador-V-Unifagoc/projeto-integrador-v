@@ -8,6 +8,7 @@ import TextField from "../TextField";
 import Button from "../Button";
 import { usePeriodoLetivo } from "../../hooks/use-periodo-letivo";
 import { periodoLetivoSchema } from "../../validators/periodo-letivo-schema";
+import { mensagemErroApi } from "../../utils/api-error";
 
 type FormPeriodoLetivoProps = {
   periodoLetivoId?: string
@@ -59,10 +60,10 @@ export default function FormPeriodoLetivo({ periodoLetivoId }: FormPeriodoLetivo
           dataFim: periodoLetivo.data_fim?.slice(0, 10) ?? "",
           status: periodoLetivo.status,
         });
-      } catch {
+      } catch (error) {
         setAlerta({
           tipo: "error",
-          mensagem: "Nao foi possivel carregar o periodo letivo.",
+          mensagem: mensagemErroApi(error, "Nao foi possivel carregar o periodo letivo."),
         });
       }
     }
@@ -116,12 +117,12 @@ export default function FormPeriodoLetivo({ periodoLetivoId }: FormPeriodoLetivo
       setTimeout(() => {
         navigate("/periodos-letivos/lista");
       }, 1500);
-    } catch {
+    } catch (error) {
       setAlerta({
         tipo: "error",
-        mensagem: periodoLetivoId
+        mensagem: mensagemErroApi(error, periodoLetivoId
           ? "Nao foi possivel atualizar o periodo letivo."
-          : "Nao foi possivel cadastrar o periodo letivo.",
+          : "Nao foi possivel cadastrar o periodo letivo."),
       });
     }
   }
@@ -204,8 +205,11 @@ export default function FormPeriodoLetivo({ periodoLetivoId }: FormPeriodoLetivo
                   onChange={(e) => handleChange("status", e.target.value)}
                 >
                   <MenuItem value="planejado">Planejado</MenuItem>
-                  <MenuItem value="ativo">Ativo</MenuItem>
+                  <MenuItem value="aberto">Aberto</MenuItem>
+                  <MenuItem value="ativo">Ativo (legado)</MenuItem>
+                  <MenuItem value="em_andamento">Em andamento</MenuItem>
                   <MenuItem value="encerrado">Encerrado</MenuItem>
+                  <MenuItem value="cancelado">Cancelado</MenuItem>
                 </TextField>
               </Grid>
             </Grid>
