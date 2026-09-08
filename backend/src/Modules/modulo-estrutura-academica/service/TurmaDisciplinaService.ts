@@ -4,6 +4,17 @@ import { CursoDisciplinaRepository } from "../repository/CursoDisciplinaReposito
 import { TurmaDisciplinaRepository } from "../repository/TurmaDisciplinaRepository";
 import { TurmaRepository } from "../repository/TurmaRepository";
 import { professorRepository } from "../../professor/repository/professorRepository";
+import { erroEstruturaAcademica } from "../errors/EstruturaAcademicaError";
+
+const STATUS_OFERTA = ["planejada", "ativa", "concluida", "cancelada", "encerrada"];
+const STATUS_TURMA_FECHADA = ["concluida", "cancelada", "encerrada"];
+const TRANSICOES_OFERTA: Record<string, string[]> = {
+    planejada: ["planejada", "ativa", "cancelada"],
+    ativa: ["ativa", "concluida", "cancelada", "encerrada"],
+    concluida: ["concluida"],
+    cancelada: ["cancelada"],
+    encerrada: ["encerrada"]
+};
 
 export class TurmaDisciplinaService {
     turmaDisciplinaRepository = new TurmaDisciplinaRepository();
@@ -11,27 +22,45 @@ export class TurmaDisciplinaService {
     cursoDisciplinaRepository = new CursoDisciplinaRepository();
     professorRepository = professorRepository;
 
+    private validarStatus(status: unknown) {
+        const normalizado = String(status ?? "ativa").trim().toLowerCase();
+
+        if (!STATUS_OFERTA.includes(normalizado)) {
+            throw erroEstruturaAcademica.invalido("Status da oferta invalido");
+        }
+
+        return normalizado;
+    }
+
     async criarTurmaDisciplina(turmaId: string, data: any) {
         const turma = await this.turmaRepository.buscarTurmaPorId(turmaId);
 
         if (!turma) {
-            throw new Error("Turma nao encontrada");
+            throw erroEstruturaAcademica.naoEncontrado("Turma nao encontrada");
+        }
+
+        if (STATUS_TURMA_FECHADA.includes(String(turma.status).toLowerCase())) {
+            throw erroEstruturaAcademica.conflito("Turma concluida ou cancelada nao aceita novas disciplinas");
         }
 
         const cursoDisciplina = await this.cursoDisciplinaRepository.buscarCursoDisciplinaPorId(data.cursoDisciplinaId);
 
         if (!cursoDisciplina) {
-            throw new Error("Associacao curso disciplina nao encontrada");
+            throw erroEstruturaAcademica.naoEncontrado("Associacao curso disciplina nao encontrada");
         }
 
         if (cursoDisciplina.curso.id !== turma.curso.id) {
-            throw new Error("A disciplina informada nao pertence a matriz curricular do curso da turma");
+            throw erroEstruturaAcademica.conflito("A disciplina informada nao pertence a matriz curricular do curso da turma");
+        }
+
+        if (!cursoDisciplina.ativo || !cursoDisciplina.disciplina.ativo) {
+            throw erroEstruturaAcademica.conflito("A associacao curricular ou a disciplina esta inativa");
         }
 
         const professor = await this.professorRepository.buscarProfessorAtivoPorId(data.professorId);
 
         if (!professor) {
-            throw new Error("Professor nao encontrado");
+            throw erroEstruturaAcademica.naoEncontrado("Professor nao encontrado");
         }
 
         const turmaDisciplinaExistente = await this.turmaDisciplinaRepository.buscarTurmaDisciplinaPorTurmaECursoDisciplina(
@@ -40,7 +69,7 @@ export class TurmaDisciplinaService {
         );
 
         if (turmaDisciplinaExistente) {
-            throw new Error("Disciplina ja adicionada a esta turma");
+            throw erroEstruturaAcademica.conflito("Disciplina ja adicionada a esta turma");
         }
 
         const turmaDisciplina: TurmaDisciplinaCommand = {
@@ -48,7 +77,7 @@ export class TurmaDisciplinaService {
             turma_id: turmaId,
             curso_disciplina_id: data.cursoDisciplinaId,
             professor_id: data.professorId,
-            status: data.status ?? "ativa"
+            status: this.validarStatus(data.status)
         };
 
         return await this.turmaDisciplinaRepository.criarTurmaDisciplina(turmaDisciplina);
@@ -58,7 +87,7 @@ export class TurmaDisciplinaService {
         const turma = await this.turmaRepository.buscarTurmaRegistroPorId(turmaId);
 
         if (!turma) {
-            throw new Error("Turma nao encontrada");
+            throw erroEstruturaAcademica.naoEncontrado("Turma nao encontrada");
         }
 
         return await this.turmaDisciplinaRepository.listarTurmaDisciplinasPorTurmaId(turmaId);
@@ -68,7 +97,7 @@ export class TurmaDisciplinaService {
         const turma = await this.turmaRepository.buscarTurmaRegistroPorId(turmaId);
 
         if (!turma) {
-            throw new Error("Turma nao encontrada");
+            throw erroEstruturaAcademica.naoEncontrado("Turma nao encontrada");
         }
 
         const turmaDisciplinaAtual = await this.turmaDisciplinaRepository.buscarTurmaDisciplinaPorId(turmaDisciplinaId);
@@ -81,14 +110,35 @@ export class TurmaDisciplinaService {
             const professor = await this.professorRepository.buscarProfessorAtivoPorId(data.professorId);
 
             if (!professor) {
-                throw new Error("Professor nao encontrado");
+                throw erroEstruturaAcademica.naoEncontrado("Professor nao encontrado");
+            }
+        }
+
+        const status = data.status === undefined ? undefined : this.validarStatus(data.status);
+
+        if (status) {
+            const statusAtual = String(turmaDisciplinaAtual.status).toLowerCase();
+            if (!(TRANSICOES_OFERTA[statusAtual] ?? [statusAtual]).includes(status)) {
+                throw erroEstruturaAcademica.conflito(
+                    `Transicao de status da oferta de ${turmaDisciplinaAtual.status} para ${status} nao e permitida`
+                );
             }
         }
 
         return await this.turmaDisciplinaRepository.atualizarTurmaDisciplina(turmaDisciplinaId, {
             professor_id: data.professorId,
-            status: data.status
+            status
         });
+    }
+
+    async obterDependencias(turmaId: string, turmaDisciplinaId: string) {
+        const turmaDisciplina = await this.turmaDisciplinaRepository.buscarTurmaDisciplinaPorId(turmaDisciplinaId);
+
+        if (!turmaDisciplina || turmaDisciplina.turma.id !== turmaId) {
+            return null;
+        }
+
+        return await this.turmaDisciplinaRepository.obterDependencias(turmaDisciplinaId);
     }
 
     async removerTurmaDisciplina(turmaId: string, turmaDisciplinaId: string) {
@@ -98,6 +148,15 @@ export class TurmaDisciplinaService {
             return 0;
         }
 
-        return await this.turmaDisciplinaRepository.removerTurmaDisciplina(turmaDisciplinaId);
+        const resultado = await this.turmaDisciplinaRepository.removerSeSemDependencias(turmaDisciplinaId);
+        const dependencias = resultado.dependencias;
+
+        if (dependencias?.emUso) {
+            throw erroEstruturaAcademica.ofertaComHistorico(
+                `A oferta possui ${dependencias.alunos} aluno(s) e ${dependencias.lancamentos} lancamento(s). Cancele a oferta para preservar o historico.`
+            );
+        }
+
+        return resultado.removidos;
     }
 }

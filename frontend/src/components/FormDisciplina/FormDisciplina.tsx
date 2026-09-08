@@ -8,6 +8,7 @@ import TextField from "../TextField";
 import Button from "../Button";
 import { useDisciplina } from "../../hooks/use-disciplina";
 import { disciplinaSchema } from "../../validators/disciplina-schema";
+import { mensagemErroApi } from "../../utils/api-error";
 
 type FormDisciplinaProps = {
   disciplinaId?: string
@@ -57,10 +58,10 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
           cargaHoraria: String(disciplina.carga_horaria),
           preRequisito: disciplina.pre_requisito ?? "",
         })
-      } catch {
+      } catch (error) {
         setAlerta({
           tipo: "error",
-          mensagem: "Nao foi possivel carregar a disciplina.",
+          mensagem: mensagemErroApi(error, "Nao foi possivel carregar a disciplina."),
         })
       }
     }
@@ -117,12 +118,12 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
       setTimeout(() => {
         navigate("/disciplinas/lista")
       }, 1500)
-    } catch {
+    } catch (error) {
       setAlerta({
         tipo: "error",
-        mensagem: disciplinaId
+        mensagem: mensagemErroApi(error, disciplinaId
           ? "Nao foi possivel atualizar a disciplina."
-          : "Nao foi possivel cadastrar a disciplina.",
+          : "Nao foi possivel cadastrar a disciplina."),
       })
     }
   }

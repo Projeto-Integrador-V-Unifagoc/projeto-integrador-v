@@ -29,7 +29,7 @@ export class DisciplinaRepository {
 
     async buscarDisciplinaPorCodigo(codigo: string) {
         return await db("disciplinas")
-            .where({ codigo })
+            .whereRaw("lower(codigo) = lower(?)", [codigo])
             .first();
     }
 

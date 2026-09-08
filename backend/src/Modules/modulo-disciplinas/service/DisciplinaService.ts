@@ -1,23 +1,45 @@
 import { v4 as uuidv4 } from "uuid";
 import { DisciplinaCommand } from "../models/Disciplina";
 import { DisciplinaRepository } from "../repository/DisciplinaRepository";
+import { erroEstruturaAcademica } from "../../modulo-estrutura-academica/errors/EstruturaAcademicaError";
 
 export class DisciplinaService {
     disciplinaRepository = new DisciplinaRepository();
 
+    private textoObrigatorio(valor: unknown, campo: string) {
+        if (typeof valor !== "string" || !valor.trim()) {
+            throw erroEstruturaAcademica.invalido(`${campo} e obrigatorio`);
+        }
+
+        return valor.trim();
+    }
+
+    private validarCargaHoraria(valor: unknown) {
+        const cargaHoraria = Number(valor);
+
+        if (!Number.isInteger(cargaHoraria) || cargaHoraria <= 0) {
+            throw erroEstruturaAcademica.invalido("Carga horaria deve ser um numero inteiro maior que zero");
+        }
+
+        return cargaHoraria;
+    }
+
     async criarDisciplina(data: any) {
-        const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(data.codigo);
+        const codigo = this.textoObrigatorio(data.codigo, "Codigo").toUpperCase();
+        const nome = this.textoObrigatorio(data.nome, "Nome");
+        const cargaHoraria = this.validarCargaHoraria(data.cargaHoraria);
+        const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(codigo);
 
         if (disciplinaExistente) {
-            throw new Error("Ja existe disciplina com este codigo");
+            throw erroEstruturaAcademica.conflito("Ja existe disciplina com este codigo");
         }
 
         const disciplina: DisciplinaCommand = {
             id: uuidv4(),
-            codigo: data.codigo,
-            nome: data.nome,
+            codigo,
+            nome,
             pre_requisito: data.preRequisito,
-            carga_horaria: Number(data.cargaHoraria),
+            carga_horaria: cargaHoraria,
             ativo: data.ativo ?? true
         };
 
@@ -39,19 +61,23 @@ export class DisciplinaService {
             return null;
         }
 
-        if (data.codigo && data.codigo !== disciplinaAtual.codigo) {
-            const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(data.codigo);
+        const codigo = this.textoObrigatorio(data.codigo ?? disciplinaAtual.codigo, "Codigo").toUpperCase();
+        const nome = this.textoObrigatorio(data.nome ?? disciplinaAtual.nome, "Nome");
+        const cargaHoraria = this.validarCargaHoraria(data.cargaHoraria ?? disciplinaAtual.carga_horaria);
 
-            if (disciplinaExistente) {
-                throw new Error("Ja existe disciplina com este codigo");
+        if (codigo !== disciplinaAtual.codigo) {
+            const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(codigo);
+
+            if (disciplinaExistente && disciplinaExistente.id !== id) {
+                throw erroEstruturaAcademica.conflito("Ja existe disciplina com este codigo");
             }
         }
 
         const disciplina: Partial<DisciplinaCommand> = {
-            codigo: data.codigo,
-            nome: data.nome,
+            codigo,
+            nome,
             pre_requisito: data.preRequisito,
-            carga_horaria: data.cargaHoraria !== undefined ? Number(data.cargaHoraria) : undefined,
+            carga_horaria: cargaHoraria,
             ativo: data.ativo
         };
 

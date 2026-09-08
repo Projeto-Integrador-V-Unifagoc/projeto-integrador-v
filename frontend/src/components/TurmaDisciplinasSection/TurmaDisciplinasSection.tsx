@@ -13,12 +13,14 @@ import { useProfessor } from "../../hooks/use-professor";
 import { turmaDisciplinaSchema } from "../../validators/turma-disciplina-schema";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
 import type { ProfessorOpcao } from "../../models/professor-model";
-import type { TurmaDisciplinaResponse } from "../../models/turma-model";
+import type { TurmaDisciplinaDependencias, TurmaDisciplinaResponse } from "../../models/turma-model";
 import type { GridColDef } from "@mui/x-data-grid";
+import { mensagemErroApi } from "../../utils/api-error";
 
 type Props = {
   turmaId: string
   cursoId: string
+  onEstruturaUtilizada?: () => void
 }
 
 type FormType = {
@@ -33,7 +35,7 @@ const initialForm: FormType = {
   status: "ativa",
 };
 
-export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
+export function TurmaDisciplinasSection({ turmaId, cursoId, onEstruturaUtilizada }: Props) {
   const [disciplinasTurma, setDisciplinasTurma] = useState<TurmaDisciplinaResponse[]>([]);
   const [disciplinasMatriz, setDisciplinasMatriz] = useState<CursoDisciplinaResponse[]>([]);
   const [professores, setProfessores] = useState<ProfessorOpcao[]>([]);
@@ -41,10 +43,18 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   const [dialogoAberto, setDialogoAberto] = useState(false);
   const [registroEdicao, setRegistroEdicao] = useState<TurmaDisciplinaResponse | null>(null);
   const [registroExclusao, setRegistroExclusao] = useState<TurmaDisciplinaResponse | null>(null);
+  const [dependenciasExclusao, setDependenciasExclusao] = useState<TurmaDisciplinaDependencias | null>(null);
   const [form, setForm] = useState<FormType>(initialForm);
   const [erros, setErros] = useState<Record<string, string>>({});
-  const [filtroStatus, setFiltroStatus] = useState<"todas" | "ativa" | "planejada" | "encerrada">("todas");
-  const { carregando, listarDisciplinasDaTurma, criarDisciplinaDaTurma, atualizarDisciplinaDaTurma, removerDisciplinaDaTurma } = useTurma();
+  const [filtroStatus, setFiltroStatus] = useState("todas");
+  const {
+    carregando,
+    listarDisciplinasDaTurma,
+    criarDisciplinaDaTurma,
+    atualizarDisciplinaDaTurma,
+    obterDependenciasDisciplinaDaTurma,
+    removerDisciplinaDaTurma,
+  } = useTurma();
   const { listarMatrizCurricularPorCursoId } = useCursoDisciplina();
   const { listarOpcoes } = useProfessor();
 
@@ -72,7 +82,8 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
 
   const disciplinasDisponiveis = useMemo(() => {
     const idsEmUso = new Set(disciplinasTurma.map((item) => item.curso_disciplina.id));
-    return disciplinasMatriz.filter((item) => !idsEmUso.has(item.id) || item.id === form.cursoDisciplinaId);
+    return disciplinasMatriz.filter((item) =>
+      item.ativo && item.disciplina.ativo && (!idsEmUso.has(item.id) || item.id === form.cursoDisciplinaId));
   }, [disciplinasMatriz, disciplinasTurma, form.cursoDisciplinaId]);
 
   const disciplinasTurmaOrdenadas = [...disciplinasTurma]
@@ -105,6 +116,18 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
     setDialogoAberto(true);
   }
 
+  async function abrirDialogoExclusao(item: TurmaDisciplinaResponse) {
+    setRegistroExclusao(item);
+    setDependenciasExclusao(null);
+
+    try {
+      setDependenciasExclusao(await obterDependenciasDisciplinaDaTurma(turmaId, item.id));
+    } catch (error) {
+      setRegistroExclusao(null);
+      setAlerta({ tipo: "error", mensagem: mensagemErroApi(error, "Nao foi possivel verificar o uso da disciplina.") });
+    }
+  }
+
   async function salvar() {
     try {
       await turmaDisciplinaSchema.validate(form, { abortEarly: false });
@@ -129,14 +152,15 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
         setAlerta({ tipo: "success", mensagem: "Disciplina da turma atualizada com sucesso!" });
       } else {
         await criarDisciplinaDaTurma(turmaId, form);
+        onEstruturaUtilizada?.();
         setAlerta({ tipo: "success", mensagem: "Disciplina adicionada a turma com sucesso!" });
       }
 
       setDialogoAberto(false);
       setForm(initialForm);
       void carregarDados();
-    } catch {
-      setAlerta({ tipo: "error", mensagem: "Nao foi possivel salvar a disciplina da turma." });
+    } catch (error) {
+      setAlerta({ tipo: "error", mensagem: mensagemErroApi(error, "Nao foi possivel salvar a disciplina da turma.") });
     }
   }
 
@@ -150,8 +174,8 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
       setAlerta({ tipo: "success", mensagem: "Disciplina removida da turma com sucesso!" });
       setRegistroExclusao(null);
       void carregarDados();
-    } catch {
-      setAlerta({ tipo: "error", mensagem: "Nao foi possivel remover a disciplina da turma." });
+    } catch (error) {
+      setAlerta({ tipo: "error", mensagem: mensagemErroApi(error, "Nao foi possivel remover a disciplina da turma.") });
     }
   }
 
@@ -171,7 +195,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
           <IconButton onClick={() => abrirDialogoEdicao(params.row)} color="primary">
             <Pencil size={18} />
           </IconButton>
-          <IconButton onClick={() => setRegistroExclusao(params.row)} color="error">
+          <IconButton onClick={() => void abrirDialogoExclusao(params.row)} color="error">
             <Trash2 size={18} />
           </IconButton>
         </>
@@ -198,12 +222,13 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
                   label="Filtrar por Status"
                   select
                   value={filtroStatus}
-                  onChange={(e) => setFiltroStatus(e.target.value as "todas" | "ativa" | "planejada" | "encerrada")}
+                  onChange={(e) => setFiltroStatus(e.target.value)}
                 >
                   <MenuItem value="todas">Todas</MenuItem>
                   <MenuItem value="ativa">Ativas</MenuItem>
                   <MenuItem value="planejada">Planejadas</MenuItem>
-                  <MenuItem value="encerrada">Encerradas</MenuItem>
+                  <MenuItem value="concluida">Concluidas</MenuItem>
+                  <MenuItem value="cancelada">Canceladas</MenuItem>
                 </TextField>
               </Grid>
               <Grid size={{ xs: 12, md: 9 }}>
@@ -295,7 +320,9 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
               >
                 <MenuItem value="ativa">Ativa</MenuItem>
                 <MenuItem value="planejada">Planejada</MenuItem>
-                <MenuItem value="encerrada">Encerrada</MenuItem>
+                <MenuItem value="concluida">Concluida</MenuItem>
+                <MenuItem value="cancelada">Cancelada</MenuItem>
+                {form.status === "encerrada" && <MenuItem value="encerrada">Encerrada (legado)</MenuItem>}
               </TextField>
             </Grid>
           </Grid>
@@ -312,13 +339,29 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
           <Dialog.ActionClose onClose={() => setRegistroExclusao(null)} />
         </Dialog.Header>
         <Dialog.Content>
-          <Typography>
-            Deseja remover a disciplina {registroExclusao?.curso_disciplina.disciplina.nome} da turma?
-          </Typography>
+          {!dependenciasExclusao ? (
+            <Typography>Verificando vinculos e lancamentos...</Typography>
+          ) : dependenciasExclusao.emUso ? (
+            <Alert severity="warning">
+              Esta oferta possui {dependenciasExclusao.alunos} aluno(s) e {dependenciasExclusao.lancamentos} lancamento(s).
+              Ela nao pode ser excluida; edite o status para Cancelada para preservar o historico.
+            </Alert>
+          ) : (
+            <Typography>
+              A oferta nunca foi utilizada. Deseja remover a disciplina {registroExclusao?.curso_disciplina.disciplina.nome} da turma?
+            </Typography>
+          )}
         </Dialog.Content>
         <Dialog.Footer>
           <Button variant="outlined" onClick={() => setRegistroExclusao(null)}>Cancelar</Button>
-          <Button variant="contained" color="error" onClick={confirmarExclusao}>Remover</Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={!dependenciasExclusao || dependenciasExclusao.emUso}
+            onClick={confirmarExclusao}
+          >
+            Remover
+          </Button>
         </Dialog.Footer>
       </Dialog.Root>
     </Stack>

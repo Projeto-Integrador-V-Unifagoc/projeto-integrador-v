@@ -2,6 +2,38 @@ import { db } from "../../../database/connection";
 import { TurmaDisciplinaCommand, TurmaDisciplinaMapper } from "../models/TurmaDisciplina";
 
 export class TurmaDisciplinaRepository {
+    private async contarDependencias(executor: any, id: string) {
+        const [matriculas, avaliacoes, aulas, notas, frequencias] = await Promise.all([
+            executor("matricula_turma_disciplina").where({ turma_disciplina_id: id }).count("id as total").first(),
+            executor("avaliacao").where({ turma_disciplina_id: id }).count("id as total").first(),
+            executor("aula").where({ turma_disciplina_id: id }).count("id as total").first(),
+            executor("nota as n")
+                .join("avaliacao as a", "n.avaliacao_id", "=", "a.id")
+                .where("a.turma_disciplina_id", id)
+                .count("n.id as total")
+                .first(),
+            executor("frequencia as f")
+                .join("aula as a", "f.aula_id", "=", "a.id")
+                .where("a.turma_disciplina_id", id)
+                .count("f.id as total")
+                .first()
+        ]);
+
+        const resultado = {
+            alunos: Number(matriculas?.total ?? 0),
+            avaliacoes: Number(avaliacoes?.total ?? 0),
+            aulas: Number(aulas?.total ?? 0),
+            notas: Number(notas?.total ?? 0),
+            frequencias: Number(frequencias?.total ?? 0)
+        };
+
+        return {
+            ...resultado,
+            lancamentos: resultado.avaliacoes + resultado.aulas + resultado.notas + resultado.frequencias,
+            emUso: Object.values(resultado).some((total) => total > 0)
+        };
+    }
+
     private baseQuery() {
         return db("turma_disciplina")
             .join("turma", "turma_disciplina.turma_id", "=", "turma.id")
@@ -62,6 +94,29 @@ export class TurmaDisciplinaRepository {
         return await db("turma_disciplina")
             .where({ turma_id, curso_disciplina_id })
             .first();
+    }
+
+    async obterDependencias(id: string) {
+        return await this.contarDependencias(db, id);
+    }
+
+    async removerSeSemDependencias(id: string) {
+        return await db.transaction(async (trx) => {
+            const oferta = await trx("turma_disciplina").where({ id }).forUpdate().first();
+
+            if (!oferta) {
+                return { removidos: 0, dependencias: null };
+            }
+
+            const dependencias = await this.contarDependencias(trx, id);
+
+            if (dependencias.emUso) {
+                return { removidos: 0, dependencias };
+            }
+
+            const removidos = await trx("turma_disciplina").where({ id }).del();
+            return { removidos, dependencias };
+        });
     }
 
     async atualizarTurmaDisciplina(id: string, data: Partial<TurmaDisciplinaCommand>) {

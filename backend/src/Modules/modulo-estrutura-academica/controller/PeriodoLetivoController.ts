@@ -1,4 +1,5 @@
 import { PeriodoLetivoService } from "../service/PeriodoLetivoService";
+import { responderErroEstruturaAcademica } from "../errors/EstruturaAcademicaError";
 
 export class PeriodoLetivoController {
     periodoLetivoService = new PeriodoLetivoService();
@@ -8,7 +9,7 @@ export class PeriodoLetivoController {
             const periodoLetivo = await this.periodoLetivoService.criarPeriodoLetivo(req.body);
             res.status(201).json(periodoLetivo);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -17,7 +18,7 @@ export class PeriodoLetivoController {
             const periodosLetivos = await this.periodoLetivoService.listarPeriodosLetivos();
             res.status(200).json(periodosLetivos);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -31,7 +32,7 @@ export class PeriodoLetivoController {
 
             res.status(200).json(periodoLetivo);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -45,7 +46,7 @@ export class PeriodoLetivoController {
 
             res.status(200).json(periodoLetivo);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 
@@ -59,7 +60,7 @@ export class PeriodoLetivoController {
 
             res.status(204).send();
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstruturaAcademica(res, error);
         }
     }
 }

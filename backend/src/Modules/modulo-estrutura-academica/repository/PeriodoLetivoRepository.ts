@@ -45,6 +45,15 @@ export class PeriodoLetivoRepository {
             .first();
     }
 
+    async possuiTurmas(id: string) {
+        const registro = await db("turma")
+            .where({ periodo_letivo_id: id })
+            .count("id as total")
+            .first();
+
+        return Number(registro?.total ?? 0) > 0;
+    }
+
     async atualizarPeriodoLetivo(id: string, data: Partial<PeriodoLetivoCommand>) {
         const [periodoLetivo] = await db("periodo_letivo")
             .where({ id })
