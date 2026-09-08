@@ -24,7 +24,7 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
+ backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -38,7 +38,6 @@ services:
       DATABASE_NAME: ${DATABASE_NAME:?DATABASE_NAME deve ser definido no arquivo .env}
       NODE_ENV: ${NODE_ENV:-production}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET deve ser definido no arquivo .env}
-
       EMAIL_MODO_TESTE: "${EMAIL_MODO_TESTE:-false}"
       SMTP_HOST: "${SMTP_HOST:-}"
       SMTP_PORT: "${SMTP_PORT:-587}"
@@ -55,15 +54,14 @@ services:
     networks:
       - app-network
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     healthcheck:
       test: ["CMD-SHELL", "wget --spider http://127.0.0.1:3000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
-
+      
   frontend:
     build:
       context: ./frontend
