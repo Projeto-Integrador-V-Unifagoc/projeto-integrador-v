@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it, expect } from "vitest";
 import { HomeAlunoService } from "./HomeAlunoService.js";
 
 const usuarioId = "77777777-7777-4777-8777-777777777777";
@@ -48,8 +47,8 @@ function criar(overrides: Record<string, any> = {}) {
 describe("HomeAlunoService.minhasDisciplinas", () => {
   it("mapeia o contrato e converte carga horária para número", async () => {
     const r = await criar().minhasDisciplinas(reqAluno);
-    assert.equal(r.length, 1);
-    assert.deepEqual(r[0], {
+    expect(r.length).toBe(1);
+    expect(r[0]).toEqual({
       turmaDisciplinaId,
       disciplinaId: "d1",
       codigo: "BD2",
@@ -59,7 +58,7 @@ describe("HomeAlunoService.minhasDisciplinas", () => {
       cargaHoraria: 60,
       periodoLetivo: { id: "pl1", codigo: "2026/1" },
     });
-    assert.equal(typeof r[0].cargaHoraria, "number");
+    expect(typeof r[0].cargaHoraria).toBe("number");
   });
 
   it("deriva o aluno do JWT e consulta o repositório pelo id resolvido", async () => {
@@ -70,13 +69,13 @@ describe("HomeAlunoService.minhasDisciplinas", () => {
       listarDisciplinasDoAluno: async (id: string) => { alunoRecebido = id; return []; },
     });
     await service.minhasDisciplinas(reqAluno);
-    assert.equal(usuarioRecebido, usuarioId);
-    assert.equal(alunoRecebido, alunoId);
+    expect(usuarioRecebido).toBe(usuarioId);
+    expect(alunoRecebido).toBe(alunoId);
   });
 
   it("retorna lista vazia para aluno sem matrícula ativa no período corrente", async () => {
     const r = await criar({ listarDisciplinasDoAluno: async () => [] }).minhasDisciplinas(reqAluno);
-    assert.deepEqual(r, []);
+    expect(r).toEqual([]);
   });
 });
 
@@ -89,13 +88,13 @@ describe("HomeAlunoService.minhasTarefas", () => {
       ],
     });
     const r = await service.minhasTarefas(reqAluno);
-    assert.deepEqual(r.map((t) => t.avaliacaoId), ["av1", "av2"]);
-    assert.equal(r[0].titulo, "Trabalho de Pesquisa - Protótipo");
-    assert.equal(r[0].tipo, "TRABALHO");
-    assert.equal(r[0].disciplinaNome, "Projeto Integrador V");
-    assert.equal(r[0].turmaDisciplinaId, turmaDisciplinaId);
-    assert.equal(r[0].dataVencimento, "2026-06-20");
-    assert.equal(r[0].valor, 10);
+    expect(r.map((t) => t.avaliacaoId)).toEqual(["av1", "av2"]);
+    expect(r[0].titulo).toBe("Trabalho de Pesquisa - Protótipo");
+    expect(r[0].tipo).toBe("TRABALHO");
+    expect(r[0].disciplinaNome).toBe("Projeto Integrador V");
+    expect(r[0].turmaDisciplinaId).toBe(turmaDisciplinaId);
+    expect(r[0].dataVencimento).toBe("2026-06-20");
+    expect(r[0].valor).toBe(10);
   });
 
   it("usa rótulo derivado do tipo quando a descrição é nula ou em branco", async () => {
@@ -105,8 +104,15 @@ describe("HomeAlunoService.minhasTarefas", () => {
         tarefaRow({ avaliacao_id: "av2", descricao_avaliacao: "   ", tipo_avaliacao: "TPI" }),
       ],
     }).minhasTarefas(reqAluno);
-    assert.equal(r[0].titulo, "Prova");
-    assert.equal(r[1].titulo, "TPI");
+    expect(r[0].titulo).toBe("Prova");
+    expect(r[1].titulo).toBe("TPI");
+  });
+
+  it("usa o proprio tipo como titulo quando nao ha rotulo mapeado", async () => {
+    const r = await criar({
+      listarTarefasDoAluno: async () => [tarefaRow({ descricao_avaliacao: "", tipo_avaliacao: "OUTRO" })],
+    }).minhasTarefas(reqAluno);
+    expect(r[0].titulo).toBe("OUTRO");
   });
 
   it("preserva valor nulo e normaliza data_devolucao Date para ISO (AAAA-MM-DD)", async () => {
@@ -115,24 +121,24 @@ describe("HomeAlunoService.minhasTarefas", () => {
         tarefaRow({ valor: null, data_devolucao: new Date("2026-06-27T03:00:00.000Z") }),
       ],
     }).minhasTarefas(reqAluno);
-    assert.equal(r[0].valor, null);
-    assert.equal(r[0].dataVencimento, "2026-06-27");
+    expect(r[0].valor).toBeNull();
+    expect(r[0].dataVencimento).toBe("2026-06-27");
   });
 });
 
 describe("HomeAlunoService autorização e isolamento por aluno", () => {
   it("bloqueia perfil não-aluno (professor/secretaria) com 403", async () => {
-    await assert.rejects(() => criar().minhasDisciplinas(reqProfessor), (e: any) => e.status === 403);
-    await assert.rejects(() => criar().minhasTarefas(reqSecretaria), (e: any) => e.status === 403);
+    await expect(criar().minhasDisciplinas(reqProfessor)).rejects.toMatchObject({ status: 403 });
+    await expect(criar().minhasTarefas(reqSecretaria)).rejects.toMatchObject({ status: 403 });
   });
 
   it("bloqueia usuário autenticado sem vínculo de aluno com 403", async () => {
     const service = criar({ buscarAlunoPorUsuarioId: async () => null });
-    await assert.rejects(() => service.minhasDisciplinas(reqAluno), (e: any) => e.status === 403);
-    await assert.rejects(() => service.minhasTarefas(reqAluno), (e: any) => e.status === 403);
+    await expect(service.minhasDisciplinas(reqAluno)).rejects.toMatchObject({ status: 403 });
+    await expect(service.minhasTarefas(reqAluno)).rejects.toMatchObject({ status: 403 });
   });
 
   it("bloqueia requisição sem identidade autenticada com 403", async () => {
-    await assert.rejects(() => criar().minhasDisciplinas(reqSemUser), (e: any) => e.status === 403);
+    await expect(criar().minhasDisciplinas(reqSemUser)).rejects.toMatchObject({ status: 403 });
   });
 });
