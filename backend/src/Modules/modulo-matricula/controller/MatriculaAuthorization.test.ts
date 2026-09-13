@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it, expect } from "vitest";
 import { autenticar } from "../../../middlewares/autenticacao";
 import { soSecretaria } from "../../../middlewares/autorizacao";
 
@@ -13,15 +12,15 @@ function resposta() {
 describe("autorização do módulo de matrícula", () => {
     it("retorna 401 sem token", () => {
         const res = resposta();
-        autenticar({ headers: {} } as any, res, () => assert.fail("não deveria autorizar"));
-        assert.equal(res.statusCode, 401);
+        autenticar({ headers: {} } as any, res, () => expect.unreachable("não deveria autorizar"));
+        expect(res.statusCode).toBe(401);
     });
 
     it("permite somente secretaria e administrador", () => {
         for (const tipo_usuario of ["aluno", "professor", "secretaria", "administrador"]) {
             const res = resposta(); let autorizado = false;
             soSecretaria({ user: { tipo_usuario } } as any, res, () => { autorizado = true; });
-            assert.equal(autorizado, ["secretaria", "administrador"].includes(tipo_usuario));
+            expect(autorizado).toBe(["secretaria", "administrador"].includes(tipo_usuario));
         }
     });
 });

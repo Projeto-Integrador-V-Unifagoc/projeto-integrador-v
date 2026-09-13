@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, it, expect } from 'vitest';
 import { autenticar } from '../../../middlewares/autenticacao.js';
 import { soSecretaria } from '../../../middlewares/autorizacao.js';
 
@@ -15,8 +14,8 @@ describe('autorização do módulo de professores', () => {
     const res = resposta();
     let proximo = false;
     autenticar({ headers: {} } as any, res as any, () => { proximo = true; });
-    assert.equal(res.statusCode, 401);
-    assert.equal(proximo, false);
+    expect(res.statusCode).toBe(401);
+    expect(proximo).toBe(false);
   });
 
   it('retorna 403 para aluno e professor', () => {
@@ -24,8 +23,8 @@ describe('autorização do módulo de professores', () => {
       const res = resposta();
       let proximo = false;
       soSecretaria({ user: { tipo_usuario } } as any, res as any, () => { proximo = true; });
-      assert.equal(res.statusCode, 403);
-      assert.equal(proximo, false);
+      expect(res.statusCode).toBe(403);
+      expect(proximo).toBe(false);
     }
   });
 
@@ -34,8 +33,8 @@ describe('autorização do módulo de professores', () => {
       const res = resposta();
       let proximo = false;
       soSecretaria({ user: { tipo_usuario } } as any, res as any, () => { proximo = true; });
-      assert.equal(proximo, true);
-      assert.equal(res.statusCode, 200);
+      expect(proximo).toBe(true);
+      expect(res.statusCode).toBe(200);
     }
   });
 });

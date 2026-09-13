@@ -6,6 +6,7 @@ node_modules/
 *.log
 backend/build/
 backend/dist/
+backend/coverage/
 frontend/dist/
 .DS_Store
 SPEC.md
