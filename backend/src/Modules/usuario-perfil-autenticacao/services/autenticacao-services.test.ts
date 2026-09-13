@@ -36,7 +36,7 @@ describe("AutenticacaoService.cadastrarUsuario", () => {
   it("rejeita e-mail ja cadastrado", async () => {
     mockRepo({ findByEmail: async () => ({ id: "u9" }) });
     await assert.rejects(
-      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "123", tipo_usuario: "secretaria" }),
+      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "secretaria" }),
       /já está cadastrado/,
     );
   });
@@ -44,13 +44,13 @@ describe("AutenticacaoService.cadastrarUsuario", () => {
   it("rejeita vinculo com aluno inexistente ou ja vinculado", async () => {
     mockRepo({ buscarAlunoSimples: async () => null });
     await assert.rejects(
-      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "123", tipo_usuario: "aluno", aluno_id: "a1" }),
+      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "aluno", aluno_id: "a1" }),
       /Aluno selecionado não encontrado/,
     );
 
     mockRepo({ buscarAlunoSimples: async () => ({ id: "a1", usuario_id: "u2" }) });
     await assert.rejects(
-      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "123", tipo_usuario: "aluno", aluno_id: "a1" }),
+      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "aluno", aluno_id: "a1" }),
       /já possui um login vinculado/,
     );
   });
@@ -58,7 +58,7 @@ describe("AutenticacaoService.cadastrarUsuario", () => {
   it("rejeita professor inativo", async () => {
     mockRepo({ buscarProfessorSimples: async () => ({ id: "p1", ativo: false, usuario_id: null }) });
     await assert.rejects(
-      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "123", tipo_usuario: "professor", professor_id: "p1" }),
+      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "professor", professor_id: "p1" }),
       /Professor inativo/,
     );
   });
@@ -73,24 +73,24 @@ describe("AutenticacaoService.cadastrarUsuario", () => {
       },
     });
     await autenticacaoService.cadastrarUsuario({
-      nome: "Fulano", email: "a@b.com", senha: "segredo123", tipo_usuario: "ALUNO", aluno_id: "a1",
+      nome: "Fulano", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "ALUNO", aluno_id: "a1",
     });
     assert.equal(criado.tipo_usuario, "aluno");
-    assert.notEqual(criado.senha, "segredo123");
-    assert.equal(await bcrypt.compare("segredo123", criado.senha), true);
+    assert.notEqual(criado.senha, "Segredo@123");
+    assert.equal(await bcrypt.compare("Segredo@123", criado.senha), true);
     assert.deepEqual(vinculo, { alunoId: "a1", usuarioId: "u1" });
   });
 
   it("rejeita vinculo com professor inexistente ou ja vinculado", async () => {
     mockRepo({ buscarProfessorSimples: async () => null });
     await assert.rejects(
-      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "123", tipo_usuario: "professor", professor_id: "p1" }),
+      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "professor", professor_id: "p1" }),
       /Professor selecionado não encontrado/,
     );
 
     mockRepo({ buscarProfessorSimples: async () => ({ id: "p1", ativo: true, usuario_id: "u2" }) });
     await assert.rejects(
-      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "123", tipo_usuario: "professor", professor_id: "p1" }),
+      () => autenticacaoService.cadastrarUsuario({ nome: "x", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "professor", professor_id: "p1" }),
       /já possui um login vinculado/,
     );
   });
@@ -104,7 +104,7 @@ describe("AutenticacaoService.cadastrarUsuario", () => {
       },
     });
     await autenticacaoService.cadastrarUsuario({
-      nome: "Fulano", email: "a@b.com", senha: "segredo123", tipo_usuario: "PROFESSOR", professor_id: "p1",
+      nome: "Fulano", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "PROFESSOR", professor_id: "p1",
     });
     assert.deepEqual(vinculo, { professorId: "p1", usuarioId: "u1" });
   });
@@ -112,7 +112,7 @@ describe("AutenticacaoService.cadastrarUsuario", () => {
   it("nao exige vinculo quando aluno_id/professor_id nao sao informados", async () => {
     const repo = mockRepo({ create: async (d: any) => ({ id: "u1", ...d }) });
     const usuario = await autenticacaoService.cadastrarUsuario({
-      nome: "Fulano", email: "a@b.com", senha: "segredo123", tipo_usuario: "secretaria",
+      nome: "Fulano", email: "a@b.com", senha: "Segredo@123", tipo_usuario: "secretaria",
     });
     assert.equal(usuario.id, "u1");
   });
@@ -297,17 +297,17 @@ describe("AutenticacaoService.atualizarUsuario", () => {
   it("atualiza apenas os campos informados, ignorando senha em branco", async () => {
     let dadosAtualizados: any;
     mockRepo({ update: async (_id: string, dados: any) => { dadosAtualizados = dados; } });
-    await autenticacaoService.atualizarUsuario("u1", { nome: "Novo Nome", senha: "   " });
+    await autenticacaoService.atualizarUsuario("u1", { nome: "Novo Nome", senha: "" });
     assert.deepEqual(dadosAtualizados, { nome: "Novo Nome" });
   });
 
   it("criptografa a senha quando informada", async () => {
     let dadosAtualizados: any;
     mockRepo({ update: async (_id: string, dados: any) => { dadosAtualizados = dados; } });
-    await autenticacaoService.atualizarUsuario("u1", { email: "novo@x.com", tipo_usuario: "SECRETARIA", senha: "novaSenha" });
+    await autenticacaoService.atualizarUsuario("u1", { email: "novo@x.com", tipo_usuario: "SECRETARIA", senha: "NovaSenha@123" });
     assert.equal(dadosAtualizados.email, "novo@x.com");
     assert.equal(dadosAtualizados.tipo_usuario, "secretaria");
-    assert.equal(await bcrypt.compare("novaSenha", dadosAtualizados.senha), true);
+    assert.equal(await bcrypt.compare("NovaSenha@123", dadosAtualizados.senha), true);
   });
 
   it("nao mexe no vinculo quando aluno_id e professor_id nao sao informados", async () => {

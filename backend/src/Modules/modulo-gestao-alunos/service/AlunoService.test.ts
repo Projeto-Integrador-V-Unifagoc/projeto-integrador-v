@@ -79,6 +79,7 @@ describe("AlunoService.criarAluno", () => {
     let pessoaRecebida: any;
     let trxDaPessoa: any;
     service.pessoaRepository = {
+      buscarPessoaPorCpf: async () => null,
       criarPessoa: async (pessoa: any, trx: any) => { pessoaRecebida = pessoa; trxDaPessoa = trx; return { id: "p1" }; },
     } as any;
     let alunoRecebido: any;
@@ -114,10 +115,38 @@ describe("AlunoService.criarAluno", () => {
     mockarTransaction(async (cb: any) => cb({}));
     const { service } = criar();
     let chamouAluno = false;
-    service.pessoaRepository = { criarPessoa: async () => { throw new Error("cpf duplicado"); } } as any;
+    service.pessoaRepository = { buscarPessoaPorCpf: async () => null, criarPessoa: async () => { throw new Error("cpf duplicado"); } } as any;
     service.alunoRepository = { criarAluno: async () => { chamouAluno = true; return {}; } } as any;
 
     await assert.rejects(() => service.criarAluno({ pessoa: {} } as any), /cpf duplicado/);
     assert.equal(chamouAluno, false);
+  });
+
+  it("rejeita quando ja existe pessoa cadastrada com o mesmo cpf", async () => {
+    mockarTransaction(async (cb: any) => cb({}));
+    const { service } = criar();
+    let chamouCriarPessoa = false;
+    service.pessoaRepository = {
+      buscarPessoaPorCpf: async () => ({ id: "p-existente" }),
+      criarPessoa: async () => { chamouCriarPessoa = true; return { id: "p1" }; },
+    } as any;
+    await assert.rejects(
+      () => service.criarAluno({ pessoa: { cpf: "11111111111" } } as any),
+      /Já existe uma matrícula ativa ou pendente para este CPF/,
+    );
+    assert.equal(chamouCriarPessoa, false);
+  });
+
+  it("traduz violacao de unicidade do cpf no banco para mensagem amigavel", async () => {
+    mockarTransaction(async (cb: any) => cb({}));
+    const { service } = criar();
+    service.pessoaRepository = {
+      buscarPessoaPorCpf: async () => null,
+      criarPessoa: async () => { throw { code: "23505", constraint: "pessoa_cpf_unique" }; },
+    } as any;
+    await assert.rejects(
+      () => service.criarAluno({ pessoa: { cpf: "11111111111" } } as any),
+      /Já existe uma matrícula ativa ou pendente para este CPF/,
+    );
   });
 });

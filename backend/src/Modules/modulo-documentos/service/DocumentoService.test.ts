@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "vitest";
 import { DocumentoService } from "./DocumentoService";
 
-function criar(overrides: Record<string, any> = {}) {
+function criar(overrides: Record<string, any> = {}, matriculaOverrides: Record<string, any> = {}) {
   const chamadas: any[] = [];
   const repository = {
     criar: async (dados: any) => ({ id: "doc1", ...dados }),
@@ -10,15 +10,19 @@ function criar(overrides: Record<string, any> = {}) {
     listarPorAluno: async (_id: string) => [],
     buscarPorId: async (_id: string) => ({ id: "doc1", aluno_id: "a1", status: "PENDENTE" }),
     validar: async (id: string, status: string, obs?: string) => ({ id, status, observacao: obs ?? null, aluno_id: "a1" }),
-    atualizarStatusMatriculaAluno: async (alunoId: string, status: string) => {
-      chamadas.push(["matricula", alunoId, status]);
-    },
     contarDocumentosPendentesOuReprovados: async (_alunoId: string) => 0,
     deletar: async (_id: string) => undefined,
     ...overrides,
   };
+  const matriculaService = {
+    matricularAutomaticamente: async (alunoId: string) => {
+      chamadas.push(["matricularAutomaticamente", alunoId]);
+    },
+    ...matriculaOverrides,
+  };
   const service = new DocumentoService();
   (service as any).repository = repository;
+  (service as any).matriculaService = matriculaService;
   return { service, repository, chamadas };
 }
 
@@ -54,22 +58,31 @@ describe("DocumentoService.validar", () => {
     await assert.rejects(() => service.validar("doc1", "TALVEZ"), /Status inválido/);
   });
 
-  it("cancela a matricula do aluno ao reprovar", async () => {
+  it("nao mexe na matricula ao reprovar", async () => {
     const { service, chamadas } = criar();
     await service.validar("doc1", "REPROVADO");
-    assert.deepEqual(chamadas, [["matricula", "a1", "CANCELADO"]]);
+    assert.deepEqual(chamadas, []);
   });
 
-  it("matricula o aluno ao aprovar quando nao restam pendencias", async () => {
+  it("matricula automaticamente o aluno ao aprovar quando nao restam pendencias", async () => {
     const { service, chamadas } = criar({ contarDocumentosPendentesOuReprovados: async () => 0 });
     await service.validar("doc1", "APROVADO");
-    assert.deepEqual(chamadas, [["matricula", "a1", "MATRICULADO"]]);
+    assert.deepEqual(chamadas, [["matricularAutomaticamente", "a1"]]);
   });
 
   it("nao matricula o aluno ao aprovar enquanto houver pendencias", async () => {
     const { service, chamadas } = criar({ contarDocumentosPendentesOuReprovados: async () => 2 });
     await service.validar("doc1", "APROVADO");
     assert.deepEqual(chamadas, []);
+  });
+
+  it("ignora falha da matricula automatica ao aprovar", async () => {
+    const { service } = criar(
+      { contarDocumentosPendentesOuReprovados: async () => 0 },
+      { matricularAutomaticamente: async () => { throw new Error("falha"); } },
+    );
+    const resultado = await service.validar("doc1", "APROVADO");
+    assert.equal(resultado.status, "APROVADO");
   });
 
   it("rejeita documento inexistente", async () => {

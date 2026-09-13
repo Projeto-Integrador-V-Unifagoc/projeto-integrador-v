@@ -2,9 +2,16 @@ import assert from "node:assert/strict";
 import { describe, it } from "vitest";
 import { FichaService } from "./FichaService";
 
+const matriculaPadrao = { id: "m1", periodo_letivo_codigo: "2026/1", turma_sigla: "A" };
+const vinculoPadrao = {
+  id: "mtd1", turma_disciplina_id: "td1", disciplina_id: "d1",
+  disciplina_nome: "Disciplina", professor_nome: "Prof", status: "ativa",
+};
+
 function criar(overrides: {
   aluno?: any;
   matriculas?: any[];
+  vinculosPorMatricula?: Record<string, any[] | Error>;
   frequencia?: any;
   documentos?: any;
   periodos?: any;
@@ -16,8 +23,12 @@ function criar(overrides: {
       "aluno" in overrides ? overrides.aluno : { id: "a1", pessoa: { nome: "Aluno Um" } },
   };
   (service as any).matriculaService = {
-    listarPorAluno: async (_id: string) =>
-      overrides.matriculas ?? [{ matricula_turma_disciplina_id: "mtd1", periodo_codigo: "2026/1" }],
+    listarPorAluno: async (_id: string) => overrides.matriculas ?? [matriculaPadrao],
+    listarVinculos: async (matriculaId: string) => {
+      const vinculos = overrides.vinculosPorMatricula?.[matriculaId] ?? (matriculaId === "m1" ? [vinculoPadrao] : []);
+      if (vinculos instanceof Error) throw vinculos;
+      return vinculos;
+    },
   };
   (service as any).frequenciaService = {
     consultarAlunoInterno: async (_id: string) => {
@@ -54,6 +65,37 @@ describe("FichaService.montarFicha", () => {
     assert.deepEqual(ficha.documentos, [{ id: "d1" }]);
   });
 
+  it("expande cada matricula nos seus vinculos de turma/disciplina", async () => {
+    const ficha = await criar().montarFicha("a1");
+    assert.equal(ficha.matriculas.length, 1);
+    assert.equal(ficha.matriculas[0].matricula_turma_disciplina_id, "mtd1");
+    assert.equal(ficha.matriculas[0].disciplina_nome, "Disciplina");
+    assert.equal(ficha.matriculas[0].periodo_codigo, "2026/1");
+  });
+
+  it("preenche a matricula sem vinculo com campos nulos, sem perder a linha", async () => {
+    const ficha = await criar({ vinculosPorMatricula: { m1: [] } }).montarFicha("a1");
+    assert.equal(ficha.matriculas.length, 1);
+    assert.equal(ficha.matriculas[0].matricula_turma_disciplina_id, null);
+    assert.equal(ficha.matriculas[0].disciplina_nome, null);
+  });
+
+  it("expande uma matricula com multiplos vinculos em multiplas linhas", async () => {
+    const vinculos = [
+      { ...vinculoPadrao, id: "mtd1", disciplina_nome: "POO" },
+      { ...vinculoPadrao, id: "mtd2", disciplina_nome: "Banco de Dados" },
+    ];
+    const ficha = await criar({ vinculosPorMatricula: { m1: vinculos } }).montarFicha("a1");
+    assert.equal(ficha.matriculas.length, 2);
+    assert.deepEqual(ficha.matriculas.map((m: any) => m.disciplina_nome), ["POO", "Banco de Dados"]);
+  });
+
+  it("ignora falha ao listar vinculos de uma matricula, tratando-a como sem vinculo", async () => {
+    const ficha = await criar({ vinculosPorMatricula: { m1: new Error("falha") } }).montarFicha("a1");
+    assert.equal(ficha.matriculas.length, 1);
+    assert.equal(ficha.matriculas[0].matricula_turma_disciplina_id, null);
+  });
+
   it("agrupa avaliacoes da mesma disciplina em um unico bloco de notas", async () => {
     const avaliacoes = [
       { id: "av1", disciplina_id: "disc1", disciplina_nome: "POO", turma_disciplina_id: "td1", tipo_avaliacao: "PROVA", descricao_avaliacao: "P1", valor: 40, nota: 32, matricula_turma_disciplina_id: "mtd1" },
@@ -76,12 +118,12 @@ describe("FichaService.montarFicha", () => {
     assert.equal(ficha.notas[0].situacao, "nao_lancada");
   });
 
-  it("usa o semestre da matricula quando nao ha periodo_codigo", async () => {
+  it("usa o semestre (turma_sigla) da matricula quando nao ha periodo_letivo_codigo", async () => {
     const avaliacoes = [
       { id: "av1", disciplina_id: "disc1", disciplina_nome: "POO", turma_disciplina_id: "td1", tipo_avaliacao: "PROVA", valor: 100, nota: 80, matricula_turma_disciplina_id: "mtd1" },
     ];
     const ficha = await criar({
-      matriculas: [{ matricula_turma_disciplina_id: "mtd1", semestre: "2026-2" }],
+      matriculas: [{ id: "m1", turma_sigla: "2026-2" }],
       avaliacoes,
     }).montarFicha("a1");
     assert.equal(ficha.notas[0].periodoLetivo, "2026-2");
@@ -91,10 +133,7 @@ describe("FichaService.montarFicha", () => {
     const avaliacoes = [
       { id: "av1", disciplina_id: "disc1", disciplina_nome: "POO", turma_disciplina_id: "td1", tipo_avaliacao: "PROVA", valor: 100, nota: 80, matricula_turma_disciplina_id: "mtd-desconhecida" },
     ];
-    const ficha = await criar({
-      matriculas: [{ matricula_turma_disciplina_id: "mtd1", periodo_codigo: "2026/1" }],
-      avaliacoes,
-    }).montarFicha("a1");
+    const ficha = await criar({ avaliacoes }).montarFicha("a1");
     assert.equal(ficha.notas[0].periodoLetivo, null);
   });
 
