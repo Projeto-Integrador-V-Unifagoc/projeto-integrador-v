@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import { autenticar } from "../../../middlewares/autenticacao.js";
 import { soSecretaria } from "../../../middlewares/autorizacao.js";
 import { DocumentoAuthContext, ErroAutorizacaoDocumento } from "../service/DocumentoAuthContext.js";
