@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it, expect } from "vitest";
 import * as jwt from "jsonwebtoken";
 import { autenticar } from "../../../middlewares/autenticacao.js";
 
@@ -19,23 +18,23 @@ describe("autenticação das rotas /me do aluno", () => {
     const res = resposta();
     let proximo = false;
     autenticar({ headers: {} } as any, res, () => { proximo = true; });
-    assert.equal(res.statusCode, 401);
-    assert.equal(proximo, false);
+    expect(res.statusCode).toBe(401);
+    expect(proximo).toBe(false);
   });
 
   it("retorna 401 com token inválido", () => {
     const res = resposta();
     let proximo = false;
     autenticar({ headers: { authorization: "Bearer token-invalido" } } as any, res, () => { proximo = true; });
-    assert.equal(res.statusCode, 401);
-    assert.equal(proximo, false);
+    expect(res.statusCode).toBe(401);
+    expect(proximo).toBe(false);
   });
 
   it("retorna 401 quando o esquema não é Bearer", () => {
     const token = jwt.sign({ id: "aluno-1", tipo_usuario: "aluno" }, SECRET, { expiresIn: "1h" });
     const res = resposta();
-    autenticar({ headers: { authorization: `Basic ${token}` } } as any, res, () => assert.fail("não deveria autorizar"));
-    assert.equal(res.statusCode, 401);
+    autenticar({ headers: { authorization: `Basic ${token}` } } as any, res, () => expect.unreachable("não deveria autorizar"));
+    expect(res.statusCode).toBe(401);
   });
 
   it("aceita token válido e popula req.user a partir do JWT", () => {
@@ -44,8 +43,8 @@ describe("autenticação das rotas /me do aluno", () => {
     const res = resposta();
     let proximo = false;
     autenticar(req, res, () => { proximo = true; });
-    assert.equal(proximo, true);
-    assert.equal(req.user.id, "aluno-1");
-    assert.equal(req.user.tipo_usuario, "aluno");
+    expect(proximo).toBe(true);
+    expect(req.user.id).toBe("aluno-1");
+    expect(req.user.tipo_usuario).toBe("aluno");
   });
 });

@@ -29,7 +29,7 @@ import { obterJwtSecret } from "./config/jwt";
 const PORT = process.env.PORT || 3000;
 obterJwtSecret();
 
-const app = express();
+export const app = express();
 
 app.use(cors({ origin: "*" }));
 app.use(express.json());
@@ -239,6 +239,11 @@ app.use(homeAlunoRouter);
 app.use(matriculaRouter);
 app.use(documentoRouter);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Sob Vitest (testes de integração com supertest) o app é apenas importado,
+// nunca escuta numa porta. Em execução normal (`tsx src/app.ts`, `npm start`,
+// e2e/start-backend) `VITEST` não está definido e o servidor sobe.
+if (!process.env.VITEST) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}

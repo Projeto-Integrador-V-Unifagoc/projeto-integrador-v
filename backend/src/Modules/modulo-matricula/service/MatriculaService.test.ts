@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import { MatriculaService } from "./MatriculaService";
 import { MatriculaError } from "../errors/MatriculaError";
 import type { MatriculaRepository } from "../repository/MatriculaRepository";
