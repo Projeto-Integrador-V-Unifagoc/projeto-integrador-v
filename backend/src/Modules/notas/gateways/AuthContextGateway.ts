@@ -18,7 +18,7 @@ export class AuthContextGateway {
   constructor(private repository: RepositorioContexto) {}
 
   async obterContexto(req?: Request): Promise<ContextoNota> {
-    const user = (req as any)?.user;
+    const user = req?.user;
     if (!user?.id || !user?.tipo_usuario) throw erroNota.proibido("Identidade autenticada inválida.");
     const tipo = String(user.tipo_usuario).trim().toLowerCase();
     const perfil: PerfilNota = tipo === "administrador" ? "secretaria" : (tipo as PerfilNota);

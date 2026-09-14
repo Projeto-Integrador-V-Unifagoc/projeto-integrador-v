@@ -13,7 +13,7 @@ import { Request, Response, NextFunction } from "express";
 export const PERFIS_ADMINISTRATIVOS = ["secretaria", "administrador"] as const;
 
 export const somenteSecretariaOuAdmin = (req: Request, res: Response, next: NextFunction) => {
-    const perfil = String((req as any).user?.tipo_usuario ?? "").trim().toLowerCase();
+    const perfil = String(req.user?.tipo_usuario ?? "").trim().toLowerCase();
 
     if ((PERFIS_ADMINISTRATIVOS as readonly string[]).includes(perfil)) {
         return next();

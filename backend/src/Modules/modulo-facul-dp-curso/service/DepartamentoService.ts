@@ -3,10 +3,16 @@ import { DepartamentoCommand } from "../models/Departamento";
 import { v4 as uuidv4 } from 'uuid';
 
 
+interface CriarDepartamentoInput {
+    codigo: string;
+    nome: string;
+    faculdadeId: string;
+}
+
 export class DepartamentoService {
     departamentoRepository = new DepartamentoRepository();
 
-    async criarDepartamento(data: any){
+    async criarDepartamento(data: CriarDepartamentoInput){
         let departamento : DepartamentoCommand = {
             id: uuidv4(),
             codigo: data.codigo,

@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { MatriculaService } from "../service/MatriculaService";
 import { MatriculaError } from "../errors/MatriculaError";
 
 const service = new MatriculaService();
 
-function responderErro(res: any, err: any, contexto: string) {
+function responderErro(res: Response, err: unknown, contexto: string) {
     if (err instanceof MatriculaError) {
         return res.status(err.status).json({ error: err.message });
     }
@@ -13,23 +14,23 @@ function responderErro(res: any, err: any, contexto: string) {
 
 export class MatriculaController {
 
-    async listarTurmasDisponiveis(req: any, res: any) {
+    async listarTurmasDisponiveis(req: Request, res: Response) {
         try {
-            res.status(200).json(await service.listarTurmasDisponiveis(req.params.cursoId));
+            res.status(200).json(await service.listarTurmasDisponiveis(String(req.params.cursoId)));
         } catch (err) {
             responderErro(res, err, "listarTurmasDisponiveis");
         }
     }
 
-    async listarDisciplinasDaTurma(req: any, res: any) {
+    async listarDisciplinasDaTurma(req: Request, res: Response) {
         try {
-            res.status(200).json(await service.listarDisciplinasDaTurma(req.params.turmaId));
+            res.status(200).json(await service.listarDisciplinasDaTurma(String(req.params.turmaId)));
         } catch (err) {
             responderErro(res, err, "listarDisciplinasDaTurma");
         }
     }
 
-    async criarMatricula(req: any, res: any) {
+    async criarMatricula(req: Request, res: Response) {
         try {
             const { alunoId, turmaId, turmaDisciplinaIds } = req.body ?? {};
             res.status(201).json(await service.criarMatricula(alunoId, turmaId, turmaDisciplinaIds));
@@ -38,7 +39,7 @@ export class MatriculaController {
         }
     }
 
-    async listarTodas(_req: any, res: any) {
+    async listarTodas(_req: Request, res: Response) {
         try {
             res.status(200).json(await service.listarTodas());
         } catch (err) {
@@ -46,23 +47,23 @@ export class MatriculaController {
         }
     }
 
-    async listarPorAluno(req: any, res: any) {
+    async listarPorAluno(req: Request, res: Response) {
         try {
-            res.status(200).json(await service.listarPorAluno(req.params.alunoId));
+            res.status(200).json(await service.listarPorAluno(String(req.params.alunoId)));
         } catch (err) {
             responderErro(res, err, "listarPorAluno");
         }
     }
 
-    async listarVinculos(req: any, res: any) {
+    async listarVinculos(req: Request, res: Response) {
         try {
-            res.status(200).json(await service.listarVinculos(req.params.id));
+            res.status(200).json(await service.listarVinculos(String(req.params.id)));
         } catch (err) {
             responderErro(res, err, "listarVinculos");
         }
     }
 
-    async consultarStatus(req: any, res: any) {
+    async consultarStatus(req: Request, res: Response) {
         try {
             const numeroMatricula = Number(req.params.matricula);
             if (!Number.isInteger(numeroMatricula)) {
@@ -74,44 +75,44 @@ export class MatriculaController {
         }
     }
 
-    async cancelar(req: any, res: any) {
+    async cancelar(req: Request, res: Response) {
         try {
-            res.status(200).json(await service.cancelar(req.params.id));
+            res.status(200).json(await service.cancelar(String(req.params.id)));
         } catch (err) {
             responderErro(res, err, "cancelar");
         }
     }
 
-    async aprovar(req: any, res: any) {
+    async aprovar(req: Request, res: Response) {
         try {
-            res.status(200).json(await service.aprovar(req.params.id));
+            res.status(200).json(await service.aprovar(String(req.params.id)));
         } catch (err) {
             responderErro(res, err, "aprovar");
         }
     }
 
-    async atualizarStatus(req: any, res: any) {
+    async atualizarStatus(req: Request, res: Response) {
         try {
             const { status } = req.body ?? {};
             if (!status) return res.status(400).json({ error: 'Campo "status" é obrigatório.' });
-            res.status(200).json(await service.atualizarStatus(req.params.id, status));
+            res.status(200).json(await service.atualizarStatus(String(req.params.id), status));
         } catch (err) {
             responderErro(res, err, "atualizarStatus");
         }
     }
 
-    async adicionarDisciplinas(req: any, res: any) {
+    async adicionarDisciplinas(req: Request, res: Response) {
         try {
             const { turmaDisciplinaIds } = req.body ?? {};
-            res.status(201).json(await service.adicionarDisciplinas(req.params.id, turmaDisciplinaIds));
+            res.status(201).json(await service.adicionarDisciplinas(String(req.params.id), turmaDisciplinaIds));
         } catch (err) {
             responderErro(res, err, "adicionarDisciplinas");
         }
     }
 
-    async cancelarVinculo(req: any, res: any) {
+    async cancelarVinculo(req: Request, res: Response) {
         try {
-            res.status(200).json(await service.cancelarVinculo(req.params.id, req.params.vinculoId));
+            res.status(200).json(await service.cancelarVinculo(String(req.params.id), String(req.params.vinculoId)));
         } catch (err) {
             responderErro(res, err, "cancelarVinculo");
         }

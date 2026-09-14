@@ -1,7 +1,7 @@
 import type { Request } from "express";
 import { AuthContextGateway, type ContextoNota } from "../gateways/AuthContextGateway.js";
 import { erroNota, NotaError } from "../errors/NotaError.js";
-import { NotaRepository } from "../repository/NotaRepository.js";
+import { NotaRepository, type MatriculaAtivaRow, type NotaDaTurmaRow } from "../repository/NotaRepository.js";
 import {
   calcularBoletim,
   type AutorizacaoExcepcionalRequest,
@@ -12,6 +12,24 @@ import {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PRAZO_RETIFICACAO_MS = 7 * 86400000;
 const PERIODO_FECHADO = ["fechado", "encerrado", "concluido", "inativo"];
+
+interface AvaliacaoResumoRaw {
+  id: string;
+  tipo_avaliacao: string;
+  descricao_avaliacao: string | null;
+  valor: number | string;
+}
+
+interface RegistroComPeriodo {
+  periodo_status?: string;
+  periodo_ativo?: boolean;
+}
+
+interface ErroSalvarLote {
+  code?: string;
+  codigoDominio?: string;
+  message?: string;
+}
 
 export class NotaService {
   constructor(
@@ -25,13 +43,13 @@ export class NotaService {
     if (ctx.perfil === "aluno") throw erroNota.proibido();
     const atribuicoes = await this.repository.listarAtribuicoes(ctx.professorId);
     const comAvaliacoes = await Promise.all(
-      atribuicoes.map(async (a: any) => ({
+      atribuicoes.map(async (a) => ({
         turmaDisciplinaId: a.id,
         turma: { id: a.turma_id, sigla: a.turma_sigla, descricao: a.turma_descricao },
         disciplina: { id: a.disciplina_id, codigo: a.disciplina_codigo, nome: a.disciplina_nome },
         periodoLetivo: { id: a.periodo_id, codigo: a.periodo_codigo, status: a.periodo_status, fechado: this.periodoFechado(a) },
         professorNome: a.professor_nome,
-        avaliacoes: (await this.repository.listarAvaliacoesDaTurma(a.id)).map((av: any) => this.avaliacaoResumo(av)),
+        avaliacoes: (await this.repository.listarAvaliacoesDaTurma(a.id)).map((av) => this.avaliacaoResumo(av)),
       })),
     );
     return { contexto: { perfil: ctx.perfil }, atribuicoes: comAvaliacoes };
@@ -42,7 +60,7 @@ export class NotaService {
     this.uuid(avaliacaoId, "Avaliação inválida.");
     const ctx = await this.auth.obterContexto(req);
     if (ctx.perfil === "aluno") throw erroNota.proibido();
-    const avaliacao: any = await this.repository.buscarAvaliacao(avaliacaoId);
+    const avaliacao = await this.repository.buscarAvaliacao(avaliacaoId);
     if (!avaliacao) throw erroNota.naoEncontrado("Avaliação não encontrada.");
     await this.autorizarTurma(ctx, avaliacao.turma_disciplina_id);
 
@@ -53,7 +71,7 @@ export class NotaService {
       this.repository.listarMatriculasAtivas(avaliacao.turma_disciplina_id),
       this.repository.listarNotasDaAvaliacao(avaliacaoId),
     ]);
-    const porMatricula = new Map(notas.map((n: any) => [String(n.matricula_turma_disciplina_id), n]));
+    const porMatricula = new Map(notas.map((n) => [String(n.matricula_turma_disciplina_id), n]));
     const agora = Date.now();
 
     return {
@@ -68,8 +86,8 @@ export class NotaService {
       periodoLetivo: { codigo: avaliacao.periodo_codigo, status: avaliacao.periodo_status, fechado },
       podeEditar,
       matriculasIrregulares: await this.repository.contarMatriculasIrregulares(avaliacao.turma_disciplina_id),
-      alunos: alunos.map((a: any) => {
-        const nota: any = porMatricula.get(String(a.matricula_turma_disciplina_id));
+      alunos: alunos.map((a) => {
+        const nota = porMatricula.get(String(a.matricula_turma_disciplina_id));
         const prazoExpirado = nota ? agora > new Date(nota.publicada_em).getTime() + PRAZO_RETIFICACAO_MS : false;
         return {
           alunoId: a.aluno_id,
@@ -94,7 +112,7 @@ export class NotaService {
     const ctx = await this.auth.obterContexto(req);
     if (ctx.perfil === "aluno") throw erroNota.proibido();
 
-    const avaliacao: any = await this.repository.buscarAvaliacao(avaliacaoId);
+    const avaliacao = await this.repository.buscarAvaliacao(avaliacaoId);
     if (!avaliacao) throw erroNota.naoEncontrado("Avaliação não encontrada.");
     await this.autorizarTurma(ctx, avaliacao.turma_disciplina_id);
     if (this.periodoFechado(avaliacao)) throw erroNota.conflito("Período letivo fechado bloqueia alterações de nota.");
@@ -104,7 +122,7 @@ export class NotaService {
       this.repository.listarMatriculasAtivas(avaliacao.turma_disciplina_id),
       this.repository.listarAvaliacoesDaTurma(avaliacao.turma_disciplina_id),
     ]);
-    const resumosDaTurma = avaliacoesDaTurma.map((item: any) => this.avaliacaoResumo(item));
+    const resumosDaTurma = avaliacoesDaTurma.map((item) => this.avaliacaoResumo(item));
     const totalRegular = resumosDaTurma
       .filter((item) => item.tipo !== "RECUPERACAO")
       .reduce((soma, item) => soma + item.valor, 0);
@@ -118,14 +136,14 @@ export class NotaService {
       const notasPorMatricula = this.agruparNotas(notasDaTurma);
       matriculasEmRecuperacao = new Set(
         elegiveis
-          .filter((matricula: any) => {
+          .filter((matricula) => {
             const notas = notasPorMatricula.get(String(matricula.matricula_turma_disciplina_id)) ?? new Map<string, number>();
             return calcularBoletim(resumosDaTurma, notas).elegivelRecuperacao;
           })
-          .map((matricula: any) => String(matricula.matricula_turma_disciplina_id)),
+          .map((matricula) => String(matricula.matricula_turma_disciplina_id)),
       );
     }
-    const porAluno = new Map(elegiveis.map((a: any) => [String(a.aluno_id), a]));
+    const porAluno = new Map(elegiveis.map((a) => [String(a.aluno_id), a]));
 
     const vistos = new Set<string>();
     const erros: string[] = [];
@@ -135,7 +153,7 @@ export class NotaService {
       if (!UUID.test(alunoId)) { erros.push("Aluno inválido no lote."); continue; }
       if (vistos.has(alunoId)) { erros.push(`Aluno ${alunoId} duplicado no lote.`); continue; }
       vistos.add(alunoId);
-      const elegivel: any = porAluno.get(alunoId);
+      const elegivel = porAluno.get(alunoId);
       if (!elegivel) { erros.push(`Aluno ${alunoId} sem matrícula ativa nesta atribuição.`); continue; }
       if (matriculasEmRecuperacao && !matriculasEmRecuperacao.has(String(elegivel.matricula_turma_disciplina_id))) {
         erros.push(`Aluno ${alunoId} não está elegível para recuperação.`);
@@ -157,12 +175,13 @@ export class NotaService {
         perfil: ctx.perfil,
         itens,
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof NotaError) throw e;
-      if (e?.code === "23505") throw erroNota.conflito("Conflito de concorrência ao salvar o lote. Tente novamente.");
-      if (e?.codigoDominio === "PRAZO_EXPIRADO") throw erroNota.conflito(e.message);
-      if (e?.codigoDominio === "VALOR_INVALIDO") throw erroNota.invalido(e.message);
-      if (e?.codigoDominio === "NAO_ENCONTRADO") throw erroNota.naoEncontrado(e.message);
+      const erro = e as ErroSalvarLote;
+      if (erro?.code === "23505") throw erroNota.conflito("Conflito de concorrência ao salvar o lote. Tente novamente.");
+      if (erro?.codigoDominio === "PRAZO_EXPIRADO") throw erroNota.conflito(erro.message);
+      if (erro?.codigoDominio === "VALOR_INVALIDO") throw erroNota.invalido(erro.message);
+      if (erro?.codigoDominio === "NAO_ENCONTRADO") throw erroNota.naoEncontrado(erro.message);
       throw e;
     }
     return { mensagem: "Notas salvas com sucesso.", ...(await this.obterLancamento(avaliacaoId, req)) };
@@ -175,14 +194,14 @@ export class NotaService {
     if (ctx.perfil === "aluno") throw erroNota.proibido();
     await this.autorizarTurma(ctx, turmaDisciplinaId);
 
-    const turma: any = await this.repository.buscarTurmaDisciplina(turmaDisciplinaId);
+    const turma = await this.repository.buscarTurmaDisciplina(turmaDisciplinaId);
     if (!turma) throw erroNota.naoEncontrado("Turma/disciplina não encontrada.");
     const [avaliacoes, matriculas, notas] = await Promise.all([
       this.repository.listarAvaliacoesDaTurma(turmaDisciplinaId),
       this.repository.listarMatriculasAtivas(turmaDisciplinaId),
       this.repository.listarNotasDaTurma(turmaDisciplinaId),
     ]);
-    const resumos = avaliacoes.map((a: any) => this.avaliacaoResumo(a));
+    const resumos = avaliacoes.map((a) => this.avaliacaoResumo(a));
     const notasPorMatricula = this.agruparNotas(notas);
 
     return {
@@ -192,7 +211,7 @@ export class NotaService {
       periodoLetivo: { codigo: turma.periodo_codigo, status: turma.periodo_status, fechado: this.periodoFechado(turma) },
       avaliacoes: resumos,
       matriculasIrregulares: await this.repository.contarMatriculasIrregulares(turmaDisciplinaId),
-      alunos: matriculas.map((m: any) => {
+      alunos: matriculas.map((m) => {
         const mapa = notasPorMatricula.get(String(m.matricula_turma_disciplina_id)) ?? new Map<string, number>();
         const boletim = calcularBoletim(resumos, mapa);
         return {
@@ -214,20 +233,20 @@ export class NotaService {
     if (ctx.perfil === "aluno") throw erroNota.proibido();
     await this.autorizarTurma(ctx, turmaDisciplinaId);
 
-    const turma: any = await this.repository.buscarTurmaDisciplina(turmaDisciplinaId);
+    const turma = await this.repository.buscarTurmaDisciplina(turmaDisciplinaId);
     if (!turma) throw erroNota.naoEncontrado("Turma/disciplina não encontrada.");
 
-    let recuperacao: any = await this.repository.buscarRecuperacaoDaTurma(turmaDisciplinaId);
+    let recuperacao = await this.repository.buscarRecuperacaoDaTurma(turmaDisciplinaId);
     const [avaliacoes, matriculas, notas] = await Promise.all([
       this.repository.listarAvaliacoesDaTurma(turmaDisciplinaId),
       this.repository.listarMatriculasAtivas(turmaDisciplinaId),
       this.repository.listarNotasDaTurma(turmaDisciplinaId),
     ]);
-    const resumos = avaliacoes.map((a: any) => this.avaliacaoResumo(a));
+    const resumos = avaliacoes.map((a) => this.avaliacaoResumo(a));
     const notasPorMatricula = this.agruparNotas(notas);
 
     const alunos = matriculas
-      .map((m: any) => {
+      .map((m) => {
         const mapa = notasPorMatricula.get(String(m.matricula_turma_disciplina_id)) ?? new Map<string, number>();
         const boletim = calcularBoletim(resumos, mapa);
         return { alunoId: m.aluno_id, matriculaTurmaDisciplinaId: m.matricula_turma_disciplina_id, matricula: m.matricula, nome: m.aluno_nome, ...boletim };
@@ -258,7 +277,7 @@ export class NotaService {
     if (motivo.length < 5 || motivo.length > 500) throw erroNota.invalido("Informe um motivo entre 5 e 500 caracteres.");
     if (payload.matriculaTurmaDisciplinaId) this.uuid(payload.matriculaTurmaDisciplinaId, "Matrícula inválida.");
 
-    const avaliacao: any = await this.repository.buscarAvaliacao(payload.avaliacaoId);
+    const avaliacao = await this.repository.buscarAvaliacao(payload.avaliacaoId);
     if (!avaliacao) throw erroNota.naoEncontrado("Avaliação não encontrada.");
     if (this.periodoFechado(avaliacao)) {
       throw erroNota.conflito("Período fechado. Reabra o período letivo antes de autorizar a retificação.");
@@ -317,9 +336,9 @@ export class NotaService {
       this.repository.listarTurmasDoAluno(alunoId, periodoId),
       this.repository.listarBoletimDoAluno(alunoId),
     ]);
-    const avaliacoesPorTurma = new Map<string, Map<string, any>>();
+    const avaliacoesPorTurma = new Map<string, Map<string, AvaliacaoResumoRaw>>();
     const notasPorTurma = new Map<string, Map<string, number>>();
-    for (const r of rows as any[]) {
+    for (const r of rows) {
       const td = String(r.turma_disciplina_id);
       if (!avaliacoesPorTurma.has(td)) avaliacoesPorTurma.set(td, new Map());
       avaliacoesPorTurma.get(td)!.set(String(r.avaliacao_id), {
@@ -334,9 +353,9 @@ export class NotaService {
       }
     }
 
-    const disciplinas = (turmas as any[]).map((t) => {
+    const disciplinas = turmas.map((t) => {
       const td = String(t.turma_disciplina_id);
-      const avaliacoes = [...(avaliacoesPorTurma.get(td)?.values() ?? [])].map((a: any) => this.avaliacaoResumo(a));
+      const avaliacoes = [...(avaliacoesPorTurma.get(td)?.values() ?? [])].map((a) => this.avaliacaoResumo(a));
       const mapaNotas = notasPorTurma.get(td) ?? new Map<string, number>();
       const boletim = calcularBoletim(avaliacoes, mapaNotas);
       return {
@@ -361,7 +380,7 @@ export class NotaService {
     return { alunoId, possuiAlerta: disciplinas.some((d) => d.alerta), disciplinas };
   }
 
-  private agruparNotas(notas: any[]) {
+  private agruparNotas(notas: NotaDaTurmaRow[]) {
     const mapa = new Map<string, Map<string, number>>();
     for (const n of notas) {
       const mtd = String(n.matricula_turma_disciplina_id);
@@ -371,8 +390,8 @@ export class NotaService {
     return mapa;
   }
 
-  private avaliacaoResumo(a: any): AvaliacaoResumo {
-    return { id: a.id, tipo: a.tipo_avaliacao, descricao: a.descricao_avaliacao ?? null, valor: Number(a.valor) };
+  private avaliacaoResumo(a: AvaliacaoResumoRaw): AvaliacaoResumo {
+    return { id: a.id, tipo: a.tipo_avaliacao as AvaliacaoResumo["tipo"], descricao: a.descricao_avaliacao ?? null, valor: Number(a.valor) };
   }
 
   private async autorizarTurma(ctx: ContextoNota, turmaDisciplinaId: string) {
@@ -381,7 +400,7 @@ export class NotaService {
     throw erroNota.proibido("Turma/disciplina fora das atribuições do professor.");
   }
 
-  private periodoFechado(registro: any) {
+  private periodoFechado(registro: RegistroComPeriodo) {
     const status = String(registro?.periodo_status || "").toLowerCase();
     return registro?.periodo_ativo === false || PERIODO_FECHADO.includes(status);
   }

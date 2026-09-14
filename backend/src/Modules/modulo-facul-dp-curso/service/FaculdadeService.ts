@@ -2,10 +2,19 @@ import { FaculdadeCommand } from "../models/Faculdade";
 import { FaculdadeRepository } from "../repository/FaculdadeRepository";
 import { v4 as uuidv4 } from 'uuid';
 
+interface CriarFaculdadeInput {
+    nome: string;
+    cidadeIbge: string;
+    logradouro: string;
+    numero: number;
+    bairro: string;
+    cep: string;
+}
+
 export class FaculdadeService {
     faculdadeRepository = new FaculdadeRepository();
 
-    async criarFaculdade(data: any){
+    async criarFaculdade(data: CriarFaculdadeInput){
 
         let faculdade : FaculdadeCommand = {
             id: uuidv4(),

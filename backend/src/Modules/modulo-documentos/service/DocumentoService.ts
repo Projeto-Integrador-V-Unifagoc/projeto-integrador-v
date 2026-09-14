@@ -8,7 +8,7 @@ export class DocumentoService {
     private matriculaService = new MatriculaService();
 
     async criar(dados: CriarDocumentoDTO): Promise<Documento> {
-        if (!TIPOS_DOCUMENTO.includes(dados.tipo_documento as any)) {
+        if (!(TIPOS_DOCUMENTO as readonly string[]).includes(dados.tipo_documento)) {
             throw new Error(`Tipo inválido. Use: ${TIPOS_DOCUMENTO.join(", ")}.`);
         }
         return this.repository.criar(dados);

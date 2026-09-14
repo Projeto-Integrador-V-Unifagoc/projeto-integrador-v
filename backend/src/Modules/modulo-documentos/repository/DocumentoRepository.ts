@@ -125,7 +125,7 @@ export class DocumentoRepository {
             )
             .orderBy("p.nome");
 
-        return linhas.map((linha: any) => ({
+        return linhas.map((linha) => ({
             ...linha,
             documentos_total: Number(linha.documentos_total ?? 0),
             documentos_pendentes: Number(linha.documentos_pendentes ?? 0),

@@ -2,24 +2,44 @@ import { db } from "../../../database/connection";
 import { PessoaCommand } from "../../modulo-pessoa-usuario/models/Pessoa";
 import { PessoaRepository } from "../../modulo-pessoa-usuario/repository/PessoaRepository";
 import { AlunoCommand } from "../models/Aluno";
-import { AlunoRepository } from "../repository/AlunoRespository";
+import { AlunoRepository, AtualizarAlunoInput, FiltrosAluno } from "../repository/AlunoRespository";
+import { comoErroBancoDados } from "../../../shared/erro";
+
+interface CriarAlunoInput {
+    id?: string;
+    usuarioId?: string;
+    periodo: number;
+    curso?: string;
+    pessoa: {
+        cpf: string;
+        nome: string;
+        dataNascimento: string;
+        logradouro: string;
+        numero: number;
+        bairro: string;
+        cidadeIbge: string;
+        estado: string;
+        cep: string;
+    };
+}
 
 export class AlunoService {
     alunoRepository = new AlunoRepository();
     pessoaRepository = new PessoaRepository();
 
-    async criarAluno(data: any) {
+    async criarAluno(data: CriarAlunoInput) {
         try {
             return await this.inserirAluno(data);
-        } catch (erro: any) {
-            if (erro?.code === "23505" && String(erro?.constraint ?? "").includes("cpf")) {
+        } catch (erroBruto: unknown) {
+            const erro = comoErroBancoDados(erroBruto);
+            if (erro.code === "23505" && String(erro.constraint ?? "").includes("cpf")) {
                 throw new Error("Já existe uma matrícula ativa ou pendente para este CPF.");
             }
-            throw erro;
+            throw erroBruto;
         }
     }
 
-    private async inserirAluno(data: any) {
+    private async inserirAluno(data: CriarAlunoInput) {
         return await db.transaction(async (trx) => {
             
             let pessoa: PessoaCommand = {
@@ -53,7 +73,7 @@ export class AlunoService {
         });
     }
 
-    async listarAlunos(filtros: any) {
+    async listarAlunos(filtros: FiltrosAluno) {
         const alunos = await this.alunoRepository.listarAlunos(filtros);
         return alunos;
     }
@@ -68,7 +88,7 @@ export class AlunoService {
         return aluno;
     }
 
-    async atualizarAluno(matricula: string, data: any) {
+    async atualizarAluno(matricula: string, data: AtualizarAlunoInput) {
         try {
             const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula)
             if (!aluno) {

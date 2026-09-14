@@ -4,12 +4,21 @@ import { DisciplinaRepository } from "../../modulo-disciplinas/repository/Discip
 import { CursoDisciplinaCommand } from "../models/CursoDisciplina";
 import { CursoDisciplinaRepository } from "../repository/CursoDisciplinaRepository";
 
+interface CriarCursoDisciplinaInput {
+    cursoId: string;
+    disciplinaId: string;
+    periodoIdeal?: number | string;
+    obrigatoria?: boolean;
+    cargaHoraria?: number | string;
+    ativo?: boolean;
+}
+
 export class CursoDisciplinaService {
     cursoDisciplinaRepository = new CursoDisciplinaRepository();
     cursoRepository = new CursoRepository();
     disciplinaRepository = new DisciplinaRepository();
 
-    private validarPeriodoIdeal(periodoIdeal: any) {
+    private validarPeriodoIdeal(periodoIdeal: number | string | undefined) {
         const periodo = Number(periodoIdeal);
 
         if (!Number.isInteger(periodo) || periodo < 1 || periodo > 12) {
@@ -17,7 +26,7 @@ export class CursoDisciplinaService {
         }
     }
 
-    async criarCursoDisciplina(data: any) {
+    async criarCursoDisciplina(data: CriarCursoDisciplinaInput) {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(data.cursoId);
 
         if (!curso) {
@@ -68,7 +77,7 @@ export class CursoDisciplinaService {
         return await this.cursoDisciplinaRepository.listarMatrizCurricularPorCursoId(cursoId, periodo);
     }
 
-    async atualizarCursoDisciplina(id: string, data: any) {
+    async atualizarCursoDisciplina(id: string, data: Partial<CriarCursoDisciplinaInput>) {
         const associacaoAtual = await this.cursoDisciplinaRepository.buscarCursoDisciplinaPorId(id);
 
         if (!associacaoAtual) {

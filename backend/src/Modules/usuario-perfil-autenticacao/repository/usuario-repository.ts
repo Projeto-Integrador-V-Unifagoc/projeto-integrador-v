@@ -11,6 +11,19 @@ export interface Usuario {
   updated_at?: Date;
 }
 
+export interface UsuarioComVinculo {
+  id: number;
+  nome: string;
+  email: string;
+  tipo_usuario: 'aluno' | 'professor' | 'secretaria' | 'administrador';
+  aluno_id: string | null;
+  aluno_nome: string | null;
+  aluno_cpf: string | null;
+  professor_id: string | null;
+  professor_nome: string | null;
+  professor_cpf: string | null;
+}
+
 export class UsuarioRepository {
   async create(usuario: Usuario): Promise<Usuario> {
     const result = await db
@@ -173,7 +186,7 @@ export class UsuarioRepository {
         .update(dados);
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<UsuarioComVinculo[]> {
     // Traz, junto de cada usuário, o aluno/professor vinculado (id + nome),
     // para que a edição já saiba qual vínculo está ativo.
     return await db('piv.usuario')

@@ -20,20 +20,34 @@ export interface FaculdadeCommand{
     cep: string
 }
 
+/** Linha crua do banco. Alguns chamadores (ex.: AlunoMapper) só preenchem um subconjunto. */
+interface RawFaculdade {
+    faculdade_id?: string;
+    faculdade_nome?: string;
+    logradouro?: string;
+    numero?: number;
+    bairro?: string;
+    cep?: string;
+    cidade_id?: string;
+    cidade_ibge?: string;
+    cidade_nome?: string;
+    cidade_uf?: string;
+}
+
 export class FaculdadeMapper {
-    static toDomain(raw: any): Faculdade {
+    static toDomain(raw: RawFaculdade): Faculdade {
         return {
-            id: raw.faculdade_id,
-            nome: raw.faculdade_nome,
-            logradouro: raw.logradouro,
-            numero: raw.numero,
-            bairro: raw.bairro,
-            cep: raw.cep,
+            id: raw.faculdade_id as string,
+            nome: raw.faculdade_nome as string,
+            logradouro: raw.logradouro as string,
+            numero: raw.numero as number,
+            bairro: raw.bairro as string,
+            cep: raw.cep as string,
             cidade: {
-                id: raw.cidade_id,
-                ibge: raw.cidade_ibge,
-                nome: raw.cidade_nome,
-                uf: raw.cidade_uf
+                id: raw.cidade_id as string,
+                ibge: raw.cidade_ibge as string,
+                nome: raw.cidade_nome as string,
+                uf: raw.cidade_uf as string
             }
         };
     }

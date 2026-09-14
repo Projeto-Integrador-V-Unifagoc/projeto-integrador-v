@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { avaliacaoService } from "../services/avaliacaoServices.js";
 import { AvaliacaoError } from "../errors/avaliacaoErrors.js";
 
-const contexto = (req: Request) => ({ usuarioId: String((req as any).user.id), tipoUsuario: String((req as any).user.tipo_usuario) });
+const contexto = (req: Request) => ({ usuarioId: String(req.user!.id), tipoUsuario: String(req.user!.tipo_usuario) });
 
 function responderErro(res: Response, erro: unknown, operacao: string) {
   if (erro instanceof AvaliacaoError) return res.status(erro.status).json({ mensagem: erro.message });

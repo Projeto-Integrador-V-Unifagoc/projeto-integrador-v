@@ -1,6 +1,12 @@
 import { professorRepository } from '../repository/professorRepository.js';
 import type { AtualizarProfessor, CriarProfessorDTO, FiltroProfessor } from '../models/professorModels.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/professorErrors.js';
+import { comoErroBancoDados } from '../../../shared/erro.js';
+
+interface ProfessorAtual {
+  curso_id?: string;
+  cidade_id?: string;
+}
 
 // O PostgreSQL aceita UUIDs canônicos sem exigir bits RFC de versão/variante.
 // A validação deve aceitar os identificadores já persistidos no banco.
@@ -18,8 +24,8 @@ function cpfValido(cpf: string) {
   return digito(10) === Number(cpf[9]) && digito(11) === Number(cpf[10]);
 }
 
-function normalizar(dados: CriarProfessorDTO | AtualizarProfessor) {
-  const resultado: any = { ...dados };
+function normalizar(dados: CriarProfessorDTO | AtualizarProfessor): AtualizarProfessor {
+  const resultado: AtualizarProfessor = { ...dados };
   if (dados.nome !== undefined) resultado.nome = dados.nome.trim().replace(/\s+/g, ' ');
   if (dados.cpf !== undefined) resultado.cpf = dados.cpf.replace(/\D/g, '');
   if (dados.cep !== undefined) resultado.cep = dados.cep.replace(/\D/g, '');
@@ -46,7 +52,7 @@ function validarCampos(dados: CriarProfessorDTO | AtualizarProfessor, criacao: b
   }
 }
 
-async function validarRelacionamentos(dados: CriarProfessorDTO | AtualizarProfessor, atual?: any) {
+async function validarRelacionamentos(dados: CriarProfessorDTO | AtualizarProfessor, atual?: ProfessorAtual) {
   const cursoId = dados.curso_id ?? atual?.curso_id;
   const cidadeId = dados.cidade_id ?? atual?.cidade_id;
   if (!cursoId || !cidadeId) throw new ValidationError('Curso e cidade são obrigatórios.');
@@ -61,10 +67,11 @@ async function validarRelacionamentos(dados: CriarProfessorDTO | AtualizarProfes
   return curso.faculdade_id as string;
 }
 
-function traduzirErroBanco(erro: any): never {
-  if (erro?.code === '23505') throw new ConflictError('Já existe um professor cadastrado com este CPF.');
-  if (erro?.code === '23503') throw new ValidationError('Relacionamento acadêmico inválido.');
-  throw erro;
+function traduzirErroBanco(erroBruto: unknown): never {
+  const erro = comoErroBancoDados(erroBruto);
+  if (erro.code === '23505') throw new ConflictError('Já existe um professor cadastrado com este CPF.');
+  if (erro.code === '23503') throw new ValidationError('Relacionamento acadêmico inválido.');
+  throw erroBruto;
 }
 
 async function listarTodos(filtro: FiltroProfessor = {}) { return professorRepository.listarTodos(filtro); }

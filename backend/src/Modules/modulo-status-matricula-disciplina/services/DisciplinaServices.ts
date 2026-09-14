@@ -5,7 +5,7 @@ import { StatusMatriculaDisciplinaCommand } from "../model/Disciplina";
 export class DisciplinaService {
     disciplinaRepository = new DisciplinaRepository();
 
-    async criarStatusMatriculaDisciplina(data: any) {
+    async criarStatusMatriculaDisciplina(data: { descricao: string }) {
         const status: StatusMatriculaDisciplinaCommand = {
             id: uuidv4(),
             descricao: data.descricao,

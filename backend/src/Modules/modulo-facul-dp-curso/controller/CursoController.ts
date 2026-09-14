@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { CursoService } from "../service/CursoService";
 
 export default class CursoController {
     cursoService = new CursoService();
 
-    async criarCurso(req: any, res: any) {
+    async criarCurso(req: Request, res: Response) {
         try {
             const curso = await this.cursoService.criarCurso(req.body);
             res.status(201).json(curso);
@@ -12,7 +13,7 @@ export default class CursoController {
         }
     }
 
-    async listarCursos(req: any, res: any) {
+    async listarCursos(req: Request, res: Response) {
         try {
             const cursos = await this.cursoService.listarCursos();
             res.status(200).json(cursos);
@@ -21,9 +22,9 @@ export default class CursoController {
         }
     }
 
-    async buscarCursoPorId(req: any, res: any) {
+    async buscarCursoPorId(req: Request, res: Response) {
         try {
-            const curso = await this.cursoService.buscarCursoPorId(req.params.id);
+            const curso = await this.cursoService.buscarCursoPorId(String(req.params.id));
             if (!curso) {
                 return res.status(404).json({ error: "Curso não encontrado" });
             }
@@ -33,9 +34,9 @@ export default class CursoController {
         }
     }
 
-    async atualizarCurso(req: any, res: any) {
+    async atualizarCurso(req: Request, res: Response) {
         try {
-            const curso = await this.cursoService.atualizarCurso(req.params.id, req.body);
+            const curso = await this.cursoService.atualizarCurso(String(req.params.id), req.body);
             if (!curso) {
                 return res.status(404).json({ error: "Curso não encontrado" });
             }
@@ -45,9 +46,9 @@ export default class CursoController {
         }
     }
 
-    async removerCurso(req: any, res: any) {
+    async removerCurso(req: Request, res: Response) {
         try {
-            const removidos = await this.cursoService.removerCurso(req.params.id);
+            const removidos = await this.cursoService.removerCurso(String(req.params.id));
             if (!removidos) {
                 return res.status(404).json({ error: "Curso não encontrado" });
             }

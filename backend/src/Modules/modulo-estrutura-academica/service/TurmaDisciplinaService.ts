@@ -5,13 +5,19 @@ import { TurmaDisciplinaRepository } from "../repository/TurmaDisciplinaReposito
 import { TurmaRepository } from "../repository/TurmaRepository";
 import { professorRepository } from "../../professor/repository/professorRepository";
 
+interface CriarTurmaDisciplinaInput {
+    cursoDisciplinaId: string;
+    professorId: string;
+    status?: string;
+}
+
 export class TurmaDisciplinaService {
     turmaDisciplinaRepository = new TurmaDisciplinaRepository();
     turmaRepository = new TurmaRepository();
     cursoDisciplinaRepository = new CursoDisciplinaRepository();
     professorRepository = professorRepository;
 
-    async criarTurmaDisciplina(turmaId: string, data: any) {
+    async criarTurmaDisciplina(turmaId: string, data: CriarTurmaDisciplinaInput) {
         const turma = await this.turmaRepository.buscarTurmaPorId(turmaId);
 
         if (!turma) {
@@ -64,7 +70,7 @@ export class TurmaDisciplinaService {
         return await this.turmaDisciplinaRepository.listarTurmaDisciplinasPorTurmaId(turmaId);
     }
 
-    async atualizarTurmaDisciplina(turmaId: string, turmaDisciplinaId: string, data: any) {
+    async atualizarTurmaDisciplina(turmaId: string, turmaDisciplinaId: string, data: Partial<CriarTurmaDisciplinaInput>) {
         const turma = await this.turmaRepository.buscarTurmaRegistroPorId(turmaId);
 
         if (!turma) {

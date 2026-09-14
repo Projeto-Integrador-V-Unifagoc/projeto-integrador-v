@@ -8,6 +8,8 @@ import {
     STATUS_MATRICULA,
 } from "../repository/MatriculaRepository";
 import { MatriculaError } from "../errors/MatriculaError";
+import type { Knex } from "knex";
+import { comoErroBancoDados } from "../../../shared/erro";
 
 const PG_UNIQUE_VIOLATION = "23505";
 const FORMATO_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -97,11 +99,11 @@ export class MatriculaService {
 
                 return { ...matricula, disciplinas_vinculadas: vinculosCriados };
             });
-        } catch (err: any) {
-            if (err?.code === PG_UNIQUE_VIOLATION) {
+        } catch (errBruto: unknown) {
+            if (comoErroBancoDados(errBruto).code === PG_UNIQUE_VIOLATION) {
                 throw MatriculaError.conflito("Aluno já está matriculado nesta turma.");
             }
-            throw err;
+            throw errBruto;
         }
     }
 
@@ -109,7 +111,7 @@ export class MatriculaService {
     private async resolverDisciplinas(
         turmaId: string,
         turmaDisciplinaIds: string[] | undefined,
-        trx: any
+        trx: Knex.Transaction
     ): Promise<string[]> {
         if (!turmaDisciplinaIds || turmaDisciplinaIds.length === 0) {
             const todas = await this.repository.listarIdsDisciplinasAtivasDaTurma(turmaId, trx);
@@ -215,7 +217,7 @@ export class MatriculaService {
     async atualizarStatus(id: string, status: string) {
         exigirUuid(id, "id");
         const normalizado = String(status).toLowerCase();
-        if (!STATUS_MATRICULA.includes(normalizado as any)) {
+        if (!(STATUS_MATRICULA as readonly string[]).includes(normalizado)) {
             throw MatriculaError.dadosInvalidos(`Status inválido. Use: ${STATUS_MATRICULA.join(", ")}.`);
         }
 

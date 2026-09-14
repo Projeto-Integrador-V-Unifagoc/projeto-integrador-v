@@ -8,11 +8,16 @@ export interface StatusMatriculaDisciplinaCommand {
     descricao: string;
 }
 
+interface RawStatusMatriculaDisciplina {
+    id?: string;
+    descricao?: string;
+}
+
 export class DisciplinaMapper {
-    static toDomain(raw: any): StatusMatriculaDisciplina {
+    static toDomain(raw: RawStatusMatriculaDisciplina): StatusMatriculaDisciplina {
         return {
-            id: raw.id,
-            descricao: raw.descricao,
+            id: raw.id as string,
+            descricao: raw.descricao as string,
         };
     }
 }

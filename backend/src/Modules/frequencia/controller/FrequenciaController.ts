@@ -14,7 +14,7 @@ export class FrequenciaController {
   salvarChamada = async (req: Request, res: Response) => { try { return res.status(200).json(await this.service.salvarChamada(req.body, req)); } catch (e) { return this.erro(res, e); } };
   consultarAluno = async (req: Request, res: Response) => { try { return res.json(await this.service.consultarAluno(String(req.params.alunoId), req)); } catch (e) { return this.erro(res, e); } };
   minhaFrequencia = async (req: Request, res: Response) => { try { return res.json(await this.service.minhaFrequencia(req)); } catch (e) { return this.erro(res, e); } };
-  consultarTurma = async (req: Request, res: Response) => { try { return res.json(await this.service.consultarTurma(String(req.params.turmaId), req, req.query as any)); } catch (e) { return this.erro(res, e); } };
+  consultarTurma = async (req: Request, res: Response) => { try { return res.json(await this.service.consultarTurma(String(req.params.turmaId), req, req.query as { turmaDisciplinaId?: string; dataInicio?: string; dataFim?: string })); } catch (e) { return this.erro(res, e); } };
   justificar = async (req: Request, res: Response) => { try { return res.json(await this.service.registrarJustificativa(String(req.params.id), req.body, req)); } catch (e) { return this.erro(res, e); } };
   relatorio = async (req: Request, res: Response) => { try { return res.json(await this.service.gerarRelatorio(req.query, req)); } catch (e) { return this.erro(res, e); } };
 }

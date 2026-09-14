@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 
 import RecuperacaoSenhaService from '../services/recuperacao-senha-service';
+import { mensagemDeErro } from '../../../shared/erro';
 
 class RecuperacaoSenhaController {
   async solicitar(req: Request, res: Response) {
@@ -58,11 +59,9 @@ class RecuperacaoSenhaController {
       return res.status(200).json({
         message: 'Senha redefinida com sucesso.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       return res.status(400).json({
-        error:
-          error?.message ||
-          'Não foi possível redefinir a senha.',
+        error: mensagemDeErro(error, 'Não foi possível redefinir a senha.'),
       });
     }
   }

@@ -19,7 +19,7 @@ export class AuthContextGateway {
   constructor(private repository: RepositorioContexto) {}
 
   async obterContexto(req?: Request): Promise<ContextoFrequenciaGateway> {
-    const user = (req as any)?.user;
+    const user = req?.user;
     if (!user?.id || !user?.tipo_usuario) throw erroFrequencia.proibido("Identidade autenticada inválida.");
     const tipo = String(user.tipo_usuario).trim().toLowerCase();
     const perfil: PerfilFrequencia = tipo === "administrador" ? "secretaria" : tipo as PerfilFrequencia;

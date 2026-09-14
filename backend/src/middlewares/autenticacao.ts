@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { obterJwtSecret } from '../config/jwt';
 
+interface TokenPayload {
+  id: string;
+  tipo_usuario: string;
+}
+
 export const autenticar = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
@@ -21,9 +26,9 @@ export const autenticar = (req: Request, res: Response, next: NextFunction) => {
 
   try {
     const secret = obterJwtSecret();
-    const decoded = jwt.verify(token, secret) as any;
+    const decoded = jwt.verify(token, secret) as TokenPayload;
 
-    (req as any).user = {
+    req.user = {
       id: decoded.id,
       tipo_usuario: decoded.tipo_usuario
     };
@@ -36,8 +41,9 @@ export const autenticar = (req: Request, res: Response, next: NextFunction) => {
     res.setHeader('x-token-renovado', tokenRenovado);
 
     return next();
-  } catch (err: any) {
-    console.error("❌ Erro na validação do JWT:", err.message);
+  } catch (err: unknown) {
+    const mensagem = err instanceof Error ? err.message : String(err);
+    console.error("❌ Erro na validação do JWT:", mensagem);
     
     return res.status(401).json({ 
       success: false, 

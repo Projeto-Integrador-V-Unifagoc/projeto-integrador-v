@@ -5,6 +5,13 @@ import { FrequenciaMapper, type StatusFrequencia } from "../models/Frequencia";
 const STATUS_ATIVO = ["ativa", "ATIVA", "ATIVO", "MATRICULADO", "REGULAR"];
 const STATUS_MATRICULA_EM_CURSO = [...STATUS_ATIVO, "pendente", "PENDENTE"];
 
+interface JustificativaInterna {
+  motivo: string;
+  observacao?: string;
+  usuarioId: string;
+  perfil: string;
+}
+
 export class FrequenciaRepository {
   buscarUsuarioPorId(usuarioId: string) { return db("usuario").select("id", "tipo_usuario").where({ id: usuarioId }).first(); }
   buscarProfessorPorUsuarioId(usuarioId: string) { return db("professor").where({ usuario_id: usuarioId }).first(); }
@@ -95,7 +102,7 @@ export class FrequenciaRepository {
     });
   }
   buscarRegistroPorId(id: string) { return this.baseRegistro().where("frequencia.id", id).first().then((r) => r ? FrequenciaMapper.registro(r) : null); }
-  async salvarJustificativa(id: string, dados: any) {
+  async salvarJustificativa(id: string, dados: JustificativaInterna) {
     return db.transaction(async (trx) => {
       const anterior = await trx("frequencia").where({ id }).forUpdate().first();
       const [atual] = await trx("frequencia").where({ id }).update({ justificativa: dados.motivo, justificativa_motivo: dados.motivo, justificativa_observacao: dados.observacao || null, justificada_por_usuario_id: dados.usuarioId, justificada_por_perfil: dados.perfil, justificada_em: trx.fn.now(), updated_at: trx.fn.now() }).returning("*");
@@ -116,9 +123,9 @@ export class FrequenciaRepository {
     const registros = aulaIds.length ? await db("frequencia").whereIn("aula_id", aulaIds).whereIn("matricula_turma_disciplina_id", alunos.map((a) => a.matricula_turma_disciplina_id)) : [];
     return { totalAulas: aulas.length, rows: alunos.map((aluno) => { const rs = registros.filter((r) => r.matricula_turma_disciplina_id === aluno.matricula_turma_disciplina_id); return { ...aluno, aluno_nome: aluno.nome, turma_disciplina_id: id, disciplina_id: turma?.disciplina_id, disciplina_nome: turma?.disciplina_nome, registros: rs.length, presencas: rs.filter((r) => r.status === "PRESENTE").length, faltas: rs.filter((r) => r.status === "AUSENTE").length }; }) };
   }
-  private filtrarData(q: Knex.QueryBuilder, f: any, coluna: string) { if (f.dataInicio) q.whereRaw(`(${coluna} AT TIME ZONE 'America/Sao_Paulo')::date >= ?::date`, [f.dataInicio]); if (f.dataFim) q.whereRaw(`(${coluna} AT TIME ZONE 'America/Sao_Paulo')::date <= ?::date`, [f.dataFim]); }
-  private dataIso(v: any) { return v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10); }
-  private auditar(trx: Knex.Transaction, frequenciaId: string, ctx: any, acao: string, antes: any, depois: any) { return trx("frequencia_auditoria").insert({ frequencia_id: frequenciaId, usuario_id: ctx.usuarioId, perfil: ctx.perfil, acao, dados_anteriores: antes ? JSON.stringify(antes) : null, dados_novos: depois ? JSON.stringify(depois) : null }); }
+  private filtrarData(q: Knex.QueryBuilder, f: { dataInicio?: string; dataFim?: string }, coluna: string) { if (f.dataInicio) q.whereRaw(`(${coluna} AT TIME ZONE 'America/Sao_Paulo')::date >= ?::date`, [f.dataInicio]); if (f.dataFim) q.whereRaw(`(${coluna} AT TIME ZONE 'America/Sao_Paulo')::date <= ?::date`, [f.dataFim]); }
+  private dataIso(v: unknown) { return v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10); }
+  private auditar(trx: Knex.Transaction, frequenciaId: string, ctx: { usuarioId: string; perfil: string }, acao: string, antes: unknown, depois: unknown) { return trx("frequencia_auditoria").insert({ frequencia_id: frequenciaId, usuario_id: ctx.usuarioId, perfil: ctx.perfil, acao, dados_anteriores: antes ? JSON.stringify(antes) : null, dados_novos: depois ? JSON.stringify(depois) : null }); }
   private baseRegistro(executor: Knex | Knex.Transaction = db) {
     return executor("frequencia").join("aula", "frequencia.aula_id", "aula.id").join("matricula_turma_disciplina as mtd", "frequencia.matricula_turma_disciplina_id", "mtd.id")
       .join("matricula as m", "mtd.matricula_id", "m.id").join("aluno as al", "m.aluno_id", "al.id").join("pessoa as p", "al.pessoa_id", "p.id")

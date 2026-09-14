@@ -1,9 +1,9 @@
 import { db } from "../../../database/connection";
-import { Faculdade } from "../models/Faculdade";
+import { Faculdade, FaculdadeCommand } from "../models/Faculdade";
 import { FaculdadeMapper } from "../models/Faculdade";
 
 export class FaculdadeRepository {
-    async criarFaculdade(data: any ){
+    async criarFaculdade(data: FaculdadeCommand){
         const faculdade = await db("faculdade")
             .insert(data)
             .returning("*")

@@ -1,8 +1,29 @@
+import type { Knex } from "knex";
 import { db } from "../../../database/connection";
 import { AlunoCommand, AlunoMapper } from "../models/Aluno";
 
+export interface FiltrosAluno {
+    cursoId?: string;
+    periodo?: string;
+    nome?: string;
+}
+
+export interface AtualizarAlunoInput {
+    nome?: string;
+    cpf?: string;
+    dataNascimento?: string;
+    logradouro?: string;
+    numero?: number;
+    bairro?: string;
+    cidade?: { ibge?: string };
+    estado?: string;
+    cep?: string;
+    curso?: string;
+    periodo?: number;
+}
+
 export class AlunoRepository {
-    async criarAluno(aluno: AlunoCommand, trx?: any) {
+    async criarAluno(aluno: AlunoCommand, trx?: Knex.Transaction) {
     const query = trx || db;
 
     const [novoAluno] = await query("aluno")
@@ -12,7 +33,7 @@ export class AlunoRepository {
     return novoAluno;
 }
 
-    async listarAlunos(filtros?: any) {
+    async listarAlunos(filtros?: FiltrosAluno) {
 
         const query = db("aluno")
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
@@ -146,7 +167,7 @@ export class AlunoRepository {
         return row ? AlunoMapper.toDomain(row) : null;
     }
 
-    async atualizarAluno(matricula: string, dados: any) {
+    async atualizarAluno(matricula: string, dados: AtualizarAlunoInput) {
         const aluno = await db("aluno")
             .where("matricula", matricula)
             .first();

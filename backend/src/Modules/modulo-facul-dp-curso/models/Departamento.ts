@@ -14,12 +14,29 @@ export interface DepartamentoCommand{
     faculdade_id: string
 }
 
+/** Linha crua do banco. Alguns chamadores (ex.: AlunoMapper) só preenchem um subconjunto. */
+interface RawDepartamento {
+    departamento_id?: string;
+    departamento_codigo?: string;
+    departamento_nome?: string;
+    faculdade_id?: string;
+    faculdade_nome?: string;
+    logradouro?: string;
+    numero?: number;
+    bairro?: string;
+    cep?: string;
+    cidade_id?: string;
+    cidade_ibge?: string;
+    cidade_nome?: string;
+    cidade_uf?: string;
+}
+
 export class DepartamentoMapper {
-    static toDomain(raw: any): Departamento {
+    static toDomain(raw: RawDepartamento): Departamento {
         return {
-            id: raw.departamento_id,
-            codigo: raw.departamento_codigo,
-            nome: raw.departamento_nome,
+            id: raw.departamento_id as string,
+            codigo: raw.departamento_codigo as string,
+            nome: raw.departamento_nome as string,
             faculdade: FaculdadeMapper.toDomain(raw)
         }
     }
