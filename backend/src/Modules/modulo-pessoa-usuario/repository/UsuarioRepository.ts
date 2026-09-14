@@ -1,7 +1,8 @@
 import { db } from "../../../database/connection";
+import { UsuarioCommand } from "../models/Usuario";
 
 export class UsuarioRepository {
-    async criarUsuario(data: any) {
+    async criarUsuario(data: UsuarioCommand) {
         const usuario = await db("usuario")
             .insert(data)
             .returning("*");

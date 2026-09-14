@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { ProfessorService } from "../service/ProfessorService";
 
 export class ProfessorController {
     professorService = new ProfessorService();
 
-    async listarProfessores(req: any, res: any) {
+    async listarProfessores(req: Request, res: Response) {
         try {
             const professores = await this.professorService.listarProfessores();
             res.status(200).json(professores);

@@ -1,10 +1,17 @@
 import { UsuarioCommand } from "../models/Usuario";
 import { UsuarioRepository } from "../repository/UsuarioRepository";
 
+interface CriarUsuarioInput {
+    id: string;
+    email: string;
+    senha: string;
+    tipoUsuario: string;
+}
+
 export class UsuarioService {
     usuarioRepository = new UsuarioRepository();
 
-    async criarUsuario(data: any) {
+    async criarUsuario(data: CriarUsuarioInput) {
         let usuario: UsuarioCommand = {
             id: data.id,
             email: data.email,

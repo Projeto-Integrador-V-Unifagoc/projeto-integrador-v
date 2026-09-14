@@ -2,10 +2,22 @@ import { PessoaCommand } from "../models/Pessoa";
 import { PessoaRepository } from "../repository/PessoaRepository";
 import { v4 as uuidv4 } from 'uuid';
 
+interface CriarPessoaInput {
+    cpf: string;
+    nome: string;
+    dataNascimento: string;
+    logradouro: string;
+    numero: number;
+    bairro: string;
+    cidadeIbge: string;
+    estado: string;
+    cep: string;
+}
+
 export class PessoaService {
     pessoaRepository = new PessoaRepository();
 
-    async criarPessoa(data: any) {
+    async criarPessoa(data: CriarPessoaInput) {
         let pessoa: PessoaCommand = {
             id: uuidv4(),
             cpf: data.cpf,
