@@ -2,10 +2,18 @@ import { v4 as uuidv4 } from "uuid";
 import { DisciplinaCommand } from "../models/Disciplina";
 import { DisciplinaRepository } from "../repository/DisciplinaRepository";
 
+interface CriarDisciplinaInput {
+    codigo: string;
+    nome: string;
+    preRequisito?: string;
+    cargaHoraria: number | string;
+    ativo?: boolean;
+}
+
 export class DisciplinaService {
     disciplinaRepository = new DisciplinaRepository();
 
-    async criarDisciplina(data: any) {
+    async criarDisciplina(data: CriarDisciplinaInput) {
         const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(data.codigo);
 
         if (disciplinaExistente) {
@@ -32,7 +40,7 @@ export class DisciplinaService {
         return await this.disciplinaRepository.buscarDisciplinaPorId(id);
     }
 
-    async atualizarDisciplina(id: string, data: any) {
+    async atualizarDisciplina(id: string, data: Partial<CriarDisciplinaInput>) {
         const disciplinaAtual = await this.disciplinaRepository.buscarDisciplinaPorId(id);
 
         if (!disciplinaAtual) {

@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { DisciplinaService } from "../services/DisciplinaServices";
 
 export class StatusDisciplinaController {
     disciplinaService = new DisciplinaService();
 
-    async criarStatusMatriculaDisciplina(req: any, res: any) {
+    async criarStatusMatriculaDisciplina(req: Request, res: Response) {
         try {
             const status = await this.disciplinaService.criarStatusMatriculaDisciplina(req.body);
             res.status(201).json(status);
@@ -12,7 +13,7 @@ export class StatusDisciplinaController {
         }
     }
 
-    async listarStatusMatriculaDisciplina(req: any, res: any) {
+    async listarStatusMatriculaDisciplina(req: Request, res: Response) {
         try {
             const status = await this.disciplinaService.listarStatusMatriculaDisciplina();
             res.status(200).json(status);
@@ -21,9 +22,9 @@ export class StatusDisciplinaController {
         }
     }
 
-    async buscarStatusMatriculaDisciplinaPorId(req: any, res: any) {
+    async buscarStatusMatriculaDisciplinaPorId(req: Request, res: Response) {
         try {
-            const status = await this.disciplinaService.buscarStatusMatriculaDisciplinaPorId(req.params.id);
+            const status = await this.disciplinaService.buscarStatusMatriculaDisciplinaPorId(String(req.params.id));
             if (!status) {
                 return res.status(404).json({ error: "Status de matrícula da disciplina não encontrado" });
             }
@@ -33,9 +34,9 @@ export class StatusDisciplinaController {
         }
     }
 
-    async atualizarStatusMatriculaDisciplina(req: any, res: any) {
+    async atualizarStatusMatriculaDisciplina(req: Request, res: Response) {
         try {
-            const status = await this.disciplinaService.atualizarStatusMatriculaDisciplina(req.params.id, req.body);
+            const status = await this.disciplinaService.atualizarStatusMatriculaDisciplina(String(req.params.id), req.body);
             if (!status) {
                 return res.status(404).json({ error: "Status de matrícula da disciplina não encontrado" });
             }

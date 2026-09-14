@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { DisciplinaService } from "../service/DisciplinaService";
 
 export class DisciplinaController {
     disciplinaService = new DisciplinaService();
 
-    async criarDisciplina(req: any, res: any) {
+    async criarDisciplina(req: Request, res: Response) {
         try {
             const disciplina = await this.disciplinaService.criarDisciplina(req.body);
             res.status(201).json(disciplina);
@@ -12,7 +13,7 @@ export class DisciplinaController {
         }
     }
 
-    async listarDisciplinas(req: any, res: any) {
+    async listarDisciplinas(req: Request, res: Response) {
         try {
             const disciplinas = await this.disciplinaService.listarDisciplinas();
             res.status(200).json(disciplinas);
@@ -21,9 +22,9 @@ export class DisciplinaController {
         }
     }
 
-    async buscarDisciplinaPorId(req: any, res: any) {
+    async buscarDisciplinaPorId(req: Request, res: Response) {
         try {
-            const disciplina = await this.disciplinaService.buscarDisciplinaPorId(req.params.id);
+            const disciplina = await this.disciplinaService.buscarDisciplinaPorId(String(req.params.id));
 
             if (!disciplina) {
                 return res.status(404).json({ error: "Disciplina não encontrada" });
@@ -35,9 +36,9 @@ export class DisciplinaController {
         }
     }
 
-    async atualizarDisciplina(req: any, res: any) {
+    async atualizarDisciplina(req: Request, res: Response) {
         try {
-            const disciplina = await this.disciplinaService.atualizarDisciplina(req.params.id, req.body);
+            const disciplina = await this.disciplinaService.atualizarDisciplina(String(req.params.id), req.body);
 
             if (!disciplina) {
                 return res.status(404).json({ error: "Disciplina não encontrada" });
@@ -49,9 +50,9 @@ export class DisciplinaController {
         }
     }
 
-    async removerDisciplina(req: any, res: any) {
+    async removerDisciplina(req: Request, res: Response) {
         try {
-            const removidos = await this.disciplinaService.removerDisciplina(req.params.id);
+            const removidos = await this.disciplinaService.removerDisciplina(String(req.params.id));
 
             if (!removidos) {
                 return res.status(404).json({ error: "Disciplina não encontrada" });

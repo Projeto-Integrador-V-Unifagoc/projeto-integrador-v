@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { MatriculaService } from "../services/MatriculaSerices";
 
 export class MatriculaController {
     matriculaService = new MatriculaService();
 
-    async criarStatusMatriculaCurso(req: any, res: any) {
+    async criarStatusMatriculaCurso(req: Request, res: Response) {
         try {
             const status = await this.matriculaService.criarStatusMatriculaCurso(req.body);
             res.status(201).json(status);
@@ -12,7 +13,7 @@ export class MatriculaController {
         }
     }
 
-    async listarStatusMatriculaCurso(req: any, res: any) {
+    async listarStatusMatriculaCurso(req: Request, res: Response) {
         try {
             const status = await this.matriculaService.listarStatusMatriculaCurso();
             res.status(200).json(status);
@@ -21,9 +22,9 @@ export class MatriculaController {
         }
     }
 
-    async buscarStatusMatriculaCursoPorId(req: any, res: any) {
+    async buscarStatusMatriculaCursoPorId(req: Request, res: Response) {
         try {
-            const status = await this.matriculaService.buscarStatusMatriculaCursoPorId(req.params.id);
+            const status = await this.matriculaService.buscarStatusMatriculaCursoPorId(String(req.params.id));
             if (!status) {
                 return res.status(404).json({ error: "Status de matrícula do curso não encontrado" });
             }
@@ -33,9 +34,9 @@ export class MatriculaController {
         }
     }
 
-    async atualizarStatusMatriculaCurso(req: any, res: any) {
+    async atualizarStatusMatriculaCurso(req: Request, res: Response) {
         try {
-            const status = await this.matriculaService.atualizarStatusMatriculaCurso(req.params.id, req.body);
+            const status = await this.matriculaService.atualizarStatusMatriculaCurso(String(req.params.id), req.body);
             if (!status) {
                 return res.status(404).json({ error: "Status de matrícula do curso não encontrado" });
             }

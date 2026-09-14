@@ -5,7 +5,7 @@ import { StatusMatriculaCursoCommand } from "../model/Matricula";
 export class MatriculaService {
     matriculaRepository = new MatriculaRepository();
 
-    async criarStatusMatriculaCurso(data: any) {
+    async criarStatusMatriculaCurso(data: { descricao: string }) {
         const status: StatusMatriculaCursoCommand = {
             id: uuidv4(),
             descricao: data.descricao
