@@ -335,7 +335,7 @@ export class MatriculaRepository {
     }
 
     async resumoDocumentosDoAluno(alunoId: string): Promise<ResumoDocumentos> {
-        const linha: any = await db("documento")
+        const linha = await db("documento")
             .where({ aluno_id: alunoId })
             .select(
                 db.raw("count(*)::int as total"),
@@ -343,7 +343,7 @@ export class MatriculaRepository {
                 db.raw("count(*) filter (where upper(status) = 'APROVADO')::int as aprovados"),
                 db.raw("count(*) filter (where upper(status) = 'REPROVADO')::int as reprovados")
             )
-            .first();
+            .first() as { total?: number; pendentes?: number; aprovados?: number; reprovados?: number } | undefined;
 
         return {
             total: Number(linha?.total ?? 0),
