@@ -14,6 +14,112 @@ export interface SalvarLoteArgs {
   itens: Array<{ matriculaId: string; valor: number }>;
 }
 
+export interface AtribuicaoRow {
+  id: string;
+  professor_id: string;
+  turma_id: string;
+  turma_sigla: string;
+  turma_descricao: string;
+  periodo_id: string;
+  periodo_codigo: string;
+  periodo_status: string;
+  periodo_ativo: boolean;
+  disciplina_id: string;
+  disciplina_codigo: string;
+  disciplina_nome: string;
+  professor_nome: string;
+}
+
+export interface TurmaDisciplinaRow {
+  id: string;
+  professor_id: string;
+  status: string;
+  turma_id: string;
+  turma_sigla: string;
+  turma_descricao: string;
+  periodo_id: string;
+  periodo_codigo: string;
+  periodo_status: string;
+  periodo_ativo: boolean;
+  disciplina_id: string;
+  disciplina_codigo: string;
+  disciplina_nome: string;
+}
+
+export interface AvaliacaoDetalhadaRow {
+  id: string;
+  tipo_avaliacao: string;
+  descricao_avaliacao: string | null;
+  valor: number;
+  data_lancamento: string;
+  turma_disciplina_id: string;
+  professor_id: string;
+  turma_disciplina_status: string;
+  turma_sigla: string;
+  periodo_id: string;
+  periodo_codigo: string;
+  periodo_status: string;
+  periodo_ativo: boolean;
+  disciplina_id: string;
+  disciplina_nome: string;
+}
+
+export interface AvaliacaoRow {
+  id: string;
+  tipo_avaliacao: string;
+  descricao_avaliacao: string | null;
+  valor: number;
+  data_lancamento: string;
+}
+
+export interface MatriculaAtivaRow {
+  matricula_turma_disciplina_id: string;
+  status_matricula: string;
+  aluno_id: string;
+  matricula: number;
+  aluno_nome: string;
+}
+
+export interface NotaRow {
+  id: string;
+  avaliacao_id: string;
+  matricula_turma_disciplina_id: string;
+  valor: number;
+  publicada_em: string;
+}
+
+export interface NotaDaTurmaRow {
+  avaliacao_id: string;
+  matricula_turma_disciplina_id: string;
+  valor: number;
+  publicada_em: string;
+}
+
+export interface TurmaDoAlunoRow {
+  matricula_turma_disciplina_id: string;
+  status_matricula: string;
+  turma_disciplina_id: string;
+  turma_sigla: string;
+  periodo_id: string;
+  periodo_codigo: string;
+  disciplina_id: string;
+  disciplina_codigo: string;
+  disciplina_nome: string;
+  professor_nome: string;
+}
+
+export interface BoletimRow {
+  matricula_turma_disciplina_id: string;
+  turma_disciplina_id: string;
+  avaliacao_id: string;
+  tipo_avaliacao: string;
+  descricao_avaliacao: string | null;
+  valor: number;
+  data_lancamento: string;
+  nota_valor: number | null;
+  publicada_em: string | null;
+}
+
 export class NotaRepository {
   transacao<T>(callback: (trx: Knex.Transaction) => Promise<T>) {
     return db.transaction(callback);
@@ -46,7 +152,7 @@ export class NotaRepository {
   }
 
   // Atribuicoes (turma/disciplina) com periodo letivo e disciplina.
-  listarAtribuicoes(professorId?: string, executor: Executor = db) {
+  async listarAtribuicoes(professorId?: string, executor: Executor = db): Promise<AtribuicaoRow[]> {
     const q = executor("piv.turma_disciplina as td")
       .join("piv.turma as t", "td.turma_id", "t.id")
       .join("piv.periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
@@ -75,7 +181,7 @@ export class NotaRepository {
     return q;
   }
 
-  buscarTurmaDisciplina(turmaDisciplinaId: string, executor: Executor = db) {
+  async buscarTurmaDisciplina(turmaDisciplinaId: string, executor: Executor = db): Promise<TurmaDisciplinaRow | undefined> {
     return executor("piv.turma_disciplina as td")
       .join("piv.turma as t", "td.turma_id", "t.id")
       .join("piv.periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
@@ -101,7 +207,7 @@ export class NotaRepository {
   }
 
   // Avaliacao com sua atribuicao, periodo e disciplina.
-  buscarAvaliacao(avaliacaoId: string, executor: Executor = db) {
+  async buscarAvaliacao(avaliacaoId: string, executor: Executor = db): Promise<AvaliacaoDetalhadaRow | undefined> {
     return executor("piv.avaliacao as a")
       .join("piv.turma_disciplina as td", "a.turma_disciplina_id", "td.id")
       .join("piv.turma as t", "td.turma_id", "t.id")
@@ -129,14 +235,14 @@ export class NotaRepository {
       .first();
   }
 
-  listarAvaliacoesDaTurma(turmaDisciplinaId: string, executor: Executor = db) {
+  async listarAvaliacoesDaTurma(turmaDisciplinaId: string, executor: Executor = db): Promise<AvaliacaoRow[]> {
     return executor("piv.avaliacao")
       .where("turma_disciplina_id", turmaDisciplinaId)
       .select("id", "tipo_avaliacao", "descricao_avaliacao", "valor", "data_lancamento")
       .orderBy("data_lancamento", "asc");
   }
 
-  buscarRecuperacaoDaTurma(turmaDisciplinaId: string, executor: Executor = db) {
+  async buscarRecuperacaoDaTurma(turmaDisciplinaId: string, executor: Executor = db): Promise<AvaliacaoRow | undefined> {
     return executor("piv.avaliacao")
       .where({ turma_disciplina_id: turmaDisciplinaId, tipo_avaliacao: "RECUPERACAO" })
       .first();
@@ -155,7 +261,7 @@ export class NotaRepository {
   }
 
   // Matriculas ativas (status regular em matricula e na atribuicao).
-  listarMatriculasAtivas(turmaDisciplinaId: string, executor: Executor = db) {
+  async listarMatriculasAtivas(turmaDisciplinaId: string, executor: Executor = db): Promise<MatriculaAtivaRow[]> {
     return executor("piv.matricula_turma_disciplina as mtd")
       .join("piv.matricula as m", "mtd.matricula_id", "m.id")
       .join("piv.aluno as a", "m.aluno_id", "a.id")
@@ -182,12 +288,12 @@ export class NotaRepository {
     return Number(total || 0);
   }
 
-  listarNotasDaAvaliacao(avaliacaoId: string, executor: Executor = db) {
+  async listarNotasDaAvaliacao(avaliacaoId: string, executor: Executor = db): Promise<NotaRow[]> {
     return executor("piv.nota").where("avaliacao_id", avaliacaoId).select("*");
   }
 
   // Todas as notas das avaliacoes de uma turma/disciplina (sem N+1).
-  listarNotasDaTurma(turmaDisciplinaId: string, executor: Executor = db) {
+  async listarNotasDaTurma(turmaDisciplinaId: string, executor: Executor = db): Promise<NotaDaTurmaRow[]> {
     return executor("piv.nota as n")
       .join("piv.avaliacao as a", "n.avaliacao_id", "a.id")
       .where("a.turma_disciplina_id", turmaDisciplinaId)
@@ -195,7 +301,7 @@ export class NotaRepository {
   }
 
   // Disciplinas em que o aluno esta matriculado (mesmo sem notas).
-  listarTurmasDoAluno(alunoId: string, periodoId?: string, executor: Executor = db) {
+  async listarTurmasDoAluno(alunoId: string, periodoId?: string, executor: Executor = db): Promise<TurmaDoAlunoRow[]> {
     const q = executor("piv.matricula_turma_disciplina as mtd")
       .join("piv.matricula as m", "mtd.matricula_id", "m.id")
       .join("piv.turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
@@ -239,7 +345,7 @@ export class NotaRepository {
   }
 
   // Avaliacoes e notas de todas as turmas do aluno (consulta unica).
-  listarBoletimDoAluno(alunoId: string, executor: Executor = db) {
+  async listarBoletimDoAluno(alunoId: string, executor: Executor = db): Promise<BoletimRow[]> {
     return executor("piv.matricula_turma_disciplina as mtd")
       .join("piv.matricula as m", "mtd.matricula_id", "m.id")
       .join("piv.avaliacao as a", "a.turma_disciplina_id", "mtd.turma_disciplina_id")
@@ -359,7 +465,7 @@ export class NotaRepository {
         const anterior = porMatricula.get(item.matriculaId);
         if (anterior) {
           const limite = new Date(anterior.publicada_em).getTime() + 7 * 86400000;
-          let autorizacao: any = null;
+          let autorizacao: { id: string; motivo?: string } | undefined = undefined;
           if (Date.now() > limite) {
             autorizacao = await this.buscarAutorizacaoVigente(args.avaliacaoId, item.matriculaId, trx);
             if (!autorizacao) {
