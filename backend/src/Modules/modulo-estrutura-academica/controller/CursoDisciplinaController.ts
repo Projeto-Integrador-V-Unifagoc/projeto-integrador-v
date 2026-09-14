@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { CursoDisciplinaService } from "../service/CursoDisciplinaService";
 
 export class CursoDisciplinaController {
     cursoDisciplinaService = new CursoDisciplinaService();
 
-    async criarCursoDisciplina(req: any, res: any) {
+    async criarCursoDisciplina(req: Request, res: Response) {
         try {
             const cursoDisciplina = await this.cursoDisciplinaService.criarCursoDisciplina(req.body);
             res.status(201).json(cursoDisciplina);
@@ -12,7 +13,7 @@ export class CursoDisciplinaController {
         }
     }
 
-    async listarCursoDisciplinas(req: any, res: any) {
+    async listarCursoDisciplinas(req: Request, res: Response) {
         try {
             const cursoDisciplinas = await this.cursoDisciplinaService.listarCursoDisciplinas();
             res.status(200).json(cursoDisciplinas);
@@ -21,19 +22,19 @@ export class CursoDisciplinaController {
         }
     }
 
-    async listarMatrizCurricularPorCursoId(req: any, res: any) {
+    async listarMatrizCurricularPorCursoId(req: Request, res: Response) {
         try {
             const periodo = req.query.periodo !== undefined ? Number(req.query.periodo) : undefined;
-            const matrizCurricular = await this.cursoDisciplinaService.listarMatrizCurricularPorCursoId(req.params.id, periodo);
+            const matrizCurricular = await this.cursoDisciplinaService.listarMatrizCurricularPorCursoId(String(req.params.id), periodo);
             res.status(200).json(matrizCurricular);
         } catch (error) {
             res.status(400).json({ error: (error as Error).message });
         }
     }
 
-    async atualizarCursoDisciplina(req: any, res: any) {
+    async atualizarCursoDisciplina(req: Request, res: Response) {
         try {
-            const cursoDisciplina = await this.cursoDisciplinaService.atualizarCursoDisciplina(req.params.id, req.body);
+            const cursoDisciplina = await this.cursoDisciplinaService.atualizarCursoDisciplina(String(req.params.id), req.body);
 
             if (!cursoDisciplina) {
                 return res.status(404).json({ error: "Associacao curso disciplina nao encontrada" });
@@ -45,9 +46,9 @@ export class CursoDisciplinaController {
         }
     }
 
-    async removerCursoDisciplina(req: any, res: any) {
+    async removerCursoDisciplina(req: Request, res: Response) {
         try {
-            const removidos = await this.cursoDisciplinaService.removerCursoDisciplina(req.params.id);
+            const removidos = await this.cursoDisciplinaService.removerCursoDisciplina(String(req.params.id));
 
             if (!removidos) {
                 return res.status(404).json({ error: "Associacao curso disciplina nao encontrada" });

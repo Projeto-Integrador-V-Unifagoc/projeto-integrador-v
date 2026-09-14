@@ -4,12 +4,23 @@ import { TurmaCommand } from "../models/Turma";
 import { PeriodoLetivoRepository } from "../repository/PeriodoLetivoRepository";
 import { TurmaRepository } from "../repository/TurmaRepository";
 
+interface CriarTurmaInput {
+    cursoId: string;
+    periodoLetivoId: string;
+    periodoCurricular: number | string;
+    descricao: string;
+    sigla: string;
+    capacidadeAlunos: number | string;
+    turno: string;
+    status?: string;
+}
+
 export class TurmaService {
     turmaRepository = new TurmaRepository();
     cursoRepository = new CursoRepository();
     periodoLetivoRepository = new PeriodoLetivoRepository();
 
-    private async validarRelacionamentos(data: any) {
+    private async validarRelacionamentos(data: CriarTurmaInput) {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(data.cursoId);
 
         if (!curso) {
@@ -33,7 +44,7 @@ export class TurmaService {
         }
     }
 
-    async criarTurma(data: any) {
+    async criarTurma(data: CriarTurmaInput) {
         await this.validarRelacionamentos(data);
 
         const turmaExistente = await this.turmaRepository.buscarTurmaPorChave(
@@ -69,14 +80,14 @@ export class TurmaService {
         return await this.turmaRepository.buscarTurmaPorId(id);
     }
 
-    async atualizarTurma(id: string, data: any) {
+    async atualizarTurma(id: string, data: Partial<CriarTurmaInput>) {
         const turmaAtual = await this.turmaRepository.buscarTurmaPorId(id);
 
         if (!turmaAtual) {
             return null;
         }
 
-        const payload = {
+        const payload: CriarTurmaInput = {
             periodoLetivoId: data.periodoLetivoId ?? turmaAtual.periodo_letivo.id,
             cursoId: data.cursoId ?? turmaAtual.curso.id,
             periodoCurricular: data.periodoCurricular ?? turmaAtual.periodo_curricular,

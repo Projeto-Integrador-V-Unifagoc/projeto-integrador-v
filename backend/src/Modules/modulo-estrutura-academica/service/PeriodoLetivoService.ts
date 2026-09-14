@@ -2,10 +2,20 @@ import { v4 as uuidv4 } from "uuid";
 import { PeriodoLetivoCommand } from "../models/PeriodoLetivo";
 import { PeriodoLetivoRepository } from "../repository/PeriodoLetivoRepository";
 
+interface CriarPeriodoLetivoInput {
+    codigo: string;
+    ano: number | string;
+    semestre: number | string;
+    dataInicio: string;
+    dataFim: string;
+    ativo?: boolean;
+    status?: string;
+}
+
 export class PeriodoLetivoService {
     periodoLetivoRepository = new PeriodoLetivoRepository();
 
-    private validarPeriodo(data: any) {
+    private validarPeriodo(data: CriarPeriodoLetivoInput) {
         const semestre = Number(data.semestre);
 
         if (![1, 2].includes(semestre)) {
@@ -17,7 +27,7 @@ export class PeriodoLetivoService {
         }
     }
 
-    async criarPeriodoLetivo(data: any) {
+    async criarPeriodoLetivo(data: CriarPeriodoLetivoInput) {
         this.validarPeriodo(data);
 
         const periodoPorCodigo = await this.periodoLetivoRepository.buscarPeriodoLetivoPorCodigo(data.codigo);
@@ -57,14 +67,14 @@ export class PeriodoLetivoService {
         return await this.periodoLetivoRepository.buscarPeriodoLetivoPorId(id);
     }
 
-    async atualizarPeriodoLetivo(id: string, data: any) {
+    async atualizarPeriodoLetivo(id: string, data: Partial<CriarPeriodoLetivoInput>) {
         const periodoAtual = await this.periodoLetivoRepository.buscarPeriodoLetivoPorId(id);
 
         if (!periodoAtual) {
             return null;
         }
 
-        const payload = {
+        const payload: CriarPeriodoLetivoInput = {
             codigo: data.codigo ?? periodoAtual.codigo,
             ano: data.ano ?? periodoAtual.ano,
             semestre: data.semestre ?? periodoAtual.semestre,

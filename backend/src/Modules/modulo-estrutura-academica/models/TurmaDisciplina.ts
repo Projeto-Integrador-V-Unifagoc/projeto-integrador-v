@@ -35,32 +35,53 @@ export interface TurmaDisciplinaCommand {
     status: string
 }
 
+interface RawTurmaDisciplina {
+    id?: string;
+    status?: string;
+    turma_id?: string;
+    turma_sigla?: string;
+    turma_descricao?: string;
+    curso_disciplina_id?: string;
+    periodo_ideal?: number;
+    obrigatoria?: boolean;
+    curso_disciplina_carga_horaria?: number;
+    disciplina_id?: string;
+    disciplina_codigo?: string;
+    disciplina_nome?: string;
+    disciplina_pre_requisito?: string;
+    disciplina_carga_horaria?: number;
+    professor_id?: string;
+    professor_nome?: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export class TurmaDisciplinaMapper {
-    static toDomain(raw: any): TurmaDisciplina {
+    static toDomain(raw: RawTurmaDisciplina): TurmaDisciplina {
         return {
-            id: raw.id,
-            status: raw.status,
+            id: raw.id as string,
+            status: raw.status as string,
             turma: {
-                id: raw.turma_id,
-                sigla: raw.turma_sigla,
-                descricao: raw.turma_descricao
+                id: raw.turma_id as string,
+                sigla: raw.turma_sigla as string,
+                descricao: raw.turma_descricao as string
             },
             curso_disciplina: {
-                id: raw.curso_disciplina_id,
+                id: raw.curso_disciplina_id as string,
                 periodo_ideal: raw.periodo_ideal ?? undefined,
-                obrigatoria: raw.obrigatoria,
-                carga_horaria: raw.curso_disciplina_carga_horaria,
+                obrigatoria: raw.obrigatoria as boolean,
+                carga_horaria: raw.curso_disciplina_carga_horaria as number,
                 disciplina: {
-                    id: raw.disciplina_id,
-                    codigo: raw.disciplina_codigo,
-                    nome: raw.disciplina_nome,
+                    id: raw.disciplina_id as string,
+                    codigo: raw.disciplina_codigo as string,
+                    nome: raw.disciplina_nome as string,
                     pre_requisito: raw.disciplina_pre_requisito ?? undefined,
-                    carga_horaria: raw.disciplina_carga_horaria
+                    carga_horaria: raw.disciplina_carga_horaria as number
                 }
             },
             professor: {
-                id: raw.professor_id,
-                nome: raw.professor_nome
+                id: raw.professor_id as string,
+                nome: raw.professor_nome as string
             },
             created_at: raw.created_at,
             updated_at: raw.updated_at

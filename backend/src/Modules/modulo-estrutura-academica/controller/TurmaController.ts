@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { TurmaService } from "../service/TurmaService";
 
 export class TurmaController {
     turmaService = new TurmaService();
 
-    async criarTurma(req: any, res: any) {
+    async criarTurma(req: Request, res: Response) {
         try {
             const turma = await this.turmaService.criarTurma(req.body);
             res.status(201).json(turma);
@@ -12,7 +13,7 @@ export class TurmaController {
         }
     }
 
-    async listarTurmas(req: any, res: any) {
+    async listarTurmas(req: Request, res: Response) {
         try {
             const turmas = await this.turmaService.listarTurmas();
             res.status(200).json(turmas);
@@ -21,9 +22,9 @@ export class TurmaController {
         }
     }
 
-    async buscarTurmaPorId(req: any, res: any) {
+    async buscarTurmaPorId(req: Request, res: Response) {
         try {
-            const turma = await this.turmaService.buscarTurmaPorId(req.params.id);
+            const turma = await this.turmaService.buscarTurmaPorId(String(req.params.id));
 
             if (!turma) {
                 return res.status(404).json({ error: "Turma nao encontrada" });
@@ -35,9 +36,9 @@ export class TurmaController {
         }
     }
 
-    async atualizarTurma(req: any, res: any) {
+    async atualizarTurma(req: Request, res: Response) {
         try {
-            const turma = await this.turmaService.atualizarTurma(req.params.id, req.body);
+            const turma = await this.turmaService.atualizarTurma(String(req.params.id), req.body);
 
             if (!turma) {
                 return res.status(404).json({ error: "Turma nao encontrada" });
@@ -49,9 +50,9 @@ export class TurmaController {
         }
     }
 
-    async removerTurma(req: any, res: any) {
+    async removerTurma(req: Request, res: Response) {
         try {
-            const removidos = await this.turmaService.removerTurma(req.params.id);
+            const removidos = await this.turmaService.removerTurma(String(req.params.id));
 
             if (!removidos) {
                 return res.status(404).json({ error: "Turma nao encontrada" });
