@@ -1,18 +1,20 @@
 import fs from "fs";
 import path from "path";
+import { Request, Response } from "express";
 
 import { DocumentoService } from "../service/DocumentoService";
 import {
     DocumentoAuthContext,
     ErroAutorizacaoDocumento,
 } from "../service/DocumentoAuthContext";
+import { mensagemDeErro } from "../../../shared/erro";
 
 const service = new DocumentoService();
 const authContext = new DocumentoAuthContext();
 
 export class DocumentoController {
 
-    async upload(req: any, res: any) {
+    async upload(req: Request, res: Response) {
         try {
             const contexto = await authContext.obterContexto(req);
             const arquivo = req.file;
@@ -50,7 +52,7 @@ export class DocumentoController {
 
             return res.status(201).json(doc);
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (err instanceof ErroAutorizacaoDocumento) {
                 return res.status(err.status).json({
                     error: err.message,
@@ -58,33 +60,33 @@ export class DocumentoController {
             }
 
             return res.status(400).json({
-                error: err.message,
+                error: mensagemDeErro(err),
             });
         }
     }
 
-    async listarTodos(_req: any, res: any) {
+    async listarTodos(_req: Request, res: Response) {
         try {
             return res.status(200).json(
                 await service.listarTodos(),
             );
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             return res.status(500).json({
-                error: err.message,
+                error: mensagemDeErro(err),
             });
         }
     }
 
-    async listarInscritos(_req: any, res: any) {
+    async listarInscritos(_req: Request, res: Response) {
         try {
             res.status(200).json(await service.listarInscritos());
-        } catch (err: any) {
-            res.status(500).json({ error: err.message });
+        } catch (err: unknown) {
+            res.status(500).json({ error: mensagemDeErro(err) });
         }
     }
 
-    async listarPorAluno(req: any, res: any) {
+    async listarPorAluno(req: Request, res: Response) {
         try {
             const contexto = await authContext.obterContexto(req);
 
@@ -98,10 +100,10 @@ export class DocumentoController {
             }
 
             return res.status(200).json(
-                await service.listarPorAluno(req.params.alunoId),
+                await service.listarPorAluno(String(req.params.alunoId)),
             );
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (err instanceof ErroAutorizacaoDocumento) {
                 return res.status(err.status).json({
                     error: err.message,
@@ -109,15 +111,15 @@ export class DocumentoController {
             }
 
             return res.status(500).json({
-                error: err.message,
+                error: mensagemDeErro(err),
             });
         }
     }
 
-    async arquivo(req: any, res: any) {
+    async arquivo(req: Request, res: Response) {
         try {
             const contexto = await authContext.obterContexto(req);
-            const doc = await service.buscarPorId(req.params.id);
+            const doc = await service.buscarPorId(String(req.params.id));
 
             if (
                 contexto.perfil === "aluno" &&
@@ -143,25 +145,26 @@ export class DocumentoController {
                 },
             );
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (err instanceof ErroAutorizacaoDocumento) {
                 return res.status(err.status).json({
                     error: err.message,
                 });
             }
 
+            const mensagem = mensagemDeErro(err);
             const status =
-                err.message.includes("não encontrado")
+                mensagem.includes("não encontrado")
                     ? 404
                     : 500;
 
             return res.status(status).json({
-                error: err.message,
+                error: mensagem,
             });
         }
     }
 
-    async validar(req: any, res: any) {
+    async validar(req: Request, res: Response) {
         try {
             const { status, observacao } = req.body;
 
@@ -173,40 +176,42 @@ export class DocumentoController {
 
             return res.status(200).json(
                 await service.validar(
-                    req.params.id,
+                    String(req.params.id),
                     status,
                     observacao,
                 ),
             );
 
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const mensagem = mensagemDeErro(err);
             const status =
-                err.message.includes("não encontrado")
+                mensagem.includes("não encontrado")
                     ? 404
-                    : err.message.includes("inválido")
+                    : mensagem.includes("inválido")
                         ? 400
                         : 500;
 
             return res.status(status).json({
-                error: err.message,
+                error: mensagem,
             });
         }
     }
 
-    async deletar(req: any, res: any) {
+    async deletar(req: Request, res: Response) {
         try {
-            await service.deletar(req.params.id);
+            await service.deletar(String(req.params.id));
 
             return res.status(204).send();
 
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const mensagem = mensagemDeErro(err);
             const status =
-                err.message.includes("não encontrado")
+                mensagem.includes("não encontrado")
                     ? 404
                     : 500;
 
             return res.status(status).json({
-                error: err.message,
+                error: mensagem,
             });
         }
     }

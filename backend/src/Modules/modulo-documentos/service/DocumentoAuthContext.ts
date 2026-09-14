@@ -16,7 +16,7 @@ export class ErroAutorizacaoDocumento extends Error {
 export class DocumentoAuthContext {
     constructor(private repository = new DocumentoRepository()) {}
     async obterContexto(req: Request): Promise<ContextoDocumento> {
-        const user = (req as any)?.user;
+        const user = req?.user;
         if (!user?.id || !user?.tipo_usuario) {
             throw new ErroAutorizacaoDocumento("Identidade autenticada inválida.", 401);
         }
