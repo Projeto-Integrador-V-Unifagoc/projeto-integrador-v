@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import AutenticacaoService from '../services/autenticacao-services';
+import { mensagemDeErro } from '../../../shared/erro';
 
 class AutenticacaoController {
   async cadastrar(req: Request, res: Response) {
@@ -38,10 +39,10 @@ class AutenticacaoController {
         tipo_usuario: usuario.tipo_usuario,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no cadastro:', error);
     return res.status(400).json({
-      error: error?.message || 'Erro ao cadastrar usuário',
+      error: mensagemDeErro(error, 'Erro ao cadastrar usuário'),
     });
   }
 }
@@ -60,23 +61,23 @@ class AutenticacaoController {
         token,
         user: usuario
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro no login:', error);
-      return res.status(401).json({ error: error?.message || 'Erro ao realizar login' });
+      return res.status(401).json({ error: mensagemDeErro(error, 'Erro ao realizar login') });
     }
   }
 
   async me(req: Request, res: Response) {
     try {
-      const id = (req as any).user.id;
+      const id = req.user!.id;
       const usuario = await AutenticacaoService.getMe(id);
 
       return res.status(200).json({
         success: true,
         data: usuario
       });
-    } catch (error: any) {
-      return res.status(401).json({ success: false, message: error.message });
+    } catch (error: unknown) {
+      return res.status(401).json({ success: false, message: mensagemDeErro(error) });
     }
   }
 
@@ -84,7 +85,7 @@ class AutenticacaoController {
     try {
       const usuarios = await AutenticacaoService.listarTodos();
       return res.status(200).json(usuarios);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao listar usuários:', error);
       return res.status(500).json({
         error: 'Erro interno ao buscar a lista de usuários.'
@@ -97,7 +98,7 @@ class AutenticacaoController {
     try {
       const alunos = await AutenticacaoService.listarAlunosSemUsuario();
       return res.status(200).json(alunos);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao listar alunos disponíveis:', error);
       return res.status(500).json({
         error: 'Erro interno ao buscar alunos disponíveis.'
@@ -110,7 +111,7 @@ class AutenticacaoController {
     try {
       const professores = await AutenticacaoService.listarProfessoresSemUsuario();
       return res.status(200).json(professores);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao listar professores disponíveis:', error);
       return res.status(500).json({
         error: 'Erro interno ao buscar professores disponíveis.'
@@ -127,10 +128,10 @@ class AutenticacaoController {
       return res.status(200).json({
         message: 'Usuário removido com sucesso', 
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao excluir usuário:', error);
       return res.status(400).json({
-        error: error?.message || 'Erro ao excluir usuário',
+        error: mensagemDeErro(error, 'Erro ao excluir usuário'),
       });
     }
   }
@@ -161,10 +162,10 @@ async atualizar(req: Request, res: Response) {
         });
 
         return res.status(200).json({ message: "Dados atualizados com sucesso!" });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Erro ao atualizar usuário:', error);
         return res.status(400).json({
-            error: error?.message || "Erro interno ao atualizar.",
+            error: mensagemDeErro(error, "Erro interno ao atualizar."),
         });
     }
 }

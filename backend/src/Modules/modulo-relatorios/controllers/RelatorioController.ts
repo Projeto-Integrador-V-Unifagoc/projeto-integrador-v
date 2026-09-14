@@ -1,15 +1,16 @@
 import { Request, Response } from 'express';
 import { RelatorioService } from '../services/RelatorioService';
+import type { TipoUsuarioRelatorio } from '../models/RelatorioAcademico';
 
 export class RelatorioController {
   private service = new RelatorioService();
 
   async listarRelatoriosAcademicos(req: Request, res: Response) {
     try {
-      const usuario = (req as any).user;
+      const usuario = req.user;
       const result = await this.service.listarRelatorios(req.query, {
-        usuarioId: String(usuario.id),
-        tipoUsuario: usuario.tipo_usuario,
+        usuarioId: String(usuario?.id),
+        tipoUsuario: usuario?.tipo_usuario as TipoUsuarioRelatorio,
       });
       return res.status(200).json(result);
     } catch (error) {

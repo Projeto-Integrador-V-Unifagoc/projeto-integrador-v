@@ -5,7 +5,7 @@ const ehAdmin = (tipoUsuario?: string) =>
   tipoUsuario === 'secretaria' || tipoUsuario === 'administrador';
 
 export const soSecretaria = (req: Request, res: Response, next: NextFunction) => {
-  const usuario = (req as any).user;
+  const usuario = req.user;
 
   if (usuario && ehAdmin(usuario.tipo_usuario)) {
     return next();
@@ -17,7 +17,7 @@ export const soSecretaria = (req: Request, res: Response, next: NextFunction) =>
 };
 
 export const secretariaOuProfessor = (req: Request, res: Response, next: NextFunction) => {
-  const usuario = (req as any).user;
+  const usuario = req.user;
 
   if (
     usuario &&
