@@ -1,9 +1,10 @@
+import { Request, Response } from "express";
 import { AlunoService } from "../service/AlunoService";
 
 export class AlunoController {
     alunoService = new AlunoService();
 
-    async criarAluno(req: any, res: any) {
+    async criarAluno(req: Request, res: Response) {
         try {
             const aluno = await this.alunoService.criarAluno(req.body);
             res.status(201).json(aluno);
@@ -12,9 +13,9 @@ export class AlunoController {
         }
     }
 
-    async listarAlunos(req: any, res: any) {
+    async listarAlunos(req: Request, res: Response) {
         try {
-            const { cursoId, periodo, nome } = req.query;
+            const { cursoId, periodo, nome } = req.query as Record<string, string | undefined>;
 
             const alunos = await this.alunoService.listarAlunos({ cursoId, periodo, nome });
             res.status(200).json(alunos);
@@ -23,9 +24,9 @@ export class AlunoController {
         }
     }
 
-    async buscarAlunoPorId(req: any, res: any) {
+    async buscarAlunoPorId(req: Request, res: Response) {
         try {
-            const aluno = await this.alunoService.buscarAlunoPorId(req.params.id);
+            const aluno = await this.alunoService.buscarAlunoPorId(String(req.params.id));
             if (aluno) {
                 res.status(200).json(aluno);
             } else {
@@ -36,7 +37,7 @@ export class AlunoController {
         }
     }
 
-    async buscarAluno(req: any, res: any) {
+    async buscarAluno(req: Request, res: Response) {
         try {
             const q = req.query.q as string;
             if (!q) return res.status(400).json({ error: 'Parâmetro "q" é obrigatório.' });
@@ -47,9 +48,9 @@ export class AlunoController {
         }
     }
 
-    async buscarAlunoPorMatricula(req: any, res: any) {
+    async buscarAlunoPorMatricula(req: Request, res: Response) {
         try {
-            const aluno = await this.alunoService.buscarAlunoPorMatricula(req.params.matricula);
+            const aluno = await this.alunoService.buscarAlunoPorMatricula(String(req.params.matricula));
             if (aluno) {
                 res.status(200).json(aluno);
             } else {
@@ -60,9 +61,9 @@ export class AlunoController {
         }
     }
 
-    async atualizarAluno(req: any, res: any) {
+    async atualizarAluno(req: Request, res: Response) {
         try {
-            const aluno = await this.alunoService.atualizarAluno(req.params.matricula, req.body);
+            const aluno = await this.alunoService.atualizarAluno(String(req.params.matricula), req.body);
             if (aluno) {
                 res.status(200).json(aluno);
             } else {
