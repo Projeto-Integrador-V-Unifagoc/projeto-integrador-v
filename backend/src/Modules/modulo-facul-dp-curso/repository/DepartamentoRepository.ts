@@ -1,7 +1,8 @@
 import { db } from "../../../database/connection"
+import { DepartamentoCommand } from "../models/Departamento"
 
 export class DepartamentoRepository {
-    async criarDepartamento(data: any ){
+    async criarDepartamento(data: DepartamentoCommand){
         const departamento = await db("departamento")
             .insert(data)
             .returning("*")

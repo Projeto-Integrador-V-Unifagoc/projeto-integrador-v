@@ -1,15 +1,23 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CursoCommand } from "../models/Curso";
 import { CursoRepository } from "../repository/CursoRepository";
+import { comoErroBancoDados } from "../../../shared/erro";
+
+interface CriarCursoInput {
+    codigo: string;
+    nome: string;
+    departamentoId: string;
+}
 
 export class CursoService {
     cursoRepository = new CursoRepository();
 
-    private traduzirErroRemocao(error: any) {
-        const codigo = error?.code;
-        const constraint = String(error?.constraint ?? "");
-        const mensagemOriginal = String(error?.message ?? "");
-        const detalhe = String(error?.detail ?? "");
+    private traduzirErroRemocao(erroBruto: unknown) {
+        const error = comoErroBancoDados(erroBruto);
+        const codigo = error.code;
+        const constraint = String(error.constraint ?? "");
+        const mensagemOriginal = String(error.message ?? "");
+        const detalhe = String(error.detail ?? "");
 
         if (
             constraint.includes("turma_curso_id_foreign") ||
@@ -30,7 +38,7 @@ export class CursoService {
         return null;
     }
 
-    async criarCurso(data: any) {
+    async criarCurso(data: CriarCursoInput) {
         const curso: CursoCommand = {
             id: uuidv4(),
             codigo: data.codigo,
@@ -49,7 +57,7 @@ export class CursoService {
         return await this.cursoRepository.buscarCursoPorId(id);
     }
 
-    async atualizarCurso(id: string, data: any) {
+    async atualizarCurso(id: string, data: Partial<CriarCursoInput>) {
         const curso: Partial<CursoCommand> = {
             codigo: data.codigo,
             nome: data.nome,
@@ -62,7 +70,7 @@ export class CursoService {
     async removerCurso(id: string) {
         try {
             return await this.cursoRepository.removerCurso(id);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const mensagemTraduzida = this.traduzirErroRemocao(error);
 
             if (mensagemTraduzida) {

@@ -20,12 +20,22 @@ export interface AlunoCommand{
     curso_id?: string
 }
 
+interface RawAluno {
+    id?: string;
+    matricula?: string;
+    periodo?: number;
+    u_id?: string;
+    curso_id?: string;
+    curso_codigo?: string;
+    curso_nome?: string;
+}
+
 export class AlunoMapper {
-    static toDomain(raw: any): Aluno {
+    static toDomain(raw: RawAluno): Aluno {
         return {
-            id: raw.id,
+            id: raw.id as string,
             matricula: raw.matricula,
-            periodo: raw.periodo,
+            periodo: raw.periodo as number,
 
             pessoa: PessoaMapper.toDomain(raw),
 
