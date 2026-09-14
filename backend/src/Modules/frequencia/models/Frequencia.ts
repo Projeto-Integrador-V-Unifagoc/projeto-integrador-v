@@ -103,15 +103,33 @@ function formatDate(value: unknown) {
   return String(value);
 }
 
+interface RawFrequenciaRegistro {
+  id?: string;
+  aula_id?: string;
+  matricula_turma_disciplina_id?: string;
+  aluno_id?: string;
+  turma_disciplina_id?: string;
+  status?: StatusFrequencia;
+  data?: unknown;
+  justificativa?: string | null;
+  justificativa_motivo?: string | null;
+  justificativa_observacao?: string | null;
+  criado_em?: string;
+  created_at?: string;
+  lancada_em?: string;
+  updated_at?: string;
+  atualizado_em?: string;
+}
+
 export class FrequenciaMapper {
-  static registro(row: any): FrequenciaRegistro {
+  static registro(row: RawFrequenciaRegistro): FrequenciaRegistro {
     return {
-      id: row.id,
-      aulaId: row.aula_id,
-      matriculaTurmaDisciplinaId: row.matricula_turma_disciplina_id,
-      alunoId: row.aluno_id,
-      turmaDisciplinaId: row.turma_disciplina_id,
-      status: row.status,
+      id: row.id as string,
+      aulaId: row.aula_id as string,
+      matriculaTurmaDisciplinaId: row.matricula_turma_disciplina_id as string,
+      alunoId: row.aluno_id as string,
+      turmaDisciplinaId: row.turma_disciplina_id as string,
+      status: row.status as StatusFrequencia,
       data: formatDate(row.data),
       justificativa: row.justificativa,
       motivoJustificativa: row.justificativa_motivo || row.justificativa || null,
