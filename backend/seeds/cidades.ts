@@ -20,14 +20,24 @@ interface Cidade {
     ibge: string
 }
 
+/** Formato (parcial) de um município na resposta da API do IBGE. */
+interface RawMunicipioIbge {
+    id?: number | string
+    ibge?: number | string
+    nome?: string
+    uf?: string
+    microrregiao?: { mesorregiao?: { UF?: { sigla?: string } } }
+    regiao_imediata?: { regiao_intermediaria?: { UF?: { sigla?: string } } }
+}
+
 const exigir = createRequire(__filename)
 const CIDADES_LOCAIS: Cidade[] = exigir("./cidades.json")
 
 function normalizar(bruto: unknown): Cidade[] {
     if (!Array.isArray(bruto)) return []
 
-    return bruto
-        .map((c: any): Cidade | null => {
+    return (bruto as RawMunicipioIbge[])
+        .map((c): Cidade | null => {
             const ibge = String(c?.id ?? c?.ibge ?? "")
             if (!/^\d{7}$/.test(ibge)) return null
 

@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
+import { Knex } from "knex";
 
-export async function seed(knex: any): Promise<void> {
+export async function seed(knex: Knex): Promise<void> {
   const emailSecretaria = "suporte@unieduca.com.br";
   const senhaPadrao = "unieduca2026";
 

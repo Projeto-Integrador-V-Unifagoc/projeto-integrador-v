@@ -260,7 +260,7 @@ const statusFrequencia = (cenario: CenarioAluno, alunoIndex: number, aulaIndex: 
 const inserir = async (
   knex: Knex,
   tabela: string,
-  linhas: any[],
+  linhas: Record<string, unknown>[],
   conflito: string | string[],
   merge?: string[]
 ) => {
@@ -664,7 +664,7 @@ export async function seed(knex: Knex): Promise<void> {
       ]
     );
 
-    const auditoriasNota = notas.flatMap((nota: any, index) => {
+    const auditoriasNota = notas.flatMap((nota, index) => {
       const lancamento = {
         id: auditId(40000 + index * 2),
         nota_id: nota.id,
@@ -698,8 +698,8 @@ export async function seed(knex: Knex): Promise<void> {
     await inserir(trx, "nota_auditoria", auditoriasNota, "id");
 
     const auditoriasFrequencia = frequencias
-      .filter((frequencia: any, index) => frequencia.alterada_por_usuario_id || index % 53 === 0)
-      .map((frequencia: any, index) => ({
+      .filter((frequencia, index) => frequencia.alterada_por_usuario_id || index % 53 === 0)
+      .map((frequencia, index) => ({
         id: auditId(45000 + index),
         frequencia_id: frequencia.id,
         usuario_id: frequencia.alterada_por_usuario_id || frequencia.responsavel_lancamento_usuario_id,
