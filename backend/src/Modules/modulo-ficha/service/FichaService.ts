@@ -5,7 +5,7 @@ import { AlunoService } from "../../modulo-gestao-alunos/service/AlunoService.js
 import { FrequenciaService } from "../../frequencia/service/FrequenciaService.js";
 import { DocumentoService } from "../../modulo-documentos/service/DocumentoService.js";
 import { PeriodoLetivoService } from "../../modulo-estrutura-academica/service/PeriodoLetivoService.js";
-import { calcularBoletim, type AvaliacaoResumo } from "../../notas/models/Nota.js";
+import { calcularBoletim, type AvaliacaoResumo, type TipoAvaliacaoNota } from "../../notas/models/Nota.js";
 
 // Mapeia a situação canônica (regra §9, escala 0–100, aprovação >= 60) para o
 // vocabulário exibido na ficha. Substitui a regra legada 0–10 (defeito §17.1).
@@ -17,6 +17,45 @@ const SITUACAO_FICHA: Record<string, string> = {
   NAO_LANCADA: "nao_lancada",
 };
 
+type MatriculaExpandida = Omit<MatriculaDetalhada, "semestre"> & {
+  matricula_id: string;
+  periodo_codigo: string;
+  // Reaproveita o campo para exibir a sigla da turma na ficha — não é o
+  // número do semestre de MatriculaDetalhada.
+  semestre: string;
+  matricula_turma_disciplina_id: string | null;
+  turma_disciplina_id: string | null;
+  disciplina_id: string | null;
+  disciplina_nome: string | null;
+  professor_nome: string | null;
+  vinculo_status: string | null;
+};
+
+interface AvaliacaoFicha {
+  id: string;
+  nome: string | null;
+  tipo: string | null;
+  nota: number | null;
+  peso: number;
+  matricula_turma_disciplina_id: string | null;
+}
+
+interface NotaFichaAgregada {
+  id: string;
+  alunoId: string;
+  alunoNome: string | null;
+  turmaId: string | null;
+  turmaNome: string | null;
+  disciplinaId: string | null;
+  disciplinaNome: string | null;
+  professorId: string | null;
+  professorNome: string | null;
+  periodoLetivo: string | null;
+  avaliacoes: AvaliacaoFicha[];
+  media: number;
+  situacao: string;
+}
+
 export class FichaService {
   private matriculaService = new MatriculaService();
   private documentoService = new DocumentoService();
@@ -25,7 +64,7 @@ export class FichaService {
   private frequenciaService = new FrequenciaService();
   private notaRepository = new NotaRepository();
 
-  private async expandirPorDisciplina(matriculas: MatriculaDetalhada[]) {
+  private async expandirPorDisciplina(matriculas: MatriculaDetalhada[]): Promise<MatriculaExpandida[]> {
     const porMatricula = await Promise.all(
       matriculas.map(async (matricula) => {
         const vinculos = await this.matriculaService
@@ -85,7 +124,7 @@ export class FichaService {
 
     const mtdIds = (
       matriculas
-        .map((m: any) => m.matricula_turma_disciplina_id)
+        .map((m) => m.matricula_turma_disciplina_id)
         .filter(Boolean) as string[]
     ).filter(Boolean);
 
@@ -94,7 +133,7 @@ export class FichaService {
       .catch(() => []);
 
     // Agrupar avaliacoes por disciplina
-    const notasPorDisciplinaMap = new Map<string, any>();
+    const notasPorDisciplinaMap = new Map<string, NotaFichaAgregada>();
 
     for (const av of avaliacoes) {
       // Prefer a stable disciplina identifier when grouping evaluations.
@@ -132,7 +171,7 @@ export class FichaService {
       try {
         if (av.matricula_turma_disciplina_id && !entry.periodoLetivo) {
           const matriculaMatch = matriculas.find(
-            (m: any) =>
+            (m) =>
               m.matricula_turma_disciplina_id ===
               av.matricula_turma_disciplina_id,
           );
@@ -159,15 +198,15 @@ export class FichaService {
       });
     }
 
-    const notas = [] as any[];
+    const notas: NotaFichaAgregada[] = [];
 
     for (const [_, item] of notasPorDisciplinaMap.entries()) {
       // Regra institucional única (spec §9): média percentual dos pontos obtidos
       // sobre os pontos máximos das avaliações regulares lançadas; situação
       // derivada do mesmo cálculo usado por notas/boletim/rendimento.
-      const avaliacoesResumo: AvaliacaoResumo[] = item.avaliacoes.map((a: any) => ({
+      const avaliacoesResumo: AvaliacaoResumo[] = item.avaliacoes.map((a) => ({
         id: a.id,
-        tipo: a.tipo,
+        tipo: a.tipo as TipoAvaliacaoNota,
         descricao: a.nome ?? null,
         valor: Number(a.peso) || 0,
       }));

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { FichaService } from "../service/FichaService.js";
+import { mensagemDeErro } from "../../../shared/erro.js";
 
 const service = new FichaService();
 
@@ -14,11 +15,11 @@ export class FichaController {
 
       const ficha = await service.montarFicha(alunoId);
       return res.status(200).json(ficha);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
       return res
         .status(500)
-        .json({ error: error?.message || "Erro ao montar ficha do aluno." });
+        .json({ error: mensagemDeErro(error, "Erro ao montar ficha do aluno.") });
     }
   }
 }
