@@ -1,13 +1,44 @@
 import bcrypt from 'bcrypt';
-import { UsuarioRepository } from '../repository/usuario-repository';
+import { Usuario, UsuarioRepository } from '../repository/usuario-repository';
 import jwt from 'jsonwebtoken';
 import { obterJwtSecret } from '../../../config/jwt';
 import { validarSenha } from './senha-policy';
 
+interface CadastrarUsuarioInput {
+  nome: string;
+  email: string;
+  senha: string;
+  tipo_usuario: string;
+  aluno_id?: string;
+  professor_id?: string;
+}
+
+interface AtualizarUsuarioInput {
+  nome?: string;
+  email?: string;
+  senha?: string;
+  tipo_usuario?: string;
+  aluno_id?: string;
+  professor_id?: string;
+}
+
+// Linha "achatada" vinda do join de aluno/professor com pessoa (ver
+// buscarAlunoPorUsuario/buscarProfessorPorUsuario em usuario-repository).
+interface RowPessoaAchatada {
+  pessoa_nome?: string;
+  cpf?: string;
+  data_nascimento?: string;
+  logradouro?: string;
+  numero?: number;
+  bairro?: string;
+  estado?: string;
+  cep?: string;
+}
+
 class AutenticacaoService {
   private usuarioRepository = new UsuarioRepository();
 
-  async cadastrarUsuario(dados: any) {
+  async cadastrarUsuario(dados: CadastrarUsuarioInput) {
     const { nome, email, senha, tipo_usuario, aluno_id, professor_id } = dados;
 
     if (!nome || !email || !senha || !tipo_usuario) {
@@ -16,7 +47,7 @@ class AutenticacaoService {
 
     validarSenha(senha);
 
-    const tipoUsuarioFormatado = tipo_usuario.toLowerCase();
+    const tipoUsuarioFormatado = tipo_usuario.toLowerCase() as Usuario['tipo_usuario'];
 
     const usuarioExiste = await this.usuarioRepository.findByEmail(email);
     if (usuarioExiste) {
@@ -131,8 +162,8 @@ class AutenticacaoService {
     const { senha, ...dadosSeguros } = usuario;
 
     // Busca o aluno/professor vinculado e monta os blocos de dados pessoais e acadêmicos.
-    let pessoa: any = null;
-    let academico: any = null;
+    let pessoa: ReturnType<AutenticacaoService['montarPessoa']> | null = null;
+    let academico: Record<string, unknown> | null = null;
 
     if (usuario.tipo_usuario === 'aluno') {
       const aluno = await this.usuarioRepository.buscarAlunoPorUsuario(id);
@@ -162,7 +193,7 @@ class AutenticacaoService {
   }
 
   // Extrai os campos de pessoa de uma linha "achatada" vinda do join.
-  private montarPessoa(row: any) {
+  private montarPessoa(row: RowPessoaAchatada) {
     return {
       nome: row.pessoa_nome ?? null,
       cpf: row.cpf ?? null,
@@ -179,7 +210,7 @@ class AutenticacaoService {
     return await this.usuarioRepository.findAll();
   }
 
-  async atualizarUsuario(id: string, dados: any) {
+  async atualizarUsuario(id: string, dados: AtualizarUsuarioInput) {
     const { nome, email, senha, tipo_usuario, aluno_id, professor_id } = dados;
 
     const usuario = await this.usuarioRepository.buscarPorId(id);
@@ -187,11 +218,11 @@ class AutenticacaoService {
       throw new Error('Usuário não encontrado.');
     }
 
-    const dadosParaAtualizar: any = {};
+    const dadosParaAtualizar: Partial<Usuario> = {};
     if (nome !== undefined) dadosParaAtualizar.nome = nome;
     if (email !== undefined) dadosParaAtualizar.email = email;
     if (tipo_usuario !== undefined) {
-      dadosParaAtualizar.tipo_usuario = tipo_usuario.toLowerCase();
+      dadosParaAtualizar.tipo_usuario = tipo_usuario.toLowerCase() as Usuario['tipo_usuario'];
     }
     if (senha !== undefined && senha !== '') {
       validarSenha(senha);
