@@ -15,7 +15,7 @@ export class HomeAlunoService {
   async minhasDisciplinas(req: Request): Promise<DisciplinaAluno[]> {
     const ctx = await this.obterContextoAluno(req);
     const linhas = await this.repository.listarDisciplinasDoAluno(ctx.alunoId);
-    return linhas.map((l: any) => ({
+    return linhas.map((l) => ({
       turmaDisciplinaId: String(l.turma_disciplina_id),
       disciplinaId: String(l.disciplina_id),
       codigo: l.disciplina_codigo,
@@ -31,7 +31,7 @@ export class HomeAlunoService {
   async minhasTarefas(req: Request): Promise<TarefaAluno[]> {
     const ctx = await this.obterContextoAluno(req);
     const linhas = await this.repository.listarTarefasDoAluno(ctx.alunoId);
-    return linhas.map((l: any) => ({
+    return linhas.map((l) => ({
       avaliacaoId: String(l.avaliacao_id),
       titulo: this.titulo(l.descricao_avaliacao, l.tipo_avaliacao),
       tipo: l.tipo_avaliacao as TipoTarefa,
@@ -45,7 +45,7 @@ export class HomeAlunoService {
   // ----- internos -----
 
   private async obterContextoAluno(req: Request): Promise<ContextoAluno> {
-    const user = (req as any)?.user;
+    const user = req?.user;
     if (!user?.id || !user?.tipo_usuario) throw erroHomeAluno.proibido("Identidade autenticada inválida.");
     const tipo = String(user.tipo_usuario).trim().toLowerCase();
     if (tipo !== "aluno") throw erroHomeAluno.proibido("Recurso disponível apenas para alunos.");

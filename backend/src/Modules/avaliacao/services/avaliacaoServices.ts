@@ -1,6 +1,7 @@
 import { avaliacaoRepository } from "../repository/avaliacaoRepository.js";
 import type { AtualizarAvaliacaoDTO, Avaliacao, ContextoAvaliacao, CriarAvaliacaoDTO, TipoAvaliacao } from "../models/avaliacaoModels.js";
 import { AvaliacaoForbiddenError, AvaliacaoNotFoundError, AvaliacaoValidationError } from "../errors/avaliacaoErrors.js";
+import { comoErroBancoDados } from "../../../shared/erro.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_PROVAS = 3;
@@ -60,11 +61,16 @@ async function professorDoContexto(contexto: ContextoAvaliacao) {
   return String(professor.id);
 }
 
-function validarPermissao(professorId: string | undefined, atribuicao: any) {
+interface AtribuicaoOuAvaliacao {
+  professor_id?: string;
+  status?: string;
+}
+
+function validarPermissao(professorId: string | undefined, atribuicao: AtribuicaoOuAvaliacao) {
   if (professorId && String(atribuicao.professor_id) !== professorId) throw new AvaliacaoForbiddenError();
 }
 
-function validarAtribuicaoAtiva(atribuicao: any) {
+function validarAtribuicaoAtiva(atribuicao: AtribuicaoOuAvaliacao) {
   if (String(atribuicao.status).toLowerCase() !== "ativa") throw new AvaliacaoValidationError("Turma/disciplina inativa.");
 }
 
@@ -99,9 +105,9 @@ async function criar(dados: CriarAvaliacaoDTO, contexto: ContextoAvaliacao) {
       validarRegras(payload, await avaliacaoRepository.buscarPorTurmaDisciplina(payload.turma_disciplina_id, trx));
       return avaliacaoRepository.criar(payload, trx);
     });
-  } catch (erro: any) {
-    if (erro?.code === "23503") throw new AvaliacaoValidationError("Relacionamento academico invalido.");
-    throw erro;
+  } catch (erroBruto: unknown) {
+    if (comoErroBancoDados(erroBruto).code === "23503") throw new AvaliacaoValidationError("Relacionamento academico invalido.");
+    throw erroBruto;
   }
 }
 

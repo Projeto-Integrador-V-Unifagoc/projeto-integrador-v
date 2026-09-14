@@ -1,3 +1,4 @@
+import type { Knex } from "knex";
 import { db } from "../../../database/connection";
 import { FiltrosRelatorioAcademico } from "../models/RelatorioAcademico";
 
@@ -153,7 +154,7 @@ export class RelatorioRepository {
     return query;
   }
 
-  private aplicarFiltrosAcademicos(query: any, filtros: FiltrosRelatorioAcademico, incluirAvaliacao = false) {
+  private aplicarFiltrosAcademicos(query: Knex.QueryBuilder, filtros: FiltrosRelatorioAcademico, incluirAvaliacao = false) {
     if (filtros.alunoId) {
       query.where("a.id", filtros.alunoId);
     }
@@ -180,7 +181,7 @@ export class RelatorioRepository {
 
     if (filtros.busca) {
       const termo = `%${filtros.busca}%`;
-      query.where((builder: any) => {
+      query.where((builder) => {
         const busca = builder
           .whereILike("p.nome", termo)
           .orWhereILike("d.nome", termo)

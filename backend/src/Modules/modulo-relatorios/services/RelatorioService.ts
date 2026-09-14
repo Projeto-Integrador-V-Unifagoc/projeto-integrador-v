@@ -56,9 +56,7 @@ export class RelatorioService {
     }
 
     if (perfil === "Professor") {
-      let professor: any;
-
-      professor = await this.repository.buscarProfessorPorUsuarioId(contexto.usuarioId);
+      const professor = await this.repository.buscarProfessorPorUsuarioId(contexto.usuarioId);
 
       if (!professor?.id) {
         return {
@@ -69,7 +67,7 @@ export class RelatorioService {
       }
 
       const turmas = await this.repository.listarTurmasDisciplinaDoProfessor(professor.id);
-      const turmaIdsPermitidos = turmas.map((turma: any) => turma.id).filter(Boolean);
+      const turmaIdsPermitidos = turmas.map((turma) => turma.id).filter(Boolean);
 
       if (filtros.turmaId && !turmaIdsPermitidos.includes(filtros.turmaId)) {
         return {
