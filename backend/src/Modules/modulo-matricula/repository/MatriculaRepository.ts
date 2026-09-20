@@ -335,8 +335,15 @@ export class MatriculaRepository {
     }
 
     async resumoDocumentosDoAluno(alunoId: string): Promise<ResumoDocumentos> {
-        const linha: any = await db("documento")
+        const ultimos = db("documento")
+            .distinctOn("tipo_documento")
             .where({ aluno_id: alunoId })
+            .orderBy("tipo_documento")
+            .orderBy("created_at", "desc")
+            .as("ultimos");
+
+        const linha: any = await db
+            .from(ultimos)
             .select(
                 db.raw("count(*)::int as total"),
                 db.raw("count(*) filter (where upper(status) = 'PENDENTE')::int as pendentes"),

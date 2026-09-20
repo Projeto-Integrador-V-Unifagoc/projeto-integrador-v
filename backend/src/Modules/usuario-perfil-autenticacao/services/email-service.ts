@@ -250,7 +250,7 @@ class EmailService {
   async enviarRecuperacaoSenha(
     dados: DadosEmailRecuperacao
   ): Promise<void> {
-    const frontendUrl = process.env.FRONTEND_URL;
+    const frontendUrl = process.env.URL_PORTAL || process.env.FRONTEND_URL;
 
     if (!frontendUrl) {
       throw new Error(

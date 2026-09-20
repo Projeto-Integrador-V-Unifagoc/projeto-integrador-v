@@ -12,8 +12,18 @@ interface DadosNotificacao {
 export class NotificacaoService {
     constructor(private readonly repository = new ConfiguracaoEmailRepository()) {}
 
+    private semBarraFinal(url: string): string {
+        return url.trim().replace(/\/+$/, "");
+    }
+
+    private urlDoSite(): string {
+        const site = this.semBarraFinal(process.env.SITE_URL ?? "");
+        return site || this.semBarraFinal(process.env.FRONTEND_URL ?? "");
+    }
+
     private urlPortal(): string {
-        return (process.env.FRONTEND_URL ?? "").replace(/\/+$/, "");
+        const portal = this.semBarraFinal(process.env.URL_PORTAL ?? "");
+        return portal || this.semBarraFinal(process.env.FRONTEND_URL ?? "");
     }
 
     async disparar(chave: ChaveDisparador, dados: DadosNotificacao): Promise<boolean> {
@@ -72,16 +82,16 @@ export class NotificacaoService {
             destaques.push({ rotulo: item.rotulo, valor: item.motivo || "Reenvie este documento" });
         });
 
-        const portal = this.urlPortal();
+        const site = this.urlDoSite();
 
         return this.disparar("documentacao_reprovada", {
             para: dados.email,
             nomeDestinatario: dados.nome,
             destaques,
-            acao: portal
+            acao: site
                 ? {
-                      rotulo: "Reenviar documentos",
-                      url: `${portal}/reenviar-documentos?aluno=${encodeURIComponent(dados.alunoId)}`,
+                      rotulo: "Clique aqui para reenviar os documentos",
+                      url: `${site}/reenviar-documentos?aluno=${encodeURIComponent(dados.alunoId)}`,
                   }
                 : undefined,
         });
@@ -104,7 +114,9 @@ export class NotificacaoService {
             para: dados.email,
             nomeDestinatario: dados.nome,
             destaques,
-            acao: portal ? { rotulo: "Acessar o portal", url: `${portal}/login` } : undefined,
+            acao: portal
+                ? { rotulo: "Clique aqui para entrar no portal do aluno", url: `${portal}/login` }
+                : undefined,
         });
     }
 }
