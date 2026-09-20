@@ -35,6 +35,7 @@ import TextField from "../../components/TextField";
 import Button from "../../components/Button";
 import CampoSenha, { senhaForte } from "../../components/CampoSenha";
 import { cpfValido } from "../../utils/cpf";
+import { ACCEPT_DOCUMENTOS, TEXTO_FORMATOS, validarDocumento } from "../../utils/arquivo-documento";
 
 const TIPOS_DOCUMENTO = [
     { tipo: "RG", label: "RG (Registro Geral)", obrigatorio: true },
@@ -129,6 +130,40 @@ function formatCpf(value: string): string {
     return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
+const CHAVE_RASCUNHO = "@UniEduca:inscricao-rascunho";
+
+interface Rascunho {
+    dados: FormDados;
+    endereco: FormEndereco;
+    cursoId: string;
+    activeStep: number;
+}
+
+function lerRascunho(): Rascunho | null {
+    try {
+        const bruto = localStorage.getItem(CHAVE_RASCUNHO);
+        return bruto ? (JSON.parse(bruto) as Rascunho) : null;
+    } catch {
+        return null;
+    }
+}
+
+function salvarRascunho(rascunho: Rascunho): void {
+    try {
+        localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(rascunho));
+    } catch {
+        return;
+    }
+}
+
+function apagarRascunho(): void {
+    try {
+        localStorage.removeItem(CHAVE_RASCUNHO);
+    } catch {
+        return;
+    }
+}
+
 function formatCep(value: string): string {
     const d = value.replace(/\D/g, "").slice(0, 8);
     if (d.length <= 5) return d;
@@ -157,6 +192,7 @@ export default function Inscricao() {
         aberto: false, mensagem: "", severidade: "success",
     });
     const [matriculaGerada, setMatriculaGerada] = useState<string | null>(null);
+    const [rascunhoRestaurado, setRascunhoRestaurado] = useState(false);
     const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     useEffect(() => {
@@ -166,6 +202,31 @@ export default function Inscricao() {
             .catch(() => setCursos([]))
             .finally(() => setCarregandoCursos(false));
     }, []);
+
+    useEffect(() => {
+        const rascunho = lerRascunho();
+        if (!rascunho) return;
+
+        setDados({ ...DADOS_INICIAIS, ...rascunho.dados, senha: "", confirmarSenha: "" });
+        setEndereco((atual) => ({ ...atual, ...rascunho.endereco }));
+        setCursoId(rascunho.cursoId ?? "");
+        setActiveStep(Math.min(rascunho.activeStep ?? 0, 4));
+        setRascunhoRestaurado(true);
+    }, []);
+
+    useEffect(() => {
+        if (activeStep >= 5) return;
+
+        const vazio = !dados.nome && !dados.cpf && !dados.email && !endereco.cep && !cursoId;
+        if (vazio) return;
+
+        salvarRascunho({
+            dados: { ...dados, senha: "", confirmarSenha: "" },
+            endereco,
+            cursoId,
+            activeStep,
+        });
+    }, [dados, endereco, cursoId, activeStep]);
 
     useEffect(() => {
         if (!cursoId) {
@@ -183,7 +244,16 @@ export default function Inscricao() {
         return documentos.find((d) => d.tipo === tipo)?.arquivo;
     }
 
-    function handleAdicionarDoc(tipo: string, arquivo: File) {
+    async function handleAdicionarDoc(tipo: string, arquivo: File) {
+        const problema = await validarDocumento(arquivo);
+
+        if (problema) {
+            setErros((e) => ({ ...e, documentos: problema }));
+            setSnackbar({ aberto: true, mensagem: problema, severidade: "error" });
+            return;
+        }
+
+        setErros((e) => { const proximo = { ...e }; delete proximo.documentos; return proximo; });
         setDocumentos((prev) => [...prev.filter((d) => d.tipo !== tipo), { tipo, arquivo }]);
     }
 
@@ -342,6 +412,8 @@ export default function Inscricao() {
             }
 
             setMatriculaGerada(alunoCreated.matricula ? String(alunoCreated.matricula) : null);
+            apagarRascunho();
+            setRascunhoRestaurado(false);
             setActiveStep(5);
         } catch (err) {
             const mensagem = getMensagemErro(
@@ -364,6 +436,8 @@ export default function Inscricao() {
     }
 
     function resetar() {
+        apagarRascunho();
+        setRascunhoRestaurado(false);
         setActiveStep(0);
         setDados(DADOS_INICIAIS);
         setEndereco({ cep: "", logradouro: "", numero: "", bairro: "", cidadeIbge: "", cidadeNome: "", estado: "" });
@@ -382,6 +456,13 @@ export default function Inscricao() {
     const step0 = (
         <Stack spacing={2.5}>
             <Typography variant="h6" fontWeight={700}>Dados pessoais</Typography>
+
+            {rascunhoRestaurado && (
+                <Alert severity="info" onClose={() => setRascunhoRestaurado(false)}>
+                    Recuperamos o que você já tinha preenchido. Por segurança, a senha e os documentos precisam
+                    ser informados de novo.
+                </Alert>
+            )}
             <TextField
                 label="Nome completo *"
                 value={dados.nome}
@@ -712,12 +793,12 @@ export default function Inscricao() {
                                     <TableCell align="right">
                                         <input
                                             type="file"
-                                            accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.zip"
+                                            accept={ACCEPT_DOCUMENTOS}
                                             style={{ display: "none" }}
                                             ref={(el) => { fileRefs.current[tipo] = el; }}
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
-                                                if (file) handleAdicionarDoc(tipo, file);
+                                                if (file) void handleAdicionarDoc(tipo, file);
                                                 e.target.value = "";
                                             }}
                                         />

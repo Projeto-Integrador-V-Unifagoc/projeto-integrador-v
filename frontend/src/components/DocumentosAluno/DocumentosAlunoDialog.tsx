@@ -21,6 +21,7 @@ import Button from "../Button";
 import { Dialog } from "../Dialog";
 import TextField from "../TextField";
 import { documentoApi, type DocumentoAluno, type StatusValidacao } from "../../services/documento-api";
+import { ACCEPT_DOCUMENTOS, validarDocumento } from "../../utils/arquivo-documento";
 import {
     formatarCpf,
     STATUS_DOCUMENTO,
@@ -109,8 +110,16 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
     const validarTodos = (status: StatusValidacao, observacao?: string) =>
         executar("todos", () => documentoApi.validarTodosDoAluno(alunoId as string, status, observacao));
 
-    const enviar = (tipo: string, arquivo: File) =>
-        executar(tipo, () => documentoApi.enviar(alunoId as string, tipo, arquivo));
+    async function enviar(tipo: string, arquivo: File) {
+        const problema = await validarDocumento(arquivo);
+
+        if (problema) {
+            setErro(problema);
+            return;
+        }
+
+        await executar(tipo, () => documentoApi.enviar(alunoId as string, tipo, arquivo));
+    }
 
     async function visualizar(id: string) {
         const janela = window.open("", "_blank");
@@ -243,7 +252,7 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
                                                     <TableCell align="right">
                                                         <input
                                                             type="file"
-                                                            accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.zip"
+                                                            accept={ACCEPT_DOCUMENTOS}
                                                             style={{ display: "none" }}
                                                             ref={(el) => { inputRefs.current[tipo] = el; }}
                                                             onChange={(e) => {

@@ -22,6 +22,7 @@ import { CheckCircle, GraduationCap, Upload } from "lucide-react";
 import { COR_BORDA, COR_DESTAQUE, COR_INSTITUCIONAL, GRADIENTE_CLARO, irParaPortal } from "../LandingPage/conteudo";
 import { inscricaoPublicaApi } from "../../services/site-api";
 import Button from "../../components/Button";
+import { ACCEPT_DOCUMENTOS, validarDocumento } from "../../utils/arquivo-documento";
 
 const ROTULO_DOCUMENTO: Record<string, string> = {
     RG: "RG (Registro Geral)",
@@ -71,6 +72,13 @@ export default function ReenviarDocumentos() {
     }, [alunoId]);
 
     async function enviar(tipo: string, arquivo: File) {
+        const problema = await validarDocumento(arquivo);
+
+        if (problema) {
+            setErro(problema);
+            return;
+        }
+
         setEnviando(tipo);
         setErro("");
         try {
@@ -211,7 +219,7 @@ export default function ReenviarDocumentos() {
                                                 <TableCell align="right">
                                                     <input
                                                         type="file"
-                                                        accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.zip"
+                                                        accept={ACCEPT_DOCUMENTOS}
                                                         style={{ display: "none" }}
                                                         ref={(el) => { inputRefs.current[tipo] = el; }}
                                                         onChange={(e) => {
