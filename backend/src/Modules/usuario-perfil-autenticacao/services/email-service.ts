@@ -187,6 +187,19 @@ class EmailService {
     return this.transporter;
   }
 
+  async aquecerConexao(): Promise<void> {
+    if (this.estaEmModoTeste() || !this.transporte) return;
+
+    const inicio = Date.now();
+
+    try {
+      await this.obterTransporteAtivo().verify();
+      console.log(`[email] conexão SMTP pronta em ${Date.now() - inicio}ms`);
+    } catch (erro: any) {
+      console.warn(`[email] não foi possível pré-abrir a conexão SMTP: ${erro?.message ?? erro}`);
+    }
+  }
+
   async verificarConexao(config: TransporteSmtp): Promise<void> {
     const anterior = this.transporte;
 
@@ -354,12 +367,15 @@ class EmailService {
 
     const destaques = (dados.destaques ?? [])
       .map(
-        (item) => `
+        (item, indice) => `
           <tr>
-            <td style="padding:8px 0;color:#5b6472;font-size:13px;width:150px;">
+            <td style="padding:12px 18px;color:#6b7684;font-size:12px;letter-spacing:.4px;
+                       text-transform:uppercase;font-weight:700;width:150px;
+                       border-top:${indice === 0 ? '0' : '1px solid #e4ecf2'};">
               ${this.escaparHtml(item.rotulo)}
             </td>
-            <td style="padding:8px 0;color:#1f2733;font-size:14px;font-weight:600;">
+            <td style="padding:12px 18px;color:#14688f;font-size:15px;font-weight:700;
+                       border-top:${indice === 0 ? '0' : '1px solid #e4ecf2'};">
               ${this.escaparHtml(item.valor)}
             </td>
           </tr>`
@@ -367,19 +383,31 @@ class EmailService {
       .join('');
 
     const blocoDestaques = destaques
-      ? `<table style="width:100%;border-collapse:collapse;margin:8px 0 22px;
-                       background:#f5f8fb;border-radius:10px;padding:8px 16px;">
+      ? `<table role="presentation" cellpadding="0" cellspacing="0"
+                style="width:100%;border-collapse:separate;border-spacing:0;margin:24px 0;
+                       background:#f4f9fc;border:1px solid #e0ecf4;border-radius:12px;">
            ${destaques}
          </table>`
       : '';
 
     const blocoAcao = dados.acao
-      ? `<p style="margin:26px 0 8px;">
-           <a href="${dados.acao.url}"
-              style="display:inline-block;padding:13px 26px;background:#05b5e6;color:#ffffff;
-                     text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;">
-             ${this.escaparHtml(dados.acao.rotulo)}
-           </a>
+      ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:30px 0 8px;">
+           <tr>
+             <td align="center"
+                 style="border-radius:10px;background:#05b5e6;
+                        box-shadow:0 6px 18px rgba(5,181,230,.35);">
+               <a href="${dados.acao.url}"
+                  style="display:inline-block;padding:16px 38px;color:#ffffff;
+                         text-decoration:none;font-weight:700;font-size:16px;
+                         font-family:Arial,Helvetica,sans-serif;letter-spacing:.2px;">
+                 ${this.escaparHtml(dados.acao.rotulo)}
+               </a>
+             </td>
+           </tr>
+         </table>
+         <p style="margin:14px 0 0;font-size:12px;color:#93a0ad;line-height:1.6;">
+           Se o botão não funcionar, copie e cole este endereço no navegador:<br>
+           <span style="color:#14688f;word-break:break-all;">${dados.acao.url}</span>
          </p>`
       : '';
 
@@ -405,34 +433,86 @@ class EmailService {
         .join('\n'),
 
       html: `
-        <div style="margin:0;padding:28px 12px;background:#eef2f6;
-                    font-family:Arial,Helvetica,sans-serif;">
-          <div style="max-width:560px;margin:0 auto;background:#ffffff;
-                      border-radius:14px;overflow:hidden;
-                      box-shadow:0 2px 10px rgba(16,24,40,.08);">
+        <div style="margin:0;padding:0;background:#eaf3f8;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="#eaf3f8"
+               style="width:100%;background-color:#eaf3f8;
+                      background-image:
+                        radial-gradient(circle at 12% 8%, rgba(5,181,230,.14) 0, transparent 38%),
+                        radial-gradient(circle at 88% 18%, rgba(20,104,143,.12) 0, transparent 42%),
+                        repeating-linear-gradient(135deg, rgba(20,104,143,.045) 0 2px, transparent 2px 14px),
+                        linear-gradient(180deg,#d9edf7 0%,#eaf3f8 340px);
+                      font-family:Arial,Helvetica,sans-serif;padding:36px 12px;">
+          <tr>
+            <td align="center">
 
-            <div style="background:#05b5e6;padding:22px 30px;">
-              <span style="color:#ffffff;font-size:20px;font-weight:700;
-                           letter-spacing:.3px;">UniEduca</span>
-            </div>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                     style="max-width:580px;width:100%;background:#ffffff;border-radius:16px;
+                            overflow:hidden;box-shadow:0 12px 34px rgba(20,104,143,.16);">
 
-            <div style="padding:30px;color:#1f2733;">
-              <h1 style="margin:0 0 18px;font-size:21px;color:#0f1720;">
-                ${tituloSeguro}
-              </h1>
+                <tr>
+                  <td style="background:#14688f;
+                             background-image:linear-gradient(120deg,#0f5878 0%,#14688f 45%,#05b5e6 100%);
+                             padding:34px 34px 30px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="padding-right:12px;vertical-align:middle;">
+                          <div style="width:42px;height:42px;border-radius:11px;
+                                      background:rgba(255,255,255,.18);text-align:center;
+                                      line-height:42px;font-size:21px;">&#127891;</div>
+                        </td>
+                        <td style="vertical-align:middle;">
+                          <span style="color:#ffffff;font-size:25px;font-weight:800;
+                                       letter-spacing:.4px;">Uni<span
+                            style="color:#9fe6ff;">Educa</span></span>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin:16px 0 0;color:rgba(255,255,255,.88);font-size:13px;
+                              letter-spacing:.5px;text-transform:uppercase;font-weight:700;">
+                      Secretaria Acadêmica
+                    </p>
+                  </td>
+                </tr>
 
-              <p style="margin:0 0 14px;line-height:1.6;">Olá, ${nomeSeguro}.</p>
+                <tr>
+                  <td style="padding:36px 34px 34px;color:#3d4753;font-size:15px;">
+                    <h1 style="margin:0 0 6px;font-size:23px;line-height:1.3;color:#14688f;
+                               font-weight:800;">
+                      ${tituloSeguro}
+                    </h1>
+                    <div style="width:52px;height:4px;border-radius:4px;background:#05b5e6;
+                                margin:0 0 22px;"></div>
 
-              ${mensagemSegura}
-              ${blocoDestaques}
-              ${blocoAcao}
-            </div>
+                    <p style="margin:0 0 16px;line-height:1.7;font-size:16px;color:#1f2733;">
+                      Olá, <strong>${nomeSeguro}</strong>.
+                    </p>
 
-            <div style="padding:18px 30px;background:#f7f9fb;
-                        border-top:1px solid #e6ebf0;color:#79828f;font-size:12px;">
-              Este é um e-mail automático da UniEduca. Não responda a esta mensagem.
-            </div>
-          </div>
+                    ${mensagemSegura}
+                    ${blocoDestaques}
+                    ${blocoAcao}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:22px 34px;background:#f4f8fb;border-top:1px solid #e2ecf3;">
+                    <p style="margin:0 0 6px;color:#14688f;font-size:13px;font-weight:700;">
+                      UniEduca
+                    </p>
+                    <p style="margin:0;color:#8b97a4;font-size:12px;line-height:1.7;">
+                      Este é um e-mail automático. Não responda a esta mensagem.<br>
+                      Dúvidas? Fale com a secretaria pelo site.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:20px 0 0;color:#8ba4b5;font-size:11px;">
+                &copy; UniEduca. Todos os direitos reservados.
+              </p>
+
+            </td>
+          </tr>
+        </table>
         </div>
       `,
     });

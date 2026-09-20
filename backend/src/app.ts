@@ -34,7 +34,7 @@ const PORT = process.env.PORT || 3000;
 obterJwtSecret();
 
 new ConfiguracaoSmtpService()
-  .aplicarNoEmailService()
+  .aplicarNoEmailService(true)
   .catch((erro) => console.error("[smtp] configuração salva não pôde ser carregada:", erro));
 
 export const app = express();

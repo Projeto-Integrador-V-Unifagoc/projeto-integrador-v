@@ -17,7 +17,7 @@ export class AlunoService {
     async criarAluno(data: any) {
         try {
             const aluno = await this.inserirAluno(data);
-            await this.avisarInscricaoRecebida(data, aluno);
+            void this.avisarInscricaoRecebida(data, aluno);
             return aluno;
         } catch (erro: any) {
             if (erro?.code === "23505" && String(erro?.constraint ?? "").includes("cpf")) {

@@ -109,13 +109,16 @@ export class ConfiguracaoSmtpService {
         };
     }
 
-    async aplicarNoEmailService(): Promise<void> {
+    async aplicarNoEmailService(aquecer = false): Promise<void> {
         try {
             emailService.definirTransporte(await this.transporteAtual());
         } catch (erro) {
             console.error("[smtp] não foi possível aplicar a configuração salva:", erro);
             emailService.definirTransporte(null);
+            return;
         }
+
+        if (aquecer) await emailService.aquecerConexao();
     }
 
     async atualizar(body: any): Promise<SmtpPublico> {
