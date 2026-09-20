@@ -10,7 +10,12 @@ export class PessoaRepository {
 
     async buscarPessoaPorCpf(cpf: string, transaction?: any) {
         const query = transaction || db;
-        const pessoa = await query("pessoa").where({ cpf }).first();
+        const somenteDigitos = String(cpf ?? "").replace(/\D/g, "");
+
+        const pessoa = await query("pessoa")
+            .whereRaw("regexp_replace(cpf, '\\D', '', 'g') = ?", [somenteDigitos])
+            .first();
+
         return pessoa ?? null;
     }
 

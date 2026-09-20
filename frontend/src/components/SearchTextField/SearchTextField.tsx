@@ -67,7 +67,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
     secondFilterLabel = "Matricula",
     fourthFilterLabel = "Periodo",
     usePeriodFilter = true,
-    defaultAddPath = "/alunos/cadastro",
+    defaultAddPath = "/inscricao",
     addPath,
     placeholder,
     showFilters = true,

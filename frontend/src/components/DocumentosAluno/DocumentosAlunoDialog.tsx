@@ -21,6 +21,7 @@ import Button from "../Button";
 import { Dialog } from "../Dialog";
 import TextField from "../TextField";
 import { documentoApi, type DocumentoAluno, type StatusValidacao } from "../../services/documento-api";
+import { ACCEPT_DOCUMENTOS, validarDocumento } from "../../utils/arquivo-documento";
 import {
     formatarCpf,
     STATUS_DOCUMENTO,
@@ -61,7 +62,7 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
     const [carregando, setCarregando] = useState(false);
     const [erro, setErro] = useState("");
     const [ocupado, setOcupado] = useState<string | null>(null);
-    const [reprovando, setReprovando] = useState<{ id: string; observacao: string } | null>(null);
+    const [reprovando, setReprovando] = useState<{ id: string | null; observacao: string } | null>(null);
     const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     const carregar = useCallback(async () => {
@@ -106,8 +107,19 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
     const validar = (id: string, status: StatusValidacao, observacao?: string) =>
         executar(id, () => documentoApi.validar(id, status, observacao));
 
-    const enviar = (tipo: string, arquivo: File) =>
-        executar(tipo, () => documentoApi.enviar(alunoId as string, tipo, arquivo));
+    const validarTodos = (status: StatusValidacao, observacao?: string) =>
+        executar("todos", () => documentoApi.validarTodosDoAluno(alunoId as string, status, observacao));
+
+    async function enviar(tipo: string, arquivo: File) {
+        const problema = await validarDocumento(arquivo);
+
+        if (problema) {
+            setErro(problema);
+            return;
+        }
+
+        await executar(tipo, () => documentoApi.enviar(alunoId as string, tipo, arquivo));
+    }
 
     async function visualizar(id: string) {
         const janela = window.open("", "_blank");
@@ -166,6 +178,31 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
 
                         {erro && <Alert severity="error" onClose={() => setErro("")}>{erro}</Alert>}
 
+                        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                            <Button
+                                variant="contained"
+                                color="success"
+                                sx={{ width: "auto", minWidth: 190 }}
+                                disabled={enviados === 0 || ocupado !== null || aprovados === enviados}
+                                isLoading={ocupado === "todos"}
+                                onClick={() => void validarTodos("APROVADO")}
+                            >
+                                <CheckCircle size={16} style={{ marginRight: 6 }} />
+                                Aprovar todos
+                            </Button>
+
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                sx={{ width: "auto", minWidth: 190 }}
+                                disabled={enviados === 0 || ocupado !== null}
+                                onClick={() => setReprovando({ id: null, observacao: "" })}
+                            >
+                                <XCircle size={16} style={{ marginRight: 6 }} />
+                                Recusar todos
+                            </Button>
+                        </Stack>
+
                         {!carregando && enviados > 0 && pendentes === 0 && reprovados === 0 && (
                             <Alert severity="success">
                                 Documentação conferida e aprovada. A matrícula deste aluno já pode ser aprovada na tela de Matrículas.
@@ -215,7 +252,7 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
                                                     <TableCell align="right">
                                                         <input
                                                             type="file"
-                                                            accept=".pdf,.jpg,.jpeg,.png"
+                                                            accept={ACCEPT_DOCUMENTOS}
                                                             style={{ display: "none" }}
                                                             ref={(el) => { inputRefs.current[tipo] = el; }}
                                                             onChange={(e) => {
@@ -290,10 +327,17 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
 
             <Dialog.Root open={!!reprovando} onClose={() => setReprovando(null)} maxWidth="xs">
                 <Dialog.Header>
-                    <Dialog.Title>Reprovar documento</Dialog.Title>
+                    <Dialog.Title>
+                        {reprovando?.id ? "Reprovar documento" : "Recusar todos os documentos"}
+                    </Dialog.Title>
                     <Dialog.ActionClose onClose={() => setReprovando(null)} />
                 </Dialog.Header>
                 <Dialog.Content>
+                    <Alert severity="info" sx={{ mb: 1 }}>
+                        O aluno recebe um e-mail com este motivo e um link para reenviar apenas os documentos
+                        recusados.
+                    </Alert>
+
                     <TextField
                         label="Motivo da reprovação (opcional)"
                         placeholder="Ex.: arquivo ilegível, documento vencido"
@@ -312,10 +356,14 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
                     <Button
                         variant="contained"
                         color="error"
-                        isLoading={ocupado === reprovando?.id}
+                        isLoading={ocupado === (reprovando?.id ?? "todos")}
                         onClick={async () => {
                             if (!reprovando) return;
-                            await validar(reprovando.id, "REPROVADO", reprovando.observacao || undefined);
+                            const motivo = reprovando.observacao || undefined;
+
+                            if (reprovando.id) await validar(reprovando.id, "REPROVADO", motivo);
+                            else await validarTodos("REPROVADO", motivo);
+
                             setReprovando(null);
                         }}
                     >

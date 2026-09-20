@@ -6,12 +6,15 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 
-import { UserRound } from "lucide-react";
+import { Settings, UserRound } from "lucide-react";
+import ConfiguracaoEmailDialog from "../../components/ConfiguracaoEmail/ConfiguracaoEmailDialog";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
 import { authService } from "../../services/auth-services";
 
@@ -66,6 +69,7 @@ function formatarData(data: string | null): string {
 export default function Perfil() {
   const [perfil, setPerfil] = useState<PerfilData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [configuracaoAberta, setConfiguracaoAberta] = useState(false);
   const { notificar } = useNotificacao();
 
   useEffect(() => {
@@ -135,6 +139,9 @@ export default function Perfil() {
   const { pessoa, academico } = perfil;
   const nomeExibicao = pessoa?.nome || perfil.nome;
   const rotuloPerfil = ROTULO_PERFIL[perfil.tipo_usuario] ?? perfil.tipo_usuario;
+  const ehAdministrativo = ["secretaria", "administrador"].includes(
+    String(perfil.tipo_usuario ?? "").trim().toLowerCase(),
+  );
   const temEndereco = !!pessoa && !!(pessoa.logradouro || pessoa.bairro || pessoa.cep);
 
   return (
@@ -158,18 +165,38 @@ export default function Perfil() {
           {nomeExibicao}
         </Typography>
 
-        <Chip
-          label={rotuloPerfil}
-          sx={{
-            px: 3,
-            py: 2,
-            fontWeight: "bold",
-            color: "primary.main",
-            bgcolor: "#e9ecef",
-            borderRadius: 10,
-          }}
-        />
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Chip
+            label={rotuloPerfil}
+            sx={{
+              px: 3,
+              py: 2,
+              fontWeight: "bold",
+              color: "primary.main",
+              bgcolor: "#e9ecef",
+              borderRadius: 10,
+            }}
+          />
+
+          {ehAdministrativo && (
+            <Tooltip title="Configurar disparadores de e-mail">
+              <IconButton
+                color="primary"
+                onClick={() => setConfiguracaoAberta(true)}
+                aria-label="Configurar disparadores de e-mail"
+                sx={{ bgcolor: "#e9ecef", "&:hover": { bgcolor: "#dde1e6" } }}
+              >
+                <Settings size={20} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
       </Stack>
+
+      <ConfiguracaoEmailDialog
+        aberto={configuracaoAberta}
+        onFechar={() => setConfiguracaoAberta(false)}
+      />
 
       <Paper
         elevation={0}

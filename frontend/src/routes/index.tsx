@@ -43,10 +43,28 @@ import CadastroProfessores from "../Pages/Professores/Cadastro";
 import Frequencia from "../Pages/Frequencia/Frequencia";
 import LancamentoNotas from "../Pages/Notas/LancamentoNotas";
 import MinhasNotas from "../Pages/Notas/MinhasNotas";
-import NovaMatricula from "../Pages/Matricula/NovaMatricula";
 import Matriculas from "../Pages/Matricula/Matriculas";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
+import ReenviarDocumentos from "../Pages/Inscricao/ReenviarDocumentos";
+import LayoutPublico from "../Pages/LandingPage/LayoutPublico";
+import LandingPage from "../Pages/LandingPage/LandingPage";
+import Sobre from "../Pages/LandingPage/Sobre";
+import CursosPublico from "../Pages/LandingPage/CursosPublico";
+import NoticiasPublicas from "../Pages/LandingPage/Noticias";
+import NoticiaDetalhe from "../Pages/LandingPage/NoticiaDetalhe";
+import GaleriaPublica from "../Pages/LandingPage/Galeria";
+import AlbumDetalhe from "../Pages/LandingPage/AlbumDetalhe";
+import ContatoPublico from "../Pages/LandingPage/Contato";
+import PainelLayout from "../Pages/Painel/PainelLayout";
+import PainelLogin from "../Pages/Painel/PainelLogin";
+import PainelDashboard from "../Pages/Painel/PainelDashboard";
+import PainelBanners from "../Pages/Painel/PainelBanners";
+import PainelNoticias from "../Pages/Painel/PainelNoticias";
+import PainelGaleria from "../Pages/Painel/PainelGaleria";
+import PainelCursos from "../Pages/Painel/PainelCursos";
+import PainelMenu from "../Pages/Painel/PainelMenu";
+import PainelUsuarios from "../Pages/Painel/PainelUsuarios";
 import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
 import ManualUsuarioAutenticacao from "../Pages/ManualDoSistema/components/ManualUsuarioAutenticacao/ManualUsuarioAutenticacao";
 import ManualAlunos from "../Pages/ManualDoSistema/components/ManualAlunos/ManualAlunos";
@@ -58,7 +76,6 @@ import ManualTurmas from "../Pages/ManualDoSistema/components/ManualTurmas/Manua
 
 const ACESSO_ADMIN = ["secretaria", "administrador"];
 const ACESSO_PROFESSOR = ["secretaria", "administrador", "professor"];
-const ACESSO_ALUNO = ["secretaria", "administrador", "aluno"];
 const ACESSO_TODOS = ["secretaria", "administrador", "professor", "aluno"];
 
 function RouteByRole({
@@ -93,7 +110,7 @@ function RouteByRole({
   }
 
   if (!perfisPermitidos.includes(tipoUsuario)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return children;
@@ -102,8 +119,33 @@ function RouteByRole({
 export default function AppRoutes() {
   return (
     <Routes>
+        <Route element={<LayoutPublico />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/sobre" element={<Sobre />} />
+          <Route path="/cursos" element={<CursosPublico />} />
+          <Route path="/noticias" element={<NoticiasPublicas />} />
+          <Route path="/noticias/:slug" element={<NoticiaDetalhe />} />
+          <Route path="/galeria" element={<GaleriaPublica />} />
+          <Route path="/galeria/:slug" element={<AlbumDetalhe />} />
+          <Route path="/contato" element={<ContatoPublico />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+
+        <Route path="/painel/login" element={<PainelLogin />} />
+        <Route path="/painel" element={<PainelLayout />}>
+          <Route index element={<PainelDashboard />} />
+          <Route path="dashboard" element={<PainelDashboard />} />
+          <Route path="banners" element={<PainelBanners />} />
+          <Route path="noticias" element={<PainelNoticias />} />
+          <Route path="galeria" element={<PainelGaleria />} />
+          <Route path="cursos" element={<PainelCursos />} />
+          <Route path="menu" element={<PainelMenu />} />
+          <Route path="usuarios" element={<PainelUsuarios />} />
+        </Route>
+
         <Route path="/login" element={<Login />} />
         <Route path="/inscricao" element={<Inscricao />} />
+        <Route path="/reenviar-documentos" element={<ReenviarDocumentos />} />
         <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
@@ -117,7 +159,6 @@ export default function AppRoutes() {
         <Route path="/manual-do-sistema/periodos-letivos" element={<ManualPeriodosLetivos />} />
         <Route path="/manual-do-sistema/turmas" element={<ManualTurmas />} />
 
-        <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
         <Route path="/perfil" element={<Perfil />} />
 
@@ -391,15 +432,6 @@ export default function AppRoutes() {
         />
 
         <Route
-          path="/matricula/nova"
-          element={
-            <RouteByRole perfisPermitidos={ACESSO_ALUNO}>
-              <NovaMatricula />
-            </RouteByRole>
-          }
-        />
-
-        <Route
           path="/documentos/envio"
           element={
             <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
@@ -445,7 +477,6 @@ export default function AppRoutes() {
         />
       </Route>
 
-      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

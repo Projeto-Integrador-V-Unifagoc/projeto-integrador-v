@@ -46,6 +46,17 @@ export default function Alunos() {
       flex: 1
     },
     {
+      field: "email",
+      headerName: "E-mail",
+      flex: 1.4,
+      renderCell: (params) =>
+        params.value ? (
+          params.value
+        ) : (
+          <span style={{ color: "#9aa7b4" }}>sem acesso</span>
+        )
+    },
+    {
       field: "logradouro",
       headerName: "Logradouro",
       flex: 1
@@ -134,6 +145,7 @@ export default function Alunos() {
   return (
     <Container>
       <SearchTextField
+        addPath="/inscricao"
         filterValues={filters}
         onFilterChange={(filters) => setFilters(filters)}
         searchValue={pesquisa}

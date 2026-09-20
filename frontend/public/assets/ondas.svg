@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="640" viewBox="0 0 420 640" role="presentation">
+  <g fill="none" stroke="#0a3d52" stroke-opacity="0.09" stroke-width="1.6">
+    <path d="M-40 40 Q 80 0 200 40 T 440 40"/>
+    <path d="M-40 88 Q 80 48 200 88 T 440 88"/>
+    <path d="M-40 136 Q 80 96 200 136 T 440 136"/>
+    <path d="M-40 184 Q 80 144 200 184 T 440 184"/>
+    <path d="M-40 232 Q 80 192 200 232 T 440 232"/>
+    <path d="M-40 280 Q 80 240 200 280 T 440 280"/>
+    <path d="M-40 328 Q 80 288 200 328 T 440 328"/>
+    <path d="M-40 376 Q 80 336 200 376 T 440 376"/>
+    <path d="M-40 424 Q 80 384 200 424 T 440 424"/>
+    <path d="M-40 472 Q 80 432 200 472 T 440 472"/>
+    <path d="M-40 520 Q 80 480 200 520 T 440 520"/>
+    <path d="M-40 568 Q 80 528 200 568 T 440 568"/>
+    <path d="M-40 616 Q 80 576 200 616 T 440 616"/>
+  </g>
+</svg>

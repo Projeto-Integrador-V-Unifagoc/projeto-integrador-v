@@ -38,7 +38,7 @@ export default function Header({ clicarMenu }: HeaderProps) {
   }, []);
 
   function navegarParaHome() {
-    navegar("/");
+    navegar("/home");
   }
 
   function handleOpenUserMenu(event: React.MouseEvent<HTMLElement>) {

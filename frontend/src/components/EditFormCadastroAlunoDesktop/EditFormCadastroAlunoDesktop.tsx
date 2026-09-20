@@ -27,6 +27,7 @@ export default function EditFormCadastroAlunoDesktop() {
     cep: string;
     curso: string;
     periodo: string;
+    email: string;
   };
   const initialForm = {
     nome: "",
@@ -40,9 +41,11 @@ export default function EditFormCadastroAlunoDesktop() {
     cep: "",
     curso: "",
     periodo: "",
+    email: "",
   };
 
   const [form, setForm] = useState<FormType>(initialForm);
+  const [temAcesso, setTemAcesso] = useState(true);
   const { matricula } = useParams();
   const { buscarAlunoPorMatricula, atualizarAluno } = useAluno();
   const [alerta, setAlerta] = useState<{
@@ -72,7 +75,10 @@ export default function EditFormCadastroAlunoDesktop() {
         cep: data.pessoa?.cep || "",
         curso: cursoId,
         periodo: data.periodo || "",
+        email: data.usuario?.email || "",
       });
+
+      setTemAcesso(Boolean(data.usuario?.email));
     }
 
     carregarAluno();
@@ -114,7 +120,18 @@ export default function EditFormCadastroAlunoDesktop() {
           </Card.Header>
           <Card.Content>
             <Grid container spacing={1}>
-              <Grid size={6}>
+              <Grid size={2}>
+                <TextField
+                  label="Matrícula"
+                  name="matricula"
+                  value={matricula ?? ""}
+                  disabled
+                  InputLabelProps={{ shrink: true }}
+                  helperText="Gerada pelo sistema"
+                />
+              </Grid>
+
+              <Grid size={4}>
                 <TextField
                   label="Nome"
                   name="nome"
@@ -142,6 +159,24 @@ export default function EditFormCadastroAlunoDesktop() {
                     handleChange("dataNascimento", e.target.value)
                   }
                   InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+
+              <Grid size={6}>
+                <TextField
+                  label="E-mail de acesso"
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                  disabled={!temAcesso}
+                  InputLabelProps={{ shrink: true }}
+                  placeholder={temAcesso ? "aluno@exemplo.com" : "Aluno sem acesso ao portal"}
+                  helperText={
+                    temAcesso
+                      ? "É com este e-mail que o aluno entra no portal."
+                      : "Este aluno não tem login criado."
+                  }
                 />
               </Grid>
 

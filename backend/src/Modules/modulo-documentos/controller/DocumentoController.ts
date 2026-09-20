@@ -6,6 +6,7 @@ import {
     DocumentoAuthContext,
     ErroAutorizacaoDocumento,
 } from "../service/DocumentoAuthContext";
+import { conferirConteudoDoArquivo, descartarArquivo } from "../service/ValidacaoArquivo";
 
 const service = new DocumentoService();
 const authContext = new DocumentoAuthContext();
@@ -13,9 +14,11 @@ const authContext = new DocumentoAuthContext();
 export class DocumentoController {
 
     async upload(req: any, res: any) {
+        const arquivo = req.file;
+        let persistido = false;
+
         try {
             const contexto = await authContext.obterContexto(req);
-            const arquivo = req.file;
             const { tipo_documento } = req.body;
 
             const aluno_id =
@@ -41,6 +44,8 @@ export class DocumentoController {
                 });
             }
 
+            conferirConteudoDoArquivo(arquivo.path, arquivo.originalname);
+
             const doc = await service.criar({
                 aluno_id,
                 tipo_documento,
@@ -48,6 +53,7 @@ export class DocumentoController {
                 caminho_arquivo: arquivo.path,
             });
 
+            persistido = true;
             return res.status(201).json(doc);
 
         } catch (err: any) {
@@ -60,6 +66,8 @@ export class DocumentoController {
             return res.status(400).json({
                 error: err.message,
             });
+        } finally {
+            if (arquivo && !persistido) descartarArquivo(arquivo.path);
         }
     }
 
@@ -158,6 +166,30 @@ export class DocumentoController {
             return res.status(status).json({
                 error: err.message,
             });
+        }
+    }
+
+    async validarTodosDoAluno(req: any, res: any) {
+        try {
+            const { status, observacao } = req.body;
+
+            if (!status) {
+                return res.status(400).json({
+                    error: 'Campo "status" é obrigatório.',
+                });
+            }
+
+            const alterados = await service.validarTodosDoAluno(
+                req.params.alunoId,
+                status,
+                observacao,
+            );
+
+            return res.status(200).json({ alterados });
+
+        } catch (err: any) {
+            const codigo = err.message.includes("nenhum documento") ? 404 : 400;
+            return res.status(codigo).json({ error: err.message });
         }
     }
 

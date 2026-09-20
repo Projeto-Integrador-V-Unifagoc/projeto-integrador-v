@@ -13,6 +13,9 @@ import { frequenciaRouter } from "./Modules/routes/frequenciaRoutes";
 import { notasRouter } from "./Modules/routes/notasRoutes";
 import { matriculaRouter } from "./Modules/routes/matriculaRoutes";
 import { documentoRouter } from "./Modules/routes/documentoRoutes";
+import { configuracaoEmailRouter } from "./Modules/routes/configuracaoEmailRoutes";
+import { inscricaoPublicaRouter } from "./Modules/routes/inscricaoPublicaRoutes";
+import { siteRouter } from "./Modules/site/routes/siteRoutes";
 import { FichaController } from "./Modules/modulo-ficha/controller/FichaController";
 import authRoutes from "./Modules/usuario-perfil-autenticacao/routes/auth-routes";
 import { autenticar } from "./middlewares/autenticacao";
@@ -25,9 +28,14 @@ import { TurmaController } from "./Modules/modulo-estrutura-academica/controller
 import { TurmaDisciplinaController } from "./Modules/modulo-estrutura-academica/controller/TurmaDisciplinaController";
 import { RelatorioController } from "./Modules/modulo-relatorios/controllers/RelatorioController";
 import { obterJwtSecret } from "./config/jwt";
+import { ConfiguracaoSmtpService } from "./Modules/configuracao-email/service/ConfiguracaoSmtpService";
 
 const PORT = process.env.PORT || 3000;
 obterJwtSecret();
+
+new ConfiguracaoSmtpService()
+  .aplicarNoEmailService(true)
+  .catch((erro) => console.error("[smtp] configuração salva não pôde ser carregada:", erro));
 
 export const app = express();
 
@@ -39,6 +47,8 @@ app.get("/health", (req, res) => {
 });
 
 app.use(authRoutes);
+app.use(siteRouter);
+app.use(inscricaoPublicaRouter);
 
 const alunoController = new AlunoController();
 const cidadeController = new CidadeController();
@@ -238,6 +248,7 @@ app.use("/notas", notasRouter);
 app.use(homeAlunoRouter);
 app.use(matriculaRouter);
 app.use(documentoRouter);
+app.use(configuracaoEmailRouter);
 
 // Sob Vitest (testes de integração com supertest) o app é apenas importado,
 // nunca escuta numa porta. Em execução normal (`tsx src/app.ts`, `npm start`,

@@ -186,7 +186,15 @@ export class MatriculaService {
 
         if (doPeriodo.length !== 1) return null;
 
-        return this.criarMatricula(alunoId, doPeriodo[0].id);
+        const matricula = await this.criarMatricula(alunoId, doPeriodo[0].id);
+
+        try {
+            const ativa = await this.aprovar(matricula.id);
+            return { ...matricula, ...ativa };
+        } catch (erro) {
+            console.error("[matricula] criada como pendente; aprovação automática falhou:", erro);
+            return matricula;
+        }
     }
 
     async aprovar(id: string) {

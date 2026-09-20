@@ -114,46 +114,66 @@ export default function EsqueceuSenha() {
           redefinição da senha.
         </Typography>
 
-        <Box component="form" onSubmit={handleSubmit}>
+        {solicitacaoEnviada ? (
           <Stack spacing={2}>
-            {solicitacaoEnviada && (
-              <Alert severity="success">
-                Se o e-mail estiver cadastrado, você
-                receberá as instruções para redefinir sua
-                senha.
-              </Alert>
-            )}
+            <Alert severity="success">
+              Se o e-mail estiver cadastrado, você receberá
+              as instruções para redefinir sua senha. O link
+              vale por 30 minutos.
+            </Alert>
 
-            <TextField
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
-              required
-              fullWidth
-              disabled={enviando}
-            />
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              Não chegou? Confira a caixa de spam antes de
+              pedir de novo.
+            </Typography>
 
             <Button
-              type="submit"
-              variant="contained"
+              variant="outlined"
               size="large"
               fullWidth
-              disabled={enviando}
-              sx={{
-                width: '100%',
-                py: 1.5,
-                fontWeight: 'bold',
-              }}
+              onClick={() => setSolicitacaoEnviada(false)}
+              sx={{ width: '100%', py: 1.5 }}
             >
-              {enviando
-                ? 'Enviando...'
-                : 'Enviar link de recuperação'}
+              Enviar para outro e-mail
             </Button>
           </Stack>
-        </Box>
+        ) : (
+          <Box component="form" onSubmit={handleSubmit}>
+            <Stack spacing={2}>
+              <TextField
+                label="E-mail"
+                type="email"
+                value={email}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
+                required
+                fullWidth
+                disabled={enviando}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                fullWidth
+                disabled={enviando}
+                sx={{
+                  width: '100%',
+                  py: 1.5,
+                  fontWeight: 'bold',
+                }}
+              >
+                {enviando
+                  ? 'Enviando...'
+                  : 'Enviar link de recuperação'}
+              </Button>
+            </Stack>
+          </Box>
+        )}
 
         <Typography variant="body2" mt={3}>
           <Link
