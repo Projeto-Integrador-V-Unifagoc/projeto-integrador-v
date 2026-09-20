@@ -35,7 +35,7 @@ import TextField from "../../components/TextField";
 import Button from "../../components/Button";
 import CampoSenha, { senhaForte } from "../../components/CampoSenha";
 import { cpfValido } from "../../utils/cpf";
-import { ACCEPT_DOCUMENTOS, TEXTO_FORMATOS, validarDocumento } from "../../utils/arquivo-documento";
+import { ACCEPT_DOCUMENTOS, validarDocumento } from "../../utils/arquivo-documento";
 
 const TIPOS_DOCUMENTO = [
     { tipo: "RG", label: "RG (Registro Geral)", obrigatorio: true },
@@ -750,12 +750,6 @@ export default function Inscricao() {
     const step3 = (
         <Stack spacing={2.5}>
             <Typography variant="h6" fontWeight={700}>Documentos</Typography>
-            <Alert severity="info">
-                Para ingresso via ENEM, envie os documentos abaixo. Os marcados com <strong>*</strong> são obrigatórios
-                para concluir a inscrição. Formatos aceitos: PDF, imagem (JPG, PNG, WEBP, GIF) ou ZIP,
-                com no máximo 10 MB cada.
-            </Alert>
-
             {erros.documentos && <Alert severity="error">{erros.documentos}</Alert>}
             <Box sx={{ overflowX: "auto" }}>
                 <Table size="small">
