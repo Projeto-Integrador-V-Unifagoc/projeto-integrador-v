@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 210" width="320" height="210" role="img" aria-label="UniEduca">
+  <title>UniEduca</title>
+
+  <g transform="translate(160 62)">
+    <path d="M0 -34 L74 0 L0 34 L-74 0 Z" fill="#159BE0"/>
+    <path d="M0 -34 L74 0 L0 12 L-74 0 Z" fill="#2BB6EF"/>
+    <path d="M-44 12 v20 a44 20 0 0 0 88 0 v-20 l-16 7 v13 a28 12 0 0 1 -56 0 v-13 Z" fill="#159BE0"/>
+    <path d="M70 2 v34 a6 6 0 0 0 12 0 v-34 Z" fill="#159BE0"/>
+    <circle cx="76" cy="40" r="7" fill="#159BE0"/>
+  </g>
+
+  <text x="160" y="178"
+        text-anchor="middle"
+        font-family="Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif"
+        font-size="56"
+        font-weight="800"
+        letter-spacing="-1">
+    <tspan fill="#0F2E6B">Uni</tspan><tspan fill="#159BE0">Educa</tspan>
+  </text>
+</svg>

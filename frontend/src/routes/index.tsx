@@ -130,6 +130,7 @@ export default function AppRoutes() {
           <Route path="/galeria" element={<GaleriaPublica />} />
           <Route path="/galeria/:slug" element={<AlbumDetalhe />} />
           <Route path="/contato" element={<ContatoPublico />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
 
         <Route path="/painel/login" element={<PainelLogin />} />
@@ -487,7 +488,6 @@ export default function AppRoutes() {
         />
       </Route>
 
-      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
