@@ -750,7 +750,7 @@ export default function Home() {
     { label: "Tarefas", descricao: "Acompanhe atividades e pendências", href: "/tarefas/lista", icon: ClipboardList, podeVer: ehAdmin },
     { label: "Períodos Letivos", descricao: "Gerencie os períodos acadêmicos", href: "/periodos-letivos/lista", icon: Calendar, podeVer: ehAdmin },
     { label: "Status", descricao: "Configure status de matrícula", href: "/statusLista", icon: Info, podeVer: ehAdmin },
-    { label: "Nova matrícula", descricao: "Matricular alunos em turmas", href: "/matricula/nova", icon: ClipboardCheck, podeVer: ehAdmin },
+    { label: "Nova inscrição", descricao: "Cadastrar candidato pelo formulário público", href: "/inscricao", icon: ClipboardCheck, podeVer: ehAdmin },
     { label: "Documentos", descricao: "Envio e consulta de documentos", href: "/documentos/envio", icon: FileText, podeVer: ehAdmin },
     { label: "Alunos", descricao: "Cadastro e consulta de alunos", href: "/alunos/lista", icon: Users, podeVer: ehAdmin },
     { label: "Usuários", descricao: "Gerencie os acessos ao sistema", href: "/usuarios/lista", icon: UserCog, podeVer: ehAdmin },
