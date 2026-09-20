@@ -99,9 +99,9 @@ export default function Sidebar({ expandido }: SidebarProps) {
     },
     {
       label: "Matrícula",
-      href: ehAdmin ? "/matricula/lista" : "/matricula/nova",
+      href: "/matricula/lista",
       icon: ClipboardCheck,
-      podeVer: ehAdmin || ehAluno,
+      podeVer: ehAdmin,
     },
     {
       label: "Documentos",

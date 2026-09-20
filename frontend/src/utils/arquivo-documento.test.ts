@@ -25,7 +25,7 @@ const ZIP = new Uint8Array([
 ]);
 
 function arquivo(nome: string, conteudo: Uint8Array): File {
-    return new File([conteudo], nome);
+    return new File([conteudo.slice().buffer as ArrayBuffer], nome);
 }
 
 describe("validarDocumento", () => {
