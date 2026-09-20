@@ -26,7 +26,11 @@ export class NotificacaoService {
         return portal || this.semBarraFinal(process.env.FRONTEND_URL ?? "");
     }
 
-    async disparar(chave: ChaveDisparador, dados: DadosNotificacao): Promise<boolean> {
+    async disparar(
+        chave: ChaveDisparador,
+        dados: DadosNotificacao,
+        aoFalhar?: (erro: unknown) => Promise<void> | void,
+    ): Promise<boolean> {
         if (!dados.para) return false;
 
         const configuracao = await this.repository.buscarPorChave(chave);
@@ -34,6 +38,7 @@ export class NotificacaoService {
 
         filaDeEmails.enfileirar({
             rotulo: `${chave} para ${dados.para}`,
+            aoFalhar,
             executar: () =>
                 emailService.enviarMensagemInstitucional({
                     para: dados.para,
@@ -66,6 +71,33 @@ export class NotificacaoService {
             nomeDestinatario: dados.nome,
             destaques,
         });
+    }
+
+    async notificarRecuperacaoSenha(dados: {
+        email: string;
+        nome: string;
+        token: string;
+        aoFalhar?: (erro: unknown) => Promise<void> | void;
+    }): Promise<boolean> {
+        const portal = this.urlPortal();
+
+        if (!portal) {
+            throw new Error("Configure FRONTEND_URL ou URL_PORTAL para enviar o link de redefinição.");
+        }
+
+        return this.disparar(
+            "recuperacao_senha",
+            {
+                para: dados.email,
+                nomeDestinatario: dados.nome,
+                destaques: [{ rotulo: "Validade do link", valor: "30 minutos" }],
+                acao: {
+                    rotulo: "Criar uma nova senha",
+                    url: `${portal}/redefinir-senha?token=${encodeURIComponent(dados.token)}`,
+                },
+            },
+            dados.aoFalhar,
+        );
     }
 
     async notificarDocumentacaoReprovada(dados: {

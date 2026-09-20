@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { db } from '../../../database/connection';
 import { UsuarioRepository } from '../repository/usuario-repository';
 import { RecuperacaoSenhaRepository } from '../repository/recuperacao-senha-repository';
-import EmailService from './email-service';
+import { notificacaoService } from '../../configuracao-email/service/NotificacaoService';
 import { validarSenha } from './senha-policy';
 
 const TEMPO_EXPIRACAO_MINUTOS = 30;
@@ -47,19 +47,16 @@ class RecuperacaoSenhaService {
       expires_at: expiraEm,
     });
 
-    try {
-      await EmailService.enviarRecuperacaoSenha({
-        nome: usuario.nome,
-        email: usuario.email,
-        token,
-      });
-    } catch (error) {
-      await this.recuperacaoRepository.invalidarTokensDoUsuario(
-        String(usuario.id)
-      );
-
-      throw error;
-    }
+    await notificacaoService.notificarRecuperacaoSenha({
+      nome: usuario.nome,
+      email: usuario.email,
+      token,
+      aoFalhar: async () => {
+        await this.recuperacaoRepository.invalidarTokensDoUsuario(
+          String(usuario.id)
+        );
+      },
+    });
   }
 
   async redefinirSenha(

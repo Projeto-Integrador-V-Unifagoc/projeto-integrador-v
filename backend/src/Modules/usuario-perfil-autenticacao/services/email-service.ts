@@ -251,6 +251,27 @@ class EmailService {
     throw ultimoErro;
   }
 
+  private blocoEnderecoAlternativo(url: string): string {
+    let endereco: URL;
+
+    try {
+      endereco = new URL(url);
+    } catch {
+      return '';
+    }
+
+    const local = /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])$/i.test(endereco.hostname);
+    if (local) return '';
+
+    const semParametros = `${endereco.origin}${endereco.pathname}`;
+
+    return `<p style="margin:14px 0 0;font-size:12px;color:#93a0ad;line-height:1.6;">
+              Se o botão não funcionar, acesse
+              <span style="color:#14688f;word-break:break-all;">${this.escaparHtml(semParametros)}</span>
+              e siga pelo próprio site.
+            </p>`;
+  }
+
   private escaparHtml(valor: string): string {
     return valor
       .replace(/&/g, '&amp;')
@@ -405,10 +426,7 @@ class EmailService {
              </td>
            </tr>
          </table>
-         <p style="margin:14px 0 0;font-size:12px;color:#93a0ad;line-height:1.6;">
-           Se o botão não funcionar, copie e cole este endereço no navegador:<br>
-           <span style="color:#14688f;word-break:break-all;">${dados.acao.url}</span>
-         </p>`
+         ${this.blocoEnderecoAlternativo(dados.acao.url)}`
       : '';
 
     const textoDestaques = (dados.destaques ?? [])
@@ -425,7 +443,7 @@ class EmailService {
         '',
         dados.mensagem,
         textoDestaques ? `\n${textoDestaques}` : '',
-        dados.acao ? `\n${dados.acao.rotulo}: ${dados.acao.url}` : '',
+        dados.acao ? `\n${dados.acao.rotulo}: use o botão "${dados.acao.rotulo}" nesta mensagem.` : '',
         '',
         'UniEduca — este é um e-mail automático, não responda.',
       ]
