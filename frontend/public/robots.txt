@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /painel
+Disallow: /alunos
+Disallow: /usuarios
+Disallow: /professores
+Disallow: /turmas
+Disallow: /matricula
+Disallow: /documentos
+Disallow: /avaliacoes
+Disallow: /frequencia
+Disallow: /notas
+Disallow: /relatorios
+Disallow: /perfil
+Disallow: /reenviar-documentos
+Disallow: /redefinir-senha
+Disallow: /esqueceu-senha
+
+Sitemap: https://unieduca.net.br/sitemap.xml

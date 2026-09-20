@@ -53,6 +53,18 @@ export const documentoApi = {
     return response.data;
   },
 
+  async validarTodosDoAluno(
+    alunoId: string,
+    status: StatusValidacao,
+    observacao?: string,
+  ): Promise<number> {
+    const response = await api.patch<{ alterados: number }>(
+      `/documentos/aluno/${alunoId}/validar-todos`,
+      { status, observacao },
+    );
+    return response.data.alterados;
+  },
+
   async abrirArquivo(id: string): Promise<string> {
     const response = await api.get(`/documentos/${id}/arquivo`, { responseType: "blob" });
     return URL.createObjectURL(response.data as Blob);

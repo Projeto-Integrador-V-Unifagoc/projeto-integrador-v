@@ -48,4 +48,8 @@ export interface AlunoResponse {
   periodo: string
   curso: string | CursoResponse
   pessoa: PessoaV2
+  usuario?: {
+    id?: string
+    email?: string
+  }
 }

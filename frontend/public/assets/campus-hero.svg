@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Ilustracao do campus UniEduca">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#0a4d73"/>
+      <stop offset="0.55" stop-color="#0b7ea8"/>
+      <stop offset="1" stop-color="#22a8d6"/>
+    </linearGradient>
+    <linearGradient id="predio" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d2f45"/>
+      <stop offset="1" stop-color="#071d2c"/>
+    </linearGradient>
+    <linearGradient id="predio2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#113b56"/>
+      <stop offset="1" stop-color="#092635"/>
+    </linearGradient>
+    <linearGradient id="chao" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#062232"/>
+      <stop offset="1" stop-color="#04151f"/>
+    </linearGradient>
+    <radialGradient id="brilho" cx="0.74" cy="0.2" r="0.52">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#ceu)"/>
+  <rect width="1600" height="900" fill="url(#brilho)"/>
+
+  <circle cx="1210" cy="176" r="86" fill="#ffffff" opacity="0.14"/>
+  <circle cx="1210" cy="176" r="130" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="1.5"/>
+  <circle cx="1210" cy="176" r="182" fill="none" stroke="#ffffff" stroke-opacity="0.09" stroke-width="1.5"/>
+
+  <g opacity="0.5" fill="#ffffff">
+    <circle cx="180" cy="120" r="2.4"/><circle cx="340" cy="78" r="1.7"/>
+    <circle cx="520" cy="150" r="2"/><circle cx="760" cy="96" r="1.6"/>
+    <circle cx="980" cy="142" r="2.2"/><circle cx="1420" cy="112" r="1.8"/>
+    <circle cx="1520" cy="230" r="2.3"/><circle cx="96" cy="250" r="1.8"/>
+  </g>
+
+  <g opacity="0.22" fill="#0a3854">
+    <path d="M0 640 L180 560 L360 620 L540 548 L720 616 L900 552 L1080 622 L1260 560 L1440 618 L1600 566 L1600 900 L0 900 Z"/>
+  </g>
+
+  <g>
+    <rect x="120" y="520" width="190" height="270" fill="url(#predio2)"/>
+    <rect x="1290" y="548" width="200" height="242" fill="url(#predio2)"/>
+    <g fill="#38c6f0" opacity="0.5">
+      <rect x="146" y="552" width="26" height="34" rx="3"/><rect x="192" y="552" width="26" height="34" rx="3"/>
+      <rect x="238" y="552" width="26" height="34" rx="3"/><rect x="146" y="614" width="26" height="34" rx="3"/>
+      <rect x="192" y="614" width="26" height="34" rx="3"/><rect x="238" y="614" width="26" height="34" rx="3"/>
+      <rect x="146" y="676" width="26" height="34" rx="3"/><rect x="238" y="676" width="26" height="34" rx="3"/>
+      <rect x="1316" y="580" width="26" height="34" rx="3"/><rect x="1362" y="580" width="26" height="34" rx="3"/>
+      <rect x="1408" y="580" width="26" height="34" rx="3"/><rect x="1316" y="642" width="26" height="34" rx="3"/>
+      <rect x="1408" y="642" width="26" height="34" rx="3"/><rect x="1362" y="704" width="26" height="34" rx="3"/>
+    </g>
+  </g>
+
+  <g>
+    <rect x="430" y="404" width="740" height="386" fill="url(#predio)"/>
+    <polygon points="430,404 800,236 1170,404" fill="#0f3d59"/>
+    <polygon points="800,236 1170,404 800,404" fill="#0a2d42"/>
+
+    <rect x="560" y="470" width="480" height="14" rx="4" fill="#0a2b3f"/>
+    <g fill="#0a2b3f">
+      <rect x="586" y="484" width="26" height="306"/><rect x="694" y="484" width="26" height="306"/>
+      <rect x="802" y="484" width="26" height="306"/><rect x="910" y="484" width="26" height="306"/>
+      <rect x="1002" y="484" width="26" height="306"/>
+    </g>
+
+    <rect x="744" y="612" width="112" height="178" rx="6" fill="#0b3b57"/>
+    <rect x="762" y="640" width="76" height="150" rx="4" fill="#38c6f0" opacity="0.35"/>
+
+    <g fill="#38c6f0" opacity="0.45">
+      <rect x="470" y="520" width="60" height="42" rx="4"/><rect x="470" y="596" width="60" height="42" rx="4"/>
+      <rect x="470" y="672" width="60" height="42" rx="4"/>
+      <rect x="1070" y="520" width="60" height="42" rx="4"/><rect x="1070" y="596" width="60" height="42" rx="4"/>
+      <rect x="1070" y="672" width="60" height="42" rx="4"/>
+    </g>
+
+    <g transform="translate(800 330)" fill="#ffffff" opacity="0.9">
+      <polygon points="0,-22 46,0 0,22 -46,0"/>
+      <path d="M-30 6 L-30 26 Q0 42 30 26 L30 6 L0 20 Z"/>
+      <line x1="42" y1="2" x2="42" y2="30" stroke="#ffffff" stroke-width="3"/>
+      <circle cx="42" cy="33" r="4"/>
+    </g>
+  </g>
+
+  <rect x="0" y="790" width="1600" height="110" fill="url(#chao)"/>
+  <g opacity="0.35" fill="#0a3854">
+    <rect x="0" y="790" width="1600" height="5"/>
+  </g>
+
+  <g>
+    <g transform="translate(300 700)">
+      <circle cx="0" cy="-42" r="17" fill="#f2c8a0"/>
+      <path d="M-19 -24 Q0 -34 19 -24 L23 46 L-23 46 Z" fill="#1f7fa8"/>
+      <rect x="-27" y="-6" width="16" height="42" rx="6" fill="#134f6b"/>
+    </g>
+    <g transform="translate(360 706)">
+      <circle cx="0" cy="-40" r="16" fill="#c98f63"/>
+      <path d="M-18 -23 Q0 -32 18 -23 L22 44 L-22 44 Z" fill="#e8eef2"/>
+      <rect x="12" y="-4" width="15" height="40" rx="6" fill="#c6d3da"/>
+    </g>
+    <g transform="translate(1230 712)">
+      <circle cx="0" cy="-40" r="16" fill="#8a5a3b"/>
+      <path d="M-18 -23 Q0 -32 18 -23 L22 44 L-22 44 Z" fill="#2aa38a"/>
+      <rect x="-26" y="-4" width="15" height="40" rx="6" fill="#1b7360"/>
+    </g>
+    <g transform="translate(1176 704)">
+      <circle cx="0" cy="-42" r="17" fill="#f2c8a0"/>
+      <path d="M-19 -24 Q0 -34 19 -24 L23 46 L-23 46 Z" fill="#e0e7ec"/>
+    </g>
+  </g>
+
+  <g opacity="0.2" fill="#000000">
+    <ellipse cx="300" cy="792" rx="34" ry="6"/>
+    <ellipse cx="360" cy="792" rx="32" ry="6"/>
+    <ellipse cx="1230" cy="792" rx="32" ry="6"/>
+    <ellipse cx="1176" cy="792" rx="34" ry="6"/>
+  </g>
+</svg>

@@ -33,14 +33,39 @@ describe("AlunoService.buscarAlunoPorCpfOuMatricula", () => {
 });
 
 describe("AlunoService.atualizarAluno", () => {
-  it("converte 'aluno nao encontrado' na mensagem generica de falha", async () => {
+  it("informa quando o aluno nao existe", async () => {
     const { service } = criar({ buscarAlunoPorMatricula: async () => null });
-    await assert.rejects(() => service.atualizarAluno("999", {}), /Não foi possível atualizar o aluno/);
+    await assert.rejects(() => service.atualizarAluno("999", {}), /Aluno não encontrado/);
   });
 
   it("atualiza quando o aluno existe", async () => {
     const { service } = criar();
     assert.deepEqual(await service.atualizarAluno("1", { periodo: 2 }), { periodo: 2 });
+  });
+
+  it("rejeita e-mail em formato invalido", async () => {
+    const { service } = criar();
+    await assert.rejects(() => service.atualizarAluno("1", { email: "sem-arroba" }), /e-mail válido/);
+  });
+
+  it("traduz e-mail duplicado do banco", async () => {
+    const { service } = criar({
+      atualizarAluno: async () => {
+        throw Object.assign(new Error("duplicate key"), { code: "23505", constraint: "usuario_email_unique" });
+      },
+    });
+
+    await assert.rejects(() => service.atualizarAluno("1", { email: "ja@existe.com" }), /já está em uso/);
+  });
+
+  it("mantem a mensagem generica para falhas inesperadas", async () => {
+    const { service } = criar({
+      atualizarAluno: async () => {
+        throw new Error("erro de banco qualquer");
+      },
+    });
+
+    await assert.rejects(() => service.atualizarAluno("1", {}), /Não foi possível atualizar o aluno/);
   });
 });
 
@@ -63,6 +88,15 @@ describe("AlunoService leitura", () => {
 
 function mockarTransaction(impl: (cb: any) => any) {
   Object.defineProperty(db, "transaction", { value: impl, writable: false, configurable: true });
+}
+
+function trxFalso(tabelas: Record<string, any> = {}) {
+  return (nome: string) => ({
+    where: () => ({
+      first: async () => tabelas[nome] ?? null,
+      update: () => ({ returning: async () => [tabelas.pessoaAtualizada ?? { id: "p-orfa" }] }),
+    }),
+  });
 }
 
 describe("AlunoService.criarAluno", () => {
@@ -122,8 +156,8 @@ describe("AlunoService.criarAluno", () => {
     assert.equal(chamouAluno, false);
   });
 
-  it("rejeita quando ja existe pessoa cadastrada com o mesmo cpf", async () => {
-    mockarTransaction(async (cb: any) => cb({}));
+  it("rejeita quando o cpf ja pertence a um aluno", async () => {
+    mockarTransaction(async (cb: any) => cb(trxFalso({ aluno: { id: "a-existente" } })));
     const { service } = criar();
     let chamouCriarPessoa = false;
     service.pessoaRepository = {
@@ -135,6 +169,40 @@ describe("AlunoService.criarAluno", () => {
       /Já existe uma matrícula ativa ou pendente para este CPF/,
     );
     assert.equal(chamouCriarPessoa, false);
+  });
+
+  it("rejeita quando o cpf ja pertence a um professor", async () => {
+    mockarTransaction(async (cb: any) => cb(trxFalso({ professor: { id: "prof-1" } })));
+    const { service } = criar();
+    service.pessoaRepository = {
+      buscarPessoaPorCpf: async () => ({ id: "p-existente" }),
+      criarPessoa: async () => ({ id: "p1" }),
+    } as any;
+    await assert.rejects(
+      () => service.criarAluno({ pessoa: { cpf: "11111111111" } } as any),
+      /já está cadastrado como professor/,
+    );
+  });
+
+  it("reaproveita a pessoa que ficou sem aluno em vez de barrar o cpf", async () => {
+    mockarTransaction(async (cb: any) => cb(trxFalso()));
+    const { service } = criar();
+    let chamouCriarPessoa = false;
+    service.pessoaRepository = {
+      buscarPessoaPorCpf: async () => ({ id: "p-orfa" }),
+      criarPessoa: async () => { chamouCriarPessoa = true; return { id: "p-nova" }; },
+    } as any;
+    let alunoRecebido: any;
+    service.alunoRepository = {
+      criarAluno: async (aluno: any) => { alunoRecebido = aluno; return { id: "a1", ...aluno }; },
+    } as any;
+
+    await service.criarAluno({
+      usuarioId: "u1", periodo: 1, curso: "c1", pessoa: { cpf: "11111111111" },
+    } as any);
+
+    assert.equal(chamouCriarPessoa, false);
+    assert.equal(alunoRecebido.pessoa_id, "p-orfa");
   });
 
   it("traduz violacao de unicidade do cpf no banco para mensagem amigavel", async () => {

@@ -4,12 +4,15 @@ export async function seed(knex: any): Promise<void> {
   const emailSecretaria = "suporte@unieduca.com.br";
   const senhaPadrao = "unieduca2026";
 
-  await knex("usuario")
+  const existente = await knex("usuario")
     .withSchema("piv")
-    .whereIn("email", [
-      "suporte@unieduca.com.br",
-    ])
-    .del();
+    .where({ email: emailSecretaria })
+    .first();
+
+  if (existente) {
+    console.log(`Usuário ${emailSecretaria} já existe (${existente.tipo_usuario}); mantido como está.`);
+    return;
+  }
 
   const senhaHash = await bcrypt.hash(senhaPadrao, 10);
 

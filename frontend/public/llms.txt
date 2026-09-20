@@ -1,0 +1,63 @@
+# UniEduca
+
+> Instituição de ensino superior com graduação presencial no período noturno e ingresso pela nota do ENEM. A inscrição é 100% online, gratuita, sem prova e sem taxa. Alunos acompanham notas, frequência, documentos e matrícula pelo portal do aluno.
+
+## Sobre
+
+UniEduca oferece cursos de graduação (bacharelado) com aulas presenciais no período noturno, voltados a quem estuda e trabalha. O corpo docente é formado por professores atuantes na área.
+
+O processo seletivo tem uma única modalidade de ingresso: **nota do ENEM**. Não há prova própria nem taxa de inscrição. O candidato preenche o formulário online, envia os documentos digitalizados e acompanha a validação feita pela secretaria.
+
+## Como funciona a inscrição
+
+1. O candidato preenche dados pessoais, endereço e escolhe o curso em https://unieduca.net.br/inscricao
+2. Cadastra o e-mail e a senha que serão usados no portal do aluno
+3. Envia os documentos obrigatórios (PDF, JPG ou PNG, até 10 MB cada)
+4. A secretaria confere cada documento e aprova ou recusa
+5. Se algum documento for recusado, o candidato recebe um e-mail com o motivo e um link para reenviar apenas os arquivos pendentes
+6. Com toda a documentação aprovada, a matrícula é gerada e o acesso ao portal do aluno é liberado por e-mail
+
+O acesso ao portal só é liberado depois da aprovação da documentação.
+
+## Documentos exigidos
+
+- RG (Registro Geral) — obrigatório
+- Histórico Escolar do Ensino Médio — obrigatório
+- Comprovante de Residência — obrigatório
+- Boletim de Desempenho do ENEM — obrigatório
+- Comprovante de Inscrição no ENEM — obrigatório
+- CPF — opcional
+
+## Páginas
+
+- [Início](https://unieduca.net.br/): apresentação da instituição, cursos em destaque e últimas notícias
+- [Inscrição online](https://unieduca.net.br/inscricao): formulário do processo seletivo por nota do ENEM
+- [Cursos](https://unieduca.net.br/cursos): cursos de graduação com inscrições abertas, grau, turno e duração
+- [Sobre](https://unieduca.net.br/sobre): história, proposta pedagógica e diferenciais da instituição
+- [Notícias](https://unieduca.net.br/noticias): comunicados, editais e novidades acadêmicas
+- [Galeria](https://unieduca.net.br/galeria): fotos de eventos, aulas práticas e formaturas
+- [Contato](https://unieduca.net.br/contato): telefone, e-mail, endereço e horário de atendimento da secretaria
+- [Portal do aluno](https://unieduca.net.br/login): acesso a notas, frequência, documentos e matrícula
+
+## Palavras-chave
+
+unieduca, faculdade, ensino superior, graduação, bacharelado, curso superior, faculdade noturna, aulas à noite, vestibular, processo seletivo, inscrição online, inscrição gratuita, sem taxa de inscrição, sem prova, ingresso pelo enem, nota do enem, usar nota do enem para entrar na faculdade, vagas abertas, matrícula, matrícula online, portal do aluno, notas e frequência, histórico escolar, documentos da matrícula, secretaria acadêmica, análise e desenvolvimento de sistemas, administração, ciências contábeis, faculdade para quem trabalha, graduação presencial
+
+## Perguntas frequentes
+
+**Tem taxa de inscrição?** Não. A inscrição é gratuita.
+
+**Tem prova?** Não. O ingresso é feito exclusivamente pela nota do ENEM.
+
+**Posso usar a nota de qualquer ano do ENEM?** O candidato envia o Boletim de Desempenho e o Comprovante de Inscrição; a secretaria confere na validação.
+
+**Quando consigo entrar no portal?** Depois que a secretaria aprovar todos os documentos. Você recebe um e-mail com o link de acesso.
+
+**E se um documento for recusado?** Você recebe um e-mail com o motivo e um link para reenviar só aquele documento.
+
+**As aulas são presenciais?** Sim, presenciais no período noturno.
+
+## Contato
+
+Site: https://unieduca.net.br/
+E-mail: contato@unieduca.net.br

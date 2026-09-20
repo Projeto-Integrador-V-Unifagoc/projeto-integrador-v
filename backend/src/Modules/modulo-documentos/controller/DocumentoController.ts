@@ -161,6 +161,30 @@ export class DocumentoController {
         }
     }
 
+    async validarTodosDoAluno(req: any, res: any) {
+        try {
+            const { status, observacao } = req.body;
+
+            if (!status) {
+                return res.status(400).json({
+                    error: 'Campo "status" é obrigatório.',
+                });
+            }
+
+            const alterados = await service.validarTodosDoAluno(
+                req.params.alunoId,
+                status,
+                observacao,
+            );
+
+            return res.status(200).json({ alterados });
+
+        } catch (err: any) {
+            const codigo = err.message.includes("nenhum documento") ? 404 : 400;
+            return res.status(codigo).json({ error: err.message });
+        }
+    }
+
     async validar(req: any, res: any) {
         try {
             const { status, observacao } = req.body;

@@ -10,5 +10,7 @@ backend/coverage/
 frontend/dist/
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/uploads-site/*
+!backend/uploads-site/.gitkeep
 .DS_Store
 SPEC.md

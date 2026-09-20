@@ -44,6 +44,13 @@ export interface InscritoComDocumentos {
     tem_matricula: boolean;
 }
 
+export interface ContatoAluno {
+    nome: string;
+    email: string | null;
+    matricula: number | null;
+    curso_nome: string | null;
+}
+
 export interface CriarDocumentoDTO {
     aluno_id: string;
     tipo_documento: string;
@@ -94,13 +101,39 @@ export class DocumentoRepository {
         return count > 0;
     }
 
-    async contarDocumentosPendentesOuReprovados(alunoId: string): Promise<number> {
-        const result = await db("documento")
+    async validarDoAluno(alunoId: string, status: string, observacao?: string): Promise<Documento[]> {
+        return db("documento")
             .where({ aluno_id: alunoId })
-            .whereIn("status", ["PENDENTE", "REPROVADO"])
+            .whereNot({ status })
+            .update({ status, observacao: observacao ?? null, updated_at: db.fn.now() })
+            .returning("*");
+    }
+
+    async listarReprovadosDoAluno(alunoId: string): Promise<Documento[]> {
+        return db
+            .from(this.ultimosPorTipo(alunoId))
+            .select("*")
+            .whereRaw("upper(status) = ?", ["REPROVADO"])
+            .orderBy("tipo_documento");
+    }
+
+    private ultimosPorTipo(alunoId: string) {
+        return db("documento")
+            .distinctOn("tipo_documento")
+            .where({ aluno_id: alunoId })
+            .orderBy("tipo_documento")
+            .orderBy("created_at", "desc")
+            .as("ultimos");
+    }
+
+    async contarDocumentosPendentesOuReprovados(alunoId: string): Promise<number> {
+        const result = await db
+            .from(this.ultimosPorTipo(alunoId))
+            .whereRaw("upper(status) in (?, ?)", ["PENDENTE", "REPROVADO"])
             .count("id as count")
             .first();
-        return Number(result?.count ?? 0);
+
+        return Number((result as any)?.count ?? 0);
     }
 
     async listarInscritos(): Promise<InscritoComDocumentos[]> {
@@ -133,6 +166,23 @@ export class DocumentoRepository {
             documentos_reprovados: Number(linha.documentos_reprovados ?? 0),
             tem_matricula: Boolean(linha.tem_matricula),
         }));
+    }
+
+    async buscarContatoDoAluno(alunoId: string): Promise<ContatoAluno | null> {
+        const linha = await db("aluno as a")
+            .join("pessoa as p", "a.pessoa_id", "p.id")
+            .leftJoin("usuario as u", "a.usuario_id", "u.id")
+            .leftJoin("curso as c", "a.curso_id", "c.id")
+            .where("a.id", alunoId)
+            .select(
+                "p.nome",
+                "u.email",
+                "a.matricula",
+                "c.nome as curso_nome",
+            )
+            .first();
+
+        return linha ?? null;
     }
 
     async buscarAlunoPorUsuarioId(usuarioId: string): Promise<{ id: string } | null> {

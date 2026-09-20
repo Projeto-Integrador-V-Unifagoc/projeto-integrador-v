@@ -53,13 +53,12 @@ export default function Usuarios() {
     nome: "",
     email: "",
     senha: "",
-    tipo_usuario: Perfil.ALUNO,
+    tipo_usuario: Perfil.PROFESSOR,
     aluno_id: "",
     professor_id: "",
   });
 
-  // Alunos/professores sem login, para os seletores de vínculo no cadastro de usuário.
-  const [alunosDisponiveis, setAlunosDisponiveis] = useState<any[]>([]);
+  // Professores sem login, para o seletor de vínculo no cadastro de usuário.
   const [professoresDisponiveis, setProfessoresDisponiveis] = useState<any[]>([]);
 
   // Vínculo atual ao editar (não vem na lista de "disponíveis", pois já tem login).
@@ -79,22 +78,19 @@ export default function Usuarios() {
     try {
       setLoading(true);
       const response = await usuarioApi.get("/usuarios");
-      setRows(Array.isArray(response.data) ? response.data : []);
+      const lista = Array.isArray(response.data) ? response.data : [];
+
+      setRows(
+        lista.filter(
+          (usuario: any) =>
+            String(usuario?.tipo_usuario ?? "").trim().toLowerCase() !== Perfil.ALUNO,
+        ),
+      );
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
       setRows([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const carregarAlunosDisponiveis = async () => {
-    try {
-      const response = await usuarioApi.get("/alunos-disponiveis");
-      setAlunosDisponiveis(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error("Erro ao carregar alunos disponíveis:", error);
-      setAlunosDisponiveis([]);
     }
   };
 
@@ -109,7 +105,6 @@ export default function Usuarios() {
   };
 
   const carregarVinculos = () => {
-    carregarAlunosDisponiveis();
     carregarProfessoresDisponiveis();
   };
 
@@ -133,7 +128,7 @@ export default function Usuarios() {
       nome: "",
       email: "",
       senha: "",
-      tipo_usuario: Perfil.ALUNO,
+      tipo_usuario: Perfil.PROFESSOR,
       aluno_id: "",
       professor_id: "",
     });
@@ -281,19 +276,6 @@ export default function Usuarios() {
     }
   };
 
-  // Inclui o vínculo atual nas opções.
-  const opcoesAlunos = [...alunosDisponiveis];
-  if (
-    vinculoAtual.aluno_id &&
-    !opcoesAlunos.some((a) => a.id === vinculoAtual.aluno_id)
-  ) {
-    opcoesAlunos.unshift({
-      id: vinculoAtual.aluno_id,
-      nome: vinculoAtual.aluno_nome,
-      cpf: vinculoAtual.aluno_cpf,
-    });
-  }
-
   const opcoesProfessores = [...professoresDisponiveis];
   if (
     vinculoAtual.professor_id &&
@@ -344,7 +326,7 @@ export default function Usuarios() {
   }
 
   if (!podeGerenciarUsuarios) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return (
@@ -467,38 +449,10 @@ export default function Usuarios() {
                   })
                 }
               >
-                <MenuItem value={Perfil.ALUNO}>Aluno</MenuItem>
                 <MenuItem value={Perfil.PROFESSOR}>Professor</MenuItem>
                 <MenuItem value={Perfil.SECRETARIA}>Secretaria</MenuItem>
                 <MenuItem value={Perfil.ADMINISTRADOR}>Administrador</MenuItem>
               </TextField>
-
-              {usuarioForm.tipo_usuario === Perfil.ALUNO && (
-                <TextField
-                  select
-                  label="Vincular ao aluno (opcional)"
-                  fullWidth
-                  value={usuarioForm.aluno_id}
-                  onChange={(e) =>
-                    setUsuarioForm({ ...usuarioForm, aluno_id: e.target.value })
-                  }
-                  helperText={
-                    opcoesAlunos.length === 0
-                      ? "Nenhum aluno sem login disponível no momento."
-                      : "O login será ligado a este aluno, e o perfil mostrará os dados dele."
-                  }
-                >
-                  <MenuItem value="">
-                    <em>Não vincular</em>
-                  </MenuItem>
-                  {opcoesAlunos.map((aluno) => (
-                    <MenuItem key={aluno.id} value={aluno.id}>
-                      {aluno.nome}
-                      {aluno.cpf ? ` — ${aluno.cpf}` : ""}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
 
               {usuarioForm.tipo_usuario === Perfil.PROFESSOR && (
                 <TextField

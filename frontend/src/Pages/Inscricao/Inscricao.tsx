@@ -7,6 +7,7 @@ import {
     CircularProgress,
     Divider,
     FormControl,
+    LinearProgress,
     InputLabel,
     MenuItem,
     Paper,
@@ -24,13 +25,15 @@ import {
     Toolbar,
     Typography,
 } from "@mui/material";
-import { CheckCircle, GraduationCap, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, CheckCircle, GraduationCap, Mail, Phone, Upload } from "lucide-react";
+
+import { COR_BORDA, COR_DESTAQUE, COR_INSTITUCIONAL, GRADIENTE_CLARO, irParaPortal } from "../LandingPage/conteudo";
 import { useViaCep } from "../../hooks/use-cep";
-import { useCurso } from "../../hooks/use-curso";
-import { cursoApi } from "../../services/curso-api";
-import { api } from "../../lib/axios";
+import { inscricaoPublicaApi } from "../../services/site-api";
 import TextField from "../../components/TextField";
 import Button from "../../components/Button";
+import CampoSenha, { senhaForte } from "../../components/CampoSenha";
 import { cpfValido } from "../../utils/cpf";
 
 const TIPOS_DOCUMENTO = [
@@ -66,6 +69,28 @@ interface FormDados {
     nome: string;
     cpf: string;
     dataNascimento: string;
+    email: string;
+    senha: string;
+    confirmarSenha: string;
+}
+
+const DADOS_INICIAIS: FormDados = {
+    nome: "", cpf: "", dataNascimento: "", email: "", senha: "", confirmarSenha: "",
+};
+
+const REQUISITOS_SENHA =
+    "Mínimo de 8 caracteres, com maiúscula, minúscula, número e caractere especial.";
+
+const FORMATO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const EMAIL_EM_USO =
+    "Este e-mail já está cadastrado. Use outro endereço ou entre no portal com ele.";
+
+function mensagemCpfEmUso(matricula: number | null): string {
+    if (matricula) {
+        return `Este CPF já tem inscrição na instituição (matrícula ${matricula}). Entre no portal ou fale com a secretaria.`;
+    }
+    return "Já existe um cadastro com este CPF. Fale com a secretaria para continuar.";
 }
 
 interface FormEndereco {
@@ -111,11 +136,12 @@ function formatCep(value: string): string {
 }
 
 export default function Inscricao() {
+    const navigate = useNavigate();
     const { buscarCep, carregando: buscandoCep } = useViaCep();
-    const { listarCursos, carregando: carregandoCursos } = useCurso();
 
+    const [carregandoCursos, setCarregandoCursos] = useState(true);
     const [activeStep, setActiveStep] = useState(0);
-    const [dados, setDados] = useState<FormDados>({ nome: "", cpf: "", dataNascimento: "" });
+    const [dados, setDados] = useState<FormDados>(DADOS_INICIAIS);
     const [endereco, setEndereco] = useState<FormEndereco>({
         cep: "", logradouro: "", numero: "", bairro: "", cidadeIbge: "", cidadeNome: "", estado: "",
     });
@@ -134,9 +160,11 @@ export default function Inscricao() {
     const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     useEffect(() => {
-        listarCursos()
-            .then((data: Curso[]) => setCursos(Array.isArray(data) ? data : []))
-            .catch(() => setCursos([]));
+        inscricaoPublicaApi
+            .cursos()
+            .then((data) => setCursos(Array.isArray(data) ? data : []))
+            .catch(() => setCursos([]))
+            .finally(() => setCarregandoCursos(false));
     }, []);
 
     useEffect(() => {
@@ -145,7 +173,7 @@ export default function Inscricao() {
             return;
         }
         setCarregandoMatriz(true);
-        cursoApi.listarMatrizCurricular(cursoId, 1)
+        inscricaoPublicaApi.matrizCurricular(cursoId, 1)
             .then((data) => setMatrizPeriodo1(Array.isArray(data) ? data : []))
             .catch(() => setMatrizPeriodo1([]))
             .finally(() => setCarregandoMatriz(false));
@@ -165,11 +193,14 @@ export default function Inscricao() {
             if (!dados.nome.trim()) e.nome = "Nome obrigatório.";
             if (!cpfValido(dados.cpf)) e.cpf = "Informe um CPF válido.";
             if (!dados.dataNascimento) e.dataNascimento = "Data de nascimento obrigatória.";
+            if (!FORMATO_EMAIL.test(dados.email.trim())) e.email = "Informe um e-mail válido.";
+            if (!senhaForte(dados.senha)) e.senha = REQUISITOS_SENHA;
+            if (dados.senha !== dados.confirmarSenha) e.confirmarSenha = "As senhas não conferem.";
         }
         if (step === 1) {
             if (endereco.cep.replace(/\D/g, "").length !== 8) e.cep = "CEP inválido.";
             if (!endereco.logradouro.trim()) e.logradouro = "Logradouro obrigatório.";
-            if (!endereco.numero.trim()) e.numero = "Número obrigatório.";
+            if (!endereco.numero.trim()) e.numero = 'Informe o número ou "S/N".';
             if (!endereco.bairro.trim()) e.bairro = "Bairro obrigatório.";
             if (!endereco.cidadeIbge) e.cidadeIbge = "Busque um CEP válido para preencher a cidade.";
         }
@@ -187,12 +218,39 @@ export default function Inscricao() {
         return e;
     }
 
-    async function cpfJaCadastrado(cpf: string): Promise<boolean> {
+    function definirErro(campo: string, mensagem: string | null) {
+        setErros((atual) => {
+            const proximo = { ...atual };
+            if (mensagem) proximo[campo] = mensagem;
+            else delete proximo[campo];
+            return proximo;
+        });
+    }
+
+    async function checarCpfCadastrado(): Promise<string | null> {
+        if (!cpfValido(dados.cpf)) return null;
+
         try {
-            const { data } = await api.get("/alunos/buscar", { params: { q: cpf.replace(/\D/g, "") } });
-            return Array.isArray(data) && data.length > 0;
+            const resultado = await inscricaoPublicaApi.cpfCadastrado(dados.cpf);
+            const mensagem = resultado.cadastrado ? mensagemCpfEmUso(resultado.matricula) : null;
+            definirErro("cpf", mensagem);
+            return mensagem;
         } catch {
-            return false;
+            return null;
+        }
+    }
+
+    async function checarEmailCadastrado(): Promise<string | null> {
+        const email = dados.email.trim();
+        if (!FORMATO_EMAIL.test(email)) return null;
+
+        try {
+            const cadastrado = await inscricaoPublicaApi.emailCadastrado(email);
+            const mensagem = cadastrado ? EMAIL_EM_USO : null;
+            definirErro("email", mensagem);
+            return mensagem;
+        } catch {
+            return null;
         }
     }
 
@@ -202,10 +260,14 @@ export default function Inscricao() {
 
         if (activeStep === 0) {
             setVerificandoCpf(true);
-            const existe = await cpfJaCadastrado(dados.cpf);
+            const [erroCpf, erroEmail] = await Promise.all([checarCpfCadastrado(), checarEmailCadastrado()]);
             setVerificandoCpf(false);
-            if (existe) {
-                setErros({ cpf: "Já existe uma matrícula ativa ou pendente para este CPF." });
+
+            if (erroCpf || erroEmail) {
+                setErros({
+                    ...(erroCpf ? { cpf: erroCpf } : {}),
+                    ...(erroEmail ? { email: erroEmail } : {}),
+                });
                 return;
             }
         }
@@ -256,12 +318,16 @@ export default function Inscricao() {
             const payload = {
                 periodo: 1,
                 curso: cursoId,
+                usuario: {
+                    email: dados.email.trim().toLowerCase(),
+                    senha: dados.senha,
+                },
                 pessoa: {
                     cpf: dados.cpf.replace(/\D/g, ""),
                     nome: dados.nome.trim(),
                     dataNascimento: dados.dataNascimento,
                     logradouro: endereco.logradouro.trim(),
-                    numero: Number(endereco.numero),
+                    numero: endereco.numero.trim(),
                     bairro: endereco.bairro.trim(),
                     cidadeIbge: endereco.cidadeIbge,
                     estado: endereco.estado,
@@ -269,14 +335,10 @@ export default function Inscricao() {
                 },
             };
 
-            const { data: alunoCreated } = await api.post("/alunos", payload);
+            const alunoCreated = await inscricaoPublicaApi.inscrever(payload);
 
             for (const doc of documentos) {
-                const form = new FormData();
-                form.append("aluno_id", alunoCreated.id);
-                form.append("tipo_documento", doc.tipo);
-                form.append("arquivo", doc.arquivo);
-                await api.post("/documentos", form);
+                await inscricaoPublicaApi.enviarDocumento(alunoCreated.id, doc.tipo, doc.arquivo);
             }
 
             setMatriculaGerada(alunoCreated.matricula ? String(alunoCreated.matricula) : null);
@@ -290,6 +352,9 @@ export default function Inscricao() {
             if (/cpf/i.test(mensagem)) {
                 setErros({ cpf: mensagem });
                 setActiveStep(0);
+            } else if (/e-?mail/i.test(mensagem)) {
+                setErros({ email: mensagem });
+                setActiveStep(0);
             }
 
             setSnackbar({ aberto: true, mensagem, severidade: "error" });
@@ -300,7 +365,7 @@ export default function Inscricao() {
 
     function resetar() {
         setActiveStep(0);
-        setDados({ nome: "", cpf: "", dataNascimento: "" });
+        setDados(DADOS_INICIAIS);
         setEndereco({ cep: "", logradouro: "", numero: "", bairro: "", cidadeIbge: "", cidadeNome: "", estado: "" });
         setCursoId("");
         setMatrizPeriodo1([]);
@@ -330,6 +395,7 @@ export default function Inscricao() {
                 value={dados.cpf}
                 placeholder="000.000.000-00"
                 onChange={(e) => setDados((d) => ({ ...d, cpf: formatCpf(e.target.value) }))}
+                onBlur={() => void checarCpfCadastrado()}
                 error={!!erros.cpf}
                 helperText={erros.cpf}
                 InputLabelProps={{ shrink: true }}
@@ -342,6 +408,45 @@ export default function Inscricao() {
                 error={!!erros.dataNascimento}
                 helperText={erros.dataNascimento}
                 InputLabelProps={{ shrink: true }}
+            />
+
+            <Divider sx={{ pt: 1 }} />
+
+            <Typography variant="subtitle1" fontWeight={700}>Acesso ao portal</Typography>
+            <Alert severity="info">
+                Guarde este e-mail e senha: o acesso ao portal do aluno é liberado assim que a secretaria aprovar a sua
+                documentação.
+            </Alert>
+
+            <TextField
+                label="E-mail *"
+                type="email"
+                placeholder="voce@exemplo.com"
+                value={dados.email}
+                onChange={(e) => setDados((d) => ({ ...d, email: e.target.value }))}
+                onBlur={() => void checarEmailCadastrado()}
+                error={!!erros.email}
+                helperText={erros.email ?? "Será o seu login no portal do aluno."}
+                InputLabelProps={{ shrink: true }}
+            />
+            <CampoSenha
+                label="Senha *"
+                value={dados.senha}
+                onChange={(valor) => setDados((d) => ({ ...d, senha: valor }))}
+                error={!!erros.senha}
+                helperText={erros.senha}
+                mostrarForca
+                mostrarRequisitos
+            />
+            <CampoSenha
+                label="Confirmar senha *"
+                value={dados.confirmarSenha}
+                onChange={(valor) => setDados((d) => ({ ...d, confirmarSenha: valor }))}
+                error={!!erros.confirmarSenha}
+                helperText={
+                    erros.confirmarSenha ??
+                    (dados.confirmarSenha && dados.senha === dados.confirmarSenha ? "As senhas conferem." : undefined)
+                }
             />
         </Stack>
     );
@@ -384,7 +489,8 @@ export default function Inscricao() {
                 <TextField
                     label="Número *"
                     value={endereco.numero}
-                    onChange={(e) => setEndereco((d) => ({ ...d, numero: e.target.value }))}
+                    placeholder="120 ou S/N"
+                    onChange={(e) => setEndereco((d) => ({ ...d, numero: e.target.value.slice(0, 20) }))}
                     error={!!erros.numero}
                     helperText={erros.numero}
                     InputLabelProps={{ shrink: true }}
@@ -451,6 +557,13 @@ export default function Inscricao() {
                     <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{erros.cursoId}</Typography>
                 )}
             </FormControl>
+
+            {!carregandoCursos && cursos.length === 0 && (
+                <Alert severity="warning">
+                    Nenhum curso com inscrições abertas no momento. Se o problema persistir, entre em contato com a
+                    secretaria.
+                </Alert>
+            )}
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <Box
@@ -733,7 +846,14 @@ export default function Inscricao() {
             <Typography variant="body2" color="text.secondary">
                 Aguarde a confirmação da secretaria. Os documentos enviados serão analisados em breve.
             </Typography>
-            <Button variant="outlined" sx={{ width: "auto", minWidth: 200, mt: 1 }} onClick={resetar}>
+
+            <Alert severity="info" sx={{ textAlign: "left", maxWidth: 560 }}>
+                O acesso ao portal é liberado quando a secretaria aprovar a sua documentação. Assim que isso acontecer,
+                você receberá um e-mail em <strong>{dados.email || "seu e-mail"}</strong> com o link para entrar, usando
+                a senha que acabou de cadastrar.
+            </Alert>
+
+            <Button variant="outlined" sx={{ width: "auto", minWidth: 200, height: 46, borderRadius: 2, mt: 1 }} onClick={resetar}>
                 Nova inscrição
             </Button>
         </Stack>
@@ -742,11 +862,50 @@ export default function Inscricao() {
     const stepContent = [step0, step1, step2, step3, step4, step5];
 
     return (
-        <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
-            <AppBar position="static" color="primary" elevation={1}>
-                <Toolbar>
-                    <GraduationCap size={22} style={{ marginRight: 10 }} />
-                    <Typography variant="h6" fontWeight={700}>unieduca — Inscrição</Typography>
+        <Box sx={{ minHeight: "100vh", bgcolor: "#fff", display: "flex", flexDirection: "column" }}>
+            <AppBar position="sticky" elevation={0} sx={{ bgcolor: "#fff", borderBottom: `1px solid ${COR_BORDA}` }}>
+                <Toolbar sx={{ maxWidth: 1180, width: "100%", mx: "auto", px: { xs: 2, md: 4 }, minHeight: 68 }}>
+                    <Stack
+                        direction="row"
+                        spacing={1.2}
+                        alignItems="center"
+                        sx={{ flexGrow: 1, cursor: "pointer" }}
+                        onClick={() => navigate("/")}
+                    >
+                        <Box
+                            sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1.6,
+                                bgcolor: COR_INSTITUCIONAL,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <GraduationCap size={20} color="#fff" />
+                        </Box>
+                        <Typography sx={{ fontSize: 20, fontWeight: 800, color: COR_INSTITUCIONAL }}>
+                            Uni<Box component="span" sx={{ color: COR_DESTAQUE }}>Educa</Box>
+                        </Typography>
+                    </Stack>
+
+                    <Button
+                        variant="text"
+                        sx={{ width: "auto", color: "#5b6472", fontSize: 14.5, display: { xs: "none", sm: "flex" } }}
+                        onClick={() => navigate("/")}
+                    >
+                        <ArrowLeft size={16} style={{ marginRight: 6 }} />
+                        Voltar ao site
+                    </Button>
+
+                    <Button
+                        variant="outlined"
+                        sx={{ width: "auto", ml: 1.5, height: 40, px: 2.5, fontSize: 14.5, borderRadius: 2 }}
+                        onClick={() => irParaPortal(navigate)}
+                    >
+                        Já tenho acesso
+                    </Button>
                 </Toolbar>
             </AppBar>
 
@@ -766,32 +925,91 @@ export default function Inscricao() {
                 </Alert>
             </Snackbar>
 
-            <Stack alignItems="center" py={4} px={2} spacing={4}>
+            <Box
+                component="section"
+                sx={{
+                    background: GRADIENTE_CLARO,
+                    borderBottom: `1px solid ${COR_BORDA}`,
+                    py: { xs: 4, md: 5.5 },
+                }}
+            >
+                <Box sx={{ maxWidth: 860, mx: "auto", px: { xs: 3, md: 2 } }}>
+                    <Typography
+                        component="h1"
+                        sx={{ color: COR_INSTITUCIONAL, fontWeight: 800, fontSize: { xs: "1.7rem", md: "2.2rem" }, lineHeight: 1.2 }}
+                    >
+                        Inscrição online
+                    </Typography>
+                    <Typography sx={{ color: "#5b6472", fontSize: { xs: ".96rem", md: "1.05rem" }, mt: 1.2, lineHeight: 1.7 }}>
+                        Preencha os dados, envie os documentos e acompanhe a validação pelo portal do aluno. Leva poucos
+                        minutos e não tem taxa.
+                    </Typography>
+
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap mt={2.5}>
+                        {["Sem taxa de inscrição", "Ingresso pela nota do ENEM", "100% online"].map((item) => (
+                            <Chip
+                                key={item}
+                                label={item}
+                                size="small"
+                                sx={{ bgcolor: "#fff", color: COR_INSTITUCIONAL, fontWeight: 600, border: `1px solid ${COR_BORDA}` }}
+                            />
+                        ))}
+                    </Stack>
+                </Box>
+            </Box>
+
+            <Stack alignItems="center" py={{ xs: 3, md: 5 }} px={2} spacing={3.5} sx={{ flex: 1 }}>
                 <Box sx={{ width: "100%", maxWidth: 860 }}>
-                    <Stepper activeStep={activeStep} alternativeLabel>
+                    <Stepper activeStep={activeStep} alternativeLabel sx={{ display: { xs: "none", sm: "flex" } }}>
                         {STEPS.map((label) => (
                             <Step key={label}><StepLabel>{label}</StepLabel></Step>
                         ))}
                     </Stepper>
+
+                    <Box sx={{ display: { xs: "block", sm: "none" } }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="baseline" mb={1}>
+                            <Typography sx={{ fontWeight: 700, color: COR_INSTITUCIONAL, fontSize: "1rem" }}>
+                                {STEPS[activeStep]}
+                            </Typography>
+                            <Typography sx={{ fontSize: ".82rem", color: "text.secondary" }}>
+                                Etapa {Math.min(activeStep + 1, STEPS.length)} de {STEPS.length}
+                            </Typography>
+                        </Stack>
+                        <LinearProgress
+                            variant="determinate"
+                            value={((activeStep + 1) / STEPS.length) * 100}
+                            sx={{ height: 6, borderRadius: 999 }}
+                        />
+                    </Box>
                 </Box>
 
                 <Paper
                     elevation={0}
-                    sx={(t) => ({
+                    sx={{
                         width: "100%",
                         maxWidth: 860,
-                        border: `1px solid ${t.palette.grey[200]}`,
-                        borderRadius: 2,
-                        p: { xs: 2, sm: 4 },
-                    })}
+                        bgcolor: "#fff",
+                        border: `1px solid ${COR_BORDA}`,
+                        borderRadius: 3,
+                        boxShadow: "0 10px 30px rgba(20,104,143,.07)",
+                        p: { xs: 2.5, sm: 4 },
+                    }}
                 >
                     {stepContent[activeStep]}
 
                     {activeStep < 5 && (
-                        <Stack direction="row" justifyContent="space-between" mt={4}>
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            mt={4}
+                            pt={3}
+                            sx={{ borderTop: `1px solid ${COR_BORDA}` }}
+                        >
                             {activeStep > 0 ? (
-                                <Button variant="outlined" sx={{ width: "auto", minWidth: 120 }} onClick={voltar}>
-                                    ← Anterior
+                                <Button variant="outlined" sx={{ width: "auto", minWidth: 120, height: 46, borderRadius: 2 }} onClick={voltar}>
+                                    <ArrowLeft size={16} style={{ marginRight: 6 }} />
+                                    Anterior
                                 </Button>
                             ) : (
                                 <Box />
@@ -799,17 +1017,18 @@ export default function Inscricao() {
                             {activeStep < 4 && (
                                 <Button
                                     variant="contained"
-                                    sx={{ width: "auto", minWidth: 140 }}
+                                    sx={{ width: "auto", minWidth: 150, height: 46, borderRadius: 2 }}
                                     isLoading={verificandoCpf}
                                     onClick={() => void avancar()}
                                 >
-                                    Próximo →
+                                    Continuar
+                                    <ArrowRight size={16} style={{ marginLeft: 6 }} />
                                 </Button>
                             )}
                             {activeStep === 4 && (
                                 <Button
                                     variant="contained"
-                                    sx={{ width: "auto", minWidth: 200 }}
+                                    sx={{ width: "auto", minWidth: 210, height: 46, borderRadius: 2 }}
                                     isLoading={enviando}
                                     onClick={() => void handleEnviar()}
                                 >
@@ -819,6 +1038,32 @@ export default function Inscricao() {
                         </Stack>
                     )}
                 </Paper>
+
+                <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={{ xs: 1, sm: 3 }}
+                    alignItems="center"
+                    justifyContent="center"
+                    sx={{ width: "100%", maxWidth: 860 }}
+                >
+                    <Typography sx={{ fontSize: ".9rem", color: "text.secondary" }}>
+                        Ficou com dúvida? Fale com a secretaria:
+                    </Typography>
+                    <Stack direction="row" spacing={2.5}>
+                        <Stack direction="row" spacing={.7} alignItems="center">
+                            <Phone size={15} color={COR_DESTAQUE} />
+                            <Typography sx={{ fontSize: ".9rem", color: COR_INSTITUCIONAL, fontWeight: 600 }}>
+                                (32) 3000-0000
+                            </Typography>
+                        </Stack>
+                        <Stack direction="row" spacing={.7} alignItems="center">
+                            <Mail size={15} color={COR_DESTAQUE} />
+                            <Typography sx={{ fontSize: ".9rem", color: COR_INSTITUCIONAL, fontWeight: 600 }}>
+                                contato@unieduca.net.br
+                            </Typography>
+                        </Stack>
+                    </Stack>
+                </Stack>
             </Stack>
         </Box>
     );

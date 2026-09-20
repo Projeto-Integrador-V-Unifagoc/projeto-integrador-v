@@ -170,6 +170,16 @@ export class AlunoRepository {
                 periodo: dados.periodo
             });
 
+        if (dados.email !== undefined && aluno.usuario_id) {
+            const email = String(dados.email).trim().toLowerCase();
+
+            if (email) {
+                await db("usuario")
+                    .where({ id: aluno.usuario_id })
+                    .update({ email, nome: dados.nome });
+            }
+        }
+
         return this.buscarAlunoPorMatricula(matricula);
     }
 }

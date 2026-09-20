@@ -32,5 +32,6 @@ documentoRouter.get("/documentos/inscritos", soSecretaria, (req, res) => control
 documentoRouter.get("/documentos/aluno/:alunoId", (req, res) => controller.listarPorAluno(req, res));
 documentoRouter.get("/documentos/:id/arquivo", (req, res) => controller.arquivo(req, res));
 documentoRouter.get("/documentos", soSecretaria, (req, res) => controller.listarTodos(req, res));
+documentoRouter.patch("/documentos/aluno/:alunoId/validar-todos", soSecretaria, (req, res) => controller.validarTodosDoAluno(req, res));
 documentoRouter.patch("/documentos/:id/validar", soSecretaria, (req, res) => controller.validar(req, res));
 documentoRouter.delete("/documentos/:id", soSecretaria, (req, res) => controller.deletar(req, res));

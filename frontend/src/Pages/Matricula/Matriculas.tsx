@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Alert, Chip, IconButton, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { CheckCircle, FileText } from "lucide-react";
@@ -11,6 +12,7 @@ import Button from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
 import DocumentosAlunoDialog from "../../components/DocumentosAluno/DocumentosAlunoDialog";
 import { useMatricula } from "../../hooks/use-matricula";
+import { documentoApi } from "../../services/documento-api";
 import type { MatriculaDetalhada } from "../../models/matricula-model";
 import {
     documentacaoRegular,
@@ -35,6 +37,7 @@ function mensagemErro(err: unknown, fallback: string): string {
 }
 
 export default function Matriculas() {
+    const navigate = useNavigate();
     const { listarTodas, aprovarMatricula, carregando } = useMatricula();
 
     const [matriculas, setMatriculas] = useState<MatriculaDetalhada[]>([]);
@@ -43,6 +46,7 @@ export default function Matriculas() {
     const [filtroCurso, setFiltroCurso] = useState("");
     const [filtroDocumentacao, setFiltroDocumentacao] = useState("");
     const [alerta, setAlerta] = useState<{ tipo: "success" | "error"; mensagem: string } | null>(null);
+    const [aguardandoDocumentos, setAguardandoDocumentos] = useState(0);
     const [aprovando, setAprovando] = useState<MatriculaDetalhada | null>(null);
     const [confirmando, setConfirmando] = useState(false);
     const [documentosDe, setDocumentosDe] = useState<MatriculaDetalhada | null>(null);
@@ -58,6 +62,15 @@ export default function Matriculas() {
     useEffect(() => {
         void carregar();
     }, [carregar]);
+
+    useEffect(() => {
+        documentoApi
+            .listarInscritos()
+            .then((inscritos) =>
+                setAguardandoDocumentos(inscritos.filter((i) => !i.tem_matricula && i.documentos_total > 0).length),
+            )
+            .catch(() => setAguardandoDocumentos(0));
+    }, [matriculas]);
 
     const cursos = useMemo(
         () => Array.from(new Set(matriculas.map((m) => m.curso_nome).filter(Boolean))).sort(),
@@ -205,6 +218,24 @@ export default function Matriculas() {
                 >
                     Matrículas
                 </SearchTextField>
+
+                {aguardandoDocumentos > 0 && (
+                    <Alert
+                        severity="info"
+                        action={
+                            <Button
+                                variant="text"
+                                sx={{ width: "auto" }}
+                                onClick={() => navigate("/documentos/envio")}
+                            >
+                                Ir para Documentos
+                            </Button>
+                        }
+                    >
+                        {aguardandoDocumentos} inscrição(ões) aguardando validação dos documentos. A matrícula só é
+                        criada depois que a documentação é aprovada.
+                    </Alert>
+                )}
 
                 <Stack direction={{ xs: "column", sm: "row" }} gap={2} alignItems="center" flexWrap="wrap">
                     <TextField

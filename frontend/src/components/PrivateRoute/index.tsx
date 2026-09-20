@@ -28,7 +28,7 @@ export function PrivateRoute({
     perfisPermitidos &&
     !perfisPermitidos.includes(usuario.tipo_usuario)
   ) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return children;

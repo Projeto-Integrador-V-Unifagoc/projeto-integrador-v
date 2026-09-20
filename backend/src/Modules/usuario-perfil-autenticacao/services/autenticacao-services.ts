@@ -99,6 +99,12 @@ class AutenticacaoService {
       throw new Error('Senha inválida');
     }
 
+    if (usuario.acesso_liberado === false) {
+      throw new Error(
+        'Seu acesso ainda não foi liberado. Ele é liberado quando a secretaria aprova a sua documentação — você receberá um e-mail avisando.'
+      );
+    }
+
     const token = jwt.sign(
       {
         id: usuario.id,

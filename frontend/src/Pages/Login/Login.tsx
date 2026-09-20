@@ -29,7 +29,7 @@ export const Login = () => {
             notificar('Login realizado com sucesso!', 'success');
 
             // Todos os perfis (aluno, professor, secretaria) caem na página principal.
-            navigate('/');
+            navigate('/home');
         } catch (error: any) {
             console.error('Erro no login:', error);
             notificar(error.response?.data?.message || 'E-mail ou senha incorretos.', 'error');
