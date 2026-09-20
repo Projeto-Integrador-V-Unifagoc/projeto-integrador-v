@@ -6,6 +6,12 @@ import fs from "fs";
 import { DocumentoController } from "../modulo-documentos/controller/DocumentoController.js";
 import { autenticar } from "../../middlewares/autenticacao.js";
 import { soSecretaria } from "../../middlewares/autorizacao.js";
+import {
+    extensaoAceita,
+    mimeAceito,
+    tratarErroDeUpload,
+    MENSAGEM_FORMATOS,
+} from "../modulo-documentos/service/ValidacaoArquivo.js";
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.resolve(process.cwd(), "uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const storage = multer.diskStorage({
@@ -19,15 +25,21 @@ const upload = multer({
     storage,
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-        const allowed = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
-        if (allowed.includes(file.mimetype)) return cb(null, true);
-        cb(new Error("Apenas PDF, JPG e PNG são aceitos."));
+        if (extensaoAceita(file.originalname) && mimeAceito(file.mimetype)) return cb(null, true);
+        cb(new Error(MENSAGEM_FORMATOS));
     },
 });
 const controller = new DocumentoController();
 export const documentoRouter = Router();
 documentoRouter.use(autenticar);
-documentoRouter.post("/documentos", upload.single("arquivo"), (req, res) => controller.upload(req, res));
+const receberArquivo = (req: any, res: any, next: any) =>
+    upload.single("arquivo")(req, res, (erro: unknown) => {
+        const tratado = tratarErroDeUpload(erro);
+        if (tratado) return res.status(tratado.status).json({ error: tratado.mensagem });
+        next();
+    });
+
+documentoRouter.post("/documentos", receberArquivo, (req, res) => controller.upload(req, res));
 documentoRouter.get("/documentos/inscritos", soSecretaria, (req, res) => controller.listarInscritos(req, res));
 documentoRouter.get("/documentos/aluno/:alunoId", (req, res) => controller.listarPorAluno(req, res));
 documentoRouter.get("/documentos/:id/arquivo", (req, res) => controller.arquivo(req, res));

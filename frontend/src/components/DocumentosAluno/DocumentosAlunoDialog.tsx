@@ -243,7 +243,7 @@ export default function DocumentosAlunoDialog(props: DocumentosAlunoDialogProps)
                                                     <TableCell align="right">
                                                         <input
                                                             type="file"
-                                                            accept=".pdf,.jpg,.jpeg,.png"
+                                                            accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.zip"
                                                             style={{ display: "none" }}
                                                             ref={(el) => { inputRefs.current[tipo] = el; }}
                                                             onChange={(e) => {

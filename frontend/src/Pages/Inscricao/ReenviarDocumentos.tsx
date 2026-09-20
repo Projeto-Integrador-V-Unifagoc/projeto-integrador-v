@@ -146,8 +146,8 @@ export default function ReenviarDocumentos() {
                         Reenviar documentos
                     </Typography>
                     <Typography sx={{ color: "#5b6472", fontSize: { xs: ".95rem", md: "1.03rem" }, mt: 1.2, lineHeight: 1.7 }}>
-                        Envie de novo apenas os arquivos que não foram aceitos. Formatos: PDF, JPG ou PNG, até 10 MB
-                        cada.
+                        Envie de novo apenas os arquivos que não foram aceitos. Formatos: PDF, imagem (JPG, PNG,
+                        WEBP, GIF) ou ZIP, até 10 MB cada.
                     </Typography>
                 </Box>
             </Box>
@@ -211,7 +211,7 @@ export default function ReenviarDocumentos() {
                                                 <TableCell align="right">
                                                     <input
                                                         type="file"
-                                                        accept=".pdf,.jpg,.jpeg,.png"
+                                                        accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.zip"
                                                         style={{ display: "none" }}
                                                         ref={(el) => { inputRefs.current[tipo] = el; }}
                                                         onChange={(e) => {

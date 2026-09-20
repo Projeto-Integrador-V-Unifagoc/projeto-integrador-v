@@ -671,7 +671,8 @@ export default function Inscricao() {
             <Typography variant="h6" fontWeight={700}>Documentos</Typography>
             <Alert severity="info">
                 Para ingresso via ENEM, envie os documentos abaixo. Os marcados com <strong>*</strong> são obrigatórios
-                para concluir a inscrição. Formatos aceitos: PDF, JPG ou PNG (máx. 10 MB cada).
+                para concluir a inscrição. Formatos aceitos: PDF, imagem (JPG, PNG, WEBP, GIF) ou ZIP,
+                com no máximo 10 MB cada.
             </Alert>
 
             {erros.documentos && <Alert severity="error">{erros.documentos}</Alert>}
@@ -711,7 +712,7 @@ export default function Inscricao() {
                                     <TableCell align="right">
                                         <input
                                             type="file"
-                                            accept=".pdf,.jpg,.jpeg,.png"
+                                            accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.zip"
                                             style={{ display: "none" }}
                                             ref={(el) => { fileRefs.current[tipo] = el; }}
                                             onChange={(e) => {

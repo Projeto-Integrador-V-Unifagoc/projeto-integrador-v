@@ -6,6 +6,7 @@ import {
     DocumentoAuthContext,
     ErroAutorizacaoDocumento,
 } from "../service/DocumentoAuthContext";
+import { conferirConteudoDoArquivo } from "../service/ValidacaoArquivo";
 
 const service = new DocumentoService();
 const authContext = new DocumentoAuthContext();
@@ -40,6 +41,8 @@ export class DocumentoController {
                     error: "tipo_documento é obrigatório.",
                 });
             }
+
+            conferirConteudoDoArquivo(arquivo.path, arquivo.originalname);
 
             const doc = await service.criar({
                 aluno_id,

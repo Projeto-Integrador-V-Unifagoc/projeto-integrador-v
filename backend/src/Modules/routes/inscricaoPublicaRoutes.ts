@@ -9,6 +9,13 @@ import { AlunoService } from "../modulo-gestao-alunos/service/AlunoService.js";
 import { DocumentoService } from "../modulo-documentos/service/DocumentoService.js";
 import { CursoDisciplinaService } from "../modulo-estrutura-academica/service/CursoDisciplinaService.js";
 import { SiteService } from "../site/service/SiteService.js";
+import {
+    conferirConteudoDoArquivo,
+    extensaoAceita,
+    mimeAceito,
+    tratarErroDeUpload,
+    MENSAGEM_FORMATOS,
+} from "../modulo-documentos/service/ValidacaoArquivo.js";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.resolve(process.cwd(), "uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -22,9 +29,8 @@ const upload = multer({
     storage,
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-        const permitidos = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
-        if (permitidos.includes(file.mimetype)) return cb(null, true);
-        cb(new Error("Apenas PDF, JPG e PNG são aceitos."));
+        if (extensaoAceita(file.originalname) && mimeAceito(file.mimetype)) return cb(null, true);
+        cb(new Error(MENSAGEM_FORMATOS));
     },
 });
 
@@ -157,7 +163,14 @@ inscricaoPublicaRouter.get("/publico/inscricao/:alunoId/documentos-recusados", a
     }
 });
 
-inscricaoPublicaRouter.post("/publico/inscricao/documentos", upload.single("arquivo"), async (req, res) => {
+const receberArquivo = (req: any, res: any, next: any) =>
+    upload.single("arquivo")(req, res, (erro: unknown) => {
+        const tratado = tratarErroDeUpload(erro);
+        if (tratado) return res.status(tratado.status).json({ error: tratado.mensagem });
+        next();
+    });
+
+inscricaoPublicaRouter.post("/publico/inscricao/documentos", receberArquivo, async (req, res) => {
     try {
         const arquivo = req.file;
         const alunoId = String(req.body?.aluno_id ?? "").trim();
@@ -166,6 +179,8 @@ inscricaoPublicaRouter.post("/publico/inscricao/documentos", upload.single("arqu
         if (!arquivo) return res.status(400).json({ error: "Arquivo é obrigatório." });
         if (!alunoId) return res.status(400).json({ error: "aluno_id é obrigatório." });
         if (!tipoDocumento) return res.status(400).json({ error: "tipo_documento é obrigatório." });
+
+        conferirConteudoDoArquivo(arquivo.path, arquivo.originalname);
 
         const aluno = await db("aluno").where({ id: alunoId }).first();
         if (!aluno) return res.status(404).json({ error: "Inscrição não encontrada." });
