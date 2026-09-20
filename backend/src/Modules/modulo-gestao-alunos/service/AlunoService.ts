@@ -70,7 +70,7 @@ export class AlunoService {
                 email,
                 senha: await bcrypt.hash(senha, 10),
                 tipo_usuario: "aluno",
-                acesso_liberado: data.liberarAcesso === true,
+                acesso_liberado: false,
             })
             .returning("*");
 

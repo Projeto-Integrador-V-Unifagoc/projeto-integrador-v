@@ -6,7 +6,7 @@ import {
     DocumentoAuthContext,
     ErroAutorizacaoDocumento,
 } from "../service/DocumentoAuthContext";
-import { conferirConteudoDoArquivo } from "../service/ValidacaoArquivo";
+import { conferirConteudoDoArquivo, descartarArquivo } from "../service/ValidacaoArquivo";
 
 const service = new DocumentoService();
 const authContext = new DocumentoAuthContext();
@@ -14,9 +14,11 @@ const authContext = new DocumentoAuthContext();
 export class DocumentoController {
 
     async upload(req: any, res: any) {
+        const arquivo = req.file;
+        let persistido = false;
+
         try {
             const contexto = await authContext.obterContexto(req);
-            const arquivo = req.file;
             const { tipo_documento } = req.body;
 
             const aluno_id =
@@ -51,6 +53,7 @@ export class DocumentoController {
                 caminho_arquivo: arquivo.path,
             });
 
+            persistido = true;
             return res.status(201).json(doc);
 
         } catch (err: any) {
@@ -63,6 +66,8 @@ export class DocumentoController {
             return res.status(400).json({
                 error: err.message,
             });
+        } finally {
+            if (arquivo && !persistido) descartarArquivo(arquivo.path);
         }
     }
 

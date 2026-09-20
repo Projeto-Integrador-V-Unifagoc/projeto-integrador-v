@@ -95,9 +95,20 @@ export class DocumentoService {
         const pendentes = await this.repository.contarDocumentosPendentesOuReprovados(alunoId);
         if (pendentes > 0) return;
 
-        await this.matriculaService
+        const matricula = await this.matriculaService
             .matricularAutomaticamente(alunoId)
-            .catch((erro) => console.error("[documentos] falha ao matricular automaticamente:", erro));
+            .catch((erro) => {
+                console.error("[documentos] falha ao matricular automaticamente:", erro);
+                return null;
+            });
+
+        if (!matricula) {
+            console.warn(
+                `[documentos] documentação do aluno ${alunoId} está aprovada, mas nenhuma turma do período dele ` +
+                    "está disponível. O acesso ao portal continua bloqueado até a secretaria criar a matrícula.",
+            );
+            return;
+        }
 
         await this.liberarAcessoDoAluno(alunoId).catch((erro) =>
             console.error("[documentos] falha ao liberar o acesso do aluno:", erro),

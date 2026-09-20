@@ -417,7 +417,7 @@ class EmailService {
              <td align="center"
                  style="border-radius:10px;background:#05b5e6;
                         box-shadow:0 6px 18px rgba(5,181,230,.35);">
-               <a href="${dados.acao.url}"
+               <a href="${this.escaparHtml(dados.acao.url)}"
                   style="display:inline-block;padding:16px 38px;color:#ffffff;
                          text-decoration:none;font-weight:700;font-size:16px;
                          font-family:Arial,Helvetica,sans-serif;letter-spacing:.2px;">

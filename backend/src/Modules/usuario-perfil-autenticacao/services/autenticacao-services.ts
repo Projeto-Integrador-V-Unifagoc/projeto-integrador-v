@@ -99,7 +99,13 @@ class AutenticacaoService {
       throw new Error('Senha inválida');
     }
 
-    if (usuario.acesso_liberado === false) {
+    const ehAluno =
+      String(usuario.tipo_usuario ?? '').trim().toLowerCase() === 'aluno';
+
+    const semAcesso =
+      usuario.acesso_liberado === false || (ehAluno && !usuario.acesso_liberado);
+
+    if (semAcesso) {
       throw new Error(
         'Seu acesso ainda não foi liberado. Ele é liberado quando a secretaria aprova a sua documentação — você receberá um e-mail avisando.'
       );

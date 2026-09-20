@@ -11,6 +11,7 @@ import { CursoDisciplinaService } from "../modulo-estrutura-academica/service/Cu
 import { SiteService } from "../site/service/SiteService.js";
 import {
     conferirConteudoDoArquivo,
+    descartarArquivo,
     extensaoAceita,
     mimeAceito,
     tratarErroDeUpload,
@@ -171,8 +172,10 @@ const receberArquivo = (req: any, res: any, next: any) =>
     });
 
 inscricaoPublicaRouter.post("/publico/inscricao/documentos", receberArquivo, async (req, res) => {
+    const arquivo = req.file;
+    let persistido = false;
+
     try {
-        const arquivo = req.file;
         const alunoId = String(req.body?.aluno_id ?? "").trim();
         const tipoDocumento = String(req.body?.tipo_documento ?? "").trim();
 
@@ -201,8 +204,11 @@ inscricaoPublicaRouter.post("/publico/inscricao/documentos", receberArquivo, asy
             caminho_arquivo: arquivo.path,
         });
 
+        persistido = true;
         res.status(201).json(documento);
     } catch (error) {
         res.status(400).json({ error: (error as Error).message });
+    } finally {
+        if (arquivo && !persistido) descartarArquivo(arquivo.path);
     }
 });

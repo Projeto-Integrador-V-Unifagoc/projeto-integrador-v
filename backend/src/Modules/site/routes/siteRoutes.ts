@@ -11,7 +11,7 @@ import { somenteSecretariaOuAdmin } from "../../modulo-matricula/middlewares/per
 export const UPLOAD_SITE_DIR = process.env.UPLOAD_SITE_DIR ?? path.resolve(process.cwd(), "uploads-site");
 fs.mkdirSync(UPLOAD_SITE_DIR, { recursive: true });
 
-const FORMATOS = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif", "image/svg+xml"];
+const FORMATOS = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif"];
 
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, UPLOAD_SITE_DIR),

@@ -83,6 +83,16 @@ function lerCabecalho(caminho: string, tamanho = 32): Buffer {
     }
 }
 
+export function descartarArquivo(caminho?: string): void {
+    if (!caminho) return;
+
+    try {
+        if (fs.existsSync(caminho)) fs.unlinkSync(caminho);
+    } catch (erro) {
+        console.error("[upload] não foi possível remover o arquivo:", erro);
+    }
+}
+
 export function tratarErroDeUpload(erro: unknown): { status: number; mensagem: string } | null {
     if (!erro) return null;
 
