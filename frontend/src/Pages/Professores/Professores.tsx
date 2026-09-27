@@ -25,6 +25,7 @@ import { cursoDisciplinaApi } from "../../services/curso-disciplina-api";
 import { cursoApi } from "../../services/curso-api";
 import { faculdadeApi } from "../../services/faculdade-api";
 import { cidadeApi } from "../../services/cidade-api";
+import { useViaCep } from "../../hooks/use-cep";
 import type { Professor, AtualizarProfessorDTO } from "../../models/professor-model";
 import type { DisciplinaResponse } from "../../models/disciplina-model";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
@@ -73,6 +74,7 @@ export default function Professores() {
     const [filtroAtivo, setFiltroAtivo] = useState<"todos" | "ativos" | "inativos">("todos");
     const [filters, setFilters] = useState<{ codigo?: string; matricula?: string; periodo?: string }>({});
     const [editData, setEditData] = useState<ProfessorEditData>(initialProfessorFormData);
+    const { buscarCep, carregando: buscandoCep } = useViaCep();
 
     useEffect(() => {
         void carregarDados();
@@ -211,6 +213,32 @@ export default function Professores() {
 
     function clearError(field: keyof ProfessorEditData) {
         setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+
+    async function handleBuscarCep() {
+        const resultado = await buscarCep(editData.cep);
+        if (!resultado) {
+            setErrors((previous) => ({ ...previous, cep: "CEP não encontrado." }));
+            return;
+        }
+
+        const cidade = await cidadeApi.buscarCidadePorIbge(String(resultado.ibge));
+
+        setEditData((previous) => ({
+            ...previous,
+            logradouro: resultado.logradouro || previous.logradouro,
+            bairro: resultado.bairro || previous.bairro,
+            uf: resultado.uf || previous.uf,
+            cidade_id: cidade ? String(cidade.ibge) : previous.cidade_id,
+            cidade_nome: cidade ? cidade.nome : previous.cidade_nome,
+        }));
+
+        setErrors((previous) => ({
+            ...previous,
+            cep: undefined,
+            uf: undefined,
+            cidade_id: cidade ? undefined : "Cidade do CEP não cadastrada — selecione manualmente.",
+        }));
     }
 
     async function validarEdicao() {
@@ -401,7 +429,9 @@ export default function Professores() {
                         onChangeFaculdade={handleChangeFaculdade}
                         onSearchCidade={(query) => void handleSearchCidade(query)}
                         onSelectCidade={handleSelectCidade}
+                        onBuscarCep={() => void handleBuscarCep()}
                         loadingCidades={loadingCidades}
+                        loadingCep={buscandoCep}
                     />
                 </Dialog.Content>
                 <Dialog.Footer>
