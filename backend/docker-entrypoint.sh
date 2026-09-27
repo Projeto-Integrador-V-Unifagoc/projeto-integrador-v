@@ -8,7 +8,7 @@ done
 echo "Banco de dados pronto."
 
 echo "Executando migrations..."
-./node_modules/.bin/knex migrate:latest --knexfile ./dist/knexfile.js
+./node_modules/.bin/tsx ./node_modules/.bin/knex migrate:latest --knexfile knexfile.ts
 echo "Migrations concluídas."
 
 echo "Iniciando o servidor..."

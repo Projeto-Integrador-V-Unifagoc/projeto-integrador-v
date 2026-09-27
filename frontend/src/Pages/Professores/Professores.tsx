@@ -15,21 +15,28 @@ import type { SelectOption } from "../../components/SearchableSelect/SearchableS
 import ProfessorFormFields from "./ProfessorFormFields";
 import {
     initialProfessorFormData,
+    type DisciplinaSelecionada,
     type ProfessorFormData,
 } from "./professor-form-model";
+import { sugerirFaculdade } from "./sugerir-faculdade";
 import { professorApi } from "../../services/professor-api";
+import { disciplinaApi } from "../../services/disciplina-api";
+import { cursoDisciplinaApi } from "../../services/curso-disciplina-api";
 import { cursoApi } from "../../services/curso-api";
+import { faculdadeApi } from "../../services/faculdade-api";
 import { cidadeApi } from "../../services/cidade-api";
 import type { Professor, AtualizarProfessorDTO } from "../../models/professor-model";
+import type { DisciplinaResponse } from "../../models/disciplina-model";
+import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
 import type { CursoResponse } from "../../models/curso-model";
+import type { FaculdadeResponse } from "../../models/faculdade-model";
 import type { CidadeModel } from "../../models/cidade-model";
 import { professorSchema } from "../../validators/professor-schema";
-import type { Cursos } from "../../enums/cursos";
 
 type ProfessorEditData = ProfessorFormData;
 
 function normalizar(value: string) {
-    return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
 function getMensagemErro(error: unknown, fallback: string) {
@@ -46,9 +53,11 @@ function getMensagemErro(error: unknown, fallback: string) {
 export default function Professores() {
     const navigate = useNavigate();
     const [professores, setProfessores] = useState<Professor[]>([]);
+    const [disciplinas, setDisciplinas] = useState<DisciplinaResponse[]>([]);
+    const [cursoDisciplinas, setCursoDisciplinas] = useState<CursoDisciplinaResponse[]>([]);
     const [cursos, setCursos] = useState<CursoResponse[]>([]);
+    const [faculdades, setFaculdades] = useState<FaculdadeResponse[]>([]);
     const [cidades, setCidades] = useState<CidadeModel[]>([]);
-    const [cursoOptions, setCursoOptions] = useState<SelectOption[]>([]);
     const [cidadeOptions, setCidadeOptions] = useState<SelectOption[]>([]);
     const [dialogEditOpen, setDialogEditOpen] = useState(false);
     const [dialogDeleteOpen, setDialogDeleteOpen] = useState(false);
@@ -62,7 +71,7 @@ export default function Professores() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [searchValue, setSearchValue] = useState("");
     const [filtroAtivo, setFiltroAtivo] = useState<"todos" | "ativos" | "inativos">("todos");
-    const [filters, setFilters] = useState<{ codigo?: string; matricula?: string; curso?: Cursos | ""; periodo?: string }>({});
+    const [filters, setFilters] = useState<{ codigo?: string; matricula?: string; periodo?: string }>({});
     const [editData, setEditData] = useState<ProfessorEditData>(initialProfessorFormData);
 
     useEffect(() => {
@@ -74,25 +83,26 @@ export default function Professores() {
     async function carregarDados() {
         setLoading(true);
         try {
-            const [professoresResponse, cursosResponse, cidadesResponse] = await Promise.all([
+            const [professoresResponse, disciplinasResponse, cursoDisciplinasResponse, cursosResponse, faculdadesResponse, cidadesResponse] = await Promise.all([
                 professorApi.listar(),
+                disciplinaApi.listarDisciplinas(),
+                cursoDisciplinaApi.listarCursoDisciplinas(),
                 cursoApi.listarCursos(),
+                faculdadeApi.listarFaculdades(),
                 cidadeApi.buscarCidades(),
             ]);
             setProfessores(professoresResponse);
+            setDisciplinas(disciplinasResponse);
+            setCursoDisciplinas(cursoDisciplinasResponse);
             setCursos(cursosResponse);
+            setFaculdades(faculdadesResponse);
             setCidades(cidadesResponse);
-            setCursoOptions(mapearCursos(cursosResponse));
             setCidadeOptions(mapearCidades(cidadesResponse));
         } catch (error) {
             setErrorMessage(getMensagemErro(error, "Não foi possível carregar professores."));
         } finally {
             setLoading(false);
         }
-    }
-
-    function mapearCursos(data: CursoResponse[]) {
-        return data.map((curso) => ({ id: curso.id, label: curso.nome, sublabel: curso.codigo }));
     }
 
     function mapearCidades(data: CidadeModel[]) {
@@ -108,7 +118,7 @@ export default function Professores() {
                 const campos = [
                     professor.nome,
                     professor.cpf,
-                    professor.curso || "",
+                    professor.disciplinas?.map((disciplina) => disciplina.nome).join(" ") || "",
                     professor.faculdade || "",
                 ];
                 if (!campos.some((campo) => normalizar(String(campo)).includes(search))) return false;
@@ -116,22 +126,10 @@ export default function Professores() {
 
             if (filters.codigo && !normalizar(professor.cpf).includes(normalizar(filters.codigo))) return false;
             if (filters.matricula && !normalizar(professor.nome).includes(normalizar(filters.matricula))) return false;
-            if (filters.curso && professor.curso !== filters.curso) return false;
             if (filters.periodo && professor.faculdade_id !== filters.periodo) return false;
             return true;
         });
     }, [filtroAtivo, filters, professores, searchValue]);
-
-    function handleSearchCurso(query: string) {
-        const term = normalizar(query);
-        setCursoOptions(
-            mapearCursos(
-                cursos.filter((curso) =>
-                    [curso.nome, curso.codigo].some((campo) => normalizar(String(campo)).includes(term)),
-                ),
-            ),
-        );
-    }
 
     async function handleSearchCidade(query: string) {
         setLoadingCidades(true);
@@ -146,17 +144,24 @@ export default function Professores() {
         }
     }
 
-    function handleSelectCurso(option: SelectOption) {
-        const curso = cursos.find((item) => item.id === option.id);
-        const faculdade = curso?.departamento?.faculdade;
-        setEditData((prev) => ({
-            ...prev,
-            curso_id: option.id,
-            curso_nome: option.label,
-            faculdade_id: faculdade?.id || "",
-            faculdade_nome: faculdade?.nome || "",
-        }));
-        clearError("curso_id");
+    function handleChangeDisciplinas(selecionadas: DisciplinaSelecionada[]) {
+        setEditData((prev) => {
+            const proximo: ProfessorEditData = {
+                ...prev,
+                disciplinasSelecionadas: selecionadas,
+                disciplinaIds: selecionadas.map((disciplina) => disciplina.id),
+            };
+            if (prev.faculdadeSugerida) {
+                const sugestao = sugerirFaculdade(proximo.disciplinaIds, cursoDisciplinas, cursos);
+                proximo.faculdade_id = sugestao?.id || "";
+            }
+            return proximo;
+        });
+        clearError("disciplinaIds");
+    }
+
+    function handleChangeFaculdade(faculdadeId: string) {
+        setEditData((prev) => ({ ...prev, faculdade_id: faculdadeId, faculdadeSugerida: false }));
         clearError("faculdade_id");
     }
 
@@ -178,12 +183,12 @@ export default function Professores() {
             nome: professor.nome,
             cpf: professor.cpf,
             dataNascimento: professor.data_nascimento?.slice(0, 10) || "",
-            curso_id: professor.curso_id || "",
+            disciplinaIds: professor.disciplinas?.map((disciplina) => disciplina.id) || [],
+            disciplinasSelecionadas: professor.disciplinas || [],
             faculdade_id: professor.faculdade_id || "",
+            faculdadeSugerida: false,
             cidade_id: professor.cidade_id || "",
             uf: professor.estado || "",
-            curso_nome: professor.curso || "",
-            faculdade_nome: professor.faculdade || "",
             cidade_nome: cidades.find((cidade) => String(cidade.ibge) === professor.cidade_id)?.nome || "",
             logradouro: professor.logradouro || "",
             bairro: professor.bairro || "",
@@ -240,8 +245,8 @@ export default function Professores() {
                 cidade_id: editData.cidade_id || undefined,
                 estado: editData.uf || undefined,
                 cep: editData.cep || undefined,
-                curso_id: editData.curso_id,
-                faculdade_id: editData.faculdade_id,
+                disciplinaIds: editData.disciplinaIds,
+                faculdade_id: editData.faculdade_id || undefined,
             };
 
             await professorApi.atualizar(professorSelecionado.id, payload);
@@ -287,7 +292,13 @@ export default function Professores() {
 
     const columns: GridColDef[] = [
         { field: "nome", headerName: "Nome", flex: 1, minWidth: 180 },
-        { field: "curso", headerName: "Curso", flex: 1, minWidth: 180 },
+        {
+            field: "disciplinas",
+            headerName: "Disciplinas",
+            flex: 1,
+            minWidth: 220,
+            valueGetter: (_value, row) => (row as Professor).disciplinas?.map((disciplina) => disciplina.nome).join(", ") || "—",
+        },
         { field: "cpf", headerName: "CPF", width: 150 },
         { field: "faculdade", headerName: "Faculdade", flex: 1, minWidth: 180 },
         { field: "ativo", headerName: "Status", width: 110, valueGetter: (value) => value ? "Ativo" : "Inativo" },
@@ -382,12 +393,13 @@ export default function Professores() {
                     <ProfessorFormFields
                         data={editData}
                         errors={errors}
-                        cursoOptions={cursoOptions}
+                        disciplinaOptions={disciplinas}
+                        faculdadeOptions={faculdades}
                         cidadeOptions={cidadeOptions}
                         onChange={handleEditChange}
-                        onSearchCurso={handleSearchCurso}
+                        onChangeDisciplinas={handleChangeDisciplinas}
+                        onChangeFaculdade={handleChangeFaculdade}
                         onSearchCidade={(query) => void handleSearchCidade(query)}
-                        onSelectCurso={handleSelectCurso}
                         onSelectCidade={handleSelectCidade}
                         loadingCidades={loadingCidades}
                     />

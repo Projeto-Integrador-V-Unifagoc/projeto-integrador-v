@@ -16,14 +16,16 @@ async function cursoBase(apiSecretaria: any, runId: string) {
   const fac = await estrutura.criarFaculdade(apiSecretaria, runId, cidade);
   const dep = await estrutura.criarDepartamento(apiSecretaria, runId, fac.id);
   const curso = await estrutura.criarCurso(apiSecretaria, runId, dep.id);
-  return { cidade, cursoId: curso.id };
+  const disciplina = await estrutura.criarDisciplina(apiSecretaria, runId);
+  await estrutura.associarDisciplinaAoCurso(apiSecretaria, curso.id, disciplina.id);
+  return { cidade, cursoId: curso.id, disciplinaId: disciplina.id };
 }
 
 test.describe("Professores @api", () => {
   test("CRUD lógico: cria, busca, inativa (204) e reativa (200)", async ({ apiSecretaria, runId }) => {
-    const { cidade, cursoId } = await cursoBase(apiSecretaria, runId);
+    const { cidade, disciplinaId } = await cursoBase(apiSecretaria, runId);
     const prof = await professorFactory.criarProfessor(apiSecretaria, runId, {
-      cursoId,
+      disciplinaIds: [disciplinaId],
       cidadeIbge: cidade.ibge,
       uf: cidade.uf,
     });
@@ -38,9 +40,9 @@ test.describe("Professores @api", () => {
   });
 
   test("CPF duplicado retorna 409", async ({ apiSecretaria, runId }) => {
-    const { cidade, cursoId } = await cursoBase(apiSecretaria, runId);
+    const { cidade, disciplinaId } = await cursoBase(apiSecretaria, runId);
     const cpf = ids.cpf();
-    await professorFactory.criarProfessor(apiSecretaria, runId, { cursoId, cidadeIbge: cidade.ibge, uf: cidade.uf, cpf });
+    await professorFactory.criarProfessor(apiSecretaria, runId, { disciplinaIds: [disciplinaId], cidadeIbge: cidade.ibge, uf: cidade.uf, cpf });
     const dup = await apiSecretaria.post("/professores", {
       body: {
         nome: `Professor ${runId}`,
@@ -52,14 +54,14 @@ test.describe("Professores @api", () => {
         cidade_id: cidade.ibge,
         estado: cidade.uf,
         cep: "35300000",
-        curso_id: cursoId,
+        disciplinaIds: [disciplinaId],
       },
     });
     expect(dup.status).toBe(409);
   });
 
   test("CPF inválido retorna 400", async ({ apiSecretaria, runId }) => {
-    const { cidade, cursoId } = await cursoBase(apiSecretaria, runId);
+    const { cidade, disciplinaId } = await cursoBase(apiSecretaria, runId);
     const resp = await apiSecretaria.post("/professores", {
       body: {
         nome: `Professor ${runId}`,
@@ -71,7 +73,7 @@ test.describe("Professores @api", () => {
         cidade_id: cidade.ibge,
         estado: cidade.uf,
         cep: "35300000",
-        curso_id: cursoId,
+        disciplinaIds: [disciplinaId],
       },
     });
     expect(resp.status).toBe(400);
@@ -83,9 +85,9 @@ test.describe("Professores @api", () => {
   });
 
   test("professor inativo não autentica nem recebe novo vínculo", async ({ apiSecretaria, runId }) => {
-    const { cidade, cursoId } = await cursoBase(apiSecretaria, runId);
+    const { cidade, disciplinaId } = await cursoBase(apiSecretaria, runId);
     const { professor, email, senha } = await professorFactory.criarProfessorComLogin(apiSecretaria, runId, {
-      cursoId,
+      disciplinaIds: [disciplinaId],
       cidadeIbge: cidade.ibge,
       uf: cidade.uf,
     });

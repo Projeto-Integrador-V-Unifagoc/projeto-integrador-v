@@ -7,21 +7,26 @@ import { Card } from "../../components/Card";
 import Button from "../../components/Button";
 import type { SelectOption } from "../../components/SearchableSelect/SearchableSelect";
 import { professorApi } from "../../services/professor-api";
+import { disciplinaApi } from "../../services/disciplina-api";
+import { cursoDisciplinaApi } from "../../services/curso-disciplina-api";
 import { cursoApi } from "../../services/curso-api";
+import { faculdadeApi } from "../../services/faculdade-api";
 import { cidadeApi } from "../../services/cidade-api";
+import { useViaCep } from "../../hooks/use-cep";
 import type { CidadeModel } from "../../models/cidade-model";
+import type { DisciplinaResponse } from "../../models/disciplina-model";
+import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
 import type { CursoResponse } from "../../models/curso-model";
+import type { FaculdadeResponse } from "../../models/faculdade-model";
 import type { CriarProfessorDTO } from "../../models/professor-model";
 import ProfessorFormFields from "./ProfessorFormFields";
 import { professorSchema } from "../../validators/professor-schema";
+import { sugerirFaculdade } from "./sugerir-faculdade";
 import {
     initialProfessorFormData,
+    type DisciplinaSelecionada,
     type ProfessorFormData,
 } from "./professor-form-model";
-
-function normalizar(value: string) {
-    return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
 
 function getMensagemErro(error: unknown, fallback: string) {
     const apiError = error as { response?: { data?: { mensagem?: string; message?: string; error?: string } } };
@@ -36,12 +41,14 @@ export default function Cadastro() {
     const [isLoading, setIsLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [disciplinas, setDisciplinas] = useState<DisciplinaResponse[]>([]);
+    const [cursoDisciplinas, setCursoDisciplinas] = useState<CursoDisciplinaResponse[]>([]);
     const [cursos, setCursos] = useState<CursoResponse[]>([]);
+    const [faculdades, setFaculdades] = useState<FaculdadeResponse[]>([]);
     const [cidades, setCidades] = useState<CidadeModel[]>([]);
-    const [cursoOptions, setCursoOptions] = useState<SelectOption[]>([]);
     const [cidadeOptions, setCidadeOptions] = useState<SelectOption[]>([]);
-    const [loadingCursos, setLoadingCursos] = useState(false);
     const [loadingCidades, setLoadingCidades] = useState(false);
+    const { buscarCep, carregando: buscandoCep } = useViaCep();
 
     useEffect(() => {
         void carregarOpcoesIniciais();
@@ -49,30 +56,29 @@ export default function Cadastro() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const mapearCursos = (data: CursoResponse[]) => data.map((curso) => ({ id: curso.id, label: curso.nome, sublabel: curso.codigo }));
     const mapearCidades = (data: CidadeModel[]) => data.map((cidade) => ({ id: String(cidade.ibge), label: cidade.nome, sublabel: cidade.uf }));
 
     async function carregarOpcoesIniciais() {
-        setLoadingCursos(true);
         setLoadingCidades(true);
         try {
-            const [cursosResponse, cidadesResponse] = await Promise.all([cursoApi.listarCursos(), cidadeApi.buscarCidades()]);
+            const [disciplinasResponse, cursoDisciplinasResponse, cursosResponse, faculdadesResponse, cidadesResponse] = await Promise.all([
+                disciplinaApi.listarDisciplinas(),
+                cursoDisciplinaApi.listarCursoDisciplinas(),
+                cursoApi.listarCursos(),
+                faculdadeApi.listarFaculdades(),
+                cidadeApi.buscarCidades(),
+            ]);
+            setDisciplinas(disciplinasResponse);
+            setCursoDisciplinas(cursoDisciplinasResponse);
             setCursos(cursosResponse);
+            setFaculdades(faculdadesResponse);
             setCidades(cidadesResponse);
-            setCursoOptions(mapearCursos(cursosResponse));
             setCidadeOptions(mapearCidades(cidadesResponse));
         } catch (error) {
             setErrorMessage(getMensagemErro(error, "Não foi possível carregar as opções do cadastro."));
         } finally {
-            setLoadingCursos(false);
             setLoadingCidades(false);
         }
-    }
-
-    function handleSearchCurso(query: string) {
-        const term = normalizar(query);
-        setCursoOptions(mapearCursos(cursos.filter((curso) =>
-            [curso.nome, curso.codigo].some((campo) => normalizar(String(campo)).includes(term)))));
     }
 
     async function handleSearchCidade(query: string) {
@@ -92,12 +98,24 @@ export default function Cadastro() {
         setErrors((previous) => ({ ...previous, [field]: undefined }));
     }
 
-    function handleSelectCurso(option: SelectOption) {
-        const curso = cursos.find((item) => item.id === option.id);
-        const faculdade = curso?.departamento?.faculdade;
-        setFormData((previous) => ({ ...previous, curso_id: option.id, curso_nome: option.label,
-            faculdade_id: faculdade?.id || "", faculdade_nome: faculdade?.nome || "" }));
-        clearError("curso_id");
+    function handleChangeDisciplinas(selecionadas: DisciplinaSelecionada[]) {
+        setFormData((previous) => {
+            const proximo: ProfessorFormData = {
+                ...previous,
+                disciplinasSelecionadas: selecionadas,
+                disciplinaIds: selecionadas.map((disciplina) => disciplina.id),
+            };
+            if (previous.faculdadeSugerida) {
+                const sugestao = sugerirFaculdade(proximo.disciplinaIds, cursoDisciplinas, cursos);
+                proximo.faculdade_id = sugestao?.id || "";
+            }
+            return proximo;
+        });
+        clearError("disciplinaIds");
+    }
+
+    function handleChangeFaculdade(faculdadeId: string) {
+        setFormData((previous) => ({ ...previous, faculdade_id: faculdadeId, faculdadeSugerida: false }));
         clearError("faculdade_id");
     }
 
@@ -112,6 +130,32 @@ export default function Cadastro() {
     function handleInputChange(field: keyof ProfessorFormData, value: string) {
         setFormData((previous) => ({ ...previous, [field]: value }));
         clearError(field);
+    }
+
+    async function handleBuscarCep() {
+        const resultado = await buscarCep(formData.cep);
+        if (!resultado) {
+            setErrors((previous) => ({ ...previous, cep: "CEP não encontrado." }));
+            return;
+        }
+
+        const cidade = await cidadeApi.buscarCidadePorIbge(String(resultado.ibge));
+
+        setFormData((previous) => ({
+            ...previous,
+            logradouro: resultado.logradouro || previous.logradouro,
+            bairro: resultado.bairro || previous.bairro,
+            uf: resultado.uf || previous.uf,
+            cidade_id: cidade ? String(cidade.ibge) : previous.cidade_id,
+            cidade_nome: cidade ? cidade.nome : previous.cidade_nome,
+        }));
+
+        setErrors((previous) => ({
+            ...previous,
+            cep: undefined,
+            uf: undefined,
+            cidade_id: cidade ? undefined : "Cidade do CEP não cadastrada — selecione manualmente.",
+        }));
     }
 
     async function validarCampos() {
@@ -139,9 +183,8 @@ export default function Cadastro() {
             const payload: CriarProfessorDTO = {
                 nome: formData.nome.trim(), cpf: formData.cpf.replace(/\D/g, ""), data_nascimento: formData.dataNascimento,
                 logradouro: formData.logradouro.trim(), numero: formData.numero.trim(), bairro: formData.bairro.trim(),
-                cidade_id: formData.cidade_id, estado: formData.uf, cep: formData.cep.trim(), curso_id: formData.curso_id,
-                faculdade_id: formData.faculdade_id, curso_nome: formData.curso_nome, faculdade_nome: formData.faculdade_nome,
-                cidade_nome: formData.cidade_nome, uf_nome: formData.uf,
+                cidade_id: formData.cidade_id, estado: formData.uf, cep: formData.cep.trim(),
+                disciplinaIds: formData.disciplinaIds, faculdade_id: formData.faculdade_id || undefined,
             };
             await professorApi.criar(payload);
             setSuccessMessage("Professor cadastrado com sucesso!");
@@ -161,10 +204,11 @@ export default function Cadastro() {
             <Card.Content>
                 {(successMessage || errorMessage) && <Alert severity={errorMessage ? "error" : "success"} sx={{ mb: 2 }}>{errorMessage || successMessage}</Alert>}
                 <Stack gap={2}>
-                    <ProfessorFormFields data={formData} errors={errors} cursoOptions={cursoOptions} cidadeOptions={cidadeOptions}
-                        onChange={handleInputChange} onSearchCurso={handleSearchCurso}
-                        onSearchCidade={(query) => void handleSearchCidade(query)} onSelectCurso={handleSelectCurso}
-                        onSelectCidade={handleSelectCidade} loadingCursos={loadingCursos} loadingCidades={loadingCidades} required />
+                    <ProfessorFormFields data={formData} errors={errors} disciplinaOptions={disciplinas} faculdadeOptions={faculdades} cidadeOptions={cidadeOptions}
+                        onChange={handleInputChange} onChangeDisciplinas={handleChangeDisciplinas} onChangeFaculdade={handleChangeFaculdade}
+                        onSearchCidade={(query) => void handleSearchCidade(query)}
+                        onSelectCidade={handleSelectCidade} onBuscarCep={() => void handleBuscarCep()}
+                        loadingCidades={loadingCidades} loadingCep={buscandoCep} required />
                     <Stack direction={{ xs: "column-reverse", sm: "row" }} justifyContent="flex-end" gap={1}
                         sx={{ "& > button": { width: { xs: "100%", sm: 75 } } }}>
                         <Button variant="outlined" onClick={() => navigate("/professores/lista")} disabled={isLoading}>Cancelar</Button>

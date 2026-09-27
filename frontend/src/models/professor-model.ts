@@ -2,10 +2,9 @@ export interface Professor {
     id: string
     nome: string
     cpf: string
-    curso: string
-    curso_id?: string
+    disciplinas: { id: string; nome: string }[]
     faculdade: string
-    faculdade_id: string
+    faculdade_id?: string
     ativo: boolean
     data_nascimento?: string
     logradouro?: string
@@ -26,12 +25,8 @@ export interface CriarProfessorDTO {
     cidade_id: string
     estado: string
     cep: string
-    curso_id: string
-    faculdade_id: string
-    curso_nome?: string
-    faculdade_nome?: string
-    cidade_nome?: string
-    uf_nome?: string
+    disciplinaIds: string[]
+    faculdade_id?: string
 }
 
 export interface AtualizarProfessorDTO {
@@ -44,17 +39,11 @@ export interface AtualizarProfessorDTO {
     cidade_id?: string
     estado?: string
     cep?: string
-    curso_id?: string
+    disciplinaIds?: string[]
     faculdade_id?: string
-    curso_nome?: string
-    faculdade_nome?: string
-    cidade_nome?: string
-    uf_nome?: string
 }
 
 export interface ProfessorOpcao {
     id: string
     nome: string
-    curso_id: string
-    curso_nome: string
 }

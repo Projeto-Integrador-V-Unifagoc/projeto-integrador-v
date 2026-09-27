@@ -31,13 +31,16 @@ function normalizar(dados: CriarProfessorDTO | AtualizarProfessor) {
 }
 
 function validarCampos(dados: CriarProfessorDTO | AtualizarProfessor, criacao: boolean) {
-  const obrigatorios = ['nome','cpf','data_nascimento','logradouro','numero','bairro','cidade_id','estado','cep','curso_id'] as const;
+  const obrigatorios = ['nome','cpf','data_nascimento','logradouro','numero','bairro','cidade_id','estado','cep'] as const;
   if (criacao) for (const campo of obrigatorios) if (!dados[campo]) throw new ValidationError(`O campo ${campo} é obrigatório.`);
+  if (criacao && (!dados.disciplinaIds || !dados.disciplinaIds.length)) throw new ValidationError('Selecione ao menos uma disciplina.');
   if (dados.nome !== undefined && dados.nome.length < 3) throw new ValidationError('Nome inválido.');
   if (dados.cpf !== undefined && !cpfValido(dados.cpf)) throw new ValidationError('CPF inválido.');
   if (dados.cep !== undefined && !/^\d{8}$/.test(dados.cep)) throw new ValidationError('CEP inválido.');
   if (dados.estado !== undefined && !UFS.has(dados.estado)) throw new ValidationError('UF inválida.');
-  if (dados.curso_id !== undefined && !UUID.test(dados.curso_id)) throw new ValidationError('Curso inválido.');
+  if (dados.disciplinaIds !== undefined) {
+    for (const disciplinaId of dados.disciplinaIds) if (!UUID.test(disciplinaId)) throw new ValidationError('Disciplina inválida.');
+  }
   if (dados.faculdade_id !== undefined && !UUID.test(dados.faculdade_id)) throw new ValidationError('Faculdade inválida.');
   if (dados.cidade_id !== undefined && !/^\d{7}$/.test(dados.cidade_id)) throw new ValidationError('Código IBGE da cidade inválido.');
   if (dados.data_nascimento !== undefined) {
@@ -47,18 +50,22 @@ function validarCampos(dados: CriarProfessorDTO | AtualizarProfessor, criacao: b
 }
 
 async function validarRelacionamentos(dados: CriarProfessorDTO | AtualizarProfessor, atual?: any) {
-  const cursoId = dados.curso_id ?? atual?.curso_id;
   const cidadeId = dados.cidade_id ?? atual?.cidade_id;
-  if (!cursoId || !cidadeId) throw new ValidationError('Curso e cidade são obrigatórios.');
-  const [curso, cidade] = await Promise.all([
-    professorRepository.buscarCursoComFaculdade(cursoId),
-    professorRepository.buscarCidadePorIbge(cidadeId),
-  ]);
-  if (!curso) throw new ValidationError('Curso inexistente.');
+  if (!cidadeId) throw new ValidationError('Cidade é obrigatória.');
+  const cidade = await professorRepository.buscarCidadePorIbge(cidadeId);
   if (!cidade) throw new ValidationError('Cidade inexistente.');
   if (dados.estado && cidade.uf !== dados.estado) throw new ValidationError('A UF não corresponde à cidade informada.');
-  if (dados.faculdade_id && dados.faculdade_id !== curso.faculdade_id) throw new ValidationError('A faculdade não corresponde ao curso informado.');
-  return curso.faculdade_id as string;
+
+  if (dados.disciplinaIds !== undefined) {
+    const disciplinas = await professorRepository.buscarDisciplinasAtivasPorIds(dados.disciplinaIds);
+    if (disciplinas.length !== new Set(dados.disciplinaIds).size) {
+      throw new ValidationError('Uma ou mais disciplinas informadas são inválidas ou inativas.');
+    }
+  }
+  if (dados.faculdade_id !== undefined && dados.faculdade_id !== null) {
+    const faculdade = await professorRepository.buscarFaculdadePorId(dados.faculdade_id);
+    if (!faculdade) throw new ValidationError('Faculdade inexistente.');
+  }
 }
 
 function traduzirErroBanco(erro: any): never {
@@ -81,8 +88,8 @@ async function criar(payload: CriarProfessorDTO) {
   const dados = normalizar(payload) as CriarProfessorDTO;
   validarCampos(dados, true);
   if (await professorRepository.buscarPorCpf(dados.cpf)) throw new ConflictError('Já existe um professor cadastrado com este CPF.');
-  const faculdade_id = await validarRelacionamentos(dados);
-  try { return await professorRepository.criar({ ...dados, faculdade_id }); }
+  await validarRelacionamentos(dados);
+  try { return await professorRepository.criar(dados); }
   catch (erro) { traduzirErroBanco(erro); }
 }
 
@@ -95,8 +102,8 @@ async function atualizar(id: string, payload: AtualizarProfessor) {
     const existente = await professorRepository.buscarPorCpf(dados.cpf);
     if (existente && existente.id !== id) throw new ConflictError('Já existe um professor cadastrado com este CPF.');
   }
-  const faculdade_id = await validarRelacionamentos(dados, atual);
-  try { return await professorRepository.atualizar(id, { ...dados, ...(dados.curso_id ? { faculdade_id } : {}) }); }
+  await validarRelacionamentos(dados, atual);
+  try { return await professorRepository.atualizar(id, dados); }
   catch (erro) { traduzirErroBanco(erro); }
 }
 

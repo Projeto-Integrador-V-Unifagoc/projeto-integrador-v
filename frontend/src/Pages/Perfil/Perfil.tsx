@@ -34,6 +34,7 @@ interface Academico {
   curso_codigo?: string | null;
   periodo?: string | null;
   faculdade?: string | null;
+  disciplinas?: string[];
 }
 
 interface PerfilData {
@@ -236,13 +237,24 @@ export default function Perfil() {
               {perfil.email}
             </Typography>
 
-            {academico?.curso && (
+            {perfil.tipo_usuario === "aluno" && academico?.curso && (
               <>
                 <Typography color="primary.main" fontSize={16}>
                   Curso
                 </Typography>
                 <Typography mb={2} fontSize={18}>
                   {academico.curso}
+                </Typography>
+              </>
+            )}
+
+            {perfil.tipo_usuario === "professor" && academico?.disciplinas && academico.disciplinas.length > 0 && (
+              <>
+                <Typography color="primary.main" fontSize={16}>
+                  Disciplinas
+                </Typography>
+                <Typography mb={2} fontSize={18}>
+                  {academico.disciplinas.join(", ")}
                 </Typography>
               </>
             )}

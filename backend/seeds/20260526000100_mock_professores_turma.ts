@@ -85,23 +85,41 @@ const PROFESSORES = [
     id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1",
     usuario_id: "99999999-9999-9999-9999-999999999991",
     pessoa_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1",
-    curso_id: "88888888-8888-8888-8888-888888888881",
     faculdade_id: FACULDADE_ID,
   },
   {
     id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2",
     usuario_id: "99999999-9999-9999-9999-999999999992",
     pessoa_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2",
-    curso_id: "88888888-8888-8888-8888-888888888881",
     faculdade_id: FACULDADE_ID,
   },
   {
     id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3",
     usuario_id: "99999999-9999-9999-9999-999999999993",
     pessoa_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3",
-    curso_id: "88888888-8888-8888-8888-888888888882",
     faculdade_id: FACULDADE_ID,
   },
+];
+
+const DISCIPLINAS = [
+  {
+    id: "cccccccc-cccc-cccc-cccc-ccccccccccc1",
+    codigo: "ES-MOCK-ALG",
+    nome: "Algoritmos Mock",
+    carga_horaria: 80,
+  },
+  {
+    id: "cccccccc-cccc-cccc-cccc-ccccccccccc2",
+    codigo: "ADS-MOCK-BD",
+    nome: "Banco de Dados Mock",
+    carga_horaria: 80,
+  },
+];
+
+const PROFESSOR_DISCIPLINAS = [
+  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1", disciplina_id: DISCIPLINAS[0].id },
+  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2", disciplina_id: DISCIPLINAS[0].id },
+  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3", disciplina_id: DISCIPLINAS[1].id },
 ];
 
 export async function seed(knex: Knex): Promise<void> {
@@ -130,5 +148,15 @@ export async function seed(knex: Knex): Promise<void> {
   await knex(`${SCHEMA}.professor`)
     .insert(PROFESSORES)
     .onConflict("id")
+    .ignore();
+
+  await knex(`${SCHEMA}.disciplinas`)
+    .insert(DISCIPLINAS)
+    .onConflict("codigo")
+    .ignore();
+
+  await knex(`${SCHEMA}.professor_disciplina`)
+    .insert(PROFESSOR_DISCIPLINAS)
+    .onConflict(["professor_id", "disciplina_id"])
     .ignore();
 }

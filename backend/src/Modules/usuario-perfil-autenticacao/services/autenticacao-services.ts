@@ -162,8 +162,7 @@ class AutenticacaoService {
       if (professor) {
         pessoa = this.montarPessoa(professor);
         academico = {
-          curso: professor.curso_nome ?? null,
-          curso_codigo: professor.curso_codigo ?? null,
+          disciplinas: professor.disciplinas ?? [],
           faculdade: professor.faculdade_nome ?? null,
         };
       }

@@ -4,7 +4,7 @@ import { cadastrarUsuario, login } from "./usuario.factory.js";
 
 /**
  * Factory de professor (spec §4.2, §11.3). O backend valida CPF (checksum), UF
- * coerente com a cidade e relacionamento curso→faculdade.
+ * coerente com a cidade e o vínculo N:N com as disciplinas informadas.
  */
 
 export interface ProfessorCriado {
@@ -16,7 +16,7 @@ export interface ProfessorCriado {
 export async function criarProfessor(
   api: Api,
   runId: string,
-  dados: { cursoId: string; cidadeIbge: string; uf: string; cpf?: string },
+  dados: { disciplinaIds: string[]; cidadeIbge: string; uf: string; cpf?: string; faculdadeId?: string },
 ): Promise<ProfessorCriado> {
   const cpf = dados.cpf ?? ids.cpf();
   const resposta = await api.post("/professores", {
@@ -30,7 +30,8 @@ export async function criarProfessor(
       cidade_id: dados.cidadeIbge,
       estado: dados.uf,
       cep: "35300000",
-      curso_id: dados.cursoId,
+      disciplinaIds: dados.disciplinaIds,
+      ...(dados.faculdadeId ? { faculdade_id: dados.faculdadeId } : {}),
     },
   });
   if (resposta.status !== 201) {
@@ -44,7 +45,7 @@ export async function criarProfessor(
 export async function criarProfessorComLogin(
   api: Api,
   runId: string,
-  dados: { cursoId: string; cidadeIbge: string; uf: string },
+  dados: { disciplinaIds: string[]; cidadeIbge: string; uf: string; faculdadeId?: string },
 ): Promise<{ professor: ProfessorCriado; email: string; senha: string; token: string }> {
   const professor = await criarProfessor(api, runId, dados);
   const email = ids.email("prof", runId);

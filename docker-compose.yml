@@ -12,6 +12,8 @@ services:
       POSTGRES_USER: ${DATABASE_USERNAME:?DATABASE_USERNAME deve ser definido no arquivo .env}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD deve ser definido no arquivo .env}
       POSTGRES_DB: ${DATABASE_NAME:?DATABASE_NAME deve ser definido no arquivo .env}
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -66,8 +68,8 @@ services:
         VITE_API_URL: ${VITE_API_URL:-/api}
     container_name: pi_frontend
     restart: always
-    expose:
-      - "80"
+    ports:
+      - "80:80"
     networks:
       - app-network
     depends_on:
