@@ -1,31 +1,32 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { notaApi } from "../services/nota-api";
 import type { ItemLoteNota } from "../models/nota-model";
 
 export function useNota() {
-  const [carregando, setCarregando] = useState(false);
+  const [pendentes, setPendentes] = useState(0);
 
-  const executar = async <T>(acao: () => Promise<T>): Promise<T> => {
-    setCarregando(true);
+  const executar = useCallback(async <T,>(acao: () => Promise<T>): Promise<T> => {
+    setPendentes((total) => total + 1);
     try {
       return await acao();
     } finally {
-      setCarregando(false);
+      setPendentes((total) => total - 1);
     }
-  };
+  }, []);
+
+  const listarOpcoes = useCallback(() => executar(() => notaApi.listarOpcoes()), [executar]);
+  const obterLancamento = useCallback((id: string) => executar(() => notaApi.obterLancamento(id)), [executar]);
+  const salvarLote = useCallback((id: string, itens: ItemLoteNota[], motivo?: string) => executar(() => notaApi.salvarLote(id, itens, motivo)), [executar]);
+  const obterRendimento = useCallback((id: string) => executar(() => notaApi.obterRendimento(id)), [executar]);
+  const obterRecuperacao = useCallback((id: string) => executar(() => notaApi.obterRecuperacao(id)), [executar]);
+  const criarAutorizacao = useCallback((dados: { avaliacaoId: string; matriculaTurmaDisciplinaId?: string; motivo: string; prazoEmDias?: number }) => executar(() => notaApi.criarAutorizacao(dados)), [executar]);
+  const meuBoletim = useCallback((id?: string) => executar(() => notaApi.meuBoletim(id)), [executar]);
+  const meuResumo = useCallback(() => executar(() => notaApi.meuResumo()), [executar]);
+  const consultarAluno = useCallback((id: string) => executar(() => notaApi.consultarAluno(id)), [executar]);
 
   return {
-    carregando,
-    listarOpcoes: () => executar(() => notaApi.listarOpcoes()),
-    obterLancamento: (avaliacaoId: string) => executar(() => notaApi.obterLancamento(avaliacaoId)),
-    salvarLote: (avaliacaoId: string, itens: ItemLoteNota[], motivo?: string) =>
-      executar(() => notaApi.salvarLote(avaliacaoId, itens, motivo)),
-    obterRendimento: (turmaDisciplinaId: string) => executar(() => notaApi.obterRendimento(turmaDisciplinaId)),
-    obterRecuperacao: (turmaDisciplinaId: string) => executar(() => notaApi.obterRecuperacao(turmaDisciplinaId)),
-    criarAutorizacao: (dados: { avaliacaoId: string; matriculaTurmaDisciplinaId?: string; motivo: string; prazoEmDias?: number }) =>
-      executar(() => notaApi.criarAutorizacao(dados)),
-    meuBoletim: (periodoId?: string) => executar(() => notaApi.meuBoletim(periodoId)),
-    meuResumo: () => executar(() => notaApi.meuResumo()),
-    consultarAluno: (alunoId: string) => executar(() => notaApi.consultarAluno(alunoId)),
+    carregando: pendentes > 0,
+    listarOpcoes, obterLancamento, salvarLote, obterRendimento, obterRecuperacao,
+    criarAutorizacao, meuBoletim, meuResumo, consultarAluno,
   };
 }

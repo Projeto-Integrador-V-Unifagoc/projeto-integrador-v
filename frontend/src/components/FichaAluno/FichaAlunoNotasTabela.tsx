@@ -8,12 +8,14 @@ import {
   TableHead,
   TableRow,
   Typography,
+  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { GraduationCap } from "lucide-react";
 
 import type { NotaAluno } from "./types";
-import { formatarNota } from "./utils";
+import { formatarPontos } from "../../utils/pontos";
+import { ResultadoAcademicoResumo } from "../ResultadoAcademico/ResultadoAcademicoResumo";
 
 interface FichaAlunoNotasTabelaProps {
   notas: NotaAluno[];
@@ -23,19 +25,9 @@ interface FichaAlunoNotasTabelaProps {
 export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
   const { notas, semestre } = props;
   const theme = useTheme();
+  const larguraResultado = useMediaQuery(theme.breakpoints.down("md")) ? 260 : 360;
 
-  // collect unique evaluation names to create one column per evaluation
-  const evalNames = Array.from(
-    new Set(
-      notas.flatMap((n) => (n.avaliacoes ?? []).map((a) => a.nome || a.id)),
-    ),
-  );
-
-  // short labels for headers (remove descriptive suffixes like " - Excelente desempenho")
-  const evalLabels = evalNames.map((n) => ({
-    name: n,
-    label: (n || "").split(" - ")[0].trim(),
-  }));
+  const avaliacoes = [...new Map(notas.flatMap((n) => n.avaliacoes ?? []).map((a) => [a.id, a])).values()];
 
   return (
     <Stack spacing={1.5}>
@@ -82,7 +74,7 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
         >
           <Table
             size="small"
-            sx={{ minWidth: Math.max(980, 240 + evalNames.length * 120) }}
+            sx={{ minWidth: Math.max(760, 620 + avaliacoes.length * 120) }}
           >
             <TableHead>
               <TableRow
@@ -95,61 +87,33 @@ export function FichaAlunoNotasTabela(props: FichaAlunoNotasTabelaProps) {
                 }}
               >
                 <TableCell>Disciplina</TableCell>
-                <TableCell>Media Final</TableCell>
-                {evalLabels.map(({ name, label }) => (
-                  <TableCell key={name}>{label}</TableCell>
+                <TableCell>Resultado acadêmico</TableCell>
+                {avaliacoes.map((avaliacao) => (
+                  <TableCell key={avaliacao.id}>{avaliacao.nome || avaliacao.id}</TableCell>
                 ))}
-                <TableCell>Prova Final</TableCell>
-                <TableCell>Prova Inova</TableCell>
-                <TableCell>Segunda Chamada</TableCell>
-                <TableCell>Conhecimentos Gerais</TableCell>
-                <TableCell>Faltas</TableCell>
-                <TableCell>% Faltas</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {notas.map((nota) => (
-                <TableRow key={nota.disciplina} hover>
+                <TableRow key={`${nota.turmaDisciplinaId}:${nota.matriculaTurmaDisciplinaId ?? ""}`} hover>
                   <TableCell sx={{ minWidth: 260 }}>
                     {nota.disciplina}
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      {[nota.turmaNome, nota.periodoLetivo, nota.professorNome].filter(Boolean).join(" · ")}
+                    </Typography>
                   </TableCell>
-                  <TableCell>{formatarNota(nota.mediaFinal)}</TableCell>
-                  {evalNames.map((name) => {
-                    const a = (nota.avaliacoes ?? []).find((x) => {
-                      const matchesName = x.nome === name || x.id === name;
-                      // if nota has a matriculaTurmaDisciplinaId, prefer the avaliacao with same mtd id
-                      if ((nota as any).matriculaTurmaDisciplinaId) {
-                        return (
-                          matchesName &&
-                          x.matricula_turma_disciplina_id ===
-                            (nota as any).matriculaTurmaDisciplinaId
-                        );
-                      }
-                      return matchesName;
-                    });
+                  <TableCell sx={{ width: larguraResultado, minWidth: larguraResultado, maxWidth: larguraResultado }}><ResultadoAcademicoResumo resultado={nota.resultadoAcademico} compacto /></TableCell>
+                  {avaliacoes.map((avaliacao) => {
+                    const a = (nota.avaliacoes ?? []).find((x) => x.id === avaliacao.id
+                      && (!nota.matriculaTurmaDisciplinaId || x.matricula_turma_disciplina_id === nota.matriculaTurmaDisciplinaId));
                     return (
                       <TableCell
-                        key={name}
-                        sx={{ color: a ? "error.main" : "inherit" }}
+                        key={avaliacao.id}
                       >
-                        {a ? formatarNota(a.nota) : "-"}
+                        {formatarPontos(a?.nota)}
                       </TableCell>
                     );
                   })}
-                  <TableCell>{formatarNota(nota.provaFinal)}</TableCell>
-                  <TableCell sx={{ color: "error.main" }}>
-                    {formatarNota(nota.provaInova)}
-                  </TableCell>
-                  <TableCell>
-                    {formatarNota(nota.provaSegundaChamada)}
-                  </TableCell>
-                  <TableCell sx={{ color: "error.main" }}>
-                    {formatarNota(nota.conhecimentosGerais)}
-                  </TableCell>
-                  <TableCell>{nota.faltas}</TableCell>
-                  <TableCell>
-                    {nota.percentualFaltas.toFixed(2).replace(".", ",")}%
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

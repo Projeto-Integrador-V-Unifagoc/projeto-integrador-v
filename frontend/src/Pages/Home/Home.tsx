@@ -8,7 +8,6 @@ import {
   CircularProgress,
   Divider,
   Grid,
-  LinearProgress,
   List,
   ListItem,
   ListItemText,
@@ -43,6 +42,8 @@ import Button from "../../components/Button";
 import { Card } from "../../components/Card";
 import Container from "../../components/Container";
 import NoData from "../../components/DataTable/NoData";
+import { ResultadoAcademicoResumo } from "../../components/ResultadoAcademico/ResultadoAcademicoResumo";
+import type { ResultadoAcademico } from "../../models/resultado-academico-model";
 import { frequenciaApi } from "../../services/frequencia-api";
 import { notaApi } from "../../services/nota-api";
 import { authService } from "../../services/auth-services";
@@ -191,53 +192,6 @@ function LinhaInfo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
   );
 }
 
-function corFrequencia(valor: number | null): "success" | "warning" | "error" | "primary" {
-  if (valor === null) return "primary";
-  if (valor < 75) return "error";
-  if (valor <= 80) return "warning";
-  return "success";
-}
-
-function IndicadorPercentual({
-  rotulo,
-  valor,
-  carregando,
-  cor,
-}: {
-  rotulo: string;
-  valor: number | null;
-  carregando: boolean;
-  cor: "primary" | "success" | "warning" | "error";
-}) {
-  const texto = valor === null
-    ? TRACO
-    : `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(valor)}%`;
-
-  return (
-    <Box sx={{ flex: 1, minWidth: 140 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1} mb={0.5}>
-        <Typography variant="caption" color="text.secondary">
-          {rotulo}
-        </Typography>
-        {carregando ? (
-          <Skeleton width={38} />
-        ) : (
-          <Typography variant="body2" fontWeight={700}>
-            {texto}
-          </Typography>
-        )}
-      </Stack>
-      <LinearProgress
-        variant="determinate"
-        value={carregando || valor === null ? 0 : Math.min(100, Math.max(0, valor))}
-        color={cor}
-        aria-label={`${rotulo}: ${carregando ? "carregando" : texto}`}
-        sx={{ height: 6, borderRadius: 999, backgroundColor: "grey.100" }}
-      />
-    </Box>
-  );
-}
-
 function EstadoCarregando({ texto }: { texto: string }) {
   return (
     <Box
@@ -321,8 +275,7 @@ export default function Home() {
   const [alertaNotas, setAlertaNotas] = useState(false);
   const [carregandoAlertas, setCarregandoAlertas] = useState(isAluno);
   const [erroAlertas, setErroAlertas] = useState<string | null>(null);
-  const [frequenciaPorDisciplina, setFrequenciaPorDisciplina] = useState<Record<string, number | null>>({});
-  const [notasPorDisciplina, setNotasPorDisciplina] = useState<Record<string, number | null>>({});
+  const [resultadoPorDisciplina, setResultadoPorDisciplina] = useState<Record<string, ResultadoAcademico>>({});
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -358,35 +311,28 @@ export default function Home() {
     setCarregandoAlertas(true);
     setErroAlertas(null);
 
-    const [resultadoFrequencia, resultadoNotas] = await Promise.allSettled([
+    const [resultadoFrequencia, resultadoNotas, resultadoResumo] = await Promise.allSettled([
       frequenciaApi.minhaFrequencia(),
       notaApi.meuBoletim(),
+      notaApi.meuResumo(),
     ]);
 
     if (resultadoFrequencia.status === "fulfilled") {
       setAlertaFrequencia(Boolean(resultadoFrequencia.value.possuiAlerta));
-      setFrequenciaPorDisciplina(
-        Object.fromEntries(
-          resultadoFrequencia.value.consolidado.map((item) => [
-            item.turmaDisciplinaId,
-            item.percentual,
-          ]),
-        ),
-      );
     }
     if (resultadoNotas.status === "fulfilled") {
-      setAlertaNotas(Boolean(resultadoNotas.value.possuiAlerta));
-      setNotasPorDisciplina(
+      setResultadoPorDisciplina(
         Object.fromEntries(
           resultadoNotas.value.disciplinas.map((item) => [
             item.turmaDisciplinaId,
-            item.mediaParcial,
+            item.resultadoAcademico,
           ]),
         ),
       );
     }
+    if (resultadoResumo.status === "fulfilled") setAlertaNotas(resultadoResumo.value.possuiAlerta);
 
-    if (resultadoFrequencia.status === "rejected" || resultadoNotas.status === "rejected") {
+    if (resultadoFrequencia.status === "rejected" || resultadoNotas.status === "rejected" || resultadoResumo.status === "rejected") {
       setErroAlertas("Não foi possível atualizar todos os alertas acadêmicos.");
     }
 
@@ -540,8 +486,7 @@ export default function Home() {
                   </Button>
                 }
               >
-                Você possui ao menos uma disciplina com média parcial abaixo de 60%. Acompanhe seu
-                desempenho.
+                Há pendências ou alertas acadêmicos. Consulte os pontos, o corte e os motivos de cada disciplina.
               </Alert>
             )}
           </Stack>
@@ -630,25 +575,8 @@ export default function Home() {
                           </Stack>
                           <Divider />
                           <Stack direction="column" gap={1.5} mt="auto">
-                            <IndicadorPercentual
-                              rotulo="Frequência atual"
-                              valor={frequenciaPorDisciplina[disc.turmaDisciplinaId] ?? null}
-                              carregando={carregandoAlertas}
-                              cor={corFrequencia(
-                                frequenciaPorDisciplina[disc.turmaDisciplinaId] ?? null,
-                              )}
-                            />
-                            <IndicadorPercentual
-                              rotulo="Porcentagem de notas"
-                              valor={notasPorDisciplina[disc.turmaDisciplinaId] ?? null}
-                              carregando={carregandoAlertas}
-                              cor={
-                                (notasPorDisciplina[disc.turmaDisciplinaId] ?? null) !== null &&
-                                (notasPorDisciplina[disc.turmaDisciplinaId] ?? 0) < 60
-                                  ? "error"
-                                  : "primary"
-                              }
-                            />
+                            {carregandoAlertas ? <Skeleton height={80} />
+                              : <ResultadoAcademicoResumo resultado={resultadoPorDisciplina[disc.turmaDisciplinaId]} compacto />}
                           </Stack>
                         </Paper>
                       </Grid>

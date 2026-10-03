@@ -1,3 +1,4 @@
+import { ValidacaoEstrutura } from "../gateways/EscritaEstruturaAcademica";
 import { v4 as uuidv4 } from "uuid";
 import { PeriodoLetivoCommand } from "../models/PeriodoLetivo";
 import { PeriodoLetivoRepository } from "../repository/PeriodoLetivoRepository";
@@ -9,11 +10,11 @@ export class PeriodoLetivoService {
         const semestre = Number(data.semestre);
 
         if (![1, 2].includes(semestre)) {
-            throw new Error("Semestre deve ser 1 ou 2");
+            throw new ValidacaoEstrutura("Semestre deve ser 1 ou 2");
         }
 
         if (new Date(data.dataFim) < new Date(data.dataInicio)) {
-            throw new Error("Data fim deve ser maior ou igual a data inicio");
+            throw new ValidacaoEstrutura("Data fim deve ser maior ou igual a data inicio");
         }
     }
 
@@ -23,7 +24,7 @@ export class PeriodoLetivoService {
         const periodoPorCodigo = await this.periodoLetivoRepository.buscarPeriodoLetivoPorCodigo(data.codigo);
 
         if (periodoPorCodigo) {
-            throw new Error("Ja existe periodo letivo com este codigo");
+            throw new ValidacaoEstrutura("Ja existe periodo letivo com este codigo");
         }
 
         const periodoPorAnoSemestre = await this.periodoLetivoRepository.buscarPeriodoLetivoPorAnoSemestre(
@@ -32,7 +33,7 @@ export class PeriodoLetivoService {
         );
 
         if (periodoPorAnoSemestre) {
-            throw new Error("Ja existe periodo letivo para este ano e semestre");
+            throw new ValidacaoEstrutura("Ja existe periodo letivo para este ano e semestre");
         }
 
         const periodoLetivo: PeriodoLetivoCommand = {
@@ -80,7 +81,7 @@ export class PeriodoLetivoService {
             const periodoPorCodigo = await this.periodoLetivoRepository.buscarPeriodoLetivoPorCodigo(payload.codigo);
 
             if (periodoPorCodigo) {
-                throw new Error("Ja existe periodo letivo com este codigo");
+                throw new ValidacaoEstrutura("Ja existe periodo letivo com este codigo");
             }
         }
 
@@ -91,18 +92,18 @@ export class PeriodoLetivoService {
             );
 
             if (periodoPorAnoSemestre) {
-                throw new Error("Ja existe periodo letivo para este ano e semestre");
+                throw new ValidacaoEstrutura("Ja existe periodo letivo para este ano e semestre");
             }
         }
 
         return await this.periodoLetivoRepository.atualizarPeriodoLetivo(id, {
-            codigo: payload.codigo,
-            ano: Number(payload.ano),
-            semestre: Number(payload.semestre),
-            data_inicio: payload.dataInicio,
-            data_fim: payload.dataFim,
-            ativo: payload.ativo,
-            status: payload.status
+            codigo: data.codigo != null ? payload.codigo : undefined,
+            ano: data.ano != null ? Number(payload.ano) : undefined,
+            semestre: data.semestre != null ? Number(payload.semestre) : undefined,
+            data_inicio: data.dataInicio != null ? payload.dataInicio : undefined,
+            data_fim: data.dataFim != null ? payload.dataFim : undefined,
+            ativo: data.ativo != null ? payload.ativo : undefined,
+            status: data.status != null ? payload.status : undefined
         });
     }
 

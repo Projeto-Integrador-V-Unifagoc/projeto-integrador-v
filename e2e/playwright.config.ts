@@ -8,10 +8,10 @@ import { config, uiEnabled } from "./helpers/config.js";
  */
 export default defineConfig({
   testDir: ".",
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  workers: process.env.E2E_WORKERS ? Number(process.env.E2E_WORKERS) : 4,
+  retries: 0,
+  workers: process.env.E2E_WORKERS ? Number(process.env.E2E_WORKERS) : 1,
   reporter: [
     ["list"],
     ["html", { outputFolder: "playwright-report", open: "never" }],
@@ -35,6 +35,8 @@ export default defineConfig({
       ? [
           {
             name: "ui",
+            // As jornadas da feature exercitam 1280x720 e 390x844 explicitamente.
+            timeout: 180_000,
             testMatch: ["ui/**/*.spec.ts"],
             use: { ...devices["Desktop Chrome"], baseURL: config.webUrl },
           },

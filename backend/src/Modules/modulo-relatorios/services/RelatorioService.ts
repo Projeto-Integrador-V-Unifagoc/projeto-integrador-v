@@ -1,5 +1,8 @@
+import type { Request } from "express";
+import { NotaError, erroNota } from "../../notas/errors/NotaError";
+import type { ResultadoAcademico } from "../../notas/models/ResultadoAcademico";
+import { RelatorioAcademicoGateway } from "../gateways/RelatorioAcademicoGateway";
 import {
-  ContextoRelatorioAcademico,
   DisciplinaRelatorio,
   FiltrosRelatorioAcademico,
   PerfilRelatorio,
@@ -15,89 +18,57 @@ import { RelatorioRepository } from "../repository/RelatorioRepository";
 export class RelatorioService {
   private repository = new RelatorioRepository();
 
-  async listarRelatorios(filtros: FiltrosRelatorioAcademico, contexto?: ContextoRelatorioAcademico) {
-    const filtrosSeguros = await this.aplicarContextoAutenticado(filtros, contexto);
-    const filtrosConsulta = { ...filtrosSeguros, busca: undefined };
-    const [linhas, notasDetalhadas] = await Promise.all([
-      this.repository.listarLinhasAcademicas(filtrosConsulta),
-      this.repository.listarNotasDetalhadas(filtrosConsulta),
-    ]);
-    return this.montarRelatorios(linhas, filtrosSeguros, notasDetalhadas);
+  private gateway = new RelatorioAcademicoGateway();
+
+  private validarAutenticacao(req?: Request) {
+    const user = (req as any)?.user;
+    if (!user?.id) throw new NotaError("Autenticação necessária.", 401, "AUTENTICACAO_NECESSARIA");
+    if (!["aluno", "professor", "secretaria", "administrador"].includes(user.tipo_usuario)) throw erroNota.proibido();
   }
 
-  async obterStatusFonteDados() {
-    return {
-      source: "database",
-      schema: "piv",
-      tabelas: await this.repository.contarFontesAcademicas(),
-    };
-  }
-
-  private async aplicarContextoAutenticado(
-    filtros: FiltrosRelatorioAcademico,
-    contexto?: ContextoRelatorioAcademico
-  ): Promise<FiltrosRelatorioAcademico> {
-    if (!contexto) {
-      return filtros;
-    }
-
-    const perfil = this.perfilRelatorioPorUsuario(contexto.tipoUsuario);
-    const filtrosSeguros: FiltrosRelatorioAcademico = {
-      ...filtros,
-      perfil,
-    };
-
-    if (perfil === "Aluno") {
-      const aluno = await this.repository.buscarAlunoPorUsuarioId(contexto.usuarioId);
-      filtrosSeguros.alunoId = aluno?.id ?? "__sem_vinculo__";
-      filtrosSeguros.turmaId = undefined;
-      filtrosSeguros.turmaIdsPermitidos = undefined;
-      return filtrosSeguros;
-    }
-
-    if (perfil === "Professor") {
-      let professor: any;
-
-      professor = await this.repository.buscarProfessorPorUsuarioId(contexto.usuarioId);
-
-      if (!professor?.id) {
-        return {
-          ...filtrosSeguros,
-          turmaId: "__sem_vinculo__",
-          turmaIdsPermitidos: ["__sem_vinculo__"],
-        };
+  async listarRelatorios(filtros: FiltrosRelatorioAcademico, req?: Request) {
+    this.validarAutenticacao(req);
+    const lote = await this.repository.carregarResultadoAcademico(filtros, req!);
+    const perfil: PerfilRelatorio = lote.contexto.perfil === "aluno" ? "Aluno" : lote.contexto.perfil === "professor" ? "Professor" : "Secretaria";
+    const ofertas = new Map(lote.ofertas.map(o => [o.id, o]));
+    const linhas: RelatorioAcademicoLinha[] = [], notas: RelatorioAcademicoLinha[] = [];
+    for (const matricula of lote.matriculas) {
+      const oferta = ofertas.get(matricula.turma_disciplina_id);
+      const resultado = matricula.resultadoAcademico;
+      if (!oferta || resultado.turmaDisciplinaId !== oferta.id ||
+        resultado.matriculaTurmaDisciplinaId !== matricula.matricula_turma_disciplina_id) {
+        throw new Error("Resultado incompatível com o lote autorizado.");
       }
-
-      const turmas = await this.repository.listarTurmasDisciplinaDoProfessor(professor.id);
-      const turmaIdsPermitidos = turmas.map((turma: any) => turma.id).filter(Boolean);
-
-      if (filtros.turmaId && !turmaIdsPermitidos.includes(filtros.turmaId)) {
-        return {
-          ...filtrosSeguros,
-          turmaId: "__sem_acesso__",
-          turmaIdsPermitidos: ["__sem_acesso__"],
-        };
-      }
-
-      return {
-        ...filtrosSeguros,
-        turmaIdsPermitidos: turmaIdsPermitidos.length ? turmaIdsPermitidos : ["__sem_vinculo__"],
+      if (filtros.cursoId && oferta.curso_id !== filtros.cursoId.toLowerCase()) continue;
+      if (filtros.disciplinaId && oferta.disciplina_id !== filtros.disciplinaId.toLowerCase()) continue;
+      if (filtros.matricula && String(matricula.matricula) !== filtros.matricula) continue;
+      const linha: RelatorioAcademicoLinha = {
+        turmaDisciplinaId: oferta.id, matriculaTurmaDisciplinaId: matricula.matricula_turma_disciplina_id,
+        periodoLetivoId: oferta.periodo_letivo_id, resultadoAcademico: resultado,
+        alunoId: matricula.aluno_id, aluno: matricula.aluno_nome, matricula: matricula.matricula,
+        cursoId: oferta.curso_id, curso: oferta.curso_nome ?? "Curso nao informado",
+        periodo: oferta.periodo_codigo ?? "Periodo nao informado", turmaId: oferta.id, disciplinaId: oferta.disciplina_id,
+        disciplina: oferta.disciplina_nome ?? "Sem disciplina vinculada", cargaHoraria: oferta.carga_horaria ?? 0,
+        ano: oferta.ano && oferta.semestre ? `${oferta.ano}/${oferta.semestre}` : String(oferta.ano ?? "Atual"),
+        nota: resultado.pontosEfetivos, frequencia: resultado.frequencia.percentual,
+        totalAulas: resultado.frequencia.presencas + resultado.frequencia.faltas,
+        presencas: resultado.frequencia.presencas, faltas: resultado.frequencia.faltas,
       };
+      linhas.push(linha);
+      for (const avaliacao of oferta.avaliacoes) notas.push({ ...linha,
+        avaliacao: avaliacao.descricao ?? avaliacao.tipo, tipoAvaliacao: avaliacao.tipo,
+        valorAvaliacao: avaliacao.valor, dataAvaliacao: avaliacao.data_lancamento,
+        nota: matricula.notas.has(avaliacao.id) ? matricula.notas.get(avaliacao.id)! : null,
+      });
     }
-
-    return filtrosSeguros;
+    // Rede externa ocorre depois de encerrar o snapshot comum e jamais amplia o lote autorizado.
+    const origem = this.gateway.estaConfigurado() ? await this.gateway.listarLinhas(filtros, linhas) : linhas;
+    return this.montarRelatorios(origem, { ...filtros, perfil }, notas);
   }
 
-  private perfilRelatorioPorUsuario(tipoUsuario: ContextoRelatorioAcademico["tipoUsuario"]): PerfilRelatorio {
-    if (tipoUsuario === "aluno") {
-      return "Aluno";
-    }
-
-    if (tipoUsuario === "professor") {
-      return "Professor";
-    }
-
-    return "Secretaria";
+  async obterStatusFonteDados(req?: Request) {
+    this.validarAutenticacao(req);
+    return { source: "database", schema: "piv", tabelas: await this.repository.contarFontesAcademicas() };
   }
 
   private montarRelatorios(
@@ -116,7 +87,7 @@ export class RelatorioService {
     const relatorios: RelatorioItem[] = [];
 
     chaves.forEach((chave, index) => {
-      const [ano, curso] = chave.split("||");
+      const [ano, _cursoId, curso] = chave.split("||");
       const linhasDoCurso = linhas.filter((linha) => this.chaveAnoCurso(linha) === chave);
       const notasDoCurso = notas.filter((linha) => this.chaveAnoCurso(linha) === chave);
       const baseId = index * 10;
@@ -215,7 +186,7 @@ export class RelatorioService {
   }
 
   private chaveAnoCurso(linha: RelatorioAcademicoLinha) {
-    return `${String(linha.ano || "Atual")}||${linha.curso || "Curso nao informado"}`;
+    return `${String(linha.ano || "Atual")}||${linha.cursoId ?? ""}||${linha.curso || "Curso nao informado"}`;
   }
 
   private montarPeriodos(
@@ -223,41 +194,24 @@ export class RelatorioService {
     perfil: PerfilRelatorio,
     tipo: TipoRelatorio
   ): PeriodoRelatorio[] {
-    const grupos = new Map<string, DisciplinaRelatorio[]>();
-
-    linhas
-      .filter((linha) => {
-        if (tipo === "Notas") return linha.nota !== null && linha.nota !== undefined;
-        if (tipo === "Frequencia") return linha.frequencia !== null && linha.frequencia !== undefined;
-        return true;
-      })
-      .forEach((linha) => {
-        const periodo = linha.periodo || linha.ano || "Periodo nao informado";
-        const disciplinas = grupos.get(periodo) ?? [];
-
-        disciplinas.push({
-          nome: linha.disciplina || "Sem disciplina vinculada",
-          aluno: perfil !== "Aluno" ? linha.aluno : undefined,
-          cargaHoraria: `${linha.cargaHoraria ?? 0}h`,
-          avaliacao: this.nomeAvaliacao(linha),
-          tipoAvaliacao: this.labelTipoAvaliacao(linha.tipoAvaliacao),
-          valorAvaliacao: this.formatarNota(linha.valorAvaliacao),
-          dataAvaliacao: this.formatarData(linha.dataAvaliacao),
-          nota: this.formatarNota(linha.nota),
-          frequencia: this.formatarFrequencia(linha.frequencia),
-          totalAulas: this.formatarInteiro(linha.totalAulas),
-          presencas: this.formatarInteiro(linha.presencas),
-          faltas: this.formatarInteiro(linha.faltas),
-          situacao: this.normalizarSituacao(linha.situacao, linha.nota, linha.frequencia),
-        });
-
-        grupos.set(periodo, disciplinas);
+    const grupos = new Map<string, PeriodoRelatorio>();
+    for (const linha of linhas) {
+      const periodo = grupos.get(linha.periodoLetivoId) ?? { id: linha.periodoLetivoId,
+        nome: linha.periodo || linha.ano || "Periodo nao informado", disciplinas: [] };
+      periodo.disciplinas.push({
+        turmaDisciplinaId: linha.turmaDisciplinaId, matriculaTurmaDisciplinaId: linha.matriculaTurmaDisciplinaId,
+        resultadoAcademico: linha.resultadoAcademico,
+        nome: linha.disciplina || "Sem disciplina vinculada", aluno: perfil !== "Aluno" ? linha.aluno : undefined,
+        cargaHoraria: `${linha.cargaHoraria}h`, avaliacao: this.nomeAvaliacao(linha),
+        tipoAvaliacao: this.labelTipoAvaliacao(linha.tipoAvaliacao), valorAvaliacao: linha.valorAvaliacao ?? undefined,
+        dataAvaliacao: this.formatarData(linha.dataAvaliacao), nota: linha.nota,
+        frequencia: linha.frequencia === null ? null : `${linha.frequencia}%`,
+        totalAulas: this.formatarInteiro(linha.totalAulas), presencas: this.formatarInteiro(linha.presencas),
+        faltas: this.formatarInteiro(linha.faltas), situacao: this.situacaoDoResultado(linha.resultadoAcademico),
       });
-
-    return Array.from(grupos.entries()).map(([nome, disciplinas]) => ({
-      nome,
-      disciplinas,
-    }));
+      grupos.set(linha.periodoLetivoId, periodo);
+    }
+    return [...grupos.values()];
   }
 
   private criarRelatorio(
@@ -336,7 +290,9 @@ export class RelatorioService {
         Tipo: disciplina.tipoAvaliacao ?? "-",
         "Carga Horaria": disciplina.cargaHoraria,
         Nota: disciplina.nota ?? "-",
-        Media: disciplina.nota ?? "-",
+        Pontos: disciplina.resultadoAcademico.pontosEfetivos ?? "-",
+        Total: disciplina.resultadoAcademico.totalPontos ?? "-",
+        Corte: disciplina.resultadoAcademico.cortePontos ?? "-",
         Valor: disciplina.valorAvaliacao ?? "-",
         Data: disciplina.dataAvaliacao ?? "-",
         Frequencia: disciplina.frequencia ?? "-",
@@ -351,11 +307,11 @@ export class RelatorioService {
   private pdfConfig(tipo: TipoRelatorio, incluirAluno: boolean, linhas: RelatorioLinhaPdf[]) {
     if (tipo === "Notas") {
       const colunas = incluirAluno
-        ? ["Aluno", "Periodo", "Disciplina", "Media", "Situacao"]
+        ? ["Aluno", "Periodo", "Disciplina", "Pontos", "Total", "Corte", "Situacao"]
         : ["Periodo", "Disciplina", "Avaliacao", "Tipo", "Nota", "Valor", "Data"];
       return {
         colunas,
-        larguras: incluirAluno ? [150, 80, 190, 70, 110] : [75, 140, 135, 65, 50, 50, 70],
+        larguras: incluirAluno ? [100, 70, 150, 60, 60, 60, 100] : [75, 140, 135, 65, 50, 50, 70],
         linhas: linhas.map((linha) => this.pick(linha, colunas)),
       };
     }
@@ -381,12 +337,12 @@ export class RelatorioService {
     }
 
     const colunas = incluirAluno
-      ? ["Aluno", "Periodo", "Disciplina", "Carga Horaria", "Nota", "Frequencia", "Situacao"]
-      : ["Periodo", "Disciplina", "Carga Horaria", "Nota", "Frequencia", "Situacao"];
+      ? ["Aluno", "Periodo", "Disciplina", "Pontos", "Total", "Corte", "Frequencia", "Situacao"]
+      : ["Periodo", "Disciplina", "Pontos", "Total", "Corte", "Frequencia", "Situacao"];
 
     return {
       colunas,
-      larguras: incluirAluno ? [100, 75, 135, 85, 55, 75, 80] : [80, 165, 95, 60, 80, 95],
+      larguras: incluirAluno ? [85, 65, 130, 55, 55, 55, 70, 90] : [70, 155, 65, 65, 65, 80, 100],
       linhas: linhas.map((linha) => this.pick(linha, colunas)),
     };
   }
@@ -398,41 +354,10 @@ export class RelatorioService {
     }, {});
   }
 
-  private normalizarSituacao(
-    situacao: RelatorioAcademicoLinha["situacao"],
-    nota: RelatorioAcademicoLinha["nota"],
-    frequencia: RelatorioAcademicoLinha["frequencia"]
-  ): SituacaoAcademica {
-    const valor = String(situacao ?? "").toLowerCase();
-
-    if (valor.includes("risco") || valor.includes("reprov")) {
-      return "Pendente";
-    }
-
-    if (valor.includes("alert") || valor.includes("recuper")) {
-      return "Atencao";
-    }
-
-    if (valor.includes("aprov") || valor.includes("regular")) {
-      return "Aprovado";
-    }
-
-    const notaNumerica = Number(String(nota ?? "").replace(",", "."));
-    const frequenciaNumerica = Number(String(frequencia ?? "").replace(",", "."));
-
-    if (!Number.isNaN(frequenciaNumerica) && frequenciaNumerica < 75) {
-      return "Pendente";
-    }
-
-    if (!Number.isNaN(notaNumerica) && notaNumerica < 6) {
-      return "Recuperacao";
-    }
-
-    if (!Number.isNaN(frequenciaNumerica) && frequenciaNumerica <= 80) {
-      return "Atencao";
-    }
-
-    return "Aprovado";
+  private situacaoDoResultado(resultado: ResultadoAcademico): SituacaoAcademica {
+    if (resultado.aprovacaoDisciplina === "APROVADA") return "Aprovado";
+    if (resultado.aprovacaoDisciplina === "NAO_APROVADA") return "Reprovado";
+    return resultado.resultadoPorNota === "EM_RECUPERACAO" ? "Recuperacao" : "Pendente";
   }
 
   private nomeAvaliacao(linha: RelatorioAcademicoLinha) {
@@ -447,6 +372,7 @@ export class RelatorioService {
 
   private labelTipoAvaliacao(tipo?: string | null) {
     const labels: Record<string, string> = {
+      REGULAR: "Regular",
       PROVA: "Prova",
       TPI: "TPI",
       TRABALHO: "Trabalho",
@@ -471,30 +397,7 @@ export class RelatorioService {
       return String(data);
     }
 
-    return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(valor);
-  }
-
-  private formatarNota(nota: RelatorioAcademicoLinha["nota"]) {
-    if (nota === null || nota === undefined || nota === "") {
-      return undefined;
-    }
-
-    const numero = Number(String(nota).replace(",", "."));
-    return Number.isNaN(numero) ? String(nota) : numero.toFixed(1).replace(".", ",");
-  }
-
-  private formatarFrequencia(frequencia: RelatorioAcademicoLinha["frequencia"]) {
-    if (frequencia === null || frequencia === undefined || frequencia === "") {
-      return undefined;
-    }
-
-    const texto = String(frequencia);
-    if (texto.includes("%")) {
-      return texto;
-    }
-
-    const numero = Number(texto.replace(",", "."));
-    return Number.isNaN(numero) ? texto : `${numero.toFixed(0)}%`;
+    return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(valor);
   }
 
   private formatarInteiro(valor?: number) {
@@ -508,7 +411,8 @@ export class RelatorioService {
   private labelSituacao(situacao: SituacaoAcademica) {
     const labels: Record<SituacaoAcademica, string> = {
       Aprovado: "Aprovado",
-      Recuperacao: "Recuperacao",
+      Reprovado: "Reprovado",
+      Recuperacao: "Recuperação",
       Pendente: "Pendente",
       Regular: "Regular",
       Atencao: "Atencao",

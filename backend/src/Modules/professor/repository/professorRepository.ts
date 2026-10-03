@@ -1,5 +1,6 @@
 import { db } from '../../../database/connection.js';
 import type { AtualizarProfessor, CriarProfessorDTO, FiltroProfessor } from '../models/professorModels.js';
+import { escritaEstrutura } from '../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica';
 
 const baseQuery = () => db('piv.professor')
   .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
@@ -64,7 +65,7 @@ export const professorRepository = {
   },
 
   async atualizar(id: string, dados: AtualizarProfessor & { faculdade_id?: string }) {
-    return db.transaction(async (trx) => {
+    return escritaEstrutura(db, "professor", id, dados, async (trx) => {
       const professor = await trx('piv.professor').where({ id }).first();
       if (!professor) return null;
       const pessoa: Record<string, unknown> = {};
@@ -89,8 +90,10 @@ export const professorRepository = {
   },
 
   async definirAtivo(id: string, ativo: boolean) {
-    const [professor] = await db('piv.professor').where({ id }).update({ ativo, updated_at: db.fn.now() }).returning('*');
+    return escritaEstrutura(db, "professor", id, { ativo }, async (trx) => {
+    const [professor] = await trx('piv.professor').where({ id }).update({ ativo, updated_at: trx.fn.now() }).returning('*');
     return professor ?? null;
+    });
   },
 
   async buscarProfessorAtivoPorId(id: string) {

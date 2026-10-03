@@ -1,200 +1,111 @@
-import assert from "node:assert/strict";
-import { describe, it } from "vitest";
+import type { Request } from "express";
+import { describe, expect, it, vi } from "vitest";
 import { RelatorioService } from "./RelatorioService";
-import type { RelatorioAcademicoLinha } from "../models/RelatorioAcademico";
+import { calcularResultadoAcademico } from "../../notas/models/ResultadoAcademico";
 
-const linhaBase = (over: Partial<RelatorioAcademicoLinha> = {}): RelatorioAcademicoLinha => ({
-  alunoId: "a1", matricula: 1, aluno: "Aluno Um",
-  curso: "Sistemas de Informacao", periodo: "1", ano: "2026",
-  disciplina: "Programacao Orientada a Objetos", cargaHoraria: 60,
-  avaliacao: "P1", tipoAvaliacao: "PROVA", valorAvaliacao: 20, dataAvaliacao: "2026-05-10",
-  nota: 75, frequencia: 90, totalAulas: 20, presencas: 18, faltas: 2, situacao: "Aprovado",
-  ...over,
-});
-
-function criar(overrides: Record<string, any> = {}) {
-  const repository = {
-    listarLinhasAcademicas: async (_f: any) => [linhaBase()],
-    listarNotasDetalhadas: async (_f: any) => [linhaBase()],
-    contarFontesAcademicas: async () => ({ alunos: 1 }),
-    buscarAlunoPorUsuarioId: async (_id: string) => ({ id: "a1" }),
-    buscarProfessorPorUsuarioId: async (_id: string) => ({ id: "prof1" }),
-    listarTurmasDisciplinaDoProfessor: async (_id: string) => [{ id: "t1" }],
-    ...overrides,
-  };
+vi.mock("../../../database/connection", () => ({ db: vi.fn(() => { throw new Error("SQL real proibido nesta unidade."); }) }));
+vi.mock("../../notas/service/criarResultadoAcademicoService", () => ({ criarResultadoAcademicoService: () => ({ consultar: vi.fn() }) }));
+const id = (n: number) => `${n.toString().padStart(8, "0")}-aaaa-bbbb-cccc-000000000000`;
+const req = (perfil = "secretaria") => ({ user: { id: id(90), tipo_usuario: perfil } }) as unknown as Request;
+function criar(perfil = "secretaria") {
+  const ofertas = [120, 300].map((total, i) => ({ id: id(i + 1), curso_id: id(10), curso_nome: "Sistemas de Informação",
+    turma_id: id(i + 11), turma_sigla: "A", disciplina_id: id(20), disciplina_nome: "Programação",
+    carga_horaria: 60, periodo_letivo_id: id(i + 21), periodo_codigo: "Mesmo rótulo", ano: 2026, semestre: 1,
+    plano: { turmaDisciplinaId: id(i + 1), regraPontuacaoId: id(i + 31), totalPontos: `${total}.00`, planoCompleto: true,
+      podeCriarRegular: false, motivosBloqueio: [], subgrupos: [] },
+    avaliacoes: [{ id: id(i + 41), tipo: "REGULAR", valor: `${total}.00`, descricao: "Atividade", data_lancamento: "2026-05-10" }] }));
+  const matriculas = ofertas.map((o, i) => {
+    const notas = new Map([[o.avaliacoes[0].id, i ? "179.99" : "72.00"]]);
+    return { aluno_id: id(50), aluno_nome: "Pessoa sintética", matricula: 2026001,
+      matricula_turma_disciplina_id: id(i + 51), turma_disciplina_id: o.id, notas,
+      resultadoAcademico: calcularResultadoAcademico({ turmaDisciplinaId: o.id, matriculaTurmaDisciplinaId: id(i + 51),
+        plano: o.plano, avaliacoes: o.avaliacoes as any, notasPorAvaliacao: notas,
+        frequencia: { presencas: 3, faltas: 1, percentual: 75, situacao: "ALERTA", requisito: "SUFICIENTE" } }) };
+  });
+  const lote = { contexto: { usuarioId: id(90), perfil }, ofertas, matriculas };
+  const repository = { carregarResultadoAcademico: vi.fn(async (_f: any, _req: any) => lote), contarFontesAcademicas: vi.fn(async () => ({ aluno: 1 })) };
+  const gateway = { estaConfigurado: vi.fn(() => false), listarLinhas: vi.fn(async (_f: any, _autorizadas: any) => []) };
   const service = new RelatorioService();
-  (service as any).repository = repository;
-  return { service, repository };
+  Object.assign(service as any, { repository, gateway });
+  return { service, repository, gateway, lote };
 }
-
-describe("RelatorioService.listarRelatorios", () => {
-  it("monta relatorios de Notas/Frequencia/Historico/Consulta para a secretaria", async () => {
-    const { service } = criar();
-    const relatorios = await service.listarRelatorios({});
-    const tipos = new Set(relatorios.map((r) => r.tipo));
-    assert.ok(tipos.has("Notas"));
-    assert.ok(tipos.has("Frequencia"));
-    assert.ok(tipos.has("Consulta"));
-    assert.ok(relatorios.every((r) => r.periodos.some((p) => p.disciplinas.length > 0)));
+const disciplinas = (relatorios: any[]) => relatorios.flatMap(r => r.periodos.flatMap((p: any) => p.disciplinas));
+describe("Relatório projeta um lote acadêmico autorizado sem fórmula alternativa", () => {
+  it.each(["secretaria", "administrador", "professor", "aluno"])("usa requisição original e perfil autenticado de %s", async perfil => {
+    const c = criar(perfil); const request = req(perfil);
+    const relatorios = await (c.service.listarRelatorios as any)({ perfil: "Secretaria" }, request);
+    expect(c.repository.carregarResultadoAcademico).toHaveBeenCalledTimes(1);
+    expect(c.repository.carregarResultadoAcademico).toHaveBeenCalledWith({ perfil: "Secretaria" }, request);
+    expect(relatorios.every((r: any) => r.perfis[0] === (perfil === "aluno" ? "Aluno" : perfil === "professor" ? "Professor" : "Secretaria"))).toBe(true);
+    expect(relatorios.map((r: any) => r.tipo)).toEqual(perfil === "aluno" ? ["Notas", "Frequencia", "Historico"] : ["Notas", "Frequencia", "Historico", "Consulta"]);
   });
-
-  it("nao gera relatorio de Consulta para o perfil Aluno", async () => {
-    const { service } = criar();
-    const relatorios = await service.listarRelatorios({}, { usuarioId: "u1", tipoUsuario: "aluno" });
-    assert.equal(relatorios.some((r) => r.tipo === "Consulta"), false);
-    assert.ok(relatorios.every((r) => r.perfis.includes("Aluno")));
+  it.each([undefined, req("visitante")])("nega contexto ausente/desconhecido antes de qualquer consulta", async request => {
+    const c = criar(); await expect((c.service.listarRelatorios as any)({}, request)).rejects.toMatchObject({ status: request ? 403 : 401 });
+    expect(c.repository.carregarResultadoAcademico).not.toHaveBeenCalled(); expect(c.gateway.listarLinhas).not.toHaveBeenCalled();
   });
-
-  it("filtra pelo tipo solicitado", async () => {
-    const { service } = criar();
-    const relatorios = await service.listarRelatorios({ tipo: "Notas" });
-    assert.ok(relatorios.length > 0);
-    assert.ok(relatorios.every((r) => r.tipo === "Notas"));
+  it("preserva oferta/matrícula/periodo por UUID e repassa resultado, pontos e corte exatos", async () => {
+    const c = criar(); const relatorios = await (c.service.listarRelatorios as any)({ tipo: "Historico" }, req());
+    expect(relatorios[0].periodos).toHaveLength(2);
+    const ds = disciplinas(relatorios); expect(ds).toHaveLength(2);
+    for (const [i, d] of ds.entries()) {
+      expect(d).toMatchObject({ turmaDisciplinaId: c.lote.ofertas[i].id, matriculaTurmaDisciplinaId: c.lote.matriculas[i].matricula_turma_disciplina_id,
+        resultadoAcademico: c.lote.matriculas[i].resultadoAcademico, nota: i ? "179.99" : "72.00", frequencia: "75%" });
+    }
+    expect(ds[0].situacao).toBe("Aprovado"); expect(ds[1].situacao).toBe("Recuperacao");
+    expect(ds[1].resultadoAcademico.percentualResultado).toBe(60);
+    expect(ds[1].resultadoAcademico.aprovacaoDisciplina).toBe("PENDENTE");
+    expect(relatorios[0].pdf.colunas).toContain("Pontos"); expect(relatorios[0].pdf.colunas).toContain("Total"); expect(relatorios[0].pdf.colunas).toContain("Corte");
+    expect(relatorios[0].pdf.linhas[1]).toMatchObject({ Pontos: "179.99", Total: "300.00", Corte: "180.00", Situacao: "Recuperação" });
   });
-
-  it("aplica o filtro de busca ignorando acentos e caixa", async () => {
-    const { service } = criar();
-    const comMatch = await service.listarRelatorios({ busca: "PROGRAMACAO" });
-    assert.ok(comMatch.length > 0);
-    const semMatch = await service.listarRelatorios({ busca: "termo-inexistente-xyz" });
-    assert.equal(semMatch.length, 0);
+  it("ausência não desaparece e não vira zero/100/aprovação", async () => {
+    const c = criar(); const m = c.lote.matriculas[0], o = c.lote.ofertas[0]; m.notas.clear();
+    m.resultadoAcademico = calcularResultadoAcademico({ turmaDisciplinaId: o.id, matriculaTurmaDisciplinaId: m.matricula_turma_disciplina_id,
+      plano: o.plano, avaliacoes: o.avaliacoes as any, notasPorAvaliacao: m.notas,
+      frequencia: { presencas: 0, faltas: 0, percentual: null, situacao: "NAO_LANCADO", requisito: "PENDENTE" } });
+    const relatorios = await (c.service.listarRelatorios as any)({}, req());
+    for (const r of relatorios) {
+      const d = disciplinas([r]).find(d => d.turmaDisciplinaId === o.id);
+      expect(d).toBeDefined(); expect(d.nota).toBeNull(); expect(d.frequencia).toBeNull(); expect(d.situacao).toBe("Pendente");
+      expect(d.resultadoAcademico.pontosEfetivos).toBeNull();
+    }
   });
-
-  it("restringe o aluno ao proprio vinculo", async () => {
-    let filtrosRecebidos: any;
-    const { service } = criar({
-      listarLinhasAcademicas: async (f: any) => {
-        filtrosRecebidos = f;
-        return [linhaBase()];
-      },
-    });
-    await service.listarRelatorios({}, { usuarioId: "u1", tipoUsuario: "aluno" });
-    assert.equal(filtrosRecebidos.alunoId, "a1");
-    assert.equal(filtrosRecebidos.perfil, "Aluno");
+  it("aluno recebe avaliações ausentes/zero como null/string sem perder precisão nem histórico", async () => {
+    const c = criar("aluno"); const o = c.lote.ofertas[0], m = c.lote.matriculas[0];
+    o.avaliacoes[0].tipo = "PROVA"; m.notas.set(o.avaliacoes[0].id, "0.00"); c.lote.matriculas[1].notas.clear();
+    const relatorios = await (c.service.listarRelatorios as any)({ tipo: "Notas" }, req("aluno"));
+    const ds = disciplinas(relatorios);
+    expect(ds[0]).toMatchObject({ nota: "0.00", valorAvaliacao: "120.00", tipoAvaliacao: "Prova", avaliacao: "Atividade", dataAvaliacao: "10/05/2026" });
+    expect(ds[1].nota).toBeNull(); expect(ds[1].valorAvaliacao).toBe("300.00");
+    expect(relatorios[0].pdf.linhas[1].Nota).toBe("-");
   });
-
-  it("marca aluno sem vinculo com sentinela __sem_vinculo__", async () => {
-    let filtrosRecebidos: any;
-    const { service } = criar({
-      buscarAlunoPorUsuarioId: async () => null,
-      listarLinhasAcademicas: async (f: any) => {
-        filtrosRecebidos = f;
-        return [];
-      },
-    });
-    await service.listarRelatorios({}, { usuarioId: "u1", tipoUsuario: "aluno" });
-    assert.equal(filtrosRecebidos.alunoId, "__sem_vinculo__");
+  it("não promove nota suficiente se a frequência do resultado impede aprovação", async () => {
+    const c = criar(); Object.assign(c.lote.matriculas[0].resultadoAcademico, { aprovacaoDisciplina: "NAO_APROVADA",
+      frequencia: { presencas: 2, faltas: 2, percentual: 50, situacao: "RISCO_REPROVACAO", requisito: "INSUFICIENTE" }, motivos: ["FREQUENCIA_INSUFICIENTE"] });
+    const ds = disciplinas(await (c.service.listarRelatorios as any)({ tipo: "Historico" }, req()));
+    expect(ds[0].situacao).toBe("Reprovado"); expect(ds[0].resultadoAcademico.resultadoPorNota).toBe("SUFICIENTE");
   });
-
-  it("marca professor sem vinculo docente com sentinela __sem_vinculo__", async () => {
-    let filtrosRecebidos: any;
-    const { service } = criar({
-      buscarProfessorPorUsuarioId: async () => null,
-      listarLinhasAcademicas: async (f: any) => { filtrosRecebidos = f; return []; },
-    });
-    await service.listarRelatorios({}, { usuarioId: "u1", tipoUsuario: "professor" });
-    assert.equal(filtrosRecebidos.turmaId, "__sem_vinculo__");
-    assert.deepEqual(filtrosRecebidos.turmaIdsPermitidos, ["__sem_vinculo__"]);
+  it("conserva filtros de tipo/ano/busca sem acentos e identidade do curso", async () => {
+    const c = criar(); const relatorios = await (c.service.listarRelatorios as any)({ tipo: "Notas", ano: "2026/1", busca: "PROGRAMACAO", cursoId: id(10) }, req());
+    expect(relatorios).toHaveLength(1); expect(relatorios[0].curso).toBe("Sistemas de Informação");
+    expect(await (c.service.listarRelatorios as any)({ busca: "inexistente" }, req())).toEqual([]);
+    expect(await (c.service.listarRelatorios as any)({ ano: "2025/1" }, req())).toEqual([]);
   });
-
-  it("aplica o perfil Secretaria quando o contexto autenticado e de secretaria", async () => {
-    let filtrosRecebidos: any;
-    const { service } = criar({
-      listarLinhasAcademicas: async (f: any) => { filtrosRecebidos = f; return [linhaBase()]; },
-    });
-    await service.listarRelatorios({}, { usuarioId: "u1", tipoUsuario: "secretaria" as any });
-    assert.equal(filtrosRecebidos.perfil, "Secretaria");
+  it("propaga falha/escopo negado sem fallback externo ou resultado inventado", async () => {
+    const c = criar(); const erro = { status: 403, codigo: "ESCOPO_PROIBIDO" }; c.repository.carregarResultadoAcademico.mockRejectedValueOnce(erro);
+    await expect((c.service.listarRelatorios as any)({}, req("professor"))).rejects.toBe(erro);
+    expect(c.gateway.listarLinhas).not.toHaveBeenCalled();
   });
-
-  it("bloqueia professor que pede turma fora das suas atribuicoes", async () => {
-    let filtrosRecebidos: any;
-    const { service } = criar({
-      listarTurmasDisciplinaDoProfessor: async () => [{ id: "t1" }],
-      listarLinhasAcademicas: async (f: any) => {
-        filtrosRecebidos = f;
-        return [];
-      },
-    });
-    await service.listarRelatorios({ turmaId: "t999" }, { usuarioId: "u1", tipoUsuario: "professor" });
-    assert.deepEqual(filtrosRecebidos.turmaIdsPermitidos, ["__sem_acesso__"]);
+  it("consulta gateway configurado somente após autorização e rejeita incompatibilidade", async () => {
+    const c = criar(); c.gateway.estaConfigurado.mockReturnValue(true);
+    const erro = { status: 502, codigo: "RESULTADO_EXTERNO_INCOMPATIVEL" }; c.gateway.listarLinhas.mockRejectedValueOnce(erro);
+    await expect((c.service.listarRelatorios as any)({}, req())).rejects.toBe(erro);
+    expect(c.gateway.listarLinhas).toHaveBeenCalledTimes(1);
+    expect(c.gateway.listarLinhas.mock.calls[0][1]).toEqual(expect.arrayContaining([expect.objectContaining({
+      turmaDisciplinaId: c.lote.ofertas[0].id, resultadoAcademico: c.lote.matriculas[0].resultadoAcademico })]));
   });
-});
-
-describe("RelatorioService formatacao de valores", () => {
-  it("trata nota, data, frequencia e contadores ausentes ou ja formatados", async () => {
-    const linhaSemDados = linhaBase({
-      nota: null as any, dataAvaliacao: null as any, frequencia: null as any,
-      totalAulas: undefined as any, valorAvaliacao: null as any,
-    });
-    const linhaComPercentual = linhaBase({ frequencia: "95%" as any });
-    const { service } = criar({
-      listarLinhasAcademicas: async () => [linhaSemDados, linhaComPercentual],
-    });
-    const relatorios = await service.listarRelatorios({ tipo: "Historico" });
-    const disciplinas = relatorios.flatMap((r) => r.periodos.flatMap((p) => p.disciplinas));
-    const semDados = disciplinas.find((d) => d.nota === undefined);
-    assert.ok(semDados);
-    assert.equal(semDados!.dataAvaliacao, undefined);
-    assert.equal(semDados!.frequencia, undefined);
-    assert.equal(semDados!.totalAulas, undefined);
-    const comPercentual = disciplinas.find((d) => d.frequencia === "95%");
-    assert.ok(comPercentual);
-  });
-
-  it("mantem valores nao numericos de nota e frequencia como texto", async () => {
-    const linha = linhaBase({ nota: "Aprovado por equivalencia" as any, frequencia: "Dispensado" as any });
-    const { service } = criar({ listarLinhasAcademicas: async () => [linha] });
-    const relatorios = await service.listarRelatorios({ tipo: "Historico" });
-    const disciplina = relatorios[0].periodos[0].disciplinas[0];
-    assert.equal(disciplina.nota, "Aprovado por equivalencia");
-    assert.equal(disciplina.frequencia, "Dispensado");
-  });
-});
-
-describe("RelatorioService.normalizarSituacao", () => {
-  async function disciplinaCom(over: Partial<RelatorioAcademicoLinha>) {
-    const { service } = criar({ listarLinhasAcademicas: async () => [linhaBase(over)] });
-    const relatorios = await service.listarRelatorios({ tipo: "Historico" });
-    return relatorios[0].periodos[0].disciplinas[0];
-  }
-
-  it("reconhece risco/reprovacao e alerta/recuperacao pelo texto da situacao", async () => {
-    assert.equal((await disciplinaCom({ situacao: "Risco de Reprovacao" as any })).situacao, "Pendente");
-    assert.equal((await disciplinaCom({ situacao: "Alerta" as any })).situacao, "Atencao");
-    assert.equal((await disciplinaCom({ situacao: "Em Recuperacao" as any })).situacao, "Atencao");
-  });
-
-  it("recorre a frequencia e nota numericas quando a situacao nao e reconhecida", async () => {
-    assert.equal((await disciplinaCom({ situacao: "" as any, frequencia: 70, nota: 90 })).situacao, "Pendente");
-    assert.equal((await disciplinaCom({ situacao: "" as any, frequencia: "N/A" as any, nota: 5 })).situacao, "Recuperacao");
-    assert.equal((await disciplinaCom({ situacao: "" as any, frequencia: 78, nota: 90 })).situacao, "Atencao");
-    assert.equal((await disciplinaCom({ situacao: "" as any, frequencia: 90, nota: 9 })).situacao, "Aprovado");
-  });
-});
-
-describe("RelatorioService.nomeAvaliacao", () => {
-  it("usa o rotulo do tipo quando a avaliacao nao tem nome, e o proprio tipo quando desconhecido", async () => {
-    const { service } = criar({
-      listarLinhasAcademicas: async () => [
-        linhaBase({ avaliacao: "" as any, tipoAvaliacao: "PROVA" }),
-        linhaBase({ avaliacao: "" as any, tipoAvaliacao: null as any }),
-        linhaBase({ avaliacao: "" as any, tipoAvaliacao: "SEMINARIO" as any }),
-      ],
-    });
-    const relatorios = await service.listarRelatorios({ tipo: "Historico" });
-    const avaliacoes = relatorios[0].periodos[0].disciplinas.map((d: any) => d.avaliacao);
-    assert.ok(avaliacoes.includes("Prova"));
-    assert.ok(avaliacoes.includes("Avaliacao"));
-    assert.ok(avaliacoes.includes("SEMINARIO"));
-  });
-});
-
-describe("RelatorioService.obterStatusFonteDados", () => {
-  it("retorna o schema e a contagem de fontes", async () => {
-    const { service } = criar();
-    const status = await service.obterStatusFonteDados();
-    assert.equal(status.source, "database");
-    assert.equal(status.schema, "piv");
-    assert.deepEqual(status.tabelas, { alunos: 1 });
+  it("status conserva fonte e contagens, exigindo autenticação", async () => {
+    const c = criar();
+    expect(await (c.service.obterStatusFonteDados as any)(req())).toEqual({ source: "database", schema: "piv", tabelas: { aluno: 1 } });
+    await expect((c.service.obterStatusFonteDados as any)()).rejects.toMatchObject({ status: 401 });
   });
 });

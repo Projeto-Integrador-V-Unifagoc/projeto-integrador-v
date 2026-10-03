@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { describe, it } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { ValidacaoEstrutura } from "../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica";
 import { DisciplinaService } from "./DisciplinaService";
 
 function criar(overrides: Record<string, any> = {}) {
@@ -18,6 +19,14 @@ function criar(overrides: Record<string, any> = {}) {
 }
 
 describe("DisciplinaService.criarDisciplina", () => {
+  it("recusa campos obrigatórios ausentes antes de consultar o banco", async () => {
+    const consulta = vi.fn();
+    const grava = vi.fn();
+    const { service } = criar({ buscarDisciplinaPorCodigo: consulta, criarDisciplina: grava });
+    await expect(service.criarDisciplina({})).rejects.toBeInstanceOf(ValidacaoEstrutura);
+    expect(consulta).not.toHaveBeenCalled();
+    expect(grava).not.toHaveBeenCalled();
+  });
   it("cria a disciplina com id gerado e carga horaria numerica", async () => {
     let salvo: any;
     const { service } = criar({ criarDisciplina: async (d: any) => ((salvo = d), d) });

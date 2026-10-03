@@ -1,4 +1,4 @@
-export type TipoTarefa = "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
+export type TipoTarefa = "REGULAR" | "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
 
 export interface DisciplinaAluno {
   turmaDisciplinaId: string;
@@ -18,11 +18,12 @@ export interface TarefaAluno {
   disciplinaNome: string;
   turmaDisciplinaId: string;
   dataVencimento: string;
-  valor: number | null;
+  valor: string | null;
 }
 
 // Rótulo exibido quando a avaliação não possui descrição própria.
 export const ROTULO_POR_TIPO: Record<string, string> = {
+  REGULAR: "Avaliação",
   PROVA: "Prova",
   TPI: "TPI",
   TRABALHO: "Trabalho",

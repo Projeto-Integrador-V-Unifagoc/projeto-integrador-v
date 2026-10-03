@@ -1,3 +1,4 @@
+import { responderErroEstrutura } from "../../modulo-estrutura-academica/controller/erroEstrutura";
 import { DisciplinaService } from "../service/DisciplinaService";
 
 export class DisciplinaController {
@@ -8,7 +9,7 @@ export class DisciplinaController {
             const disciplina = await this.disciplinaService.criarDisciplina(req.body);
             res.status(201).json(disciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 
@@ -17,7 +18,7 @@ export class DisciplinaController {
             const disciplinas = await this.disciplinaService.listarDisciplinas();
             res.status(200).json(disciplinas);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 
@@ -31,7 +32,7 @@ export class DisciplinaController {
 
             res.status(200).json(disciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 
@@ -45,7 +46,7 @@ export class DisciplinaController {
 
             res.status(200).json(disciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 
@@ -59,7 +60,7 @@ export class DisciplinaController {
 
             res.status(204).send();
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 }

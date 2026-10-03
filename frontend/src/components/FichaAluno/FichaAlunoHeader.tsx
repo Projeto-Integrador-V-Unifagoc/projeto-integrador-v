@@ -25,6 +25,9 @@ export function FichaAlunoHeader(props: FichaAlunoHeaderProps) {
         >
           <TextField
             select
+            id="ficha-periodo-letivo"
+            label="Período letivo"
+            SelectProps={{ SelectDisplayProps: { "aria-labelledby": "ficha-periodo-letivo-label" } }}
             value={semestre}
             onChange={(e) => onSemestreChange(e.target.value)}
             sx={{

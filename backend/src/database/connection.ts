@@ -1,11 +1,16 @@
 import dotenv from "dotenv";
 import knex, { type Knex } from "knex";
+import { configurarAmbienteTeste } from "../config/ambienteTeste";
 
-dotenv.config({ path: ".env.development" });
-dotenv.config();
+const databaseUrlTeste = configurarAmbienteTeste();
+if (!databaseUrlTeste) {
+  dotenv.config({ path: ".env.development" });
+  dotenv.config();
+}
 
 function criarConfigConexao(): Knex.Config {
   const connection =
+    databaseUrlTeste ||
     process.env.DATABASE_URL ||
     process.env.DATABASE ||
     {

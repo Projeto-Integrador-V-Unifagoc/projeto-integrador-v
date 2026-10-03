@@ -1,5 +1,6 @@
 import { db } from "../../../database/connection";
 import { DisciplinaCommand, DisciplinaMapper } from "../models/Disciplina";
+import { escritaEstrutura } from "../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica";
 
 export class DisciplinaRepository {
     async criarDisciplina(data: DisciplinaCommand) {
@@ -34,17 +35,19 @@ export class DisciplinaRepository {
     }
 
     async atualizarDisciplina(id: string, data: Partial<DisciplinaCommand>) {
-        const [disciplina] = await db("disciplinas")
+        return escritaEstrutura(db, "disciplinas", id, data, async (trx) => {
+        const [disciplina] = await trx("disciplinas")
             .where({ id })
             .update(data)
             .returning("*");
 
         return disciplina ?? null;
+        });
     }
 
     async removerDisciplina(id: string) {
-        return await db("disciplinas")
+        return escritaEstrutura(db, "disciplinas", id, {}, async (trx) => trx("disciplinas")
             .where({ id })
-            .del();
+            .del(), true);
     }
 }

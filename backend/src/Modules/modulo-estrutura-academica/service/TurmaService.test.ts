@@ -96,13 +96,12 @@ describe("TurmaService.atualizarTurma", () => {
     await assert.rejects(() => service.atualizarTurma("t1", { sigla: "B" }), /Ja existe turma com esta sigla/);
   });
 
-  it("atualiza combinando os dados atuais com as alteracoes", async () => {
+  it("persiste somente os campos enviados sem reenviar identidade ou status", async () => {
     let salvo: any;
     const { service } = criar({ turma: { atualizarTurma: async (_id: string, d: any) => ((salvo = d), d) } });
     await service.atualizarTurma("t1", { capacidadeAlunos: 50 });
     assert.equal(salvo.capacidade_alunos, 50);
-    assert.equal(salvo.sigla, "A");
-    assert.equal(salvo.periodo_letivo_id, "pl1");
+    assert.deepEqual(Object.fromEntries(Object.entries(salvo).filter(([, valor]) => valor !== undefined)), { capacidade_alunos: 50 });
   });
 });
 

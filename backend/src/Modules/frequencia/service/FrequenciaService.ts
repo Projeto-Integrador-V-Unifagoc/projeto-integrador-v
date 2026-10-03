@@ -3,6 +3,7 @@ import { AuthContextGateway } from "../gateways/AuthContextGateway";
 import { erroFrequencia, FrequenciaError } from "../errors/FrequenciaError";
 import type { ConsolidadoFrequencia, JustificativaRequest, RegistrarFrequenciaRequest, StatusFrequencia } from "../models/Frequencia";
 import { FrequenciaRepository } from "../repository/FrequenciaRepository";
+import { consolidarFrequencia } from "./FrequenciaConsolidada";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DATA = /^\d{4}-\d{2}-\d{2}$/;
@@ -118,7 +119,10 @@ export class FrequenciaService {
   private uuid(v: string, msg: string) { if (!UUID.test(v)) throw erroFrequencia.invalido(msg); }
   private data(v: string) { if (!DATA.test(v)) throw erroFrequencia.invalido("Data inválida. Use AAAA-MM-DD."); const [ano, mes, dia] = v.split("-").map(Number); const normalizada = new Date(Date.UTC(ano, mes - 1, dia)).toISOString().slice(0, 10); if (normalizada !== v) throw erroFrequencia.invalido("Data inválida. Use AAAA-MM-DD."); }
   private status(v: StatusFrequencia) { if (!["PRESENTE", "AUSENTE"].includes(v)) throw erroFrequencia.invalido("Status de frequência inválido. Use PRESENTE ou AUSENTE."); }
-  private consolidar(g: any): ConsolidadoFrequencia { const contabilizadas = g.presencas + g.faltas; const percentual = contabilizadas ? Number((g.presencas / contabilizadas * 100).toFixed(2)) : null; return { ...g, percentual, situacao: percentual === null ? "NAO_LANCADO" : percentual < 75 ? "RISCO_REPROVACAO" : percentual <= 80 ? "ALERTA" : "REGULAR" }; }
+  private consolidar(g: any): ConsolidadoFrequencia {
+    const { percentual, situacao } = consolidarFrequencia(g.presencas, g.faltas);
+    return { ...g, percentual, situacao };
+  }
   private iso(v: any) { return v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10); }
   private hojeLocal() { return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
 }
