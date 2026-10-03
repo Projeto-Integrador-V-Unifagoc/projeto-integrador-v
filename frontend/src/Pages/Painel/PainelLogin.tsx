@@ -40,7 +40,7 @@ export default function PainelLogin() {
 
             navigate("/painel", { replace: true });
         } catch (err: any) {
-            setErro(err?.response?.data?.message ?? "E-mail ou senha incorretos.");
+            setErro(err?.response?.data?.error ?? err?.response?.data?.message ?? err?.message ?? "E-mail ou senha incorretos.");
         } finally {
             setEnviando(false);
         }

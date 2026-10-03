@@ -10,12 +10,15 @@ const FavIcon = '/assets/favIcon.svg';
 export const Login = () => {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
+    const [enviando, setEnviando] = useState(false);
     const navigate = useNavigate();
     const { notificar } = useNotificacao();
     const theme = useTheme();
 
     const handleLogin = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (enviando) return;
+        setEnviando(true);
 
         try {
             const data = await authService.login({
@@ -32,7 +35,9 @@ export const Login = () => {
             navigate('/home');
         } catch (error: any) {
             console.error('Erro no login:', error);
-            notificar(error.response?.data?.message || 'E-mail ou senha incorretos.', 'error');
+            notificar(error.response?.data?.error || error.response?.data?.message || error.message || 'E-mail ou senha incorretos.', 'error');
+        } finally {
+            setEnviando(false);
         }
     }
 
@@ -94,6 +99,7 @@ export const Login = () => {
                         />
                         <Button
                             type="submit"
+                            disabled={enviando}
                             variant="contained"
                             color="primary"
                             size="large"

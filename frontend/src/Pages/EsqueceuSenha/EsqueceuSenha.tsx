@@ -42,7 +42,7 @@ export default function EsqueceuSenha() {
       setSolicitacaoEnviada(true);
     } catch (error: any) {
       notificar(
-        error.response?.data?.error ||
+        error.response?.data?.error || error.message ||
           'Não foi possível solicitar a recuperação de senha.',
         'error'
       );

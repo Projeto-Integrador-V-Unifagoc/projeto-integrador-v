@@ -1,4 +1,5 @@
 import { api } from "../lib/axios";
+import { executarRecaptcha } from './recaptcha';
 
 export interface SiteBanner {
     id: string;
@@ -175,7 +176,7 @@ export const inscricaoPublicaApi = {
     },
 
     async inscrever(payload: unknown) {
-        const { data } = await api.post("/publico/inscricao", payload);
+        const { data } = await api.post("/publico/inscricao", { ...(payload as Record<string, unknown>), recaptchaToken: await executarRecaptcha() });
         return data;
     },
 
