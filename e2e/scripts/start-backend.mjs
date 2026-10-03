@@ -9,6 +9,8 @@ const backendDir = path.resolve(dir, "../../backend");
 
 const env = {
   ...process.env,
+  NODE_ENV: "test",
+  RECAPTCHA_BYPASS: "true",
   PORT: process.env.E2E_BACKEND_PORT ?? "3100",
   DATABASE_URL:
     process.env.E2E_DATABASE_URL ??
