@@ -96,6 +96,10 @@ export function limitarSolicitacoes(
   >();
 
   return (req, res, next) => {
+    // Bypass explícito apenas no processo isolado da suíte E2E.
+    if (process.env.NODE_ENV === 'test' && process.env.E2E_RATE_LIMIT_BYPASS === 'true') {
+      return next();
+    }
     const agora = Date.now();
 
     for (const [chave, entrada] of entradas) {

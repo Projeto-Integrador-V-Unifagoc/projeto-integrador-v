@@ -59,3 +59,17 @@ describe('validação reCAPTCHA', () => {
     } finally { relogio.mockRestore(); }
   });
 });
+
+it.each([
+  ['test', 'true', 204],
+  ['test', 'false', 429],
+  ['production', 'true', 429],
+  ['development', 'true', 429],
+])('limite no ambiente %s com bypass %s retorna %s', async (ambiente, bypass, esperado) => {
+  vi.stubEnv('NODE_ENV', ambiente);
+  vi.stubEnv('E2E_RATE_LIMIT_BYPASS', bypass);
+  const limitado = express();
+  limitado.get('/', limitarSolicitacoes(1), (_req, res) => res.sendStatus(204));
+  expect((await request(limitado).get('/')).status).toBe(204);
+  expect((await request(limitado).get('/')).status).toBe(esperado);
+});
