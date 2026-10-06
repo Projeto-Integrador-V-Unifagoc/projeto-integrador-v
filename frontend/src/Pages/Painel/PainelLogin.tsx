@@ -1,4 +1,6 @@
 import { useState } from "react";
+import RecaptchaCheckbox from '../../components/RecaptchaCheckbox';
+import { useRecaptcha } from '../../hooks/use-recaptcha';
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import { Settings } from "lucide-react";
@@ -16,6 +18,7 @@ export default function PainelLogin() {
     const [senha, setSenha] = useState("");
     const [erro, setErro] = useState(state?.semPermissao ? "Seu perfil não tem acesso ao painel do site." : "");
     const [enviando, setEnviando] = useState(false);
+    const recaptcha = useRecaptcha();
 
     if (localStorage.getItem("@UniEduca:token") && ehAdministrativo() && !state?.semPermissao) {
         return <Navigate to="/painel" replace />;
@@ -23,11 +26,12 @@ export default function PainelLogin() {
 
     async function entrar(evento: React.FormEvent) {
         evento.preventDefault();
+        if (enviando || !recaptcha.token) return;
         setErro("");
         setEnviando(true);
 
         try {
-            const data = await authService.login({ email: email.trim().toLowerCase(), senha });
+            const data = await authService.login({ email: email.trim().toLowerCase(), senha }, recaptcha.token);
             const tipo = String(data?.user?.tipo_usuario ?? "").trim().toLowerCase();
 
             if (!PERFIS_PERMITIDOS.includes(tipo)) {
@@ -40,8 +44,9 @@ export default function PainelLogin() {
 
             navigate("/painel", { replace: true });
         } catch (err: any) {
-            setErro(err?.response?.data?.message ?? "E-mail ou senha incorretos.");
+            setErro(err?.response?.data?.error ?? err?.response?.data?.message ?? err?.message ?? "E-mail ou senha incorretos.");
         } finally {
+            recaptcha.resetar();
             setEnviando(false);
         }
     }
@@ -116,10 +121,11 @@ export default function PainelLogin() {
                             required
                         />
 
+                        <RecaptchaCheckbox key={recaptcha.versao} onChange={recaptcha.setToken} />
                         <Button
                             type="submit"
                             variant="contained"
-                            disabled={enviando}
+                            disabled={enviando || !recaptcha.token}
                             fullWidth
                             sx={{ width: "100%", height: 50, borderRadius: 2, fontSize: 15 }}
                         >
