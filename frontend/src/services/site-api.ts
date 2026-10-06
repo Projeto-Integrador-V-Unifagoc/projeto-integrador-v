@@ -1,5 +1,5 @@
 import { api } from "../lib/axios";
-import { executarRecaptcha } from './recaptcha';
+import { exigirTokenRecaptcha } from './recaptcha';
 
 export interface SiteBanner {
     id: string;
@@ -175,8 +175,8 @@ export const inscricaoPublicaApi = {
         return Array.isArray(data?.recusados) ? data.recusados : [];
     },
 
-    async inscrever(payload: unknown) {
-        const { data } = await api.post("/publico/inscricao", { ...(payload as Record<string, unknown>), recaptchaToken: await executarRecaptcha() });
+    async inscrever(payload: unknown, recaptchaToken: string) {
+        const { data } = await api.post("/publico/inscricao", { ...(payload as Record<string, unknown>), recaptchaToken: exigirTokenRecaptcha(recaptchaToken) });
         return data;
     },
 

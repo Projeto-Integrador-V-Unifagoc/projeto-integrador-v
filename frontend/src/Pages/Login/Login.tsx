@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import RecaptchaCheckbox from '../../components/RecaptchaCheckbox';
+import { useRecaptcha } from '../../hooks/use-recaptcha';
 import { useNavigate, Link } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Stack, Paper, useTheme } from "@mui/material";
 import Container from "../../components/Container";
@@ -11,20 +13,21 @@ export const Login = () => {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [enviando, setEnviando] = useState(false);
+    const recaptcha = useRecaptcha();
     const navigate = useNavigate();
     const { notificar } = useNotificacao();
     const theme = useTheme();
 
     const handleLogin = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (enviando) return;
+        if (enviando || !recaptcha.token) return;
         setEnviando(true);
 
         try {
             const data = await authService.login({
                 email: email,
                 senha: senha,
-            });
+            }, recaptcha.token);
 
             localStorage.setItem('@UniEduca:token', data.token);
             localStorage.setItem('@UniEduca:user', JSON.stringify(data.user));
@@ -37,6 +40,7 @@ export const Login = () => {
             console.error('Erro no login:', error);
             notificar(error.response?.data?.error || error.response?.data?.message || error.message || 'E-mail ou senha incorretos.', 'error');
         } finally {
+            recaptcha.resetar();
             setEnviando(false);
         }
     }
@@ -97,9 +101,10 @@ export const Login = () => {
                             onChange={e => setSenha(e.target.value)}
                             required
                         />
+                        <RecaptchaCheckbox key={recaptcha.versao} onChange={recaptcha.setToken} />
                         <Button
                             type="submit"
-                            disabled={enviando}
+                            disabled={enviando || !recaptcha.token}
                             variant="contained"
                             color="primary"
                             size="large"

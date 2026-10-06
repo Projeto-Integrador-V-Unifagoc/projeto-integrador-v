@@ -1,5 +1,5 @@
 import api from './conexao-api';
-import { executarRecaptcha } from './recaptcha';
+import { exigirTokenRecaptcha } from './recaptcha';
 import type { Usuario } from '../models/usuario';
 
 interface DadosRedefinicaoSenha {
@@ -14,8 +14,8 @@ export const authService = {
     return response.data;
   },
 
-  async login(dados: Pick<Usuario, 'email' | 'senha'>) {
-    const response = await api.post('/login', { ...dados, recaptchaToken: await executarRecaptcha() });
+  async login(dados: Pick<Usuario, 'email' | 'senha'>, recaptchaToken: string) {
+    const response = await api.post('/login', { ...dados, recaptchaToken: exigirTokenRecaptcha(recaptchaToken) });
     return response.data;
   },
 
@@ -28,10 +28,10 @@ export const authService = {
     return response.data;
   },
 
-  async solicitarRecuperacaoSenha(email: string) {
+  async solicitarRecuperacaoSenha(email: string, recaptchaToken: string) {
     const response = await api.post('/recuperacao-senha', {
       email,
-      recaptchaToken: await executarRecaptcha(),
+      recaptchaToken: exigirTokenRecaptcha(recaptchaToken),
     });
 
     return response.data;

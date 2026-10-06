@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import RecaptchaCheckbox from '../../components/RecaptchaCheckbox';
+import { useRecaptcha } from '../../hooks/use-recaptcha';
 import { Link } from 'react-router-dom';
 
 import {
@@ -20,6 +22,7 @@ import { useNotificacao } from '../../components/Notificacao/NotificationProvide
 export default function EsqueceuSenha() {
   const [email, setEmail] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const recaptcha = useRecaptcha();
   const [solicitacaoEnviada, setSolicitacaoEnviada] =
     useState(false);
 
@@ -30,13 +33,14 @@ export default function EsqueceuSenha() {
     event: React.FormEvent
   ) {
     event.preventDefault();
+    if (enviando || !recaptcha.token) return;
 
     try {
       setEnviando(true);
       setSolicitacaoEnviada(false);
 
       await authService.solicitarRecuperacaoSenha(
-        email.trim()
+        email.trim(), recaptcha.token
       );
 
       setSolicitacaoEnviada(true);
@@ -47,6 +51,7 @@ export default function EsqueceuSenha() {
         'error'
       );
     } finally {
+      recaptcha.resetar();
       setEnviando(false);
     }
   }
@@ -155,12 +160,13 @@ export default function EsqueceuSenha() {
                 disabled={enviando}
               />
 
+              <RecaptchaCheckbox key={recaptcha.versao} onChange={recaptcha.setToken} />
               <Button
                 type="submit"
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={enviando}
+                disabled={enviando || !recaptcha.token}
                 sx={{
                   width: '100%',
                   py: 1.5,

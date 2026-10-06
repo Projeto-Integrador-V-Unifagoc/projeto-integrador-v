@@ -1,6 +1,5 @@
 interface Recaptcha {
   render(container: HTMLElement, options: Record<string, unknown>): number;
-  execute(id: number): void;
   reset(id: number): void;
 }
 declare global {
@@ -11,9 +10,8 @@ declare global {
 }
 
 let carregamento: Promise<Recaptcha> | undefined;
-let emAndamento = false;
 
-function carregar(): Promise<Recaptcha> {
+export function carregarRecaptcha(): Promise<Recaptcha> {
   if (window.grecaptcha?.render) return Promise.resolve(window.grecaptcha);
   if (carregamento) return carregamento;
   carregamento = new Promise<Recaptcha>((resolve, reject) => {
@@ -39,37 +37,7 @@ function carregar(): Promise<Recaptcha> {
   return carregamento;
 }
 
-export async function executarRecaptcha(): Promise<string> {
-  if (emAndamento) throw new Error('Aguarde a verificação de segurança em andamento.');
-  const sitekey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-  if (!sitekey) throw new Error('Verificação de segurança não configurada.');
-  emAndamento = true;
-  try {
-    const api = await carregar();
-    return await new Promise<string>((resolve, reject) => {
-      const container = document.createElement('div');
-      document.body.appendChild(container);
-      let id: number | undefined;
-      let concluido = false;
-      const finalizar = (token?: string) => {
-        if (concluido) return;
-        concluido = true;
-        clearTimeout(timer);
-        if (id !== undefined) api.reset(id);
-        container.remove();
-        if (token) resolve(token);
-        else reject(new Error('Verificação de segurança não concluída. Tente novamente.'));
-      };
-      const timer = window.setTimeout(() => finalizar(), 120000);
-      try {
-        id = api.render(container, {
-          sitekey, size: 'invisible', badge: 'bottomright',
-          callback: (token: string) => finalizar(token),
-          'expired-callback': () => finalizar(),
-          'error-callback': () => finalizar(),
-        });
-        api.execute(id);
-      } catch { finalizar(); }
-    });
-  } finally { emAndamento = false; }
+export function exigirTokenRecaptcha(token: string): string {
+  if (!token.trim()) throw new Error('Marque a caixa “Não sou um robô” antes de enviar.');
+  return token;
 }
