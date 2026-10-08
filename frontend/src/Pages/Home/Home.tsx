@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,6 +21,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import {
   ArrowRight,
+  BookOpen,
   Calendar,
   CalendarCheck,
   ClipboardCheck,
@@ -37,6 +38,7 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Button from "../../components/Button";
 import { Card } from "../../components/Card";
 import Container from "../../components/Container";
 import NoData from "../../components/DataTable/NoData";
@@ -57,12 +59,28 @@ import {
   formatarPontos,
   ROTULO_TIPO_AVALIACAO,
 } from "../../utils/avaliacao";
-import StudentDashboard from "./StudentDashboard";
 
 interface UsuarioLocal {
   nome?: string;
   email?: string;
   tipo_usuario?: string;
+}
+
+interface InformacaoAluno {
+  matricula: string | number | null;
+  curso: string | null;
+  periodo: string | number | null;
+}
+
+// Resposta de GET /me — apenas os campos usados no cabeçalho do aluno.
+interface RespostaMe {
+  data?: {
+    academico?: {
+      matricula?: string | number | null;
+      curso?: string | null;
+      periodo?: string | number | null;
+    } | null;
+  };
 }
 
 interface Atalho {
@@ -73,11 +91,22 @@ interface Atalho {
   podeVer: boolean;
 }
 
+// Altura mínima reservada para os estados de carregando/erro/vazio, evitando salto de layout.
+const MIN_ALTURA_CONTEUDO = 360;
+
+const TRACO = "—";
+
+// Estilo compartilhado dos cartões acionáveis (atalhos e disciplinas): cursor, hover,
+// foco visível por teclado e respeito à preferência de redução de movimento.
 const sxCartaoAcionavel = {
   cursor: "pointer",
   height: "100%",
   transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-  "&:hover": { transform: "translateY(-2px)", boxShadow: 3, borderColor: "primary.main" },
+  "&:hover": {
+    transform: "translateY(-2px)",
+    boxShadow: 3,
+    borderColor: "primary.main",
+  },
   "&:focus-visible": {
     outline: "2px solid",
     outlineColor: "primary.main",
@@ -89,6 +118,7 @@ const sxCartaoAcionavel = {
   },
 } as const;
 
+// Props de acessibilidade para tornar um cartão operável por mouse e teclado.
 function propsCartaoAcionavel(rotulo: string, acao: () => void) {
   return {
     role: "button" as const,
@@ -104,14 +134,20 @@ function propsCartaoAcionavel(rotulo: string, acao: () => void) {
   };
 }
 
-function IconeBadge({ children }: { children: ReactNode }) {
+function valorOuTraco(valor: string | number | null | undefined): string {
+  if (valor === null || valor === undefined || valor === "") return TRACO;
+  return String(valor);
+}
+
+// Crachá circular com fundo levemente tingido pela cor primária, reaproveitado nos cabeçalhos e cartões.
+function IconeBadge({ children, size = 48 }: { children: ReactNode; size?: number }) {
   return (
     <Box
       aria-hidden="true"
       sx={(theme) => ({
-        width: 48,
-        height: 48,
-        borderRadius: 2,
+        width: size,
+        height: size,
+        borderRadius: "50%",
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
@@ -199,18 +235,24 @@ function EstadoVazio({ titulo, descricao }: { titulo: string; descricao: string 
 
 export default function Home() {
   const navigate = useNavigate();
+
+  // Inicializa o usuário de forma síncrona para evitar flash visual.
   const [user] = useState<UsuarioLocal | null>(() => {
     const stored = localStorage.getItem("@UniEduca:user");
-    if (!stored) return null;
-    try {
-      return JSON.parse(stored) as UsuarioLocal;
-    } catch {
-      return null;
+    if (stored) {
+      try {
+        return JSON.parse(stored) as UsuarioLocal;
+      } catch {
+        return null;
+      }
     }
+    return null;
   });
 
   const userName = user?.nome?.trim() || "Usuário";
-  const perfil = String(user?.tipo_usuario || "").trim().toLowerCase();
+  const perfil = String(user?.tipo_usuario || "")
+    .trim()
+    .toLowerCase();
   const isAluno = perfil === "aluno";
   const ehAdmin = perfil === "secretaria" || perfil === "administrador";
   const ehProfessor = perfil === "professor";
@@ -632,8 +674,6 @@ export default function Home() {
   }
 
   // Visão da secretaria/administrador/professor: cabeçalho equivalente e atalhos autorizados.
-  if (isAluno) return <StudentDashboard userName={userName} />;
-
   const atalhos: Atalho[] = [
     { label: "Tarefas", descricao: "Acompanhe atividades e pendências", href: "/tarefas/lista", icon: ClipboardList, podeVer: ehAdmin },
     { label: "Períodos Letivos", descricao: "Gerencie os períodos acadêmicos", href: "/periodos-letivos/lista", icon: Calendar, podeVer: ehAdmin },
@@ -652,29 +692,16 @@ export default function Home() {
     { label: "Relatórios", descricao: "Indicadores e relatórios", href: "/relatorios/lista", icon: FileBarChart, podeVer: ehAdmin || ehProfessor },
   ].filter((atalho) => atalho.podeVer);
 
-  const IconeCabecalho = ehProfessor ? UserStar : Users;
-  const subtitulo = ehAdmin
-    ? "Acesse rapidamente as áreas administrativas do sistema."
-    : ehProfessor
-      ? "Acesse rapidamente suas turmas, avaliações e lançamentos."
-      : "Bem-vindo de volta ao seu sistema acadêmico.";
-
   return (
     <Container sx={{ p: { xs: 2, md: 3 }, overflowY: "auto" }}>
       <Stack gap={3}>
-        <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, bgcolor: "#fff" }}>
-          <Stack direction="row" alignItems="center" gap={2}>
-            <IconeBadge><IconeCabecalho size={24} /></IconeBadge>
-            <Box>
-              <Typography component="h1" variant="h5" fontWeight={700}>Olá, {userName}!</Typography>
-              <Typography variant="body2" color="text.secondary">{subtitulo}</Typography>
-            </Box>
-          </Stack>
-        </Paper>
+        {cabecalho}
 
         {atalhos.length > 0 && (
           <Box>
-            <Typography variant="h6" fontWeight={700} gutterBottom>Acesso rápido</Typography>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Acesso rápido
+            </Typography>
             <Grid container spacing={2}>
               {atalhos.map((atalho) => {
                 const Icone = atalho.icon;
@@ -683,17 +710,30 @@ export default function Home() {
                     <Card.Root
                       variant="outlined"
                       elevation={0}
-                      {...propsCartaoAcionavel(`Ir para ${atalho.label}`, () => navigate(atalho.href))}
-                      sx={{ ...sxCartaoAcionavel, bgcolor: "#fff" }}
+                      {...propsCartaoAcionavel(
+                        `Ir para ${atalho.label}`,
+                        () => navigate(atalho.href),
+                      )}
+                      sx={{ ...sxCartaoAcionavel, backgroundColor: "#FFF" }}
                     >
                       <Card.Content sx={{ height: "100%" }}>
-                        <Stack direction="row" alignItems="center" gap={2}>
-                          <IconeBadge><Icone size={22} /></IconeBadge>
+                        <Stack direction="row" alignItems="center" gap={2} sx={{ minWidth: 0 }}>
+                          <IconeBadge>
+                            <Icone size={22} aria-hidden="true" />
+                          </IconeBadge>
                           <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography fontWeight={700}>{atalho.label}</Typography>
-                            <Typography variant="body2" color="text.secondary">{atalho.descricao}</Typography>
+                            <Typography fontWeight={700}>
+                              {atalho.label}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {atalho.descricao}
+                            </Typography>
                           </Box>
-                          <ArrowRight size={18} aria-hidden="true" style={{ opacity: 0.5 }} />
+                          <ArrowRight
+                            size={18}
+                            aria-hidden="true"
+                            style={{ flexShrink: 0, opacity: 0.5 }}
+                          />
                         </Stack>
                       </Card.Content>
                     </Card.Root>
