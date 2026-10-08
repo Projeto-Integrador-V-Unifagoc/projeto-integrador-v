@@ -44,6 +44,8 @@ services:
       SMTP_FROM_NAME: "${SMTP_FROM_NAME:-UniEduca}"
       SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL:-}"
       FRONTEND_URL: "${FRONTEND_URL:?FRONTEND_URL deve ser definida no arquivo .env}"
+      RECAPTCHA_SECRET_KEY: "${RECAPTCHA_SECRET_KEY:-}"
+      RECAPTCHA_ALLOWED_HOSTNAMES: "${RECAPTCHA_ALLOWED_HOSTNAMES:-unieduca.net.br,www.unieduca.net.br,portal.unieduca.net.br}"
     expose:
       - "3000"
     volumes:
@@ -64,6 +66,8 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
+        VITE_URL_PORTAL: ${VITE_URL_PORTAL:-}
     container_name: pi_frontend
     restart: always
     expose:
