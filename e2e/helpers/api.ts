@@ -1,5 +1,6 @@
 import type { APIRequestContext } from "@playwright/test";
 import { config } from "./config.js";
+import { validarUrlHttpTeste } from "./isolamento.js";
 
 export interface Resposta<T = any> {
   status: number;
@@ -28,11 +29,12 @@ export class Api {
   constructor(
     private readonly ctx: APIRequestContext,
     private readonly tokenPadrao?: string | null,
-  ) {}
+    private readonly baseUrl = config.apiUrl,
+  ) { validarUrlHttpTeste(baseUrl); }
 
   /** Deriva um cliente com um token padrão (perfil autenticado). */
   comToken(token?: string | null): Api {
-    return new Api(this.ctx, token);
+    return new Api(this.ctx, token, this.baseUrl);
   }
 
   get(path: string, opcoes: OpcoesReq = {}) {
@@ -56,13 +58,14 @@ export class Api {
     path: string,
     opcoes: OpcoesReq,
   ): Promise<Resposta<T>> {
-    const url = montarUrl(path, opcoes.query);
+    const url = montarUrl(path, this.baseUrl, opcoes.query);
     const headers: Record<string, string> = { ...(opcoes.headers ?? {}) };
     const token = opcoes.token === undefined ? this.tokenPadrao : opcoes.token;
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const resposta = await this.ctx.fetch(url, {
       method: metodo,
+      maxRedirects: 0,
       headers,
       ...(opcoes.body !== undefined ? { data: opcoes.body } : {}),
       ...(opcoes.multipart !== undefined ? { multipart: opcoes.multipart as any } : {}),
@@ -91,14 +94,14 @@ export class Api {
 
 function montarUrl(
   path: string,
+  baseUrl: string,
   query?: Record<string, string | number | boolean | undefined>,
 ): string {
-  const base = path.startsWith("http") ? path : `${config.apiUrl}${path.startsWith("/") ? "" : "/"}${path}`;
-  if (!query) return base;
-  const params = new URLSearchParams();
+  const destino = new URL(path, `${validarUrlHttpTeste(baseUrl)}/`);
+  validarUrlHttpTeste(destino.toString());
+  if (!query) return destino.toString();
   for (const [chave, valor] of Object.entries(query)) {
-    if (valor !== undefined) params.append(chave, String(valor));
+    if (valor !== undefined) destino.searchParams.append(chave, String(valor));
   }
-  const qs = params.toString();
-  return qs ? `${base}?${qs}` : base;
+  return destino.toString();
 }

@@ -133,7 +133,7 @@ function getOpcoesSemestre(
       ),
     ),
     ...matriculas.map((matricula) =>
-      normalizarSemestre((matricula as any).semestre),
+      normalizarSemestre(matricula.semestre || matricula.periodo_letivo_codigo || matricula.periodo_codigo),
     ),
     ...notas.map((nota) => normalizarSemestre(nota.periodoLetivo)),
   ].filter(Boolean);
@@ -160,7 +160,7 @@ function montarAlunoFicha(
     idade: calcularIdade(aluno.pessoa?.dataNascimento),
     responsavelFinanceiro: aluno.pessoa?.nome ?? VALOR_NAO_INFORMADO,
     email: aluno.usuario?.email ?? VALOR_NAO_INFORMADO,
-    semestre: normalizarSemestre((matriculaAtiva as any)?.semestre) || "",
+    semestre: normalizarSemestre(matriculaAtiva?.semestre || matriculaAtiva?.periodo_letivo_codigo || matriculaAtiva?.periodo_codigo),
   };
 }
 

@@ -1,6 +1,6 @@
-export type TipoAvaliacaoNota = "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
+export type TipoAvaliacaoNota = "REGULAR" | "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
 
-// Situacao academica derivada da media (secao 5.3 da spec).
+// Alias transitório do resultado por nota; não representa aprovação conjunta.
 export type SituacaoNota =
   | "NAO_LANCADA"
   | "EM_ANDAMENTO"
@@ -8,11 +8,11 @@ export type SituacaoNota =
   | "APROVADO"
   | "REPROVADO";
 
-export type PerfilNota = "professor" | "aluno" | "secretaria";
+export type PerfilNota = "professor" | "aluno" | "secretaria" | "administrador";
 
 export interface ItemLoteNota {
   alunoId: string;
-  valor: number;
+  valor: string;
 }
 
 export interface SalvarLoteNotaRequest {
@@ -27,80 +27,27 @@ export interface AutorizacaoExcepcionalRequest {
   prazoEmDias?: number;
 }
 
-// Resultado consolidado do calculo de media de uma disciplina para um aluno.
-export interface BoletimDisciplina {
-  pontosObtidos: number;
-  pontosMaximos: number;
-  mediaParcial: number | null;
-  notaRecuperacao: number | null;
-  mediaFinal: number | null;
-  situacao: SituacaoNota;
-  etapaRegularCompleta: boolean;
-  elegivelRecuperacao: boolean;
-  alerta: boolean;
-}
-
 export interface AvaliacaoResumo {
   id: string;
   tipo: TipoAvaliacaoNota;
   descricao: string | null;
-  valor: number;
+  valor: string;
 }
 
-const arredondar = (valor: number) => Number(valor.toFixed(2));
+/** DTO textual de opções/lançamento. */
+export interface AvaliacaoResumoPontos extends Omit<AvaliacaoResumo, "valor"> {
+  valor: string;
+}
 
-// Calculo central da media (RN-07, RN-08, RN-09, secao 5.1 e 5.3).
-// Apenas avaliacoes com nota lancada para o aluno entram no denominador.
-export function calcularBoletim(
-  avaliacoes: AvaliacaoResumo[],
-  notasPorAvaliacao: Map<string, number>,
-): BoletimDisciplina {
-  const regulares = avaliacoes.filter((a) => a.tipo !== "RECUPERACAO");
-  const recuperacao = avaliacoes.find((a) => a.tipo === "RECUPERACAO");
-  const regularesLancadas = regulares.filter((a) => notasPorAvaliacao.has(a.id));
-
-  const pontosObtidos = arredondar(
-    regularesLancadas.reduce((soma, a) => soma + Number(notasPorAvaliacao.get(a.id) ?? 0), 0),
-  );
-  const pontosMaximos = arredondar(regularesLancadas.reduce((soma, a) => soma + Number(a.valor), 0));
-  const mediaParcial = pontosMaximos > 0 ? arredondar((pontosObtidos / pontosMaximos) * 100) : null;
-
-  const totalMaximoRegular = arredondar(regulares.reduce((soma, a) => soma + Number(a.valor), 0));
-  // A etapa somente termina quando o plano regular totaliza os 100 pontos
-  // institucionais e todas essas avaliacoes possuem nota para o aluno.
-  const etapaRegularCompleta =
-    totalMaximoRegular === 100 && regularesLancadas.length === regulares.length;
-  const notaRecuperacao =
-    recuperacao && notasPorAvaliacao.has(recuperacao.id)
-      ? arredondar(Number(notasPorAvaliacao.get(recuperacao.id)))
-      : null;
-
-  let situacao: SituacaoNota;
-  let mediaFinal = mediaParcial;
-
-  if (!etapaRegularCompleta) {
-    situacao = mediaParcial === null ? "NAO_LANCADA" : "EM_ANDAMENTO";
-  } else if ((mediaParcial as number) >= 60) {
-    situacao = "APROVADO";
-  } else if (notaRecuperacao !== null) {
-    mediaFinal = arredondar(Math.max(mediaParcial as number, notaRecuperacao));
-    situacao = mediaFinal >= 60 ? "APROVADO" : "REPROVADO";
-  } else {
-    situacao = "EM_RECUPERACAO";
-  }
-
-  const elegivelRecuperacao = etapaRegularCompleta && (mediaParcial as number) < 60;
-  const alerta = mediaParcial !== null && mediaParcial < 60;
-
-  return {
-    pontosObtidos,
-    pontosMaximos,
-    mediaParcial,
-    notaRecuperacao,
-    mediaFinal,
-    situacao,
-    etapaRegularCompleta,
-    elegivelRecuperacao,
-    alerta,
+/** Aliases de transporte derivados do contrato comum, sem outra decisão acadêmica. */
+export function projetarBoletim(resultado: import("./ResultadoAcademico").ResultadoAcademico) {
+  const situacoes: Record<import("./ResultadoAcademico").ResultadoPorNota, SituacaoNota> = {
+    NAO_LANCADA: "NAO_LANCADA", EM_ANDAMENTO: "EM_ANDAMENTO", EM_RECUPERACAO: "EM_RECUPERACAO",
+    SUFICIENTE: "APROVADO", INSUFICIENTE: "REPROVADO",
   };
+  return { pontosObtidos: resultado.pontosRegularesObtidos, pontosMaximos: resultado.pontosMaximosLancados,
+    mediaParcial: resultado.indicadorRegular.percentual, notaRecuperacao: resultado.pontosRecuperacao,
+    mediaFinal: resultado.percentualResultado, situacao: situacoes[resultado.resultadoPorNota],
+    etapaRegularCompleta: resultado.etapaRegularCompleta, elegivelRecuperacao: resultado.elegivelRecuperacaoPorNota,
+    alerta: resultado.motivos.length > 0 || resultado.frequencia.situacao === "ALERTA", resultadoAcademico: resultado };
 }

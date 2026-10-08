@@ -1,3 +1,4 @@
+import { ValidacaoEstrutura } from "../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica";
 import { v4 as uuidv4 } from "uuid";
 import { DisciplinaCommand } from "../models/Disciplina";
 import { DisciplinaRepository } from "../repository/DisciplinaRepository";
@@ -6,10 +7,16 @@ export class DisciplinaService {
     disciplinaRepository = new DisciplinaRepository();
 
     async criarDisciplina(data: any) {
+        if (!data || typeof data !== "object" || Array.isArray(data)
+            || typeof data.codigo !== "string" || !data.codigo.trim()
+            || typeof data.nome !== "string" || !data.nome.trim()
+            || data.cargaHoraria == null || !Number.isFinite(Number(data.cargaHoraria))) {
+            throw new ValidacaoEstrutura("Informe código, nome e carga horária válidos.");
+        }
         const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(data.codigo);
 
         if (disciplinaExistente) {
-            throw new Error("Ja existe disciplina com este codigo");
+            throw new ValidacaoEstrutura("Ja existe disciplina com este codigo");
         }
 
         const disciplina: DisciplinaCommand = {
@@ -43,7 +50,7 @@ export class DisciplinaService {
             const disciplinaExistente = await this.disciplinaRepository.buscarDisciplinaPorCodigo(data.codigo);
 
             if (disciplinaExistente) {
-                throw new Error("Ja existe disciplina com este codigo");
+                throw new ValidacaoEstrutura("Ja existe disciplina com este codigo");
             }
         }
 

@@ -18,6 +18,7 @@ import {
 import { GraduationCap } from "lucide-react";
 
 import { SITUACAO_LABEL, situacaoCor, type BoletimAluno } from "../../models/nota-model";
+import { formatarPontos } from "../../utils/pontos";
 
 interface FichaAlunoNotasReaisProps {
   boletim: BoletimAluno | null;
@@ -26,7 +27,7 @@ interface FichaAlunoNotasReaisProps {
 }
 
 const fmtMedia = (v: number | null) => (v === null ? "—" : `${v.toFixed(1).replace(".", ",")}%`);
-const fmtNota = (v: number | null) => (v === null ? "Não lançada" : v.toFixed(2).replace(".", ","));
+const fmtNota = (v: string | null) => formatarPontos(v, "Não lançada");
 
 export function FichaAlunoNotasReais({ boletim, carregando, erro }: FichaAlunoNotasReaisProps) {
   const theme = useTheme();

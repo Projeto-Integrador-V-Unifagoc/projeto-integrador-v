@@ -1,3 +1,4 @@
+import { ValidacaoEstrutura } from "../gateways/EscritaEstruturaAcademica";
 import { v4 as uuidv4 } from "uuid";
 import { CursoRepository } from "../../modulo-facul-dp-curso/repository/CursoRepository";
 import { DisciplinaRepository } from "../../modulo-disciplinas/repository/DisciplinaRepository";
@@ -13,7 +14,7 @@ export class CursoDisciplinaService {
         const periodo = Number(periodoIdeal);
 
         if (!Number.isInteger(periodo) || periodo < 1 || periodo > 12) {
-            throw new Error("Periodo ideal deve estar entre 1 e 12");
+            throw new ValidacaoEstrutura("Periodo ideal deve estar entre 1 e 12");
         }
     }
 
@@ -21,13 +22,13 @@ export class CursoDisciplinaService {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(data.cursoId);
 
         if (!curso) {
-            throw new Error("Curso nao encontrado");
+            throw new ValidacaoEstrutura("Curso nao encontrado");
         }
 
         const disciplina = await this.disciplinaRepository.buscarDisciplinaPorId(data.disciplinaId);
 
         if (!disciplina) {
-            throw new Error("Disciplina nao encontrada");
+            throw new ValidacaoEstrutura("Disciplina nao encontrada");
         }
 
         const associacaoExistente = await this.cursoDisciplinaRepository.buscarCursoDisciplinaPorCursoEDisciplina(
@@ -36,7 +37,7 @@ export class CursoDisciplinaService {
         );
 
         if (associacaoExistente) {
-            throw new Error("Disciplina ja associada a este curso");
+            throw new ValidacaoEstrutura("Disciplina ja associada a este curso");
         }
 
         this.validarPeriodoIdeal(data.periodoIdeal);
@@ -62,7 +63,7 @@ export class CursoDisciplinaService {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(cursoId);
 
         if (!curso) {
-            throw new Error("Curso nao encontrado");
+            throw new ValidacaoEstrutura("Curso nao encontrado");
         }
 
         return await this.cursoDisciplinaRepository.listarMatrizCurricularPorCursoId(cursoId, periodo);

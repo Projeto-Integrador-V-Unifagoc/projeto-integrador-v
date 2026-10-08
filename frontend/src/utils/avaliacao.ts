@@ -1,6 +1,9 @@
-export type TipoAvaliacaoVisual = "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
+import { formatarPontos as formatarPontosTextuais } from "./pontos";
+
+export type TipoAvaliacaoVisual = "REGULAR" | "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
 
 export const ROTULO_TIPO_AVALIACAO: Record<TipoAvaliacaoVisual, string> = {
+  REGULAR: "Regular",
   PROVA: "Prova",
   TPI: "TPI",
   TRABALHO: "Trabalho",
@@ -11,14 +14,15 @@ export const COR_TIPO_AVALIACAO: Record<
   TipoAvaliacaoVisual,
   "error" | "warning" | "info" | "secondary"
 > = {
+  REGULAR: "info",
   PROVA: "error",
   TPI: "warning",
   TRABALHO: "info",
   RECUPERACAO: "secondary",
 };
 
-export const formatarPontos = (valor: number | null | undefined) =>
-  valor == null ? "—" : `${Number(valor).toFixed(1).replace(".", ",")} pts`;
+export const formatarPontos = (valor: string | null | undefined) =>
+  valor == null ? "-" : `${formatarPontosTextuais(valor)} pts`;
 
 export const formatarDataPtBr = (valor?: string | null) => {
   if (!valor) return "—";

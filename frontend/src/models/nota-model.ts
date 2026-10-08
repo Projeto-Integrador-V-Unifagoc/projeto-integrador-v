@@ -1,4 +1,6 @@
-export type TipoAvaliacaoNota = "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
+import type { ResultadoAcademico } from "./resultado-academico-model";
+
+export type TipoAvaliacaoNota = "REGULAR" | "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
 
 export type SituacaoNota =
   | "NAO_LANCADA"
@@ -11,7 +13,7 @@ export interface AvaliacaoResumo {
   id: string;
   tipo: TipoAvaliacaoNota;
   descricao: string | null;
-  valor: number;
+  valor: string;
 }
 
 export interface AtribuicaoNota {
@@ -33,7 +35,7 @@ export interface AlunoLancamento {
   matriculaTurmaDisciplinaId: string;
   matricula: number;
   nome: string;
-  valor: number | null;
+  valor: string | null;
   lancada: boolean;
   publicadaEm: string | null;
   prazoExpirado: boolean;
@@ -44,7 +46,7 @@ export interface Lancamento {
     id: string;
     tipo: TipoAvaliacaoNota;
     descricao: string | null;
-    valorMaximo: number;
+    valorMaximo: string;
     disciplina: { id: string; nome: string };
     turmaSigla: string;
   };
@@ -55,15 +57,16 @@ export interface Lancamento {
 }
 
 export interface Boletim {
-  pontosObtidos: number;
-  pontosMaximos: number;
+  pontosObtidos: string;
+  pontosMaximos: string;
   mediaParcial: number | null;
-  notaRecuperacao: number | null;
+  notaRecuperacao: string | null;
   mediaFinal: number | null;
   situacao: SituacaoNota;
   etapaRegularCompleta: boolean;
   elegivelRecuperacao: boolean;
   alerta: boolean;
+  resultadoAcademico: ResultadoAcademico;
 }
 
 export interface AlunoRendimento extends Boletim {
@@ -71,7 +74,7 @@ export interface AlunoRendimento extends Boletim {
   matriculaTurmaDisciplinaId: string;
   matricula: number;
   nome: string;
-  notas: { avaliacaoId: string; valor: number | null }[];
+  notas: { avaliacaoId: string; valor: string | null }[];
 }
 
 export interface Rendimento {
@@ -95,12 +98,14 @@ export interface Recuperacao {
   turmaDisciplinaId: string;
   disciplina: { id: string; nome: string };
   recuperacaoAvaliacaoId: string | null;
+  valorMaximoRecuperacao: string | null;
   periodoLetivo: { codigo: string; fechado: boolean };
   alunos: AlunoRecuperacao[];
 }
 
 export interface DisciplinaBoletim extends Boletim {
   turmaDisciplinaId: string;
+  matriculaTurmaDisciplinaId: string;
   disciplina: { id: string; codigo: string; nome: string };
   disciplinaNome: string;
   turmaSigla: string;
@@ -110,8 +115,8 @@ export interface DisciplinaBoletim extends Boletim {
     id: string;
     tipo: TipoAvaliacaoNota;
     descricao: string | null;
-    valorMaximo: number;
-    valorObtido: number | null;
+    valorMaximo: string;
+    valorObtido: string | null;
     lancada: boolean;
   }[];
 }
@@ -124,14 +129,28 @@ export interface BoletimAluno {
 
 export interface ResumoNotas {
   totalDisciplinas: number;
+  disciplinasAbaixoDoCorte: number;
+  /** Alias de transporte legado; não usar como corte no cliente. */
   disciplinasAbaixoDe60: number;
   possuiAlerta: boolean;
-  disciplinasAlerta: { disciplinaNome: string; mediaParcial: number | null }[];
+  disciplinasAlerta: {
+    turmaDisciplinaId: string;
+    matriculaTurmaDisciplinaId: string;
+    disciplinaNome: string;
+    mediaParcial: number | null;
+    resultadoAcademico: ResultadoAcademico;
+  }[];
 }
 
 export interface ItemLoteNota {
   alunoId: string;
-  valor: number;
+  valor: string;
+}
+
+export interface ErroLoteNota {
+  codigo?: string;
+  mensagem?: string;
+  campos?: { campo: string; codigo?: string; mensagem: string }[];
 }
 
 export const SITUACAO_LABEL: Record<SituacaoNota, string> = {

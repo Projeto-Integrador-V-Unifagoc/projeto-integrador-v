@@ -7,7 +7,6 @@ import {
 } from "@mui/material";
 import {
   CalendarCheck,
-  CalendarDays,
   ClipboardCheck,
   ClipboardList,
   ClipboardPen,
@@ -133,12 +132,6 @@ export default function Sidebar({ expandido }: SidebarProps) {
       href: "/frequencias/lista",
       icon: CalendarCheck,
       podeVer: ehAdmin || ehProfessor,
-    },
-    {
-      label: "Minha Agenda",
-      href: "/minha-agenda",
-      icon: CalendarDays,
-      podeVer: ehAluno,
     },
     {
       label: "Minha Frequência",

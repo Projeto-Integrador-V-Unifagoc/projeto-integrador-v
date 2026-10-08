@@ -18,9 +18,11 @@ import DataTable from "../../components/DataTable/DataTable";
 import NoData from "../../components/DataTable/NoData";
 import TextField from "../../components/TextField";
 import { useNota } from "../../hooks/use-nota";
-import { SITUACAO_LABEL, situacaoCor, type BoletimAluno, type DisciplinaBoletim } from "../../models/nota-model";
+import { type BoletimAluno, type DisciplinaBoletim } from "../../models/nota-model";
+import { ROTULO_APROVACAO, ROTULO_RESULTADO_NOTA } from "../../models/resultado-academico-model";
+import { ResultadoAcademicoResumo } from "../../components/ResultadoAcademico/ResultadoAcademicoResumo";
 import { COR_TIPO_AVALIACAO, formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
-import { formatarMedia, formatarNota, mensagemErro } from "./notas-utils";
+import { formatarNota, mensagemErro } from "./notas-utils";
 
 type AvaliacaoDisciplina = DisciplinaBoletim["avaliacoes"][number];
 
@@ -71,7 +73,7 @@ const colunasAvaliacoes: GridColDef<AvaliacaoDisciplina>[] = [
     align: "right",
     headerAlign: "right",
     sortable: false,
-    valueFormatter: (valor) => formatarPontos(Number(valor)),
+    valueFormatter: (valor: string) => formatarPontos(valor),
   },
 ];
 
@@ -118,7 +120,9 @@ export default function MinhasNotas() {
           {periodos.length > 1 && (
             <TextField
               select
+              id="minhas-notas-periodo"
               label="Período letivo"
+              SelectProps={{ SelectDisplayProps: { "aria-labelledby": "minhas-notas-periodo-label" } }}
               value={periodo}
               onChange={(e) => setPeriodo(e.target.value)}
               sx={{ minWidth: 200, maxWidth: { sm: 260 } }}
@@ -135,7 +139,7 @@ export default function MinhasNotas() {
 
         {erro && <Alert severity="error">{erro}</Alert>}
         {boletim?.possuiAlerta && (
-          <Alert severity="warning">Você possui ao menos uma disciplina com média parcial abaixo de 60%. Acompanhe seu desempenho.</Alert>
+          <Alert severity="warning">Há pendências ou alertas acadêmicos. Consulte o resultado por nota, a frequência e os motivos de cada disciplina.</Alert>
         )}
 
         {!boletim && !erro && (
@@ -162,7 +166,7 @@ export default function MinhasNotas() {
 }
 
 function DisciplinaCard({ disciplina }: { disciplina: DisciplinaBoletim }) {
-  const abaixoDe60 = disciplina.mediaParcial !== null && disciplina.mediaParcial < 60;
+  const resultado = disciplina.resultadoAcademico;
 
   return (
     <Accordion
@@ -189,15 +193,15 @@ function DisciplinaCard({ disciplina }: { disciplina: DisciplinaBoletim }) {
             </Typography>
           </Box>
           <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
-            <Chip size="small" variant="outlined" color={abaixoDe60 ? "error" : "default"} label={`Média parcial: ${formatarMedia(disciplina.mediaParcial)}`} />
-            {disciplina.mediaFinal !== null && (
-              <Chip size="small" variant="outlined" label={`Média final: ${formatarMedia(disciplina.mediaFinal)}`} />
-            )}
-            <Chip size="small" color={situacaoCor(disciplina.situacao)} label={SITUACAO_LABEL[disciplina.situacao]} />
+            {resultado && <>
+              <Chip size="small" variant="outlined" label={`Resultado por nota: ${ROTULO_RESULTADO_NOTA[resultado.resultadoPorNota]}`} />
+              <Chip size="small" variant="outlined" label={`Aprovação na disciplina: ${ROTULO_APROVACAO[resultado.aprovacaoDisciplina]}`} />
+            </>}
           </Stack>
         </Stack>
       </AccordionSummary>
       <AccordionDetails>
+        <ResultadoAcademicoResumo resultado={resultado} />
         <DataTable
           rows={disciplina.avaliacoes}
           columns={colunasAvaliacoes}
@@ -214,12 +218,6 @@ function DisciplinaCard({ disciplina }: { disciplina: DisciplinaBoletim }) {
             minHeight: 0,
           }}
         />
-        {disciplina.notaRecuperacao !== null && (
-          <Typography variant="body2" mt={1.5}>
-            Recuperação: <strong>{formatarNota(disciplina.notaRecuperacao)}</strong> · Média final:{" "}
-            <strong>{formatarMedia(disciplina.mediaFinal)}</strong>
-          </Typography>
-        )}
       </AccordionDetails>
     </Accordion>
   );

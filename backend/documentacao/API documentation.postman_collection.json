@@ -365,6 +365,388 @@
 				}
 			],
 			"description": "Endpoints responsáveis pelo gerenciamento de alunos."
+		},
+		{
+			"name": "Pontuação dinâmica - contrato v2",
+			"description": "Somente dados sintéticos em destino autorizado. UUIDs e token devem ser preenchidos sem exportar credenciais. Pontos são strings decimais estritas; resposta com duas casas, ausência null e zero lançado \"0.00\". Erros de domínio usam codigo/mensagem/campos, sem SQL; 401/403 para autenticação/escopo, 400 contrato, 404 ausência, 409 conflito e 500 opaco. API, frontend e integrações devem migrar juntos. Ver specs/001-notas-dinamicas/contracts/api.md e adocao-e-retorno.md.",
+			"item": [
+				{
+					"name": "Consultar regra do curso e período",
+					"request": {
+						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/regras-pontuacao/cursos/{{cursoId}}/periodos/{{periodoLetivoId}}",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"regras-pontuacao",
+								"cursos",
+								"{{cursoId}}",
+								"periodos",
+								"{{periodoLetivoId}}"
+							]
+						},
+						"description": "Administrativo ou professor com oferta do par.404 REGRA_AUSENTE quando não configurada; sem default100 e sem escrita."
+					},
+					"response": []
+				},
+				{
+					"name": "Configurar regra explícita120",
+					"request": {
+						"method": "PUT",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/regras-pontuacao/cursos/{{cursoId}}/periodos/{{periodoLetivoId}}",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"regras-pontuacao",
+								"cursos",
+								"{{cursoId}}",
+								"periodos",
+								"{{periodoLetivoId}}"
+							]
+						},
+						"description": "Secretaria/administrador. Criação versaoEsperada:null ->201; atualização versão do GET ->200, IDs conservados nos subgrupos existentes. Soma exata.409 VERSAO_OBSOLETA/REGRA_PRESERVADA; primeiro uso preserva mesmo após exclusão de avaliação sem notas.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"versaoEsperada\": null,\n  \"totalPontos\": \"120.00\",\n  \"subgrupos\": [\n    {\n      \"nome\": \"Provas\",\n      \"orcamentoPontos\": \"72.00\",\n      \"modoQuantidade\": \"FIXA\",\n      \"quantidadeFixa\": 4,\n      \"ordem\": 0\n    },\n    {\n      \"nome\": \"Avaliações institucionais\",\n      \"orcamentoPontos\": \"6.00\",\n      \"modoQuantidade\": \"FIXA\",\n      \"quantidadeFixa\": 1,\n      \"ordem\": 1\n    },\n    {\n      \"nome\": \"Trabalhos e projetos\",\n      \"orcamentoPontos\": \"42.00\",\n      \"modoQuantidade\": \"SEM_LIMITE\",\n      \"quantidadeFixa\": null,\n      \"ordem\": 2\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Consultar plano da oferta",
+					"request": {
+						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/avaliacoes/plano/{{ofertaId}}",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"avaliacoes",
+								"plano",
+								"{{ofertaId}}"
+							]
+						},
+						"description": "Administrativo/professor autorizado. Saldos e quantidades por subgrupo, completude e bloqueios; regra ausente ->200 com null/lista vazia/REGRA_AUSENTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Criar avaliação regular",
+					"request": {
+						"method": "POST",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/avaliacoes",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"avaliacoes"
+							]
+						},
+						"description": "Administrativo/professor da oferta. REGULAR e subgrupo obrigatório. Saldo/quantidade/período revalidados. REC é criada somente no fluxo recuperação.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo_avaliacao\": \"REGULAR\",\n  \"subgrupo_id\": \"{{subgrupoId}}\",\n  \"turma_disciplina_id\": \"{{ofertaId}}\",\n  \"descricao_avaliacao\": \"Avaliação sintética do módulo\",\n  \"data_lancamento\": \"2026-09-28\",\n  \"data_devolucao\": \"2026-10-05\",\n  \"valor\": \"18.00\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Consultar grade de lançamento",
+					"request": {
+						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/notas/avaliacoes/{{avaliacaoId}}/lancamento",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"notas",
+								"avaliacoes",
+								"{{avaliacaoId}}",
+								"lancamento"
+							]
+						},
+						"description": "Administrativo/professor da oferta. Máximo textual, notas null/zero, prazos/publicação e permissão."
+					},
+					"response": []
+				},
+				{
+					"name": "Lançar ou retificar lote",
+					"request": {
+						"method": "PUT",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/notas/avaliacoes/{{avaliacaoId}}/lote",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"notas",
+								"avaliacoes",
+								"{{avaliacaoId}}",
+								"lote"
+							]
+						},
+						"description": "Lote atômico; aluno único e matrícula ativa da oferta. Retificação segue prazo/autorização. Período fechado bloqueia inclusive com autorização. Primeiro zero conta como lançamento.409 RECUPERACAO_NAO_ELEGIVEL se etapa regular incompleta ou nota não elegível.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"itens\": [\n    {\n      \"alunoId\": \"{{alunoId}}\",\n      \"valor\": \"0.00\"\n    }\n  ],\n  \"motivo\": \"Retificação sintética para validar o contrato\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Consultar rendimento",
+					"request": {
+						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/notas/turmas/{{ofertaId}}/rendimento",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"notas",
+								"turmas",
+								"{{ofertaId}}",
+								"rendimento"
+							]
+						},
+						"description": "Administrativo/professor da oferta. resultadoAcademico v2 por UUID, sem cálculo local. Nota suficiente e frequência insuficiente/pendente não concedem aprovação."
+					},
+					"response": []
+				},
+				{
+					"name": "Abrir recuperação - pode materializar avaliação",
+					"request": {
+						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/notas/turmas/{{ofertaId}}/recuperacao",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"notas",
+								"turmas",
+								"{{ofertaId}}",
+								"recuperacao"
+							]
+						},
+						"description": "EFEITO DE ESCRITA HERDADO: se há elegível e período aberto, pode criar REC única com máximo igual ao total. Executar somente ao abrir o fluxo autorizado; não prefetch. Cache-Control: private, no-store. Frequência não altera elegibilidade por nota, mas continua requisito de aprovação."
+					},
+					"response": []
+				},
+				{
+					"name": "Boletim do aluno autenticado",
+					"request": {
+						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/notas/me",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"notas",
+								"me"
+							]
+						},
+						"description": "Aluno somente seus vínculos. Plano incompleto/notas ausentes permanecem pendentes; percentual parcial não decide aprovação."
+					},
+					"response": []
+				},
+				{
+					"name": "Ficha administrativa",
+					"request": {
+						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/alunos/{{alunoId}}/ficha",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"alunos",
+								"{{alunoId}}",
+								"ficha"
+							]
+						},
+						"description": "Exclusiva secretaria/administrador, preserva notas e vínculos históricos concluídos/cancelados. Aluno/professor ->403 e usam boletim autorizado."
+					},
+					"response": []
+				},
+				{
+					"name": "Relatório acadêmico autorizado",
+					"request": {
+						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"header": [],
+						"url": {
+							"raw": "{{pontuacaoBaseUrl}}/relatorios/academicos",
+							"host": [
+								"{{pontuacaoBaseUrl}}"
+							],
+							"path": [
+								"relatorios",
+								"academicos"
+							]
+						},
+						"description": "Aluno próprio/professor próprias ofertas/administrativo. Mesmo resultadoAcademico v2; fonte externa, quando configurada, não amplia escopo e precisa cumprir o contrato."
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"auth": {
@@ -406,6 +788,46 @@
 		{
 			"key": "baseUrl",
 			"value": "http://localhost:8080"
+		},
+		{
+			"key": "pontuacaoBaseUrl",
+			"value": "http://127.0.0.1:3100",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cursoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "periodoLetivoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ofertaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "subgrupoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "avaliacaoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "alunoId",
+			"value": "",
+			"type": "string"
 		}
 	]
 }

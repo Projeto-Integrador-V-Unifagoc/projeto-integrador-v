@@ -1,12 +1,13 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { configurarAmbienteTeste } from "./config/ambienteTeste";
 
 import authRoutes from "./Modules/usuario-perfil-autenticacao/routes/auth-routes";
 import { autenticar } from "./middlewares/autenticacao";
 import { soSecretaria } from "./middlewares/autorizacao";
 
-dotenv.config();
+if (!configurarAmbienteTeste()) dotenv.config();
 
 const app = express();
 

@@ -1,4 +1,13 @@
-import "dotenv/config";
+import { configurarAmbienteTeste, validarBancoTeste } from "../../backend/src/config/ambienteTeste";
+import { exigirModoSintetico, validarUrlHttpTeste } from "./isolamento.js";
+
+const databaseUrl = validarBancoTeste(process.env.E2E_DATABASE_URL ?? process.env.DATABASE_URL);
+
+exigirModoSintetico();
+configurarAmbienteTeste({
+  ...process.env,
+  DATABASE_URL: databaseUrl,
+});
 
 /**
  * Configuração central da suíte E2E, derivada de variáveis de ambiente com
@@ -7,11 +16,9 @@ import "dotenv/config";
  * specs e mantém a execução reproduzível (spec §4, §5).
  */
 export const config = {
-  apiUrl: (process.env.E2E_API_URL ?? "http://localhost:3100").replace(/\/$/, ""),
-  webUrl: (process.env.E2E_WEB_URL ?? "").replace(/\/$/, ""),
-  databaseUrl:
-    process.env.E2E_DATABASE_URL ??
-    "postgresql://postgres:postgres@localhost:5433/projeto_integrador_e2e",
+  apiUrl: validarUrlHttpTeste(process.env.E2E_API_URL ?? "http://localhost:3100"),
+  webUrl: process.env.E2E_WEB_URL ? validarUrlHttpTeste(process.env.E2E_WEB_URL) : "",
+  databaseUrl,
   secretaria: {
     email: process.env.E2E_SECRETARIA_EMAIL ?? "suporte@unieduca.com.br",
     senha: process.env.E2E_SECRETARIA_SENHA ?? "unieduca2026",

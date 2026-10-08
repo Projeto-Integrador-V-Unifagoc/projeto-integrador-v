@@ -1,5 +1,6 @@
 import { db } from "../../../database/connection";
 import { PeriodoLetivoCommand, PeriodoLetivoMapper } from "../models/PeriodoLetivo";
+import { escritaEstrutura } from "../gateways/EscritaEstruturaAcademica";
 
 export class PeriodoLetivoRepository {
     async criarPeriodoLetivo(data: PeriodoLetivoCommand) {
@@ -46,20 +47,22 @@ export class PeriodoLetivoRepository {
     }
 
     async atualizarPeriodoLetivo(id: string, data: Partial<PeriodoLetivoCommand>) {
-        const [periodoLetivo] = await db("periodo_letivo")
+        return escritaEstrutura(db, "periodo_letivo", id, data, async (trx) => {
+        const [periodoLetivo] = await trx("periodo_letivo")
             .where({ id })
             .update({
                 ...data,
-                updated_at: db.fn.now()
+                updated_at: trx.fn.now()
             })
             .returning("*");
 
         return periodoLetivo ?? null;
+        });
     }
 
     async removerPeriodoLetivo(id: string) {
-        return await db("periodo_letivo")
+        return escritaEstrutura(db, "periodo_letivo", id, {}, async (trx) => trx("periodo_letivo")
             .where({ id })
-            .del();
+            .del(), true);
     }
 }

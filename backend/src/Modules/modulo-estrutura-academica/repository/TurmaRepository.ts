@@ -1,5 +1,6 @@
 import { db } from "../../../database/connection";
 import { TurmaCommand, TurmaMapper } from "../models/Turma";
+import { escritaEstrutura, ValidacaoEstrutura } from "../gateways/EscritaEstruturaAcademica";
 
 export class TurmaRepository {
     private baseQuery() {
@@ -19,11 +20,16 @@ export class TurmaRepository {
     }
 
     async criarTurma(data: TurmaCommand) {
-        const [turma] = await db("turma")
+        return escritaEstrutura(db, "turma", data.id, data, async (trx) => {
+        const curso = await trx("piv.curso").where({ id: data.curso_id }).first();
+        const periodo = await trx("piv.periodo_letivo").where({ id: data.periodo_letivo_id }).first();
+        if (!curso || !periodo) throw new ValidacaoEstrutura("Os vínculos da turma não estão disponíveis.");
+        const [turma] = await trx("turma")
             .insert(data)
             .returning("*");
 
         return turma;
+        });
     }
 
     async listarTurmas() {
@@ -56,20 +62,22 @@ export class TurmaRepository {
     }
 
     async atualizarTurma(id: string, data: Partial<TurmaCommand>) {
-        const [turma] = await db("turma")
+        return escritaEstrutura(db, "turma", id, data, async (trx) => {
+        const [turma] = await trx("turma")
             .where({ id })
             .update({
                 ...data,
-                updated_at: db.fn.now()
+                updated_at: trx.fn.now()
             })
             .returning("*");
 
         return turma ?? null;
+        });
     }
 
     async removerTurma(id: string) {
-        return await db("turma")
+        return escritaEstrutura(db, "turma", id, {}, async (trx) => trx("turma")
             .where({ id })
-            .del();
+            .del(), true);
     }
 }

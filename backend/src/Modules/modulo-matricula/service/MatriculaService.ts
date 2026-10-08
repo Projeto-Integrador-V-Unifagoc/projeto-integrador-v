@@ -96,7 +96,7 @@ export class MatriculaService {
                 );
 
                 return { ...matricula, disciplinas_vinculadas: vinculosCriados };
-            });
+            }, turmaId);
         } catch (err: any) {
             if (err?.code === PG_UNIQUE_VIOLATION) {
                 throw MatriculaError.conflito("Aluno já está matriculado nesta turma.");
@@ -217,7 +217,7 @@ export class MatriculaService {
             );
         }
 
-        return (await this.repository.atualizarStatus(id, "ativa"))!;
+        return (await this.repository.atualizarStatus(id, "ativa", "pendente"))!;
     }
 
     async atualizarStatus(id: string, status: string) {
@@ -277,6 +277,6 @@ export class MatriculaService {
         if (String(vinculo.status).toLowerCase() === "cancelada") {
             throw MatriculaError.conflito("Vínculo já está cancelado.");
         }
-        return (await this.repository.cancelarVinculo(vinculoId))!;
+        return (await this.repository.cancelarVinculo(vinculoId, matriculaId))!;
     }
 }

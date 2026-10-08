@@ -1,8 +1,12 @@
 import type { Knex } from "knex";
+import { configurarAmbienteTeste } from "./src/config/ambienteTeste";
 
 // Load .env.development for local dev; in Docker the env vars come from docker-compose.
-require("dotenv").config({ path: ".env.development" });
-require("dotenv").config();
+const databaseUrlTeste = configurarAmbienteTeste();
+if (!databaseUrlTeste) {
+  require("dotenv").config({ path: ".env.development" });
+  require("dotenv").config();
+}
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -15,6 +19,7 @@ const getEnvOrThrow = (key: string, defaultValue?: string): string => {
 };
 
 const connection =
+  databaseUrlTeste ||
   process.env.DATABASE_URL ||
   process.env.DATABASE ||
   {

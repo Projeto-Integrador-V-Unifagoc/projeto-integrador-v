@@ -1,65 +1,68 @@
-import { test, expect } from "../fixtures/test.js";
-import { criarPlano100, lancarNotaLote, registrarChamada, datasRecentes } from "../helpers/dominio.js";
+import { test, expect, consultarResultadoJornada } from "../fixtures/test.js";
+import type { Api } from "../helpers/api.js";
+import { fecharDb } from "../helpers/db.js";
+import { criarPlano100, criarPlanoRegular, lancarNotaLote, lancarPontosRegulares, registrarFrequenciaCompleta } from "../helpers/dominio.js";
 
-/**
- * E2E-J01 — Aprovação direta (spec §10). A jornada autoritativa (notas +
- * frequência, que implementam a regra §9) deve passar de ponta a ponta. A
- * coerência em ficha é verificada à parte e está sujeita ao defeito §17.1.
- */
-test.describe("E2E-J01 Aprovação direta @journey", () => {
-  test("aluno com 100 pontos e 100% de presença é APROVADO em todas as leituras autoritativas", async ({
-    novoCenario,
-  }) => {
-    const cenario = await novoCenario();
-    const { aluno, apiAluno } = await cenario.matricularAluno();
+test.afterAll(fecharDb);
 
-    // 7. Professor cria avaliações totalizando 100 pontos.
-    const plano = await criarPlano100(cenario.apiProfessor, cenario.turmaDisciplinaId);
+test.describe("E2E-J01 Aprovação conjunta @journey", () => {
+  for (const caso of [
+    { nome: "total120", total: "120.00", provas: "72.00", quantidade: 4, institucional: "6.00", trabalhos: "42.00" },
+    { nome: "composição100 diferente", total: "100.00", provas: "60.00", quantidade: 2, institucional: "5.00", trabalhos: "35.00" },
+  ]) {
+    test("fixture100 rejeita " + caso.nome + " antes de qualquer escrita", async () => {
+      const escritas: unknown[] = [];
+      const api = {
+        get: async () => ({ status: 200, body: { regraPontuacaoId: "regra-sintética", totalPontos: caso.total, subgrupos: [
+          { id: "g1", nome: "Provas", orcamentoPontos: caso.provas, modoQuantidade: "FIXA", quantidadeFixa: caso.quantidade },
+          { id: "g2", nome: "Institucional", orcamentoPontos: caso.institucional, modoQuantidade: "FIXA", quantidadeFixa: 1 },
+          { id: "g3", nome: "Trabalhos", orcamentoPontos: caso.trabalhos, modoQuantidade: "SEM_LIMITE", quantidadeFixa: null },
+        ] } }),
+        post: async (_url: string, dados: unknown) => { escritas.push(dados); return { status: 201, body: { id: "av-" + escritas.length } }; },
+      } as unknown as Api;
+      await expect(criarPlano100(api, "oferta-sintética")).rejects.toThrow(/criarPlano100 exige/);
+      expect(escritas).toEqual([]);
+    });
+  }
 
-    // 8. Professor lança notas cheias (100% dos pontos).
-    for (const provaId of plano.provas) {
-      const r = await lancarNotaLote(cenario.apiProfessor, provaId, [{ alunoId: aluno.id, valor: 20 }]);
-      expect(r.status, JSON.stringify(r.body)).toBe(200);
+  test("100 pontos e100% de presença aprovam com resultado comum na ficha", async ({ novoCenario }) => {
+    const c = await novoCenario({ regraPontuacao: "100" });
+    const aluno = await c.matricularAluno();
+    const plano = await criarPlano100(c.apiProfessor, c.turmaDisciplinaId);
+    const notas = ["20.00", "20.00", "20.00", "5.00", "35.00"];
+    for (const [indice, id] of plano.todas.entries()) {
+      expect((await lancarNotaLote(c.apiProfessor, id, [{ alunoId: aluno.aluno.id, valor: notas[indice] }])).status).toBe(200);
     }
-    expect((await lancarNotaLote(cenario.apiProfessor, plano.tpi, [{ alunoId: aluno.id, valor: 5 }])).status).toBe(200);
-    expect((await lancarNotaLote(cenario.apiProfessor, plano.trabalho, [{ alunoId: aluno.id, valor: 35 }])).status).toBe(200);
-
-    // 9. Professor registra frequência de 100% (5 aulas, todas presentes).
-    for (const data of datasRecentes(5)) {
-      const chamada = await registrarChamada(cenario.apiProfessor, cenario.turmaDisciplinaId, data, [
-        { alunoId: aluno.id, status: "PRESENTE" },
-      ]);
-      expect([200, 201], JSON.stringify(chamada.body)).toContain(chamada.status);
-    }
-
-    // 10. Aluno acessa o próprio boletim — APROVADO com média final 100.
-    const boletim = await apiAluno.get("/notas/me");
-    expect(boletim.status).toBe(200);
-    const disciplina = boletim.body.disciplinas[0];
-    expect(disciplina.situacao).toBe("APROVADO");
-    expect(disciplina.etapaRegularCompleta).toBe(true);
-    expect(disciplina.mediaFinal).toBe(100);
-
-    // 10b. Aluno acessa a própria frequência — REGULAR, 100%.
-    const minhaFreq = await apiAluno.get("/frequencias/minha");
-    expect(minhaFreq.status).toBe(200);
-    const consolidado = minhaFreq.body.consolidado[0];
-    expect(consolidado.percentual).toBe(100);
-    expect(consolidado.situacao).toBe("REGULAR");
-
-    // 11. Secretaria consulta o rendimento da turma — aluno APROVADO.
-    const rendimento = await cenario.apiSecretaria.get(
-      `/notas/turmas/${cenario.turmaDisciplinaId}/rendimento`,
-    );
-    expect(rendimento.status).toBe(200);
-    const linhaAluno = rendimento.body.alunos.find((a: any) => a.alunoId === aluno.id);
-    expect(linhaAluno.situacao).toBe("APROVADO");
-    expect(linhaAluno.mediaFinal).toBe(100);
-
-    // 11b. Ficha consolidada deve existir e trazer a matrícula do aluno.
-    const ficha = await cenario.apiSecretaria.get(`/alunos/${aluno.id}/ficha`);
+    await registrarFrequenciaCompleta(c.apiProfessor, c.turmaDisciplinaId, [aluno.aluno.id], 5, 0);
+    const resultado = await consultarResultadoJornada(c, aluno);
+    expect(resultado).toMatchObject({ totalPontos: "100.00", cortePontos: "60.00", planoCompleto: true,
+      etapaRegularCompleta: true, pontosRegularesObtidos: "100.00", pontosEfetivos: "100.00",
+      resultadoPorNota: "SUFICIENTE", aprovacaoDisciplina: "APROVADA", elegivelRecuperacaoPorNota: false,
+      frequencia: { presencas: 5, faltas: 0, percentual: 100, situacao: "REGULAR", requisito: "SUFICIENTE" },
+    });
+    const ficha = await c.apiSecretaria.get("/alunos/" + aluno.aluno.id + "/ficha");
     expect(ficha.status).toBe(200);
-    expect(ficha.body.aluno).toBeTruthy();
-    expect(Array.isArray(ficha.body.matriculas)).toBe(true);
+    const disciplina = ficha.body.notas.find((n: any) => n.resultadoAcademico?.turmaDisciplinaId === c.turmaDisciplinaId);
+    expect(disciplina?.resultadoAcademico).toEqual(resultado);
+    const frequencia = await aluno.apiAluno.get("/frequencias/minha");
+    expect(frequencia.status).toBe(200);
+    expect(frequencia.body.consolidado.find((f: any) => f.turmaDisciplinaId === c.turmaDisciplinaId)).toMatchObject({ percentual: 100, situacao: "REGULAR" });
   });
+
+  for (const caso of [{ presencas: 3, faltas: 1, percentual: 75 }, { presencas: 4, faltas: 1, percentual: 80 }]) {
+    test("72/120 com frequência" + caso.percentual + "% aprova e conserva ALERTA", async ({ novoCenario }) => {
+      const c = await novoCenario({ regraPontuacao: "120" }); const aluno = await c.matricularAluno();
+      const plano = await criarPlanoRegular(c.apiProfessor, c.turmaDisciplinaId);
+      await lancarPontosRegulares(c.apiProfessor, plano, aluno.aluno.id, "72.00");
+      await registrarFrequenciaCompleta(c.apiProfessor, c.turmaDisciplinaId, [aluno.aluno.id], caso.presencas, caso.faltas);
+      const resultado = await consultarResultadoJornada(c, aluno);
+      expect(resultado).toMatchObject({ totalPontos: "120.00", cortePontos: "72.00", etapaRegularCompleta: true,
+        pontosEfetivos: "72.00", resultadoPorNota: "SUFICIENTE", aprovacaoDisciplina: "APROVADA",
+        frequencia: { ...caso, situacao: "ALERTA", requisito: "SUFICIENTE" },
+      });
+      const recuperacao = await c.apiProfessor.get("/notas/turmas/" + c.turmaDisciplinaId + "/recuperacao");
+      expect(recuperacao.status).toBe(200); expect(recuperacao.body.alunos).toEqual([]);
+      expect(recuperacao.body.recuperacaoAvaliacaoId).toBeNull();
+    });
+  }
 });

@@ -73,7 +73,7 @@ describe("Autenticação — rotas + Postgres real @int", () => {
   it("POST /cadastro cria um usuário novo e rejeita e-mail duplicado", async () => {
     const login = await request(app).post("/login").send({ email: EMAIL_SECRETARIA, senha: SENHA_SECRETARIA });
     const auth = `Bearer ${login.body.token}`;
-    const novo = { nome: "Coordenação", email: "coord@unieduca.com.br", senha: "senhaForte1", tipo_usuario: "secretaria" };
+    const novo = { nome: "Coordenação", email: "coord@unieduca.com.br", senha: "senhaForte1!", tipo_usuario: "secretaria" };
 
     const criado = await request(app).post("/cadastro").set("Authorization", auth).send(novo);
     expect(criado.status).toBe(201);

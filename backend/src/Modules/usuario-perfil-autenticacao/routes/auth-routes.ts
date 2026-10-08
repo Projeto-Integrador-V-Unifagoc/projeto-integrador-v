@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { validarRecaptcha, limitarSolicitacoes } from '../../../middlewares/recaptcha';
 import AutenticacaoController from '../controller/autenticacao-controller';
 import RecuperacaoSenhaController from '../controller/recuperacao-senha-controller';
 import { autenticar } from '../../../middlewares/autenticacao';
@@ -9,17 +8,17 @@ import { soSecretaria } from '../../../middlewares/autorizacao';
 const router = Router();
 
 // LOGIN
-router.post('/login', limitarSolicitacoes(30), validarRecaptcha, (req, res) => {
+router.post('/login', (req, res) => {
   return AutenticacaoController.login(req, res);
 });
 
 // SOLICITAR RECUPERAÇÃO DE SENHA
-router.post('/recuperacao-senha', limitarSolicitacoes(5), validarRecaptcha, (req, res) => {
+router.post('/recuperacao-senha', (req, res) => {
   return RecuperacaoSenhaController.solicitar(req, res);
 });
 
 // REDEFINIR SENHA USANDO O TOKEN
-router.post('/redefinir-senha', limitarSolicitacoes(15), (req, res) => {
+router.post('/redefinir-senha', (req, res) => {
   return RecuperacaoSenhaController.redefinir(req, res);
 });
 

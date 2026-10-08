@@ -54,7 +54,7 @@ export default function AutorizacaoDialog({ open, motivo, saving, onMotivo, onCl
         <Button variant="outlined" disabled={saving} onClick={fechar}>
           Cancelar
         </Button>
-        <Button variant="contained" disabled={saving || invalido} isLoading={saving} onClick={onSave}>
+        <Button variant="contained" aria-label="Registrar autorização" disabled={saving || invalido} isLoading={saving} onClick={onSave}>
           Registrar autorização
         </Button>
       </Dialog.Footer>

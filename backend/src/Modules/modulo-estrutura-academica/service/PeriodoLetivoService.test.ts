@@ -95,12 +95,11 @@ describe("PeriodoLetivoService.atualizarPeriodoLetivo", () => {
     assert.equal(chamouBuscaPorAnoSemestre, false);
   });
 
-  it("atualiza o periodo combinando dados atuais e alteracoes", async () => {
+  it("persiste somente o status enviado sem reenviar codigo, datas ou ativo", async () => {
     let salvo: any;
     const { service } = criar({ atualizarPeriodoLetivo: async (_id: string, d: any) => ((salvo = d), d) });
     await service.atualizarPeriodoLetivo("p1", { status: "em_andamento" });
-    assert.equal(salvo.codigo, "2026/1");
-    assert.equal(salvo.status, "em_andamento");
+    assert.deepEqual(Object.fromEntries(Object.entries(salvo).filter(([, valor]) => valor !== undefined)), { status: "em_andamento" });
   });
 });
 

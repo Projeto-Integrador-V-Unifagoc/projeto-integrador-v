@@ -63,7 +63,7 @@ export class HomeAlunoRepository {
         "a.tipo_avaliacao",
         "a.descricao_avaliacao",
         "a.data_devolucao",
-        "a.valor",
+        executor.raw("a.valor::text AS valor"),
         "d.nome as disciplina_nome",
         "td.id as turma_disciplina_id",
       )

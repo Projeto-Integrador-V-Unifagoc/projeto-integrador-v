@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
+import type { Knex } from "knex";
 import { startPgIntegration, type PgIntegration } from "../../test-helpers/pgIntegration";
 import { bearer } from "../../test-helpers/httpAuth";
 
@@ -17,16 +18,18 @@ import { bearer } from "../../test-helpers/httpAuth";
 
 let ctx: PgIntegration;
 let app: Express;
+let bancoApp: Knex;
 const auth = () => bearer("secretaria");
 const sufixo = Date.now().toString().slice(-6);
 
 beforeAll(async () => {
   ctx = await startPgIntegration();
   ({ app } = await import("../../app"));
+  ({ db: bancoApp } = await import("../../database/connection"));
 }, 180_000);
 
 afterAll(async () => {
-  await ctx?.stop();
+  try { await bancoApp?.destroy(); } finally { await ctx?.stop(); }
 });
 
 describe("Estrutura acadêmica — cadeia de FKs + Postgres real @int", () => {
@@ -181,5 +184,9 @@ describe("Estrutura acadêmica — cadeia de FKs + Postgres real @int", () => {
     const res = await request(app).delete(`/cursos/${ids.curso}`).set("Authorization", auth());
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Nao e possivel remover o curso/);
+    expect(res.body.codigo).toBe("DADOS_ACADEMICOS_INVALIDOS");
+    expect(JSON.stringify(res.body)).not.toMatch(/DELETE|constraint|piv\.|stack/i);
+    expect(await ctx.db("piv.curso").where({ id: ids.curso }).first("id")).toEqual({ id: ids.curso });
+    expect(await ctx.db("piv.turma").where({ id: ids.turma }).first("curso_id")).toEqual({ curso_id: ids.curso });
   });
 });

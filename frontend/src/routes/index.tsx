@@ -24,6 +24,7 @@ import Cursos from "../Pages/Cursos/Cursos";
 import CadastroCursos from "../Pages/Cursos/CadastroCursos";
 import EditCurso from "../Pages/Cursos/EditCurso";
 import MatrizCurricularCurso from "../Pages/Cursos/MatrizCurricularCurso";
+import RegraPontuacaoCurso from "../Pages/Cursos/RegraPontuacaoCurso";
 
 import Disciplinas from "../Pages/Disciplinas/Disciplinas";
 import CadastroDisciplinas from "../Pages/Disciplinas/CadastroDisciplinas";
@@ -43,7 +44,6 @@ import CadastroProfessores from "../Pages/Professores/Cadastro";
 import Frequencia from "../Pages/Frequencia/Frequencia";
 import LancamentoNotas from "../Pages/Notas/LancamentoNotas";
 import MinhasNotas from "../Pages/Notas/MinhasNotas";
-import MinhaAgenda from "../Pages/Agenda/MinhaAgenda";
 import Matriculas from "../Pages/Matricula/Matriculas";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
@@ -290,15 +290,6 @@ export default function AppRoutes() {
         />
 
         <Route
-          path="/minha-agenda"
-          element={
-            <RouteByRole perfisPermitidos={["aluno"]}>
-              <MinhaAgenda />
-            </RouteByRole>
-          }
-        />
-
-        <Route
           path="/cursos/lista"
           element={
             <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
@@ -330,6 +321,15 @@ export default function AppRoutes() {
           element={
             <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <MatrizCurricularCurso />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/cursos/:id/pontuacao"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
+              <RegraPontuacaoCurso />
             </RouteByRole>
           }
         />

@@ -5,6 +5,7 @@ import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
 } from "@testcontainers/postgresql";
+import { configurarAmbienteTeste, estaEmModoTeste } from "../config/ambienteTeste";
 
 /**
  * Sobe um Postgres efêmero (Testcontainers), aplica migrations + seeds essenciais
@@ -28,22 +29,33 @@ export interface PgIntegration {
   stop(): Promise<void>;
 }
 
-function knexCli(args: string[], databaseUrl: string, label: string): void {
+export interface OpcoesPgIntegration {
+  /** Schema antigo, antes de inserir o histórico artificial da adoção. */
+  fronteiraHistorica?: boolean;
+  /** Schema expandido sem adoção/guards, para incompatibilidades de precisão sintéticas. */
+  fronteiraExpandida?: boolean;
+}
+
+function knexCli(args: string[], databaseUrl: string, label: string, fronteira?: "historica" | "expandida"): void {
   const resultado = spawnSync(
-    "node",
+    process.execPath,
     [
       "-r",
       "ts-node/register",
-      "node_modules/knex/bin/cli.js",
-      ...args,
-      "--knexfile",
-      "knexfile.ts",
+      ...(fronteira ? ["src/test-helpers/migrarFronteira.ts", fronteira]
+        : ["node_modules/knex/bin/cli.js", ...args, "--knexfile", "knexfile.ts", "--env", "development"]),
     ],
     {
       cwd: backendDir,
-      env: { ...process.env, DATABASE_URL: databaseUrl, TZ: "America/Sao_Paulo" },
+      env: {
+        ...process.env,
+        ACADEMICO_MODO_TESTE: "true",
+        NODE_ENV: "development",
+        EMAIL_MODO_TESTE: "true",
+        DATABASE_URL: databaseUrl,
+        TZ: "America/Sao_Paulo",
+      },
       stdio: "inherit",
-      shell: true,
     },
   );
   if (resultado.status !== 0) {
@@ -51,36 +63,46 @@ function knexCli(args: string[], databaseUrl: string, label: string): void {
   }
 }
 
-export async function startPgIntegration(): Promise<PgIntegration> {
+export async function startPgIntegration(opcoes: OpcoesPgIntegration = {}): Promise<PgIntegration> {
+  if (opcoes.fronteiraHistorica && opcoes.fronteiraExpandida) throw new TypeError("Selecione uma única fronteira de teste.");
+  process.env.ACADEMICO_MODO_TESTE = "true";
+  // Rejeita produção antes de iniciar o container, sem substituir NODE_ENV.
+  estaEmModoTeste();
   const container = await new PostgreSqlContainer("postgres:15")
     // Nome termina em `_test`: mantém a trava de segurança do e2e/setup-db.mjs.
     .withDatabase("projeto_integrador_test")
     .start();
 
-  const databaseUrl = container.getConnectionUri();
+  try {
+    const databaseUrl = container.getConnectionUri();
 
-  // Precisa valer ANTES de qualquer import de src/database/connection.ts.
-  process.env.DATABASE_URL = databaseUrl;
-  process.env.JWT_SECRET = process.env.JWT_SECRET || "x".repeat(40);
-  process.env.TZ = "America/Sao_Paulo";
+    // Precisa valer ANTES de qualquer import de src/database/connection.ts.
+    process.env.DATABASE_URL = databaseUrl;
+    configurarAmbienteTeste();
+    process.env.JWT_SECRET = "integration-jwt-secret-only-for-tests-0123456789";
+    process.env.TZ = "America/Sao_Paulo";
 
-  knexCli(["migrate:latest"], databaseUrl, "migrate:latest");
-  knexCli(["seed:run", "--specific=cidades.ts"], databaseUrl, "seed cidades");
-  knexCli(["seed:run", "--specific=usuario_inicial.ts"], databaseUrl, "seed usuario_inicial");
+    const fronteira = opcoes.fronteiraHistorica ? "historica" : opcoes.fronteiraExpandida ? "expandida" : undefined;
+    knexCli(["migrate:latest"], databaseUrl, "migrate:latest", fronteira);
+    knexCli(["seed:run", "--specific=cidades.ts"], databaseUrl, "seed cidades");
+    knexCli(["seed:run", "--specific=usuario_inicial.ts"], databaseUrl, "seed usuario_inicial");
 
-  const db = knexLib({
-    client: "pg",
-    connection: databaseUrl,
-    searchPath: ["piv", "public"],
-  });
+    const db = knexLib({
+      client: "pg",
+      connection: databaseUrl,
+      searchPath: ["piv", "public"],
+    });
 
-  return {
-    container,
-    db,
-    databaseUrl,
-    async stop() {
-      await db.destroy();
-      await container.stop();
-    },
-  };
+    return {
+      container,
+      db,
+      databaseUrl,
+      async stop() {
+        try { await db.destroy(); } finally { await container.stop(); }
+      },
+    };
+  } catch (erro) {
+    await container.stop();
+    throw erro;
+  }
 }

@@ -1,5 +1,6 @@
 import type { Knex } from 'knex';
 import { db } from '../../../database/connection';
+import { escritaEstrutura, escritaVinculosDocentes, EstruturaPreservada } from '../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica';
 
 export interface Usuario {
   id?: number;
@@ -143,9 +144,13 @@ export class UsuarioRepository {
 
   // Vincula um professor a um usuário (define professor.usuario_id).
   async vincularUsuarioAoProfessor(professorId: string, usuarioId: string) {
-    return await db('piv.professor')
+    return escritaEstrutura(db, "professor", professorId, { usuario_id: usuarioId }, async (trx) => {
+    const professor = await trx('piv.professor').where({ id: professorId }).first();
+    if (!professor || !professor.ativo || (professor.usuario_id && professor.usuario_id !== usuarioId)) throw new EstruturaPreservada("O vínculo docente foi alterado. Recarregue e tente novamente.");
+    return trx('piv.professor')
       .where({ id: professorId })
       .update({ usuario_id: usuarioId });
+    });
   }
 
   // Remove o vínculo de qualquer aluno apontando para este usuário (usuario_id -> null).
@@ -157,9 +162,9 @@ export class UsuarioRepository {
 
   // Remove o vínculo de qualquer professor apontando para este usuário (usuario_id -> null).
   async desvincularProfessoresDoUsuario(usuarioId: string) {
-    return await db('piv.professor')
+    return escritaVinculosDocentes(db, usuarioId, (trx) => trx('piv.professor')
       .where({ usuario_id: usuarioId })
-      .update({ usuario_id: null });
+      .update({ usuario_id: null }));
   }
 
   // Atualiza os dados básicos do usuário (nome, email, senha, tipo_usuario).

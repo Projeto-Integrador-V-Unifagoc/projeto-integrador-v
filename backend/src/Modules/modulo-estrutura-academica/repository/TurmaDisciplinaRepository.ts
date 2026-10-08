@@ -1,5 +1,6 @@
 import { db } from "../../../database/connection";
 import { TurmaDisciplinaCommand, TurmaDisciplinaMapper } from "../models/TurmaDisciplina";
+import { escritaEstrutura, EstruturaPreservada } from "../gateways/EscritaEstruturaAcademica";
 
 export class TurmaDisciplinaRepository {
     private baseQuery() {
@@ -29,11 +30,17 @@ export class TurmaDisciplinaRepository {
     }
 
     async criarTurmaDisciplina(data: TurmaDisciplinaCommand) {
-        const [turmaDisciplina] = await db("turma_disciplina")
+        return escritaEstrutura(db, "turma_disciplina", data.id, data, async (trx) => {
+        const turma = await trx("piv.turma").where({ id: data.turma_id }).first();
+        const matriz = await trx("piv.curso_disciplina").where({ id: data.curso_disciplina_id }).first();
+        const professor = await trx("piv.professor").where({ id: data.professor_id, ativo: true }).first();
+        if (!turma || !matriz || !professor || turma.curso_id !== matriz.curso_id) throw new EstruturaPreservada("Os vínculos da oferta foram alterados. Recarregue e tente novamente.");
+        const [turmaDisciplina] = await trx("turma_disciplina")
             .insert(data)
             .returning("*");
 
         return turmaDisciplina;
+        });
     }
 
     async listarTurmaDisciplinasPorTurmaId(turmaId: string) {
@@ -65,20 +72,23 @@ export class TurmaDisciplinaRepository {
     }
 
     async atualizarTurmaDisciplina(id: string, data: Partial<TurmaDisciplinaCommand>) {
-        const [turmaDisciplina] = await db("turma_disciplina")
+        return escritaEstrutura(db, "turma_disciplina", id, data, async (trx) => {
+        if (data.professor_id && !(await trx("piv.professor").where({ id: data.professor_id, ativo: true }).first())) throw new EstruturaPreservada("Professor sem vínculo ativo.");
+        const [turmaDisciplina] = await trx("turma_disciplina")
             .where({ id })
             .update({
                 ...data,
-                updated_at: db.fn.now()
+                updated_at: trx.fn.now()
             })
             .returning("*");
 
         return turmaDisciplina ?? null;
+        });
     }
 
     async removerTurmaDisciplina(id: string) {
-        return await db("turma_disciplina")
+        return escritaEstrutura(db, "turma_disciplina", id, {}, async (trx) => trx("turma_disciplina")
             .where({ id })
-            .del();
+            .del(), true);
     }
 }

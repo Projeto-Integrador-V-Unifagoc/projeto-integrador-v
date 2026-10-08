@@ -1,8 +1,11 @@
+import type { ResultadoAcademico } from "../../notas/models/ResultadoAcademico";
+
 export type PerfilRelatorio = "Professor" | "Aluno" | "Secretaria";
 export type TipoUsuarioRelatorio = "aluno" | "professor" | "secretaria" | "administrador";
 export type TipoRelatorio = "Notas" | "Frequencia" | "Consulta" | "Historico";
 export type SituacaoAcademica =
   | "Aprovado"
+  | "Reprovado"
   | "Recuperacao"
   | "Pendente"
   | "Regular"
@@ -19,6 +22,7 @@ export interface FiltrosRelatorioAcademico {
   turmaId?: string;
   turmaIdsPermitidos?: string[];
   disciplinaId?: string;
+  periodoLetivoId?: string;
 }
 
 export interface ContextoRelatorioAcademico {
@@ -27,6 +31,10 @@ export interface ContextoRelatorioAcademico {
 }
 
 export interface RelatorioAcademicoLinha {
+  turmaDisciplinaId: string;
+  matriculaTurmaDisciplinaId: string;
+  periodoLetivoId: string;
+  resultadoAcademico: ResultadoAcademico;
   alunoId: string;
   matricula: number | string;
   aluno: string;
@@ -40,10 +48,10 @@ export interface RelatorioAcademicoLinha {
   ano: string;
   avaliacao?: string | null;
   tipoAvaliacao?: string | null;
-  valorAvaliacao?: number | string | null;
+  valorAvaliacao?: string | null;
   dataAvaliacao?: string | Date | null;
-  nota?: number | string | null;
-  frequencia?: number | string | null;
+  nota: string | null;
+  frequencia: number | null;
   totalAulas?: number;
   presencas?: number;
   faltas?: number;
@@ -51,6 +59,9 @@ export interface RelatorioAcademicoLinha {
 }
 
 export interface DisciplinaRelatorio {
+  turmaDisciplinaId: string;
+  matriculaTurmaDisciplinaId: string;
+  resultadoAcademico: ResultadoAcademico;
   nome: string;
   aluno?: string;
   cargaHoraria: string;
@@ -58,8 +69,8 @@ export interface DisciplinaRelatorio {
   tipoAvaliacao?: string;
   valorAvaliacao?: string;
   dataAvaliacao?: string;
-  nota?: string;
-  frequencia?: string;
+  nota: string | null;
+  frequencia: string | null;
   totalAulas?: string;
   presencas?: string;
   faltas?: string;
@@ -67,6 +78,7 @@ export interface DisciplinaRelatorio {
 }
 
 export interface PeriodoRelatorio {
+  id: string;
   nome: string;
   disciplinas: DisciplinaRelatorio[];
 }

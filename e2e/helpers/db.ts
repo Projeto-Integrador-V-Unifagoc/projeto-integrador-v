@@ -1,5 +1,8 @@
 import knexFactory, { type Knex } from "knex";
 import { config } from "./config.js";
+import { exigirModoSintetico } from "./isolamento.js";
+import { validarBancoTeste } from "../../backend/src/config/ambienteTeste";
+import { validarDestinoPostgresTeste } from "../../backend/src/test-helpers/disputaAcademica";
 
 /**
  * Acesso ao banco EXCLUSIVO de testes (spec §4.1, §5). Usado apenas para:
@@ -11,28 +14,15 @@ import { config } from "./config.js";
  * banco não terminar em `_e2e` ou `_test` (spec §5.1).
  */
 
-function nomeDoBanco(url: string): string {
-  try {
-    return new URL(url).pathname.replace(/^\//, "");
-  } catch {
-    return "";
-  }
-}
-
-const NOME_BANCO = nomeDoBanco(config.databaseUrl);
-const BANCO_SEGURO = /(_e2e|_test)$/.test(NOME_BANCO);
-
 export function exigirBancoDeTeste(): void {
-  if (!BANCO_SEGURO) {
-    throw new Error(
-      `Recusando operar no banco "${NOME_BANCO}": o nome deve terminar em _e2e ou _test (spec §5.1).`,
-    );
-  }
+  exigirModoSintetico();
+  validarBancoTeste(config.databaseUrl);
 }
 
 let instancia: Knex | null = null;
 
 export function db(): Knex {
+  exigirBancoDeTeste();
   if (!instancia) {
     instancia = knexFactory({
       client: "pg",
@@ -41,6 +31,7 @@ export function db(): Knex {
       pool: { min: 0, max: 8 },
     });
   }
+  validarDestinoPostgresTeste(instancia);
   return instancia;
 }
 
@@ -49,16 +40,16 @@ export async function fecharDb(): Promise<void> {
     await instancia.destroy();
     instancia = null;
   }
+  cidadeCache = null;
 }
 
-// Tabelas de dados em ordem pai → filho. A limpeza percorre todas; a ordem é
-// irrelevante porque desativamos as checagens de FK na transação de limpeza,
-// mas a lista documenta o grafo de dependências (spec §7.1).
+// Inventário de grafos sintéticos, sem excluir histórico ou suspender guards.
 export const TABELAS_DADOS = [
   "recuperacao_senha",
   "matricula_documento",
   "documento",
   "nota_auditoria",
+  "regra_pontuacao_auditoria",
   "frequencia_auditoria",
   "nota_autorizacao_excepcional",
   "nota",
@@ -68,6 +59,8 @@ export const TABELAS_DADOS = [
   "matricula_turma_disciplina",
   "matricula",
   "turma_disciplina",
+  "subgrupo_avaliacao",
+  "regra_pontuacao",
   "turma",
   "curso_disciplina",
   "periodo_letivo",
@@ -84,20 +77,20 @@ export const TABELAS_DADOS = [
 ] as const;
 
 /**
- * Limpa todos os dados transacionais preservando os dados de referência
- * (cidade) e a secretaria inicial (seed). Reaproveita uma única conexão com as
- * checagens de FK desativadas para não depender da ordem (spec §5.3).
+ * A suíte comum começa em base vazia. História imutável exige recriar somente
+ * o container próprio pelo provisionador, nunca DELETE/TRUNCATE ou replica.
  */
-export async function limparBanco(): Promise<void> {
+export async function exigirBaseVazia(): Promise<void> {
   exigirBancoDeTeste();
-  await db().transaction(async (trx) => {
-    await trx.raw("SET LOCAL session_replication_role = replica");
-    for (const tabela of TABELAS_DADOS) {
-      await trx(`piv.${tabela}`).del();
+  const banco = db();
+  for (const tabela of TABELAS_DADOS) {
+    if (await banco(`piv.${tabela}`).first("id")) {
+      throw new Error("A suíte exige base sem grafos transacionais. Preserve o histórico e recrie somente seu container descartável.");
     }
-    await trx("piv.usuario").whereNot("email", config.secretaria.email).del();
-    await trx.raw("SET LOCAL session_replication_role = DEFAULT");
-  });
+  }
+  if (await banco("piv.usuario").whereNot("email", config.secretaria.email).first("id")) {
+    throw new Error("A base possui usuários de outra execução. Recrie somente seu container descartável.");
+  }
 }
 
 let cidadeCache: { ibge: string; nome: string; uf: string } | null = null;

@@ -5,7 +5,23 @@ import { FrequenciaMapper, type StatusFrequencia } from "../models/Frequencia";
 const STATUS_ATIVO = ["ativa", "ATIVA", "ATIVO", "MATRICULADO", "REGULAR"];
 const STATUS_MATRICULA_EM_CURSO = [...STATUS_ATIVO, "pendente", "PENDENTE"];
 
+export interface ContagemFrequenciaMatricula {
+  matricula_turma_disciplina_id: string;
+  presencas: string | number;
+  faltas: string | number;
+}
+
 export class FrequenciaRepository {
+  async carregarContagensPorMatriculas(ids: string[], executor: Knex | Knex.Transaction): Promise<ContagemFrequenciaMatricula[]> {
+    if (!ids.length) return [];
+    return executor("frequencia")
+      .select("matricula_turma_disciplina_id")
+      .select(executor.raw("COUNT(*) FILTER (WHERE status = ?) AS presencas", ["PRESENTE"]))
+      .select(executor.raw("COUNT(*) FILTER (WHERE status = ?) AS faltas", ["AUSENTE"]))
+      .whereIn("matricula_turma_disciplina_id", ids)
+      .groupBy("matricula_turma_disciplina_id");
+  }
+
   buscarUsuarioPorId(usuarioId: string) { return db("usuario").select("id", "tipo_usuario").where({ id: usuarioId }).first(); }
   buscarProfessorPorUsuarioId(usuarioId: string) { return db("professor").where({ usuario_id: usuarioId }).first(); }
   buscarAlunoPorUsuarioId(usuarioId: string) { return db("aluno").where({ usuario_id: usuarioId }).first(); }
