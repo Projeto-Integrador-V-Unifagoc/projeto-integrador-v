@@ -3,3 +3,9 @@ dist
 .env
 .env.*
 *.log
+.git/
+Dockerfile*
+.dockerignore
+coverage/
+build/
+*.log*

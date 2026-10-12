@@ -1,4 +1,4 @@
-export type TipoTarefa = "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
+export type TipoTarefa = "REGULAR" | "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
 
 export interface DisciplinaAluno {
   turmaDisciplinaId: string;
@@ -18,5 +18,5 @@ export interface TarefaAluno {
   disciplinaNome: string;
   turmaDisciplinaId: string;
   dataVencimento: string;
-  valor: number | null;
+  valor: string | null;
 }

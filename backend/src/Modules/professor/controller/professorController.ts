@@ -1,10 +1,14 @@
 import type { Request, Response } from 'express';
 import { professorService } from '../services/professorServices.js';
 import { ProfessorError } from '../errors/professorErrors.js';
+import { EstruturaPreservada } from '../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica';
+import { ConflitoAcademico } from '../../modulo-estrutura-academica/gateways/TransacaoAcademica';
+import { responderErroEstrutura } from '../../modulo-estrutura-academica/controller/erroEstrutura';
 
 function responderErro(res: Response, erro: unknown, contexto: string) {
+  if (erro instanceof EstruturaPreservada || erro instanceof ConflitoAcademico) return responderErroEstrutura(res, erro);
   if (erro instanceof ProfessorError) return res.status(erro.status).json({ mensagem: erro.message });
-  console.error(contexto, erro);
+  void contexto;
   return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
 }
 

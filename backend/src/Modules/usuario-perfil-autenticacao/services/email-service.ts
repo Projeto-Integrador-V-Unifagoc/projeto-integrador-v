@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import { estaEmModoTeste } from '../../../config/ambienteTeste';
 
 interface DadosEmailRecuperacao {
   nome: string;
@@ -46,7 +47,7 @@ class EmailService {
   }
 
   private estaEmModoTeste(): boolean {
-    return process.env.EMAIL_MODO_TESTE === 'true';
+    return estaEmModoTeste() || process.env.EMAIL_MODO_TESTE === 'true';
   }
 
   private obterTransporter(): Transporter {

@@ -1,14 +1,20 @@
+import type { ResultadoAcademico } from "./resultado-academico-model";
+
 export type PerfilRelatorio = "Professor" | "Aluno" | "Secretaria";
 export type TipoUsuarioRelatorio = "aluno" | "professor" | "secretaria" | "administrador";
 export type TipoRelatorio = "Notas" | "Frequencia" | "Consulta" | "Historico";
 export type SituacaoAcademica =
   | "Aprovado"
+  | "Reprovado"
   | "Recuperacao"
   | "Pendente"
   | "Regular"
   | "Atencao";
 
 export interface DisciplinaRelatorio {
+  turmaDisciplinaId: string;
+  matriculaTurmaDisciplinaId: string;
+  resultadoAcademico: ResultadoAcademico;
   nome: string;
   aluno?: string;
   cargaHoraria: string;
@@ -16,12 +22,13 @@ export interface DisciplinaRelatorio {
   tipoAvaliacao?: string;
   valorAvaliacao?: string;
   dataAvaliacao?: string;
-  nota?: string;
+  nota?: string | null;
   frequencia?: string;
   situacao: SituacaoAcademica;
 }
 
 export interface PeriodoRelatorio {
+  id: string;
   nome: string;
   disciplinas: DisciplinaRelatorio[];
 }

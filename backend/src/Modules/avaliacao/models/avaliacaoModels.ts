@@ -1,11 +1,14 @@
-export type TipoAvaliacao = "PROVA" | "TPI" | "TRABALHO";
+export type TipoAvaliacao = "REGULAR" | "PROVA" | "TPI" | "TRABALHO" | "RECUPERACAO";
 
 export interface Avaliacao {
   id: string;
   tipo_avaliacao: TipoAvaliacao;
   descricao_avaliacao?: string | null;
   data_lancamento: string | Date;
-  valor: number;
+  valor: string;
+  subgrupo_id: string | null;
+  regraPontuacaoId: string | null;
+  primeiraNotaEm: string | null;
   data_devolucao?: string | Date | null;
   turma_disciplina_id: string;
   turma_id?: string;
@@ -19,20 +22,22 @@ export interface Avaliacao {
 }
 
 export interface CriarAvaliacaoDTO {
-  tipo_avaliacao: TipoAvaliacao;
+  tipo_avaliacao?: TipoAvaliacao;
+  subgrupo_id: string | null;
   descricao_avaliacao?: string;
-  data_lancamento: string | Date;
-  valor: number;
-  data_devolucao?: string | Date | null;
+  data_lancamento: string;
+  valor: string;
+  data_devolucao?: string | null;
   turma_disciplina_id: string;
 }
 
 export interface AtualizarAvaliacaoDTO {
   tipo_avaliacao?: TipoAvaliacao;
+  subgrupo_id?: string | null;
   descricao_avaliacao?: string | null;
-  data_lancamento?: string | Date;
-  valor?: number;
-  data_devolucao?: string | Date | null;
+  data_lancamento?: string;
+  valor?: string;
+  data_devolucao?: string | null;
   turma_disciplina_id?: string;
 }
 

@@ -1,5 +1,6 @@
 import type { Knex } from "knex";
 import bcrypt from "bcrypt";
+import { auditarUsoDemo, criarRegraDemo, demoJaCriada } from "./helpers/pontuacaoDemo";
 
 const SCHEMA = "piv";
 const SENHA = "Relatorios@123";
@@ -120,6 +121,8 @@ const presencas: Record<string, Record<string, string[]>> = {
 };
 
 export async function seed(knex: Knex): Promise<void> {
+  if (await demoJaCriada(knex, [ids.curso], ids.periodoLetivo, "relatorios-v2")) return;
+  await knex.transaction(async (knex) => {
   const senhaHash = await bcrypt.hash(SENHA, 10);
 
   await knex(`${SCHEMA}.cidade`)
@@ -350,12 +353,16 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict(["matricula_id", "turma_disciplina_id"])
     .merge();
 
+  const autor = await knex(`${SCHEMA}.usuario`).where({ tipo_usuario: "secretaria" }).orderBy("id").first("id");
+  if (!autor) throw new Error("Execute o seed institucional inicial antes da demo.");
+  const regra = await criarRegraDemo(knex, ids.curso, ids.periodoLetivo, autor.id, "120.00", "relatorios-v2");
   const avaliacoes = disciplinas.flatMap((disciplina, disciplinaIndex) =>
     [0, 1].map((notaIndex) => ({
       id: demoId(600 + disciplinaIndex * 10 + notaIndex),
-      tipo_avaliacao: "PROVA",
+      tipo_avaliacao: "REGULAR",
+      subgrupo_id: regra.subgrupos[0].id,
       descricao_avaliacao: notaIndex === 0 ? "Avaliacao parcial" : "Avaliacao final",
-      valor: 20,
+      valor: "60.00",
       data_lancamento: notaIndex === 0 ? "2026-03-10T12:00:00.000Z" : "2026-05-10T12:00:00.000Z",
       data_devolucao: notaIndex === 0 ? "2026-04-15" : "2026-06-20",
       turma_disciplina_id: disciplina.turmaDisciplinaId,
@@ -367,6 +374,8 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict("id")
     .merge();
 
+  for (const d of disciplinas) await auditarUsoDemo(knex, d.turmaDisciplinaId, ids.professorUsuario);
+
   const notasLancadas = vinculos.flatMap((vinculo, vinculoIndex) => {
     const avaliacoesDaTurma = avaliacoes.filter(
       (avaliacao) => avaliacao.turma_disciplina_id === vinculo.turmaDisciplinaId
@@ -377,16 +386,18 @@ export async function seed(knex: Knex): Promise<void> {
       id: demoId(660 + vinculoIndex * 10 + notaIndex),
       avaliacao_id: avaliacao.id,
       matricula_turma_disciplina_id: vinculo.id,
-      valor: Number(((valores[notaIndex] ?? 0) * 2).toFixed(2)),
+      valor: ((valores[notaIndex] ?? 0) * 6).toFixed(2),
       criada_por_usuario_id: ids.professorUsuario,
       atualizada_por_usuario_id: ids.professorUsuario,
     }));
   });
 
   await knex(`${SCHEMA}.nota`)
-    .insert(notasLancadas)
-    .onConflict(["avaliacao_id", "matricula_turma_disciplina_id"])
-    .merge(["valor", "atualizada_por_usuario_id"]);
+    .insert(notasLancadas);
+  await knex(`${SCHEMA}.nota_auditoria`).insert(notasLancadas.map((n) => ({
+    nota_id: n.id, usuario_id: ids.professorUsuario, perfil: "professor", acao: "LANCAMENTO",
+    valor_anterior: null, valor_novo: n.valor, motivo: null, criado_em: knex.raw("clock_timestamp()"),
+  })));
 
   const aulas = disciplinas.flatMap((disciplina, disciplinaIndex) =>
     [1, 2, 3, 4, 5].map((numeroAula) => ({
@@ -423,7 +434,6 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict(["aula_id", "matricula_turma_disciplina_id"])
     .merge(["status", "data", "lancada_em", "responsavel_lancamento_usuario_id"]);
 
-  console.log("Dados academicos de relatorios criados com sucesso.");
-  console.log("Professor: professor.relatorios@unieduca.local / Relatorios@123");
-  console.log("Aluno: ana.relatorios@unieduca.local / Relatorios@123");
+  });
+  console.log("Dados academicos sintéticos de relatorios criados com regra explícita120.");
 }

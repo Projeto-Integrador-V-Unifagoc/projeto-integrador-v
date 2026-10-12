@@ -4,6 +4,7 @@ import type {
   AtribuicaoAvaliacao,
   Avaliacao,
   CriarAvaliacaoDTO,
+  PlanoAvaliacao,
 } from "../models/avaliacao-model";
 
 export const avaliacaoApi = {
@@ -15,6 +16,10 @@ export const avaliacaoApi = {
   async listarAtribuicoes(): Promise<AtribuicaoAvaliacao[]> {
     const response = await api.get<AtribuicaoAvaliacao[]>("/avaliacoes/atribuicoes");
     return response.data;
+  },
+
+  async buscarPlano(ofertaId: string): Promise<PlanoAvaliacao> {
+    return (await api.get<PlanoAvaliacao>(`/avaliacoes/plano/${encodeURIComponent(ofertaId)}`)).data;
   },
 
   async buscarPorId(id: string): Promise<Avaliacao> {

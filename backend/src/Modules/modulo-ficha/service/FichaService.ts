@@ -1,20 +1,17 @@
-import { NotaRepository } from "../../notas/repository/NotaRepository.js";
+import type { Request } from "express";
 import { MatriculaService } from "../../modulo-matricula/service/MatriculaService.js";
 import type { MatriculaDetalhada } from "../../modulo-matricula/repository/MatriculaRepository.js";
 import { AlunoService } from "../../modulo-gestao-alunos/service/AlunoService.js";
 import { FrequenciaService } from "../../frequencia/service/FrequenciaService.js";
 import { DocumentoService } from "../../modulo-documentos/service/DocumentoService.js";
 import { PeriodoLetivoService } from "../../modulo-estrutura-academica/service/PeriodoLetivoService.js";
-import { calcularBoletim, type AvaliacaoResumo } from "../../notas/models/Nota.js";
+import { criarResultadoAcademicoService } from "../../notas/service/criarResultadoAcademicoService";
+import type { ResultadoAcademicoService } from "../../notas/service/ResultadoAcademicoService";
+import { erroNota } from "../../notas/errors/NotaError";
 
-// Mapeia a situação canônica (regra §9, escala 0–100, aprovação >= 60) para o
-// vocabulário exibido na ficha. Substitui a regra legada 0–10 (defeito §17.1).
 const SITUACAO_FICHA: Record<string, string> = {
-  APROVADO: "aprovado",
-  REPROVADO: "reprovado",
-  EM_RECUPERACAO: "recuperacao",
-  EM_ANDAMENTO: "em_andamento",
-  NAO_LANCADA: "nao_lancada",
+  SUFICIENTE: "aprovado", INSUFICIENTE: "reprovado", EM_RECUPERACAO: "recuperacao",
+  EM_ANDAMENTO: "em_andamento", NAO_LANCADA: "nao_lancada",
 };
 
 export class FichaService {
@@ -23,173 +20,80 @@ export class FichaService {
   private periodoService = new PeriodoLetivoService();
   private alunoService = new AlunoService();
   private frequenciaService = new FrequenciaService();
-  private notaRepository = new NotaRepository();
+  private resultadoService = criarResultadoAcademicoService();
 
-  private async expandirPorDisciplina(matriculas: MatriculaDetalhada[]) {
-    const porMatricula = await Promise.all(
-      matriculas.map(async (matricula) => {
-        const vinculos = await this.matriculaService
-          .listarVinculos(matricula.id)
-          .catch(() => []);
-
-        const base = {
-          ...matricula,
-          matricula_id: matricula.id,
-          periodo_codigo: matricula.periodo_letivo_codigo,
-          semestre: matricula.turma_sigla,
-        };
-
-        if (vinculos.length === 0) {
-          return [
-            {
-              ...base,
-              matricula_turma_disciplina_id: null as string | null,
-              turma_disciplina_id: null as string | null,
-              disciplina_id: null as string | null,
-              disciplina_nome: null as string | null,
-              professor_nome: null as string | null,
-              vinculo_status: null as string | null,
-            },
-          ];
-        }
-
-        return vinculos.map((vinculo) => ({
-          ...base,
-          matricula_turma_disciplina_id: vinculo.id as string | null,
-          turma_disciplina_id: vinculo.turma_disciplina_id as string | null,
-          disciplina_id: vinculo.disciplina_id as string | null,
-          disciplina_nome: vinculo.disciplina_nome as string | null,
-          professor_nome: vinculo.professor_nome as string | null,
-          vinculo_status: vinculo.status as string | null,
-        }));
-      }),
-    );
-
-    return porMatricula.flat();
+  private expandirPorDisciplina(matriculas: MatriculaDetalhada[],
+    lote: Awaited<ReturnType<ResultadoAcademicoService["consultar"]>>) {
+    const ofertas = new Map(lote.ofertas.map((oferta) => [oferta.id, oferta]));
+    const vinculosPorMatricula = new Map<string, typeof lote.matriculas>();
+    for (const vinculo of lote.matriculas) {
+      const vinculos = vinculosPorMatricula.get(vinculo.matricula_id) ?? [];
+      vinculos.push(vinculo);
+      vinculosPorMatricula.set(vinculo.matricula_id, vinculos);
+    }
+    const data = (matricula: MatriculaDetalhada) => new Date(matricula.data_matricula).getTime() || 0;
+    const ordenadas = [...matriculas].sort((a, b) => data(b) - data(a) || a.id.localeCompare(b.id));
+    return ordenadas.flatMap((matricula) => {
+      const vinculos = [...(vinculosPorMatricula.get(matricula.id) ?? [])].sort((a, b) => {
+        const nomeA = String(ofertas.get(a.turma_disciplina_id)?.disciplina_nome ?? "");
+        const nomeB = String(ofertas.get(b.turma_disciplina_id)?.disciplina_nome ?? "");
+        return nomeA.localeCompare(nomeB, "pt-BR") || a.matricula_turma_disciplina_id.localeCompare(b.matricula_turma_disciplina_id);
+      });
+      const base = { ...matricula, matricula_id: matricula.id,
+        periodo_codigo: matricula.periodo_letivo_codigo, semestre: matricula.turma_sigla };
+      if (vinculos.length === 0) return [{ ...base, matricula_turma_disciplina_id: null,
+        turma_disciplina_id: null, disciplina_id: null, disciplina_nome: null, professor_nome: null, vinculo_status: null }];
+      return vinculos.map((vinculo) => {
+        const oferta = ofertas.get(vinculo.turma_disciplina_id)!;
+        return { ...base, matricula_turma_disciplina_id: vinculo.matricula_turma_disciplina_id,
+          turma_disciplina_id: vinculo.turma_disciplina_id, disciplina_id: oferta.disciplina_id,
+          disciplina_nome: oferta.disciplina_nome, professor_nome: oferta.professor_nome, vinculo_status: vinculo.status_matricula };
+      });
+    });
   }
 
-  async montarFicha(alunoId: string) {
+  async montarFicha(alunoId: string, req?: Request) {
+    const user = (req as any)?.user;
+    const perfil = typeof user?.tipo_usuario === "string" ? user.tipo_usuario.trim().toLowerCase() : "";
+    // Ficha inclui seções pessoais/documentais não filtráveis por oferta.
+    // Professor/aluno consultam seu boletim autorizado pelo módulo de notas.
+    if (!user?.id || !["secretaria", "administrador"].includes(perfil)) throw erroNota.proibido();
+    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(alunoId)) {
+      throw erroNota.invalido("Identificador do aluno inválido.", "UUID_INVALIDO");
+    }
+    alunoId = alunoId.toLowerCase();
+    const lote = await this.resultadoService.consultar({ alunoId, incluirMatriculasHistoricas: true }, req!);
+    if (!["secretaria", "administrador"].includes(lote.contexto.perfil)) throw erroNota.proibido();
+    const ofertas = new Map(lote.ofertas.map((o) => [o.id, o]));
+    if (lote.matriculas.some((m) => m.aluno_id !== alunoId || !ofertas.has(m.turma_disciplina_id))) {
+      throw new Error("Composição da ficha incompatível com o escopo autorizado.");
+    }
+    // Somente depois da autorização do lote são lidas as seções institucionais.
     const aluno = await this.alunoService.buscarAlunoPorId(alunoId);
-    const matriculas = await this.expandirPorDisciplina(
-      await this.matriculaService.listarPorAluno(alunoId),
-    );
-    const frequencia = await this.frequenciaService
-      .consultarAlunoInterno(alunoId)
-      .catch(() => undefined);
-    const documentos = await this.documentoService
-      .listarPorAluno(alunoId)
-      .catch(() => []);
-    const periodos = await this.periodoService
-      .listarPeriodosLetivos()
-      .catch(() => []);
-
-    const mtdIds = (
-      matriculas
-        .map((m: any) => m.matricula_turma_disciplina_id)
-        .filter(Boolean) as string[]
-    ).filter(Boolean);
-
-    const avaliacoes = await this.notaRepository
-      .buscarAvaliacoesParaFicha(mtdIds)
-      .catch(() => []);
-
-    // Agrupar avaliacoes por disciplina
-    const notasPorDisciplinaMap = new Map<string, any>();
-
-    for (const av of avaliacoes) {
-      // Prefer a stable disciplina identifier when grouping evaluations.
-      // Use a composite key to avoid collisions: disciplina_id (if present) + turma_disciplina_id,
-      // otherwise fall back to disciplina_nome + turma_disciplina_id, then other fallbacks.
-      const disciplinaPart =
-        av.disciplina_id || av.disciplina_nome || "unknown_disc";
-      const turmaPart =
-        av.turma_disciplina_id ||
-        av.turma_id ||
-        av.turma_sigla ||
-        av.turma_descricao ||
-        av.id;
-      const key = `${disciplinaPart}::${turmaPart}`;
-      if (!notasPorDisciplinaMap.has(key)) {
-        notasPorDisciplinaMap.set(key, {
-          id: `nota-${key}`,
-          alunoId: alunoId,
-          alunoNome: aluno?.pessoa?.nome ?? null,
-          turmaId: av.turma_id ?? null,
-          turmaNome: av.turma_sigla ?? av.turma_descricao ?? null,
-          disciplinaId: av.disciplina_id ?? null,
-          disciplinaNome: av.disciplina_nome ?? null,
-          professorId: av.professor_id ?? null,
-          professorNome: av.professor_nome ?? null,
-          periodoLetivo: null,
-          avaliacoes: [],
-          media: 0,
-          situacao: "",
-        });
-      }
-
-      const entry = notasPorDisciplinaMap.get(key);
-      // if avaliacao references a matricula_turma_disciplina, try to fill periodoLetivo
-      try {
-        if (av.matricula_turma_disciplina_id && !entry.periodoLetivo) {
-          const matriculaMatch = matriculas.find(
-            (m: any) =>
-              m.matricula_turma_disciplina_id ===
-              av.matricula_turma_disciplina_id,
-          );
-          if (matriculaMatch) {
-            entry.periodoLetivo =
-              matriculaMatch.periodo_codigo ?? matriculaMatch.semestre ?? null;
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
-      entry.avaliacoes.push({
-        id: av.id,
-        nome: av.descricao_avaliacao || av.tipo_avaliacao,
-        tipo: av.tipo_avaliacao,
-        // `nota` é null quando ainda não lançada — distinção necessária para a
-        // regra §9 (apenas avaliações com nota entram no denominador).
-        nota: av.nota == null ? null : Number(av.nota),
-        peso: (() => {
-          const p = av.valor == null ? NaN : Number(av.valor);
-          return Number.isFinite(p) ? p : 0;
-        })(),
-        matricula_turma_disciplina_id: av.matricula_turma_disciplina_id ?? null,
-      });
-    }
-
-    const notas = [] as any[];
-
-    for (const [_, item] of notasPorDisciplinaMap.entries()) {
-      // Regra institucional única (spec §9): média percentual dos pontos obtidos
-      // sobre os pontos máximos das avaliações regulares lançadas; situação
-      // derivada do mesmo cálculo usado por notas/boletim/rendimento.
-      const avaliacoesResumo: AvaliacaoResumo[] = item.avaliacoes.map((a: any) => ({
-        id: a.id,
-        tipo: a.tipo,
-        descricao: a.nome ?? null,
-        valor: Number(a.peso) || 0,
-      }));
-      const notasPorAvaliacao = new Map<string, number>();
-      for (const a of item.avaliacoes) {
-        if (a.nota !== null && a.nota !== undefined) {
-          notasPorAvaliacao.set(a.id, Number(a.nota));
-        }
-      }
-      const boletim = calcularBoletim(avaliacoesResumo, notasPorAvaliacao);
-      item.media = boletim.mediaFinal ?? boletim.mediaParcial ?? 0;
-      item.situacao = SITUACAO_FICHA[boletim.situacao] ?? "em_andamento";
-      notas.push(item);
-    }
-
-    return {
-      aluno,
-      matriculas,
-      notas,
-      frequencia,
-      documentos,
-      periodos,
-    };
+    const matriculas = this.expandirPorDisciplina(await this.matriculaService.listarPorAluno(alunoId), lote);
+    const frequencia = await this.frequenciaService.consultarAlunoInterno(alunoId);
+    const documentos = await this.documentoService.listarPorAluno(alunoId);
+    const periodos = await this.periodoService.listarPeriodosLetivos();
+    const notas = lote.matriculas.map((matricula) => {
+      const oferta = ofertas.get(matricula.turma_disciplina_id)!;
+      const resultado = matricula.resultadoAcademico;
+      return {
+        id: matricula.matricula_turma_disciplina_id, alunoId,
+        alunoNome: matricula.aluno_nome ?? aluno?.pessoa?.nome ?? null,
+        turmaId: oferta.turma_id ?? null, turmaNome: oferta.turma_sigla ?? oferta.turma_descricao ?? null,
+        turmaDisciplinaId: oferta.id, matriculaTurmaDisciplinaId: matricula.matricula_turma_disciplina_id,
+        disciplinaId: oferta.disciplina_id ?? null, disciplinaNome: oferta.disciplina_nome ?? null,
+        professorId: oferta.professor_id ?? null, professorNome: oferta.professor_nome ?? null,
+        periodoLetivoId: oferta.periodo_letivo_id ?? null, periodoLetivo: oferta.periodo_codigo ?? null,
+        avaliacoes: oferta.avaliacoes.map((avaliacao) => ({ id: avaliacao.id,
+          nome: avaliacao.descricao ?? avaliacao.tipo, tipo: avaliacao.tipo,
+          nota: matricula.notas.has(avaliacao.id) ? matricula.notas.get(avaliacao.id)! : null,
+          peso: avaliacao.valor, matricula_turma_disciplina_id: matricula.matricula_turma_disciplina_id })),
+        resultadoAcademico: resultado,
+        // Aliases transitórios do resultado por nota; aprovação conjunta está no DTO.
+        media: resultado.percentualResultado, situacao: SITUACAO_FICHA[resultado.resultadoPorNota],
+      };
+    });
+    return { aluno, matriculas, notas, frequencia, documentos, periodos };
   }
 }

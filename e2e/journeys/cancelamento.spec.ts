@@ -1,6 +1,7 @@
 import { test, expect } from "../fixtures/test.js";
 import { criarPlano100, lancarNotaLote, registrarChamada, datasRecentes } from "../helpers/dominio.js";
-import { db } from "../helpers/db.js";
+import { db, fecharDb } from "../helpers/db.js";
+test.afterAll(fecharDb);
 
 /**
  * E2E-J06 — Cancelamento/trancamento (spec §10). Cancelar remove o aluno das
@@ -11,12 +12,12 @@ test.describe("E2E-J06 Cancelamento @journey", () => {
   test("cancelamento retira das grades e preserva histórico; recancelar retorna 409", async ({
     novoCenario,
   }) => {
-    const cenario = await novoCenario();
+    const cenario = await novoCenario({ regraPontuacao: "100" });
     const { aluno, matriculaId } = await cenario.matricularAluno();
     const plano = await criarPlano100(cenario.apiProfessor, cenario.turmaDisciplinaId);
 
     // Lança ao menos uma nota e uma frequência.
-    await lancarNotaLote(cenario.apiProfessor, plano.provas[0], [{ alunoId: aluno.id, valor: 15 }]);
+    expect((await lancarNotaLote(cenario.apiProfessor, plano.provas[0], [{ alunoId: aluno.id, valor: "15.00" }])).status).toBe(200);
     const [data] = datasRecentes(1);
     await registrarChamada(cenario.apiProfessor, cenario.turmaDisciplinaId, data, [
       { alunoId: aluno.id, status: "PRESENTE" },

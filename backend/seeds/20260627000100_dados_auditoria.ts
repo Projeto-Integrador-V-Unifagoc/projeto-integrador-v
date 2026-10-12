@@ -1,5 +1,6 @@
 import type { Knex } from "knex";
 import bcrypt from "bcrypt";
+import { auditarUsoDemo, criarRegraDemo, demoJaCriada } from "./helpers/pontuacaoDemo";
 
 const SCHEMA = "piv";
 const CIDADE_IBGE = "3171303";
@@ -280,6 +281,7 @@ const inserir = async (
 };
 
 export async function seed(knex: Knex): Promise<void> {
+  if (await demoJaCriada(knex, cursos.map((_, i) => auditId(200 + i)), ids.periodoLetivo, "auditoria-v2")) return;
   const senhaHash = await bcrypt.hash(SENHA_PADRAO, 10);
   const alunos = criarAlunos();
 
@@ -532,6 +534,11 @@ export async function seed(knex: Knex): Promise<void> {
       ["matricula_id", "turma_disciplina_id"]
     );
 
+    const regras = new Map<string, Awaited<ReturnType<typeof criarRegraDemo>>>();
+    for (const [i, curso] of cursos.entries()) {
+      const regra = await criarRegraDemo(trx, auditId(200 + i), ids.periodoLetivo, ids.secretariaSaulo, "100.00", "auditoria-v2");
+      curso.disciplinas.forEach((_, j) => regras.set(auditId(900 + i * 10 + j), regra));
+    }
     const avaliacoesRegulares = turmaDisciplinas.flatMap((turmaDisciplina, tdIndex) =>
       [
         { tipo: "PROVA", descricao: "Prova 1", valor: 20, data: "2026-02-24T12:00:00.000Z", devolucao: "2026-03-03" },
@@ -541,9 +548,10 @@ export async function seed(knex: Knex): Promise<void> {
         { tipo: "TRABALHO", descricao: "Trabalho Semestral", valor: 35, data: "2026-05-12T12:00:00.000Z", devolucao: "2026-05-19" },
       ].map((avaliacao, avaliacaoIndex) => ({
         id: auditId(5000 + tdIndex * 10 + avaliacaoIndex),
-        tipo_avaliacao: avaliacao.tipo,
+        tipo_avaliacao: "REGULAR",
+        subgrupo_id: regras.get(turmaDisciplina.id)!.subgrupos[avaliacaoIndex < 3 ? 0 : avaliacaoIndex === 3 ? 1 : 2].id,
         descricao_avaliacao: avaliacao.descricao,
-        valor: avaliacao.valor,
+        valor: avaliacao.valor.toFixed(2),
         data_lancamento: avaliacao.data,
         data_devolucao: avaliacao.devolucao,
         turma_disciplina_id: turmaDisciplina.id,
@@ -554,13 +562,18 @@ export async function seed(knex: Knex): Promise<void> {
       id: auditId(5000 + tdIndex * 10 + 5),
       tipo_avaliacao: "RECUPERACAO",
       descricao_avaliacao: "Recuperacao semestral",
-      valor: 100,
+      valor: "100.00",
+      subgrupo_id: null,
       data_lancamento: "2026-06-02T12:00:00.000Z",
       data_devolucao: "2026-06-10",
       turma_disciplina_id: turmaDisciplina.id,
     }));
 
     await inserir(trx, "avaliacao", [...avaliacoesRegulares, ...avaliacoesRecuperacao], "id");
+    for (const td of turmaDisciplinas) {
+      const ator = await trx(`${SCHEMA}.professor`).where({ id: td.professor_id }).first("usuario_id");
+      await auditarUsoDemo(trx, td.id, ator.usuario_id);
+    }
 
     const notas = vinculos.flatMap((vinculo, vinculoIndex) => {
       const tdIndex = turmaDisciplinas.findIndex((td) => td.id === vinculo.turmaDisciplinaId);
@@ -574,7 +587,7 @@ export async function seed(knex: Knex): Promise<void> {
             id: auditId(10000 + vinculoIndex * 10 + avaliacaoIndex),
             avaliacao_id: avaliacao.id,
             matricula_turma_disciplina_id: vinculo.id,
-            valor,
+            valor: valor.toFixed(2),
             criada_por_usuario_id: auditId(300 + ((vinculo.aluno.turmaIndex * 2 + vinculo.disciplinaIndex) % professores.length)),
             atualizada_por_usuario_id: avaliacaoIndex === 1 && vinculo.aluno.globalIndex % 13 === 0 ? ids.secretariaSaulo : auditId(300 + ((vinculo.aluno.turmaIndex * 2 + vinculo.disciplinaIndex) % professores.length)),
           };
@@ -587,7 +600,7 @@ export async function seed(knex: Knex): Promise<void> {
           id: auditId(10000 + vinculoIndex * 10 + 5),
           avaliacao_id: auditId(5000 + tdIndex * 10 + 5),
           matricula_turma_disciplina_id: vinculo.id,
-          valor: recuperacao,
+          valor: recuperacao.toFixed(2),
           criada_por_usuario_id: auditId(300 + ((vinculo.aluno.turmaIndex * 2 + vinculo.disciplinaIndex) % professores.length)),
           atualizada_por_usuario_id: ids.secretariaRicardo,
         });
@@ -596,13 +609,14 @@ export async function seed(knex: Knex): Promise<void> {
       return notasRegulares;
     });
 
-    await inserir(
-      trx,
-      "nota",
-      notas,
-      ["avaliacao_id", "matricula_turma_disciplina_id"],
-      ["valor", "atualizada_por_usuario_id", "updated_at"]
-    );
+    const notasIniciais = notas.map((n: any, i) => ({ ...n,
+      valor: i % 37 === 0 ? Math.max(0, Number(n.valor) - 1).toFixed(2) : n.valor,
+      atualizada_por_usuario_id: n.criada_por_usuario_id }));
+    const regulares = new Set(avaliacoesRegulares.map((a) => a.id));
+    for (const lote of [notasIniciais.filter((n) => regulares.has(n.avaliacao_id)),
+      notasIniciais.filter((n) => !regulares.has(n.avaliacao_id))]) {
+      if (lote.length) await trx(`${SCHEMA}.nota`).insert(lote);
+    }
 
     const aulas = turmaDisciplinas.flatMap((turmaDisciplina, tdIndex) =>
       Array.from({ length: 10 }, (_, aulaIndex) => ({
@@ -664,8 +678,7 @@ export async function seed(knex: Knex): Promise<void> {
       ]
     );
 
-    const auditoriasNota = notas.flatMap((nota: any, index) => {
-      const lancamento = {
+    const auditoriasNota = notasIniciais.map((nota: any, index) => ({
         id: auditId(40000 + index * 2),
         nota_id: nota.id,
         usuario_id: nota.criada_por_usuario_id,
@@ -674,28 +687,28 @@ export async function seed(knex: Knex): Promise<void> {
         valor_anterior: null,
         valor_novo: nota.valor,
         motivo: "Lancamento inicial.",
-        criado_em: "2026-05-20T12:00:00.000Z",
-      };
-
-      if (index % 37 !== 0) return [lancamento];
-
-      return [
-        lancamento,
-        {
+        criado_em: trx.raw("clock_timestamp()"),
+      }));
+    await trx(`${SCHEMA}.nota_auditoria`).insert(auditoriasNota);
+    for (const [index, nota] of notas.entries() as IterableIterator<[number, any]>) {
+      const inicial = notasIniciais[index];
+      if (inicial.valor === nota.valor) continue;
+      const usuario = nota.atualizada_por_usuario_id;
+      const ator = await trx(`${SCHEMA}.usuario`).where({ id: usuario }).first("tipo_usuario");
+      await trx(`${SCHEMA}.nota`).where({ id: nota.id }).update({ valor: nota.valor,
+        atualizada_por_usuario_id: usuario, updated_at: trx.raw("clock_timestamp()") });
+      await trx(`${SCHEMA}.nota_auditoria`).insert({
           id: auditId(40000 + index * 2 + 1),
           nota_id: nota.id,
-          usuario_id: nota.atualizada_por_usuario_id || ids.secretariaSaulo,
-          perfil: nota.atualizada_por_usuario_id === ids.secretariaSaulo ? "secretaria" : "professor",
+           usuario_id: usuario,
+           perfil: ator.tipo_usuario,
           acao: "RETIFICACAO",
-          valor_anterior: Math.max(0, Number(nota.valor) - 1),
+           valor_anterior: inicial.valor,
           valor_novo: nota.valor,
           motivo: "Retificacao amostral.",
-          criado_em: "2026-05-22T12:00:00.000Z",
-        },
-      ];
-    });
-
-    await inserir(trx, "nota_auditoria", auditoriasNota, "id");
+           criado_em: trx.raw("clock_timestamp()"),
+        });
+    }
 
     const auditoriasFrequencia = frequencias
       .filter((frequencia: any, index) => frequencia.alterada_por_usuario_id || index % 53 === 0)
@@ -710,10 +723,10 @@ export async function seed(knex: Knex): Promise<void> {
           status: frequencia.status,
           justificada: Boolean(frequencia.justificada_por_usuario_id),
         },
-        criado_em: "2026-04-21T12:00:00.000Z",
+        criado_em: trx.raw("clock_timestamp()"),
       }));
 
-    await inserir(trx, "frequencia_auditoria", auditoriasFrequencia, "id");
+    await trx(`${SCHEMA}.frequencia_auditoria`).insert(auditoriasFrequencia);
 
     const documentos = alunos.slice(0, 15).flatMap((aluno, index) => {
       const status = index % 3;
@@ -734,7 +747,6 @@ export async function seed(knex: Knex): Promise<void> {
   });
 
   console.log("Dados academicos de auditoria criados com sucesso.");
-  console.log(`Senha padrao de auditoria: ${SENHA_PADRAO}`);
   console.log("Secretaria: saulocampos@unieduca.com.br");
   console.log("Secretaria: ricardovarella@unieduca.com.br");
   console.log("Professor: prof.helena.duarte@auditoria.unieduca.local");

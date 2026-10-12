@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Alert, IconButton, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, ListChecks, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Container from "../../components/Container";
 import SearchTextField from "../../components/SearchTextField/SearchTextField";
@@ -69,8 +69,8 @@ export default function Cursos() {
     {
       field: "id",
       headerName: "Ações",
-      width: 160,
-      minWidth: 160,
+      width: 200,
+      minWidth: 200,
       sortable: false,
       renderCell: (params) => (
         <Stack direction="row" alignItems="center">
@@ -79,6 +79,10 @@ export default function Cursos() {
           </IconButton>
           <IconButton onClick={() => navigate(`/cursos/${params.row.id}/matriz-curricular`)} color="secondary">
             <Eye size={18} />
+          </IconButton>
+          <IconButton aria-label={`Pontuação de ${params.row.nome}`} title="Pontuação"
+            onClick={() => navigate(`/cursos/${params.row.id}/pontuacao`)} color="primary">
+            <ListChecks size={18} />
           </IconButton>
           <IconButton onClick={() => setCursoParaExcluir(params.row)} color="error">
             <Trash2 size={18} />
@@ -109,9 +113,12 @@ export default function Cursos() {
                     <Typography variant="body2"><strong>Código:</strong> {curso.codigo}</Typography>
                     <Typography variant="body2"><strong>Departamento:</strong> {curso.departamento}</Typography>
                     <Typography variant="body2"><strong>Faculdade:</strong> {curso.faculdade}</Typography>
-                    <Stack direction="row" justifyContent="flex-end" gap={1}>
+                    <Stack direction="row" justifyContent="flex-end" gap={1} flexWrap="wrap">
                       <Button variant="outlined" onClick={() => navigate(`/cursos/${curso.id}/matriz-curricular`)}>
                         Matriz
+                      </Button>
+                      <Button variant="outlined" sx={{ width: "auto", minWidth: 100 }} onClick={() => navigate(`/cursos/${curso.id}/pontuacao`)}>
+                        Pontuação
                       </Button>
                       <Button variant="outlined" onClick={() => navigate(`/cursos/${curso.id}`)}>
                         Editar

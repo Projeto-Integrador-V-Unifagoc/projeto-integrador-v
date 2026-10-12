@@ -2,6 +2,7 @@ import type { Request } from "express";
 import { erroHomeAluno } from "../errors/HomeAlunoError.js";
 import { HomeAlunoRepository } from "../repository/HomeAlunoRepository.js";
 import { ROTULO_POR_TIPO, type DisciplinaAluno, type TarefaAluno, type TipoTarefa } from "../models/HomeAluno.js";
+import { formatarPontos, parsePontos } from "../../avaliacao/models/Pontos";
 
 interface ContextoAluno {
   usuarioId: string;
@@ -38,7 +39,7 @@ export class HomeAlunoService {
       disciplinaNome: l.disciplina_nome,
       turmaDisciplinaId: String(l.turma_disciplina_id),
       dataVencimento: this.iso(l.data_devolucao),
-      valor: l.valor === null || l.valor === undefined ? null : Number(l.valor),
+      valor: l.valor === null || l.valor === undefined ? null : formatarPontos(parsePontos(String(l.valor))),
     }));
   }
 

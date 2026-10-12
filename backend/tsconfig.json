@@ -5,7 +5,7 @@
   },
   "compilerOptions": {
     "module": "commonjs",
-    "target": "ES6",
+    "target": "ES2022",
     "esModuleInterop": true,
     "moduleResolution": "node",
     "skipLibCheck": true,
@@ -16,6 +16,7 @@
     "src/**/*.ts",
     "knexfile.ts",
     "migrations/**/*.ts",
-    "seeds/**/*.ts"
+    "seeds/**/*.ts",
+    "scripts/**/*.ts"
   ]
 }

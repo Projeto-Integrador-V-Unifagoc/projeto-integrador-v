@@ -1,63 +1,42 @@
-import { test, expect } from "../fixtures/test.js";
-import { criarPlano100, lancarNotaLote, registrarChamada, datasRecentes } from "../helpers/dominio.js";
+import { test, expect, consultarResultadoJornada } from "../fixtures/test.js";
+import { fecharDb } from "../helpers/db.js";
+import { criarPlanoRegular, lancarPontosRegulares, registrarFrequenciaCompleta } from "../helpers/dominio.js";
 
-/**
- * E2E-J04 — Reprovação por frequência (spec §10, §9.3). Nota suficiente não pode
- * mascarar frequência < 75%. A justificativa não altera o percentual.
- */
-test.describe("E2E-J04 Reprovação por frequência @journey", () => {
-  test("nota alta com frequência < 75% mantém risco; justificativa não muda o percentual", async ({
-    novoCenario,
-  }) => {
-    const cenario = await novoCenario();
-    const { aluno, apiAluno } = await cenario.matricularAluno();
+test.afterAll(fecharDb);
 
-    // Nota final >= 60 (plano cheio).
-    const plano = await criarPlano100(cenario.apiProfessor, cenario.turmaDisciplinaId);
-    await lancarNotaLote(cenario.apiProfessor, plano.provas[0], [{ alunoId: aluno.id, valor: 20 }]);
-    await lancarNotaLote(cenario.apiProfessor, plano.provas[1], [{ alunoId: aluno.id, valor: 20 }]);
-    await lancarNotaLote(cenario.apiProfessor, plano.provas[2], [{ alunoId: aluno.id, valor: 20 }]);
-    await lancarNotaLote(cenario.apiProfessor, plano.tpi, [{ alunoId: aluno.id, valor: 5 }]);
-    await lancarNotaLote(cenario.apiProfessor, plano.trabalho, [{ alunoId: aluno.id, valor: 35 }]);
-
-    // Frequência 50% (2 presenças, 2 ausências).
-    const datas = datasRecentes(4);
-    const statuses: Array<"PRESENTE" | "AUSENTE"> = ["PRESENTE", "PRESENTE", "AUSENTE", "AUSENTE"];
-    let registroAusenteId = "";
-    for (let i = 0; i < datas.length; i++) {
-      const chamada = await registrarChamada(cenario.apiProfessor, cenario.turmaDisciplinaId, datas[i], [
-        { alunoId: aluno.id, status: statuses[i] },
-      ]);
-      expect([200, 201]).toContain(chamada.status);
-      if (statuses[i] === "AUSENTE") registroAusenteId = chamada.body.registros[0].id;
-    }
-
-    // Nota aprova, mas frequência reprova: as duas leituras autoritativas divergem
-    // em situação, e nenhuma "mascara" a outra (§9.4 ainda não materializada — §17.2).
-    const rendimento = await cenario.apiProfessor.get(
-      `/notas/turmas/${cenario.turmaDisciplinaId}/rendimento`,
-    );
-    expect(rendimento.body.alunos.find((a: any) => a.alunoId === aluno.id).situacao).toBe("APROVADO");
-
-    const freq = await apiAluno.get("/frequencias/minha");
-    const consolidado = freq.body.consolidado[0];
-    expect(consolidado.percentual).toBe(50);
-    expect(consolidado.situacao).toBe("RISCO_REPROVACAO");
-
-    // Relatório de frequência da turma lista o aluno em risco.
-    const turma = await cenario.apiProfessor.get(`/frequencias/turma/${cenario.turmaDisciplinaId}`);
-    expect(turma.status).toBe(200);
-    expect(turma.body.alunosEmRisco.some((a: any) => a.alunoId === aluno.id)).toBe(true);
-
-    // 4. Justificativa da ausência (pelo próprio aluno) não altera o percentual.
-    expect(registroAusenteId).toBeTruthy();
-    const justificativa = await apiAluno.post(`/frequencias/${registroAusenteId}/justificativa`, {
-      body: { motivo: "Atestado médico", observacao: "Consulta de rotina" },
+test.describe("E2E-J04 Impedimento e pendência de frequência @journey", () => {
+  test("nota120/120 com frequência50% não aprova; justificativa não altera o requisito", async ({ novoCenario }) => {
+    const c = await novoCenario({ regraPontuacao: "120" }); const aluno = await c.matricularAluno();
+    const plano = await criarPlanoRegular(c.apiProfessor, c.turmaDisciplinaId);
+    await lancarPontosRegulares(c.apiProfessor, plano, aluno.aluno.id, "120.00");
+    const registros = await registrarFrequenciaCompleta(c.apiProfessor, c.turmaDisciplinaId, [aluno.aluno.id], 2, 2);
+    const antes = await consultarResultadoJornada(c, aluno);
+    expect(antes).toMatchObject({ pontosEfetivos: "120.00", resultadoPorNota: "SUFICIENTE", aprovacaoDisciplina: "NAO_APROVADA",
+      frequencia: { presencas: 2, faltas: 2, percentual: 50, situacao: "RISCO_REPROVACAO", requisito: "INSUFICIENTE" },
     });
-    expect(justificativa.status, JSON.stringify(justificativa.body)).toBe(200);
+    expect(antes.motivos).toContain("FREQUENCIA_INSUFICIENTE");
+    const turma = await c.apiProfessor.get("/frequencias/turma/" + c.turmaDisciplinaId);
+    expect(turma.status).toBe(200); expect(turma.body.alunosEmRisco.some((a: any) => a.alunoId === aluno.aluno.id)).toBe(true);
+    const ausente = registros.find((r) => r.status === "AUSENTE");
+    expect(ausente?.id).toEqual(expect.any(String));
+    const justificativa = await aluno.apiAluno.post("/frequencias/" + ausente!.id + "/justificativa", {
+      body: { motivo: "Atestado médico", observacao: "Consulta sintética de rotina" },
+    });
+    expect(justificativa.status).toBe(200);
+    const frequencia = await aluno.apiAluno.get("/frequencias/minha");
+    expect(frequencia.status).toBe(200);
+    expect(frequencia.body.consolidado.find((f: any) => f.turmaDisciplinaId === c.turmaDisciplinaId)).toMatchObject({ percentual: 50, situacao: "RISCO_REPROVACAO" });
+    expect(await consultarResultadoJornada(c, aluno)).toEqual(antes);
+  });
 
-    const freqDepois = await apiAluno.get("/frequencias/minha");
-    expect(freqDepois.body.consolidado[0].percentual).toBe(50);
-    expect(freqDepois.body.consolidado[0].situacao).toBe("RISCO_REPROVACAO");
+  test("nota120/120 sem frequência permanece pendente e não presume presença100%", async ({ novoCenario }) => {
+    const c = await novoCenario({ regraPontuacao: "120" }); const aluno = await c.matricularAluno();
+    const plano = await criarPlanoRegular(c.apiProfessor, c.turmaDisciplinaId);
+    await lancarPontosRegulares(c.apiProfessor, plano, aluno.aluno.id, "120.00");
+    const resultado = await consultarResultadoJornada(c, aluno);
+    expect(resultado).toMatchObject({ etapaRegularCompleta: true, resultadoPorNota: "SUFICIENTE", aprovacaoDisciplina: "PENDENTE",
+      frequencia: { presencas: 0, faltas: 0, percentual: null, situacao: "NAO_LANCADO", requisito: "PENDENTE" },
+    });
+    expect(resultado.motivos).toContain("FREQUENCIA_PENDENTE");
   });
 });

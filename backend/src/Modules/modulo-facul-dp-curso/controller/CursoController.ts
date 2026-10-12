@@ -1,4 +1,5 @@
 import { CursoService } from "../service/CursoService";
+import { responderErroEstrutura } from "../../modulo-estrutura-academica/controller/erroEstrutura";
 
 export default class CursoController {
     cursoService = new CursoService();
@@ -41,7 +42,7 @@ export default class CursoController {
             }
             res.status(200).json(curso);
         } catch (error) {
-            res.status(500).json({ error: "Erro ao atualizar curso" });
+            responderErroEstrutura(res, error);
         }
     }
 
@@ -53,10 +54,7 @@ export default class CursoController {
             }
             res.status(204).send();
         } catch (error) {
-            const mensagem = (error as Error).message;
-            const status = mensagem.startsWith("Nao e possivel remover o curso") ? 400 : 500;
-
-            res.status(status).json({ error: mensagem });
+            responderErroEstrutura(res, error);
         }
     }
 }

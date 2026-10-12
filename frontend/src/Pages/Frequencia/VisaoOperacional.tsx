@@ -5,10 +5,12 @@ import { CheckCheck, RefreshCw, Save, Search } from "lucide-react";
 import Button from "../../components/Button";
 import { Card } from "../../components/Card";
 import Container from "../../components/Container";
+import ConfirmacaoDialog from "../../components/ConfirmacaoDialog/ConfirmacaoDialog";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
 import { useFrequencia } from "../../hooks/use-frequencia";
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import type {
   AlunoChamada,
   ConsolidadoFrequencia,
@@ -30,6 +32,7 @@ export default function VisaoOperacional() {
   const api = useFrequencia();
   const { notificar } = useNotificacao();
   const podeEditar = perfilLocal() === "professor";
+  const confirmacao = useConfirmacao();
 
   const [turmas, setTurmas] = useState<TurmaFrequencia[]>([]);
   const [locais, setLocais] = useState<LocalAula[]>([]);
@@ -69,16 +72,23 @@ export default function VisaoOperacional() {
     return () => removeEventListener("beforeunload", sair);
   }, [alterado]);
 
-  async function carregar() {
+  async function carregar(opcoes: { aposSalvar?: boolean } = {}) {
     if (!turmaId) return;
-    if (alterado && !confirm("Descartar alterações ainda não salvas?")) return;
+    if (alterado && !opcoes.aposSalvar && !(await confirmacao.solicitar({
+      titulo: "Descartar alterações?",
+      mensagem: "Descartar alterações ainda não salvas na chamada?",
+      textoConfirmar: "Descartar",
+    }))) return;
     try {
       const r = await api.obterChamada({ turmaDisciplinaId: turmaId, data });
-      setChamada(r.alunos);
+      const alunos: AlunoChamada[] = r.alunos;
+      setChamada(alunos.map((aluno) => ({
+        ...aluno, status: podeEditar && aluno.status === null ? "AUSENTE" : aluno.status,
+      })));
       if (r.matriculasIrregulares > 0) {
         notificar(`${r.matriculasIrregulares} matrícula(s) irregular(es) foram omitidas.`, "info");
       }
-      setAlterado(false);
+      setAlterado(podeEditar && alunos.some((aluno) => aluno.status === null));
       if (r.jaRegistrada && !r.chamadaCompleta) {
         notificar("A chamada existente está incompleta; salve para regularizá-la.", "warning");
       }
@@ -93,8 +103,13 @@ export default function VisaoOperacional() {
     setAlterado(true);
   }, [alterado, notificar]);
 
-  function todosPresentes() {
-    if (!confirm("Marcar todos os alunos elegíveis como presentes?")) return;
+  async function todosPresentes() {
+    if (!(await confirmacao.solicitar({
+      titulo: "Marcar todos presentes?",
+      mensagem: "Marcar todos os alunos elegíveis como presentes? Salve a chamada para registrar a alteração.",
+      textoConfirmar: "Marcar presentes",
+      cor: "primary",
+    }))) return;
     setChamada((xs) => xs.map((x) => ({ ...x, status: "PRESENTE" })));
     notificar("Todos os alunos elegíveis foram marcados como presentes. Salve a chamada para confirmar.", "info");
     setAlterado(true);
@@ -118,7 +133,7 @@ export default function VisaoOperacional() {
       });
       setAlterado(false);
       notificar("Chamada completa salva com sucesso.", "success");
-      await carregar();
+      await carregar({ aposSalvar: true });
     } catch (e) {
       notificar(mensagemErro(e), "error");
     }
@@ -243,7 +258,7 @@ export default function VisaoOperacional() {
               <Grid size={{ xs: 12, md: 2 }}>
                 <Button
                   variant="contained"
-                  onClick={carregar}
+                  onClick={() => void carregar()}
                   disabled={!turmaId}
                   isLoading={api.operacoes.chamada}
                   startIcon={<Search size={16} aria-hidden="true" />}
@@ -294,6 +309,11 @@ export default function VisaoOperacional() {
                   </Button>
                 </Stack>
               )}
+              {acoesProfessor && alterado && (
+                <Typography variant="body2" color="text.secondary">
+                  As presenças e faltas do rascunho só serão registradas ao salvar a chamada.
+                </Typography>
+              )}
               <Card.Root elevation={0} variant="outlined">
                 <Card.Content sx={{ minHeight: 480 }}>
                   <DataTable
@@ -339,6 +359,8 @@ export default function VisaoOperacional() {
           </Box>
         )}
       </Stack>
+      <ConfirmacaoDialog aberto={confirmacao.aberto} configuracao={confirmacao.configuracao}
+        onConfirmar={confirmacao.aceitar} onCancelar={confirmacao.cancelar} />
     </Container>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   Alert,
@@ -31,6 +31,9 @@ import Button from "../../components/Button";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
+import { Dialog } from "../../components/Dialog";
+import { ResultadoAcademicoResumo } from "../../components/ResultadoAcademico/ResultadoAcademicoResumo";
+import { ROTULO_APROVACAO, ROTULO_MOTIVO, ROTULO_RESULTADO_NOTA } from "../../models/resultado-academico-model";
 import { useRelatorio } from "../../hooks/use-relatorio";
 import type {
   FiltrosRelatorios,
@@ -169,6 +172,25 @@ function totalDisciplinas(relatorio: RelatorioItem) {
   );
 }
 
+function ResultadosRelatorio({ relatorio }: { relatorio: RelatorioItem }) {
+  return <Stack spacing={2}>
+      {relatorio.periodos.map((periodo) => {
+        const disciplinas = [...new Map(periodo.disciplinas.map((d) => [`${d.turmaDisciplinaId}:${d.matriculaTurmaDisciplinaId}`, d])).values()];
+        return <Stack key={periodo.id} spacing={2}>
+          <Typography variant="subtitle2">{periodo.nome}</Typography>
+          {disciplinas.map((disciplina) => {
+            const contexto = `${disciplina.aluno ? `${disciplina.aluno} - ` : ""}${disciplina.nome} - ${periodo.nome}`;
+            return <Box component="section" aria-label={contexto} key={`${disciplina.turmaDisciplinaId}:${disciplina.matriculaTurmaDisciplinaId}`}
+              sx={{ borderTop: "1px solid", borderColor: "divider", pt: 1.5, minWidth: 0 }}>
+              <Typography variant="subtitle2" mb={1}>{contexto}</Typography>
+              <ResultadoAcademicoResumo resultado={disciplina.resultadoAcademico} compacto />
+            </Box>;
+          })}
+        </Stack>;
+      })}
+  </Stack>;
+}
+
 function criarFiltros(
   perfil: PerfilRelatorio,
   busca: string,
@@ -215,6 +237,10 @@ function valoresBuscaRelatorio(relatorio: RelatorioItem) {
         disciplina.frequencia,
         disciplina.situacao
       );
+      const resultado = disciplina.resultadoAcademico;
+      if (resultado) valores.push(ROTULO_RESULTADO_NOTA[resultado.resultadoPorNota], ROTULO_APROVACAO[resultado.aprovacaoDisciplina],
+        resultado.pontosRegularesObtidos, resultado.pontosEfetivos, resultado.totalPontos, resultado.cortePontos,
+        ...resultado.motivos.map((motivo) => ROTULO_MOTIVO[motivo]));
     });
   });
 
@@ -637,6 +663,7 @@ export default function Relatorios() {
   const [tipo, setTipo] = useState("Todos");
   const [relatoriosBase, setRelatoriosBase] = useState<RelatorioItem[]>([]);
   const [erro, setErro] = useState<string | null>(null);
+  const [selecionado, setSelecionado] = useState<RelatorioItem | null>(null);
 
   const anosDisponiveis = useMemo(
     () => ["Todos", ...new Set(relatoriosBase.map((item) => item.ano))],
@@ -667,7 +694,7 @@ export default function Relatorios() {
     [relatorios]
   );
 
-  function emitirRelatorio(relatorio: RelatorioItem) {
+  const emitirRelatorio = useCallback((relatorio: RelatorioItem) => {
     const pdfBlob = buildRelatorioPdf(relatorio, perfil);
     const pdfUrl = URL.createObjectURL(pdfBlob);
     window.open(pdfUrl, "_blank", "noopener,noreferrer");
@@ -675,7 +702,7 @@ export default function Relatorios() {
     window.setTimeout(() => {
       URL.revokeObjectURL(pdfUrl);
     }, 60000);
-  }
+  }, [perfil]);
 
   const columns = useMemo<GridColDef[]>(
     () => [
@@ -711,10 +738,15 @@ export default function Relatorios() {
         headerName: "",
         sortable: false,
         filterable: false,
-        width: 112,
+        width: 240,
         align: "center",
         headerAlign: "center",
         renderCell: (params: GridRenderCellParams<RelatorioTabelaRow>) => (
+          <Stack direction="row" gap={1} alignItems="center">
+            <Button variant="outlined" aria-label={`Consultar resultados de ${params.row.nome}`}
+              onClick={() => setSelecionado(params.row)} sx={{ minWidth: 104, width: 104, height: 28, px: 1 }}>
+              Consultar
+            </Button>
           <Tooltip title="Emitir PDF">
             <Box component="span">
               <Button
@@ -726,10 +758,11 @@ export default function Relatorios() {
               </Button>
             </Box>
           </Tooltip>
+          </Stack>
         ),
       },
     ],
-    [perfil]
+    [emitirRelatorio]
   );
 
   useEffect(() => {
@@ -1047,6 +1080,14 @@ export default function Relatorios() {
                     </Typography>
 
                     <Button
+                      variant="outlined"
+                      aria-label={`Consultar resultados de ${relatorio.nome}`}
+                      onClick={() => setSelecionado(relatorio)}
+                      sx={{ width: "100%" }}
+                    >
+                      Consultar resultados
+                    </Button>
+                    <Button
                       variant="contained"
                       startIcon={<Download size={16} />}
                       onClick={() => emitirRelatorio(relatorio)}
@@ -1060,6 +1101,15 @@ export default function Relatorios() {
             ))}
           </Stack>
         )}
+
+        <Dialog.Root open={Boolean(selecionado)} onClose={() => setSelecionado(null)} maxWidth="lg" aria-labelledby="dialog-relatorio-resultados-title">
+          <Dialog.Header>
+            <Dialog.Title><span id="dialog-relatorio-resultados-title">Resultados - {selecionado?.nome}</span></Dialog.Title>
+            <Dialog.ActionClose onClose={() => setSelecionado(null)} />
+          </Dialog.Header>
+          <Dialog.Content>{selecionado && <ResultadosRelatorio relatorio={selecionado} />}</Dialog.Content>
+          <Dialog.Footer><Button variant="outlined" onClick={() => setSelecionado(null)}>Fechar</Button></Dialog.Footer>
+        </Dialog.Root>
 
         {mobile && !carregando && !erro && relatorios.length === 0 ? (
           <Box

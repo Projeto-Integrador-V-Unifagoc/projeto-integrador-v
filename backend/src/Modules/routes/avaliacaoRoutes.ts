@@ -5,7 +5,9 @@ import { secretariaOuProfessor } from '../../middlewares/autorizacao.js';
 
 const avaliacaoRouter = Router();
 
-avaliacaoRouter.use(autenticar, secretariaOuProfessor);
+avaliacaoRouter.use(autenticar);
+avaliacaoRouter.get('/plano/:turmaDisciplinaId', avaliacaoController.buscarPlano);
+avaliacaoRouter.use(secretariaOuProfessor);
 
 avaliacaoRouter.get('/', avaliacaoController.listarTodos);
 avaliacaoRouter.get('/atribuicoes', avaliacaoController.listarAtribuicoes);

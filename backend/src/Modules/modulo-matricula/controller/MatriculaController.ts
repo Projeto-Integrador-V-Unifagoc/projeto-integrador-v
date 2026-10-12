@@ -1,13 +1,17 @@
 import { MatriculaService } from "../service/MatriculaService";
 import { MatriculaError } from "../errors/MatriculaError";
+import { EstruturaPreservada } from "../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica";
+import { ConflitoAcademico } from "../../modulo-estrutura-academica/gateways/TransacaoAcademica";
+import { responderErroEstrutura } from "../../modulo-estrutura-academica/controller/erroEstrutura";
 
 const service = new MatriculaService();
 
 function responderErro(res: any, err: any, contexto: string) {
+    if (err instanceof EstruturaPreservada || err instanceof ConflitoAcademico) return responderErroEstrutura(res, err);
     if (err instanceof MatriculaError) {
         return res.status(err.status).json({ error: err.message });
     }
-    console.error(`[matricula] ${contexto}:`, err);
+    void contexto;
     return res.status(500).json({ error: "Erro interno ao processar a solicitação de matrícula." });
 }
 

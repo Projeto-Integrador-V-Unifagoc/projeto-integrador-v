@@ -1,5 +1,6 @@
 import { db } from "../../../database/connection"
 import { CursoCommand, CursoMapper } from "../models/Curso";
+import { escritaEstrutura, ValidacaoEstrutura } from "../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica";
 
 export class CursoRepository {
     async criarCurso(data: CursoCommand) {
@@ -75,17 +76,27 @@ export class CursoRepository {
     }
 
     async atualizarCurso(id: string, data: Partial<CursoCommand>) {
-        const [curso] = await db("curso")
+        return escritaEstrutura(db, "curso", id, data, async (trx) => {
+        const [curso] = await trx("curso")
             .where({ id })
             .update(data)
             .returning("*");
 
         return curso ?? null;
+        });
     }
 
     async removerCurso(id: string) {
-        return await db("curso")
-            .where({ id })
-            .del();
+        return escritaEstrutura(db, "curso", id, {}, async (trx) => {
+            try {
+                return await trx("curso").where({ id }).del();
+            } catch (error) {
+                const erroSql = error as { code?: string; constraint?: string };
+                if (erroSql?.code === "23503" && erroSql.constraint === "turma_curso_id_foreign") {
+                    throw new ValidacaoEstrutura("Nao e possivel remover o curso porque ele possui turmas cadastradas.");
+                }
+                throw error;
+            }
+        }, true);
     }
 }

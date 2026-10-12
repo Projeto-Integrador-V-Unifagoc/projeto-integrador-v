@@ -1,5 +1,6 @@
 import { db } from "../../../database/connection";
 import { CursoDisciplinaCommand, CursoDisciplinaMapper } from "../models/CursoDisciplina";
+import { escritaEstrutura, ValidacaoEstrutura } from "../gateways/EscritaEstruturaAcademica";
 
 export class CursoDisciplinaRepository {
     private baseQuery() {
@@ -21,11 +22,16 @@ export class CursoDisciplinaRepository {
     }
 
     async criarCursoDisciplina(data: CursoDisciplinaCommand) {
-        const [cursoDisciplina] = await db("curso_disciplina")
+        return escritaEstrutura(db, "curso_disciplina", data.id, data, async (trx) => {
+        const curso = await trx("piv.curso").where({ id: data.curso_id }).first();
+        const disciplina = await trx("piv.disciplinas").where({ id: data.disciplina_id }).first();
+        if (!curso || !disciplina) throw new ValidacaoEstrutura("Os vínculos da matriz não estão disponíveis.");
+        const [cursoDisciplina] = await trx("curso_disciplina")
             .insert(data)
             .returning("*");
 
         return cursoDisciplina;
+        });
     }
 
     async listarCursoDisciplinas() {
@@ -71,20 +77,22 @@ export class CursoDisciplinaRepository {
     }
 
     async atualizarCursoDisciplina(id: string, data: Partial<CursoDisciplinaCommand>) {
-        const [cursoDisciplina] = await db("curso_disciplina")
+        return escritaEstrutura(db, "curso_disciplina", id, data, async (trx) => {
+        const [cursoDisciplina] = await trx("curso_disciplina")
             .where({ id })
             .update({
                 ...data,
-                updated_at: db.fn.now()
+                updated_at: trx.fn.now()
             })
             .returning("*");
 
         return cursoDisciplina ?? null;
+        });
     }
 
     async removerCursoDisciplina(id: string) {
-        return await db("curso_disciplina")
+        return escritaEstrutura(db, "curso_disciplina", id, {}, async (trx) => trx("curso_disciplina")
             .where({ id })
-            .del();
+            .del(), true);
     }
 }

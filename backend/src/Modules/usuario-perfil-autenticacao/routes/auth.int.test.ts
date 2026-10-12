@@ -6,7 +6,7 @@ import { bearer } from "../../../test-helpers/httpAuth";
 
 /**
  * Integração do fluxo de autenticação (projeto `integration`).
- * Sobe Postgres real via Testcontainers, aplica migrations + seed `usuario_inicial`
+ * Sobe Postgres real via Testcontainers, aplica migrations + seed `20260512000000_usuario_inicial`
  * (secretaria `suporte@unieduca.com.br` / `unieduca2026`) e exercita as rotas
  * `/login`, `/me`, `/cadastro`, `/usuarios` de ponta a ponta.
  *
@@ -73,7 +73,7 @@ describe("Autenticação — rotas + Postgres real @int", () => {
   it("POST /cadastro cria um usuário novo e rejeita e-mail duplicado", async () => {
     const login = await request(app).post("/login").send({ email: EMAIL_SECRETARIA, senha: SENHA_SECRETARIA });
     const auth = `Bearer ${login.body.token}`;
-    const novo = { nome: "Coordenação", email: "coord@unieduca.com.br", senha: "senhaForte1", tipo_usuario: "secretaria" };
+    const novo = { nome: "Coordenação", email: "coord@unieduca.com.br", senha: "senhaForte1!", tipo_usuario: "secretaria" };
 
     const criado = await request(app).post("/cadastro").set("Authorization", auth).send(novo);
     expect(criado.status).toBe(201);

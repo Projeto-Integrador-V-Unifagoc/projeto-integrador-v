@@ -1,3 +1,4 @@
+import { ValidacaoEstrutura } from "../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica";
 import { v4 as uuidv4 } from 'uuid';
 import { CursoCommand } from "../models/Curso";
 import { CursoRepository } from "../repository/CursoRepository";
@@ -66,7 +67,7 @@ export class CursoService {
             const mensagemTraduzida = this.traduzirErroRemocao(error);
 
             if (mensagemTraduzida) {
-                throw new Error(mensagemTraduzida);
+                throw new ValidacaoEstrutura(mensagemTraduzida);
             }
 
             throw error;

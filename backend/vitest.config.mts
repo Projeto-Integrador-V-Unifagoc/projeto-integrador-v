@@ -3,9 +3,9 @@ import { defineConfig } from "vitest/config";
 // Runner de testes do backend (mesmo Vitest do frontend).
 //
 // Dois projetos:
-//  - "unit": src/**/*.test.ts (menos *.int.test.ts). Isolados: repositorios
+//  - "unit": src/scripts **/*.test.ts (menos *.int.test.ts). Isolados: repositorios
 //    mockados, nao sobe servidor nem toca banco.
-//  - "integration": src/**/*.int.test.ts. Sobem Postgres real via Testcontainers
+//  - "integration": src/scripts **/*.int.test.ts. Sobem Postgres real via Testcontainers
 //    e exercitam as rotas Express com supertest. Exigem Docker; rodam em serie.
 //
 // "npm test" roda so o projeto "unit" (rapido, sem Docker, e o que o CI usa).
@@ -32,8 +32,8 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: ["src/**/*.test.ts"],
-          exclude: ["src/**/*.int.test.ts", "node_modules/**"],
+          include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+          exclude: ["src/**/*.int.test.ts", "scripts/**/*.int.test.ts", "node_modules/**"],
         },
       },
       {
@@ -41,7 +41,7 @@ export default defineConfig({
         test: {
           name: "integration",
           environment: "node",
-          include: ["src/**/*.int.test.ts"],
+          include: ["src/**/*.int.test.ts", "scripts/**/*.int.test.ts"],
           // Baixar a imagem do Postgres na primeira execucao pode demorar.
           hookTimeout: 120000,
           testTimeout: 30000,

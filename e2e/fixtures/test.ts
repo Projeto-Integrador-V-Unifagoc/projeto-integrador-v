@@ -3,7 +3,8 @@ import { Api } from "../helpers/api.js";
 import { config } from "../helpers/config.js";
 import * as idsHelper from "../helpers/ids.js";
 import { login } from "../factories/usuario.factory.js";
-import { montarCenario, type Cenario } from "./academic.fixture.js";
+import { montarCenario, type AlunoMatriculado, type Cenario, type OpcoesCenario } from "./academic.fixture.js";
+import type { ResultadoAcademico } from "../../backend/src/Modules/notas/models/ResultadoAcademico.js";
 
 /**
  * Fixtures base da suíte (spec §4.2). Fornecem:
@@ -18,7 +19,7 @@ interface Fixtures {
   api: Api;
   secretariaToken: string;
   apiSecretaria: Api;
-  novoCenario: (opcoes?: { capacidadeTurma?: number; statusPeriodo?: string }) => Promise<Cenario>;
+  novoCenario: (opcoes?: OpcoesCenario) => Promise<Cenario>;
 }
 
 export const test = base.extend<Fixtures>({
@@ -41,3 +42,20 @@ export const test = base.extend<Fixtures>({
 });
 
 export { expect };
+
+/** Toda escrita da jornada termina antes destas duas leituras da mesma oferta. */
+export async function consultarResultadoJornada(cenario: Cenario, aluno: AlunoMatriculado): Promise<ResultadoAcademico> {
+  const boletim = await aluno.apiAluno.get("/notas/me");
+  expect(boletim.status).toBe(200);
+  const disciplina = boletim.body.disciplinas.find((d: any) => d.resultadoAcademico?.turmaDisciplinaId === cenario.turmaDisciplinaId);
+  expect(disciplina, "Boletim deve identificar a oferta por UUID").toBeTruthy();
+  const resultado: ResultadoAcademico = disciplina.resultadoAcademico;
+  expect(resultado.contratoVersao).toBe(2);
+  const rendimento = await cenario.apiProfessor.get(`/notas/turmas/${cenario.turmaDisciplinaId}/rendimento`);
+  expect(rendimento.status).toBe(200);
+  const linha = rendimento.body.alunos.find((a: any) => a.alunoId === aluno.aluno.id);
+  expect(linha, "Rendimento deve identificar o aluno da jornada").toBeTruthy();
+  expect(linha.resultadoAcademico).toEqual(resultado);
+  expect(resultado.matriculaTurmaDisciplinaId).toBe(linha.matriculaTurmaDisciplinaId);
+  return resultado;
+}

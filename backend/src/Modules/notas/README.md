@@ -1,68 +1,36 @@
-# API mock de notas
+# Notas e resultado acadêmico
 
-Este modulo disponibiliza dados mockados de notas para integracao temporaria com os demais grupos. Os dados ficam em memoria e nao dependem de banco, migrations ou seeds.
+Módulo integrado ao PostgreSQL `piv`. A API ativa usa avaliações, regras por curso/período, matrículas, notas e frequência reais da base autorizada. Os arquivos de mocks antigos não alimentam as rotas ativas de notas. Execução sintética, comandos e isolamento: [quickstart](../../../../specs/001-notas-dinamicas/quickstart.md).
 
-## Endpoints
+## Contratos e permissões
 
-Base URL local:
+[REST completo](../../../../specs/001-notas-dinamicas/contracts/api.md) e [DTO resultadoAcademico v2](../../../../specs/001-notas-dinamicas/contracts/resultado-academico.md) são as referências de integração. Pontos são strings decimais estritas, com até duas casas na entrada e duas na saída; zero lançado é `"0.00"`, ausência é null. Percentuais nullable são projeções para exibição. O corte exato é60% do total; plano e notas regulares devem estar completos, e aprovação conjunta exige também frequência suficiente (75% segundo a fórmula vigente). REC usa o maior resultado, sem somar pontos e sem suprir faltas.
 
-```text
-http://localhost:3000/notas
-```
+Todas as rotas abaixo exigem autenticação. Secretaria/administrador têm alcance administrativo; professor somente suas ofertas; aluno somente seus vínculos. Ficha é exclusiva administrativa. Permissão e escopo são validados antes da leitura e novamente nos locks da escrita.
 
-Listar todas as notas:
+| Rota | Uso |
+| --- | --- |
+| GET /notas/opcoes | Ofertas/avaliações autorizadas para lançamento |
+| GET /notas/avaliacoes/:avaliacaoId/lancamento | Grade, máximo textual, null/zero, prazos e permissões |
+| PUT /notas/avaliacoes/:avaliacaoId/lote | Lote atômico de `{itens:[{alunoId,valor:"18.00"}],motivo}` |
+| GET /notas/turmas/:turmaDisciplinaId/rendimento | Resultado comum por matrícula/oferta |
+| GET /notas/turmas/:turmaDisciplinaId/recuperacao | Elegíveis por nota e avaliação REC, quando aplicável |
+| POST /notas/autorizacoes-excepcionais | Exceção de retificação por secretaria/administrador; não reabre período |
+| GET /notas/me e /notas/me/resumo | Boletim e resumo do aluno autenticado |
+| GET /notas/alunos/:alunoId | Administrativo, próprio aluno ou ofertas do professor autorizado |
 
-```http
-GET /notas/mock
-```
+O GET recuperação conserva o efeito herdado de materializar avaliação quando há elegível e período aberto. Não usar prefetch: resposta `Cache-Control: private, no-store`, máximo igual ao total da regra e unicidade por oferta. A UI solicita ao abrir o fluxo explicitamente. Lote REC revalida completude/elegibilidade, período, prazo e vínculo sob lock.
 
-Buscar notas por aluno:
+Configuração fica em `/regras-pontuacao/cursos/:cursoId/periodos/:periodoLetivoId`; plano em `/avaliacoes/plano/:turmaDisciplinaId`. Novo cadastro regular usa `tipo_avaliacao:"REGULAR"` e `subgrupo_id` da regra, sem default100. Regra é preservada no primeiro uso, mesmo apagando avaliação sem nota; máximo/subgrupo/oferta/finalidade da avaliação são preservados após a primeira nota. Datas/descrição e retificação seguem o fluxo vigente.
 
-```http
-GET /notas/mock/aluno/:alunoId
-```
+## Composição e erros
 
-Buscar notas por turma:
+`ResultadoAcademicoService` coordena estrutura autorizada, plano, notas e frequência em snapshot único e consultas em lote. O cálculo puro trabalha em centésimos exatos, não consulta banco/perfil e não refaz frequência. Boletim, rendimento, ficha, relatório e Home usam o mesmo resultado por UUID; aliases antigos não decidem aprovação conjunta.
 
-```http
-GET /notas/mock/turma/:turmaId
-```
+Erro de domínio retorna status apropriado, codigo/mensagem e campos autorizados. Lote inválido não grava parte dos itens nem eventos. Falha inesperada retorna500 opaco, sem SQL/payload de terceiros e sem converter indisponibilidade em zero/ausência. Matrícula, avaliação, oferta, regra e pais são revalidados segundo a precedência transacional comum; triggers protegem escritores diretos.
 
-Buscar notas por disciplina:
+Falhas internas de notas recebem `X-Request-ID` gerado no servidor e evento técnico mínimo para diagnóstico. Somente operação/correlação/classificação/código permitido são registrados; nenhum objeto do driver, mensagem, SQL, payload, URL, stack ou identidade é serializado. Erros de domínio mantêm seu contrato.
 
-```http
-GET /notas/mock/disciplina/:disciplinaId
-```
+## Ativação e retorno
 
-## Exemplo de resposta
-
-```json
-{
-  "id": "nota-001",
-  "alunoId": "aluno-001",
-  "alunoNome": "Ana Clara Souza",
-  "turmaId": "turma-ads-2026-1",
-  "turmaNome": "ADS 5o Periodo",
-  "disciplinaId": "disciplina-pi-v",
-  "disciplinaNome": "Projeto Integrador V",
-  "professorId": "prof-001",
-  "professorNome": "Theilor Martins",
-  "periodoLetivo": "2026/1",
-  "avaliacoes": [
-    {
-      "id": "av-001",
-      "nome": "Entrega 1",
-      "nota": 8.5,
-      "peso": 2
-    }
-  ],
-  "media": 8.6,
-  "situacao": "aprovado"
-}
-```
-
-## Observacoes
-
-- Esta API e temporaria e deve ser substituida pela integracao definitiva do modulo de notas.
-- Os filtros usam os identificadores mockados presentes no retorno de `GET /notas/mock`.
-- O campo `situacao` pode retornar `aprovado`, `recuperacao` ou `reprovado`.
+Este contrato quebra a representação numérica antiga, exige subgrupo em regulares e atualização coordenada dos consumidores. [Adoção e retorno](../../../../specs/001-notas-dinamicas/adocao-e-retorno.md) descreve as três migrations novas, preflight somente leitura, suspensão de escritores, backups e gates de ambiente. Adoção/retorno foram ensaiados em histórico sintético, com manifestos; não houve operação real. Histórico incompatível bloqueia o conjunto inteiro, sem saneamento ou replay de migrations normalizadoras antigas.

@@ -3,17 +3,21 @@ import type { ConsolidadoFrequencia } from "../models/frequencia-model";
 import type { PeriodoLetivoResponse } from "../models/periodo-letivo-model";
 import type { CidadeModel } from "../models/cidade-model";
 import type { DocumentoAluno } from "./documento-api";
+import type { ResultadoAcademico } from "../models/resultado-academico-model";
 
 export interface AvaliacaoFicha {
   id: string;
   nome: string;
-  nota: number;
-  peso: number;
+  nota: string | null;
+  peso: string;
   matricula_turma_disciplina_id: string | null;
 }
 
 export interface NotaFicha {
   id: string;
+  turmaDisciplinaId: string;
+  matriculaTurmaDisciplinaId: string;
+  resultadoAcademico: ResultadoAcademico;
   alunoId: string;
   alunoNome: string | null;
   turmaId: string | null;
@@ -24,7 +28,7 @@ export interface NotaFicha {
   professorNome: string | null;
   periodoLetivo: string | null;
   avaliacoes: AvaliacaoFicha[];
-  media: number;
+  media: number | null;
   situacao: string;
 }
 

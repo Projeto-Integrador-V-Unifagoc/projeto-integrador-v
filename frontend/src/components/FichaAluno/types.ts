@@ -1,3 +1,5 @@
+import type { ResultadoAcademico } from "../../models/resultado-academico-model";
+
 export type AbaFicha =
   | "notas"
   | "financeiro"
@@ -9,22 +11,19 @@ export type AbaFicha =
 
 export type NotaAluno = {
   disciplina: string;
-  mediaFinal: number;
-  avaliacao: number;
+  turmaNome?: string | null;
+  professorNome?: string | null;
+  periodoLetivo?: string | null;
+  turmaDisciplinaId: string;
+  matriculaTurmaDisciplinaId: string | null;
+  resultadoAcademico: ResultadoAcademico | null;
   avaliacoes?: Array<{
     id: string;
     nome: string;
-    nota: number;
-    peso: number;
+    nota: string | null;
+    peso: string;
     matricula_turma_disciplina_id?: string | null;
   }>;
-  matriculaTurmaDisciplinaId?: string | null;
-  provaFinal: number;
-  provaInova: number;
-  provaSegundaChamada: number;
-  conhecimentosGerais: number;
-  faltas: number;
-  percentualFaltas: number;
 };
 
 export type AlunoFicha = {

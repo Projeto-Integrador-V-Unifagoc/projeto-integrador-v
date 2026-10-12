@@ -1,5 +1,6 @@
 import { Knex } from "knex";
 import { db } from "../../../database/connection";
+import { escritaEstrutura, EstruturaPreservada } from "../../modulo-estrutura-academica/gateways/EscritaEstruturaAcademica";
 
 export const STATUS_MATRICULA = ["pendente", "ativa", "trancada", "cancelada", "concluida"] as const;
 
@@ -236,32 +237,39 @@ export class MatriculaRepository {
         return row ?? null;
     }
 
-    async atualizarStatus(id: string, status: string): Promise<Matricula | null> {
-        const [row] = await db("matricula")
+    async atualizarStatus(id: string, status: string, statusEsperado?: string): Promise<Matricula | null> {
+        return escritaEstrutura(db, "matricula", id, { status }, async (trx) => {
+        const atual = await trx("piv.matricula").where({ id }).first();
+        if (statusEsperado && atual?.status.toLowerCase() !== statusEsperado) throw new EstruturaPreservada("A situação da matrícula foi alterada. Recarregue e tente novamente.");
+        const [row] = await trx("matricula")
             .where({ id })
-            .update({ status, updated_at: db.fn.now() })
+            .update({ status, updated_at: trx.fn.now() })
             .returning("*");
         return row ?? null;
+        });
     }
 
     async cancelarComVinculos(id: string): Promise<Matricula | null> {
-        return db.transaction(async (trx) => {
-            await trx("matricula_turma_disciplina")
-                .where({ matricula_id: id })
-                .whereRaw("lower(status) = 'ativa'")
-                .update({ status: "cancelada", updated_at: trx.fn.now() });
-
+        return escritaEstrutura(db, "matricula", id, { status: "cancelada" }, async (trx) => {
             const [row] = await trx("matricula")
                 .where({ id })
                 .update({ status: "cancelada", updated_at: trx.fn.now() })
                 .returning("*");
+            await trx("matricula_turma_disciplina")
+                .where({ matricula_id: id })
+                .whereRaw("lower(status) = 'ativa'")
+                .update({ status: "cancelada", updated_at: trx.fn.now() });
 
             return row ?? null;
         });
     }
 
     async adicionarVinculos(matriculaId: string, turmaDisciplinaIds: string[]): Promise<number> {
-        const inseridos = await db("matricula_turma_disciplina")
+        return escritaEstrutura(db, "matricula", matriculaId, { ofertasAdicionais: turmaDisciplinaIds }, async (trx) => {
+        const matricula = await trx("piv.matricula").where({ id: matriculaId }).first();
+        const validas = matricula ? await this.listarTurmaDisciplinasValidas(matricula.turma_id, turmaDisciplinaIds, trx) : [];
+        if (!matricula || matricula.status.toLowerCase() === "cancelada" || validas.length !== new Set(turmaDisciplinaIds).size) throw new EstruturaPreservada("A matrícula ou as ofertas foram alteradas. Recarregue e tente novamente.");
+        const inseridos = await trx("matricula_turma_disciplina")
             .insert(
                 turmaDisciplinaIds.map((turmaDisciplinaId) => ({
                     matricula_id: matriculaId,
@@ -273,14 +281,19 @@ export class MatriculaRepository {
             .ignore()
             .returning("id");
         return inseridos.length;
+        });
     }
 
-    async cancelarVinculo(vinculoId: string): Promise<VinculoDetalhado | null> {
-        const [row] = await db("matricula_turma_disciplina")
+    async cancelarVinculo(vinculoId: string, matriculaId?: string): Promise<VinculoDetalhado | null> {
+        return escritaEstrutura(db, "matricula_turma_disciplina", vinculoId, { status: "cancelada" }, async (trx) => {
+        const atual = await trx("piv.matricula_turma_disciplina").where({ id: vinculoId }).first();
+        if (matriculaId && atual?.matricula_id !== matriculaId) throw new EstruturaPreservada("O vínculo não está disponível nesta matrícula.");
+        const [row] = await trx("matricula_turma_disciplina")
             .where({ id: vinculoId })
-            .update({ status: "cancelada", updated_at: db.fn.now() })
+            .update({ status: "cancelada", updated_at: trx.fn.now() })
             .returning("*");
         return row ?? null;
+        });
     }
 
     async buscarVinculo(vinculoId: string) {
@@ -419,7 +432,7 @@ export class MatriculaRepository {
         return { ...aluno, matriculas: comVinculos };
     }
 
-    transacao<T>(callback: (trx: Knex.Transaction) => Promise<T>): Promise<T> {
-        return db.transaction(callback);
+    transacao<T>(callback: (trx: Knex.Transaction) => Promise<T>, turmaId?: string): Promise<T> {
+        return turmaId ? escritaEstrutura(db, "turma", turmaId, {}, callback) : db.transaction(callback);
     }
 }

@@ -1,0 +1,4315 @@
+{
+  "protocolo": "T091-v1",
+  "antes": {
+    "capturadaEm": "2026-09-28T23:19:30.706Z",
+    "fase": "antes",
+    "fonteFichaSha256": "2007ec86083447d785ace05c8029da6cab22e08e8a829393db87c04068e5e9f1",
+    "runtime": {
+      "node": "v24.19.0",
+      "plataforma": "win32",
+      "arquitetura": "x64",
+      "cpus": 12,
+      "postgres": "15.19 (Debian 15.19-1.pgdg13+2)",
+      "poolMaximo": 10
+    },
+    "condicoes": {
+      "migrations": 16,
+      "banco": "PostgreSQL15 efêmero próprio; loopback e sufixo _test validados",
+      "amostras": 10,
+      "aquecimentos": 2,
+      "tempo": "performance.now em milissegundos; aquecimentos excluídos de mediana/p95",
+      "p95": "nearest-rank, ceil(0.95*N)",
+      "recursosEncerrados": true,
+      "consultas": "eventos Knex enviados ao servidor; domínio separado de BEGIN/COMMIT/SET e instrumentação",
+      "limites": [
+        "Dataset sintético de 1/20 ofertas e matrículas; sem SLO nem inferência de volume de produção",
+        "Caches quentes após aquecimento; máquina compartilhada, sem isolamento de CPU/IO",
+        "A Ficha usa o snapshot do resultado comum e leituras institucionais subsequentes, como antes",
+        "Escritas medidas incluem espera artificial explicitamente separada; dados preexistentes com primeiro uso já marcado"
+      ]
+    },
+    "leituras": [
+      {
+        "leitor": "resultado",
+        "ofertas": 1,
+        "matriculas": 1,
+        "avaliacoes": 1,
+        "notas": 1,
+        "registrosFrequencia": 4,
+        "historicas": 0,
+        "aquecimentoMs": [
+          16.73990000000049,
+          10.134200000000419
+        ],
+        "amostras": [
+          {
+            "duracaoMs": 10.04870000000119,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 8.883200000000215,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 7.594499999999243,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 8.24409999999989,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 8.011499999998705,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 8.907400000000052,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 9.279199999999037,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 12.793400000000474,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 8.465799999999945,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 7.496099999998478,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          }
+        ],
+        "medianaMs": 8.67450000000008,
+        "p95Ms": 12.793400000000474
+      },
+      {
+        "leitor": "ficha",
+        "ofertas": 1,
+        "matriculas": 1,
+        "avaliacoes": 1,
+        "notas": 1,
+        "registrosFrequencia": 4,
+        "historicas": 0,
+        "aquecimentoMs": [
+          30.17320000000109,
+          14.804700000000594
+        ],
+        "amostras": [
+          {
+            "duracaoMs": 14.939000000000306,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 13.736899999999878,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 14.119699999999284,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 14.029300000000148,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.087999999999738,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.01300000000083,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.6924999999992,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 14.563200000000506,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 14.733399999999165,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.202400000000125,
+            "consultas": {
+              "dominio": 15,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          }
+        ],
+        "medianaMs": 14.836199999999735,
+        "p95Ms": 15.6924999999992
+      },
+      {
+        "leitor": "resultado",
+        "ofertas": 20,
+        "matriculas": 20,
+        "avaliacoes": 20,
+        "notas": 14,
+        "registrosFrequencia": 56,
+        "historicas": 13,
+        "aquecimentoMs": [
+          11.611100000000079,
+          9.404500000000553
+        ],
+        "amostras": [
+          {
+            "duracaoMs": 10.48699999999917,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 10.766099999998914,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 8.017499999999927,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 13.883499999999913,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 13.227199999999357,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 10.681700000001001,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 9.94839999999931,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 11.08179999999993,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 12.100099999999657,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 10.138899999999921,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          }
+        ],
+        "medianaMs": 10.723899999999958,
+        "p95Ms": 13.883499999999913
+      },
+      {
+        "leitor": "ficha",
+        "ofertas": 20,
+        "matriculas": 20,
+        "avaliacoes": 20,
+        "notas": 14,
+        "registrosFrequencia": 56,
+        "historicas": 13,
+        "aquecimentoMs": [
+          44.94390000000021,
+          36.595799999999144
+        ],
+        "amostras": [
+          {
+            "duracaoMs": 25.36579999999958,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 27.338200000000143,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 24.652200000000448,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 22.56550000000061,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 22.488600000000588,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 27.46099999999933,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 23.899599999998827,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 22.8729000000003,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 21.08680000000095,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 27.139000000001033,
+            "consultas": {
+              "dominio": 53,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          }
+        ],
+        "medianaMs": 24.275899999999638,
+        "p95Ms": 27.46099999999933
+      }
+    ]
+  },
+  "depois": {
+    "capturadaEm": "2026-09-28T23:24:30.738Z",
+    "fase": "depois",
+    "fontes": [
+      {
+        "arquivo": "FichaService.ts",
+        "sha256": "6320d4a0685140767ccce1d1764809f81a54b87bbd0890d738d55773729d9b40"
+      },
+      {
+        "arquivo": "desempenhoAcademico.int.test.ts",
+        "sha256": "6826fe47b2c68fd6b063b9ad598d0de0a73d549e0f34f209177806ad34fef19f"
+      }
+    ],
+    "runtime": {
+      "node": "v24.19.0",
+      "plataforma": "win32",
+      "arquitetura": "x64",
+      "cpus": 12,
+      "postgres": "15.19 (Debian 15.19-1.pgdg13+2)",
+      "poolMaximo": 10
+    },
+    "condicoes": {
+      "migrations": 16,
+      "banco": "PostgreSQL15 efêmero próprio; loopback e sufixo _test validados",
+      "amostras": 10,
+      "aquecimentos": 2,
+      "tempo": "performance.now em milissegundos; aquecimentos excluídos de mediana/p95",
+      "p95": "nearest-rank, ceil(0.95*N)",
+      "recursosEncerrados": true,
+      "consultas": "eventos Knex enviados ao servidor; domínio separado de BEGIN/COMMIT/SET e instrumentação",
+      "limites": [
+        "Dataset sintético de 1/20 ofertas e matrículas; sem SLO nem inferência de volume de produção",
+        "Caches quentes após aquecimento; máquina compartilhada, sem isolamento de CPU/IO",
+        "A Ficha usa o snapshot do resultado comum e leituras institucionais subsequentes, como antes",
+        "Escritas medidas incluem espera artificial e observação concorrente explicitamente separadas; dados preexistentes com primeiro uso já marcado",
+        "pg_stat_activity/pg_locks são amostras pontuais; ausência observada não constitui garantia geral de ausência de contenção"
+      ]
+    },
+    "leituras": [
+      {
+        "leitor": "resultado",
+        "ofertas": 1,
+        "matriculas": 1,
+        "avaliacoes": 1,
+        "notas": 1,
+        "registrosFrequencia": 4,
+        "historicas": 0,
+        "aquecimentoMs": [
+          18.992099999999482,
+          15.50250000000051
+        ],
+        "amostras": [
+          {
+            "duracaoMs": 15.80869999999959,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 11.122199999999793,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 10.235899999999674,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 12.035900000000765,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 13.223500000000058,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 20.332399999999325,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 13.390699999999924,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.146200000001045,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.100600000001577,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 16.955200000000332,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          }
+        ],
+        "medianaMs": 14.24565000000075,
+        "p95Ms": 20.332399999999325,
+        "preservacao": {
+          "tabelas": 9,
+          "colunas": "todas, limitadas aos IDs próprios",
+          "hashAntes": "78ece8a0e07054c065cef809e3b494033405a705797f262e1b19fee8f7baddd6",
+          "hashDepois": "78ece8a0e07054c065cef809e3b494033405a705797f262e1b19fee8f7baddd6"
+        }
+      },
+      {
+        "leitor": "ficha",
+        "ofertas": 1,
+        "matriculas": 1,
+        "avaliacoes": 1,
+        "notas": 1,
+        "registrosFrequencia": 4,
+        "historicas": 0,
+        "aquecimentoMs": [
+          49.83519999999953,
+          28.001399999999194
+        ],
+        "amostras": [
+          {
+            "duracaoMs": 20.633499999999913,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 16.547500000000582,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.497300000000905,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.738099999998667,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 14.955700000000434,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 16.252699999999095,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 14.960100000000239,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.688399999999092,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 17.817299999998795,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 16.56750000000102,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          }
+        ],
+        "medianaMs": 15.995399999998881,
+        "p95Ms": 20.633499999999913,
+        "preservacao": {
+          "tabelas": 9,
+          "colunas": "todas, limitadas aos IDs próprios",
+          "hashAntes": "78ece8a0e07054c065cef809e3b494033405a705797f262e1b19fee8f7baddd6",
+          "hashDepois": "78ece8a0e07054c065cef809e3b494033405a705797f262e1b19fee8f7baddd6"
+        }
+      },
+      {
+        "leitor": "resultado",
+        "ofertas": 20,
+        "matriculas": 20,
+        "avaliacoes": 20,
+        "notas": 14,
+        "registrosFrequencia": 56,
+        "historicas": 13,
+        "aquecimentoMs": [
+          16.840900000001056,
+          13.025299999999334
+        ],
+        "amostras": [
+          {
+            "duracaoMs": 13.477999999999156,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 12.075699999999415,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 17.277500000000146,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 20.04910000000018,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 16.58719999999994,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 13.937799999999697,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 13.512300000000323,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 10.128500000000713,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 15.204400000000533,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 14.644200000000637,
+            "consultas": {
+              "dominio": 8,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          }
+        ],
+        "medianaMs": 14.291000000000167,
+        "p95Ms": 20.04910000000018,
+        "preservacao": {
+          "tabelas": 9,
+          "colunas": "todas, limitadas aos IDs próprios",
+          "hashAntes": "b8866c213234152f986a9b86225e902079e1955c678fcde8e771e7fa3ffe46ae",
+          "hashDepois": "b8866c213234152f986a9b86225e902079e1955c678fcde8e771e7fa3ffe46ae"
+        }
+      },
+      {
+        "leitor": "ficha",
+        "ofertas": 20,
+        "matriculas": 20,
+        "avaliacoes": 20,
+        "notas": 14,
+        "registrosFrequencia": 56,
+        "historicas": 13,
+        "aquecimentoMs": [
+          18.536699999998746,
+          19.97320000000036
+        ],
+        "amostras": [
+          {
+            "duracaoMs": 24.512000000000626,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 20.903299999999945,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 19.219900000000052,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 24.244199999999182,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 20.672700000000987,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 22.660400000000664,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 16.57549999999901,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 18.685299999999188,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 18.56129999999939,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          },
+          {
+            "duracaoMs": 19.10230000000047,
+            "consultas": {
+              "dominio": 13,
+              "controle": 2,
+              "instrumentacao": 0
+            }
+          }
+        ],
+        "medianaMs": 19.94630000000052,
+        "p95Ms": 24.512000000000626,
+        "preservacao": {
+          "tabelas": 9,
+          "colunas": "todas, limitadas aos IDs próprios",
+          "hashAntes": "b8866c213234152f986a9b86225e902079e1955c678fcde8e771e7fa3ffe46ae",
+          "hashDepois": "b8866c213234152f986a9b86225e902079e1955c678fcde8e771e7fa3ffe46ae"
+        }
+      }
+    ],
+    "escritas": {
+      "ofertas": 2,
+      "regraCompartilhada": 1,
+      "notasPreexistentes": 2,
+      "aquecimentos": [
+        {
+          "duracaoParMs": 76.16640000000007,
+          "esperaArtificialAteLiberarPaiMs": 27.958300000000236,
+          "rendezvousDepoisPaiMs": 16.343300000000454,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 71.693299999999,
+              "depoisLiberacaoMs": 30.679199999998673,
+              "valor": "72.00"
+            },
+            {
+              "duracaoTotalMs": 70.11839999999938,
+              "depoisLiberacaoMs": 29.436499999999796,
+              "valor": "72.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 24
+          },
+          "consultasBarreira": 6,
+          "esperas": [
+            {
+              "pid": 674,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                674,
+                625
+              ]
+            },
+            {
+              "pid": 675,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                675,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 674,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 675,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 43.99029999999948,
+          "esperaArtificialAteLiberarPaiMs": 13.0604000000003,
+          "rendezvousDepoisPaiMs": 11.731799999999566,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 36.3158999999996,
+              "depoisLiberacaoMs": 14.375400000000809,
+              "valor": "60.00"
+            },
+            {
+              "duracaoTotalMs": 40.16769999999997,
+              "depoisLiberacaoMs": 18.35020000000077,
+              "valor": "60.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 24
+          },
+          "consultasBarreira": 6,
+          "esperas": [
+            {
+              "pid": 673,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                673,
+                625
+              ]
+            },
+            {
+              "pid": 675,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                675,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 673,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 675,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        }
+      ],
+      "amostras": [
+        {
+          "duracaoParMs": 43.2510999999995,
+          "esperaArtificialAteLiberarPaiMs": 9.345499999999447,
+          "rendezvousDepoisPaiMs": 12.66439999999966,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 40.09300000000076,
+              "depoisLiberacaoMs": 20.693499999999403,
+              "valor": "72.00"
+            },
+            {
+              "duracaoTotalMs": 37.81340000000091,
+              "depoisLiberacaoMs": 18.48569999999927,
+              "valor": "72.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 23
+          },
+          "consultasBarreira": 5,
+          "esperas": [
+            {
+              "pid": 674,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                674,
+                625
+              ]
+            },
+            {
+              "pid": 675,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                675,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 674,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 675,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 46.73739999999998,
+          "esperaArtificialAteLiberarPaiMs": 11.073899999999412,
+          "rendezvousDepoisPaiMs": 14.677400000000489,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 42.78969999999936,
+              "depoisLiberacaoMs": 19.482299999999668,
+              "valor": "60.00"
+            },
+            {
+              "duracaoTotalMs": 43.65059999999903,
+              "depoisLiberacaoMs": 20.426300000000992,
+              "valor": "60.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 20
+          },
+          "consultasBarreira": 5,
+          "esperas": [
+            {
+              "pid": 674,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                674,
+                625
+              ]
+            },
+            {
+              "pid": 673,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                673,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 673,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 674,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 41.448199999998906,
+          "esperaArtificialAteLiberarPaiMs": 9.179999999998472,
+          "rendezvousDepoisPaiMs": 13.54410000000098,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 38.5104999999985,
+              "depoisLiberacaoMs": 17.987999999999374,
+              "valor": "72.00"
+            },
+            {
+              "duracaoTotalMs": 37.124800000001414,
+              "depoisLiberacaoMs": 16.65990000000056,
+              "valor": "72.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 21
+          },
+          "consultasBarreira": 6,
+          "esperas": [
+            {
+              "pid": 674,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                674,
+                625
+              ]
+            },
+            {
+              "pid": 675,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                675,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 674,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 675,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 43.982099999999264,
+          "esperaArtificialAteLiberarPaiMs": 9.922699999999168,
+          "rendezvousDepoisPaiMs": 14.146199999999226,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 39.00489999999991,
+              "depoisLiberacaoMs": 17.688100000001214,
+              "valor": "60.00"
+            },
+            {
+              "duracaoTotalMs": 36.8130000000001,
+              "depoisLiberacaoMs": 15.573200000000725,
+              "valor": "60.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 22
+          },
+          "consultasBarreira": 6,
+          "esperas": [
+            {
+              "pid": 673,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                673,
+                625
+              ]
+            },
+            {
+              "pid": 675,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                675,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 673,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 675,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 46.05459999999948,
+          "esperaArtificialAteLiberarPaiMs": 9.593999999999141,
+          "rendezvousDepoisPaiMs": 12.855500000001484,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 38.44659999999931,
+              "depoisLiberacaoMs": 18.501899999999296,
+              "valor": "72.00"
+            },
+            {
+              "duracaoTotalMs": 42.29689999999937,
+              "depoisLiberacaoMs": 22.382799999999406,
+              "valor": "72.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 21
+          },
+          "consultasBarreira": 6,
+          "esperas": [
+            {
+              "pid": 674,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                674,
+                625
+              ]
+            },
+            {
+              "pid": 673,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                673,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 673,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 674,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 48.41139999999905,
+          "esperaArtificialAteLiberarPaiMs": 11.83299999999872,
+          "rendezvousDepoisPaiMs": 15.030000000000655,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 40.01549999999952,
+              "depoisLiberacaoMs": 17.26429999999891,
+              "valor": "60.00"
+            },
+            {
+              "duracaoTotalMs": 42.64270000000033,
+              "depoisLiberacaoMs": 19.96719999999914,
+              "valor": "60.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 18
+          },
+          "consultasBarreira": 5,
+          "esperas": [
+            {
+              "pid": 673,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                673,
+                625
+              ]
+            },
+            {
+              "pid": 675,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                675,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 673,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 675,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 56.61210000000028,
+          "esperaArtificialAteLiberarPaiMs": 13.412999999998647,
+          "rendezvousDepoisPaiMs": 20.4320000000007,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 50.675600000000486,
+              "depoisLiberacaoMs": 19.85230000000047,
+              "valor": "72.00"
+            },
+            {
+              "duracaoTotalMs": 52.27729999999974,
+              "depoisLiberacaoMs": 21.49109999999928,
+              "valor": "72.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 21
+          },
+          "consultasBarreira": 6,
+          "esperas": [
+            {
+              "pid": 674,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                674,
+                625
+              ]
+            },
+            {
+              "pid": 673,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                673,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 673,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 674,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 40.72910000000047,
+          "esperaArtificialAteLiberarPaiMs": 11.015900000000329,
+          "rendezvousDepoisPaiMs": 11.57719999999972,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 37.841599999999744,
+              "depoisLiberacaoMs": 17.373600000000806,
+              "valor": "60.00"
+            },
+            {
+              "duracaoTotalMs": 36.253600000000006,
+              "depoisLiberacaoMs": 15.808600000000297,
+              "valor": "60.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 22
+          },
+          "consultasBarreira": 7,
+          "esperas": [
+            {
+              "pid": 673,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                673,
+                625
+              ]
+            },
+            {
+              "pid": 675,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                675,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 673,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 675,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 42.93080000000009,
+          "esperaArtificialAteLiberarPaiMs": 9.67909999999938,
+          "rendezvousDepoisPaiMs": 13.878600000000006,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 39.57669999999962,
+              "depoisLiberacaoMs": 18.515000000001237,
+              "valor": "72.00"
+            },
+            {
+              "duracaoTotalMs": 38.39170000000013,
+              "depoisLiberacaoMs": 17.363600000000588,
+              "valor": "72.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 21
+          },
+          "consultasBarreira": 6,
+          "esperas": [
+            {
+              "pid": 674,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                674,
+                625
+              ]
+            },
+            {
+              "pid": 675,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                675,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 674,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 675,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 675,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        },
+        {
+          "duracaoParMs": 44.80630000000019,
+          "esperaArtificialAteLiberarPaiMs": 10.505400000000009,
+          "rendezvousDepoisPaiMs": 13.777900000000955,
+          "operacoes": [
+            {
+              "duracaoTotalMs": 40.202800000000934,
+              "depoisLiberacaoMs": 18.33510000000024,
+              "valor": "60.00"
+            },
+            {
+              "duracaoTotalMs": 41.82300000000032,
+              "depoisLiberacaoMs": 19.996100000000297,
+              "valor": "60.00"
+            }
+          ],
+          "consultasEscritores": {
+            "dominio": 62,
+            "controle": 4,
+            "instrumentacao": 4
+          },
+          "consultasPreparacaoEObservacao": {
+            "dominio": 1,
+            "controle": 2,
+            "instrumentacao": 23
+          },
+          "consultasBarreira": 6,
+          "esperas": [
+            {
+              "pid": 674,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                674,
+                625
+              ]
+            },
+            {
+              "pid": 673,
+              "bloqueadores": [
+                625
+              ],
+              "evento": "transactionid",
+              "tiposLock": [
+                "transactionid"
+              ],
+              "cadeiaAteBloqueador": [
+                673,
+                625
+              ]
+            }
+          ],
+          "coexistenciaAposLocks": [
+            {
+              "pid": 673,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            },
+            {
+              "pid": 674,
+              "state": "idle in transaction",
+              "bloqueadores": [],
+              "locks_pai": [
+                "RowShareLock"
+              ],
+              "locks_regra": []
+            }
+          ],
+          "observacoesDuranteEscrita": [
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": null,
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle in transaction",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "LWLock",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "active",
+                "wait_event_type": "IO",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ],
+            [
+              {
+                "pid": 673,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              },
+              {
+                "pid": 674,
+                "state": "idle",
+                "wait_event_type": "Client",
+                "bloqueadores": [],
+                "locks_regra": []
+              }
+            ]
+          ]
+        }
+      ],
+      "medianaMs": 44.39419999999973,
+      "p95Ms": 56.61210000000028,
+      "depoisLiberacao": {
+        "medianaMs": 18.493799999999283,
+        "p95Ms": 21.49109999999928
+      },
+      "conclusao": "Ambos os escritores alcançaram o callback após T010 simultaneamente; parents SHARE coexistem e regra usada não recebeu SHARE/UPDATE."
+    }
+  }
+}

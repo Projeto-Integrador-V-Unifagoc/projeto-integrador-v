@@ -94,7 +94,7 @@ describe("HomeAlunoService.minhasTarefas", () => {
     expect(r[0].disciplinaNome).toBe("Projeto Integrador V");
     expect(r[0].turmaDisciplinaId).toBe(turmaDisciplinaId);
     expect(r[0].dataVencimento).toBe("2026-06-20");
-    expect(r[0].valor).toBe(10);
+    expect(r[0].valor).toBe("10.00");
   });
 
   it("usa rótulo derivado do tipo quando a descrição é nula ou em branco", async () => {
@@ -113,6 +113,17 @@ describe("HomeAlunoService.minhasTarefas", () => {
       listarTarefasDoAluno: async () => [tarefaRow({ descricao_avaliacao: "", tipo_avaliacao: "OUTRO" })],
     }).minhasTarefas(reqAluno);
     expect(r[0].titulo).toBe("OUTRO");
+  });
+
+  it("usa REGULAR e máximo textual variável sem teto100", async () => {
+    const r = await criar({ listarTarefasDoAluno: async () => [
+      tarefaRow({ descricao_avaliacao: null, tipo_avaliacao: "REGULAR", valor: "300.01" }),
+    ] }).minhasTarefas(reqAluno);
+    expect(r[0]).toMatchObject({ tipo: "REGULAR", titulo: "Avaliação", valor: "300.01" });
+  });
+
+  it.each(["NaN", "Infinity", "1.001"])("propaga máximo persistido incompatível %s sem fallback", async (valor) => {
+    await expect(criar({ listarTarefasDoAluno: async () => [tarefaRow({ valor })] }).minhasTarefas(reqAluno)).rejects.toThrow();
   });
 
   it("preserva valor nulo e normaliza data_devolucao Date para ISO (AAAA-MM-DD)", async () => {

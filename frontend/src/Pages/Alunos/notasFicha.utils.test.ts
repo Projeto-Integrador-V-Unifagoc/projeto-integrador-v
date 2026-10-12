@@ -1,241 +1,176 @@
 import { describe, expect, it } from "vitest";
+import type { ResultadoAcademico } from "../../models/resultado-academico-model";
+import type { FrequenciaAluno, MatriculaDisciplinaFicha, NotaFicha } from "../../services/ficha-api";
+import { montarNotasFicha, normalizarSemestre } from "./notasFicha.utils";
 
-import type {
-  FrequenciaAluno,
-  MatriculaDisciplinaFicha,
-  NotaFicha,
-} from "../../services/ficha-api";
-import {
-  getNotaPorNome,
-  montarNotasFicha,
-  normalizarSemestre,
-} from "./notasFicha.utils";
+const ALUNO = "11111111-1111-1111-1111-111111111111";
+const OFERTA_A = "22222222-2222-2222-2222-222222222222";
+const OFERTA_B = "33333333-3333-3333-3333-333333333333";
+const VINCULO_A = "44444444-4444-4444-4444-444444444444";
+const VINCULO_B = "55555555-5555-5555-5555-555555555555";
+const AVALIACAO = "66666666-6666-6666-6666-666666666666";
+
+function criarResultado(overrides: Partial<ResultadoAcademico> = {}): ResultadoAcademico {
+  return {
+    contratoVersao: 2, turmaDisciplinaId: OFERTA_A, matriculaTurmaDisciplinaId: VINCULO_A,
+    regraPontuacaoId: "77777777-7777-7777-7777-777777777777", totalPontos: "120.00", cortePontos: "72.00",
+    planoCompleto: true, avaliacoesRegulares: 6, avaliacoesLancadas: 6, avaliacoesSemNota: [], etapaRegularCompleta: true,
+    pontosRegularesObtidos: "72.00", pontosMaximosLancados: "120.00",
+    indicadorRegular: { percentual: 60, parcial: false, denominadorPontos: "120.00" },
+    pontosRecuperacao: null, valorMaximoRecuperacao: "120.00", pontosEfetivos: "72.00", percentualResultado: 60,
+    resultadoPorNota: "SUFICIENTE", elegivelRecuperacaoPorNota: false,
+    frequencia: { presencas: 0, faltas: 0, percentual: null, situacao: "NAO_LANCADO", requisito: "PENDENTE" },
+    aprovacaoDisciplina: "PENDENTE", motivos: ["FREQUENCIA_PENDENTE"], ...overrides,
+  };
+}
 
 function criarNota(overrides: Partial<NotaFicha> = {}): NotaFicha {
   return {
-    id: "nota-1",
-    alunoId: "aluno-1",
-    alunoNome: "Aluno Teste",
-    turmaId: "turma-1",
-    turmaNome: "Turma A",
-    disciplinaId: "disc-1",
-    disciplinaNome: "Calculo I",
-    professorId: "prof-1",
-    professorNome: "Professor Teste",
-    periodoLetivo: "2026/1",
-    avaliacoes: [],
-    media: 0,
-    situacao: "",
-    ...overrides,
+    id: OFERTA_A, alunoId: ALUNO, alunoNome: "Aluno Teste",
+    turmaId: "88888888-8888-8888-8888-888888888888", turmaNome: "Turma A",
+    disciplinaId: "99999999-9999-9999-9999-999999999999", disciplinaNome: "Cálculo I",
+    professorId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", professorNome: "Professor Teste", periodoLetivo: "2026/1",
+    turmaDisciplinaId: OFERTA_A, matriculaTurmaDisciplinaId: VINCULO_A,
+    avaliacoes: [], media: 60, situacao: "APROVADO", resultadoAcademico: criarResultado(), ...overrides,
   };
 }
 
-function criarMatricula(
-  overrides: Partial<MatriculaDisciplinaFicha> = {},
-): MatriculaDisciplinaFicha {
+function criarMatricula(overrides: Partial<MatriculaDisciplinaFicha> = {}): MatriculaDisciplinaFicha {
   return {
-    id: "matricula-1",
-    matricula_id: "matricula-1",
-    aluno_id: "aluno-1",
-    curso_id: "curso-1",
-    turma_id: "turma-1",
-    status: "ativa",
-    data_matricula: "2026-02-03T03:00:00.000Z",
-    aluno_nome: "Aluno Teste",
-    aluno_cpf: "000.000.000-00",
-    aluno_matricula: 1,
-    curso_nome: "Curso Teste",
-    turma_sigla: "TURMA-A",
-    turma_descricao: "Turma A",
-    turno: "Noturno",
-    periodo_curricular: 1,
-    periodo_letivo_codigo: "2026/1",
-    periodo_codigo: "2026/1",
-    semestre: null,
-    ano: 2026,
-    total_disciplinas: 1,
-    matricula_turma_disciplina_id: "mtd-1",
-    turma_disciplina_id: "td-1",
-    disciplina_id: "disc-1",
-    disciplina_nome: "Calculo I",
-    professor_nome: "Professor Teste",
-    vinculo_status: "ativa",
-    ...overrides,
+    id: VINCULO_A, matricula_id: VINCULO_A, aluno_id: ALUNO, curso_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    turma_id: "88888888-8888-8888-8888-888888888888", status: "ativa", data_matricula: "2026-02-03T03:00:00.000Z",
+    aluno_nome: "Aluno Teste", aluno_cpf: "000.000.000-00", aluno_matricula: 1, curso_nome: "Curso Teste",
+    turma_sigla: "TURMA-A", turma_descricao: "Turma A", turno: "Noturno", periodo_curricular: 1,
+    periodo_letivo_codigo: "2026/1", periodo_codigo: "2026/1", semestre: "2026/1", ano: 2026, total_disciplinas: 1,
+    matricula_turma_disciplina_id: VINCULO_A, turma_disciplina_id: OFERTA_A,
+    disciplina_id: "99999999-9999-9999-9999-999999999999", disciplina_nome: "Cálculo I", professor_nome: "Professor Teste",
+    vinculo_status: "ativa", ...overrides,
   };
 }
 
-function criarFrequencia(
-  overrides: Partial<FrequenciaAluno["consolidado"][number]> = {},
-): FrequenciaAluno {
-  return {
-    alunoId: "aluno-1",
-    consolidado: [
-      {
-        alunoId: "aluno-1",
-        alunoNome: "Aluno Teste",
-        turmaDisciplinaId: "td-1",
-        disciplinaId: "disc-1",
-        disciplinaNome: "Calculo I",
-        totalAulas: 20,
-        presencas: 16,
-        faltas: 4,
-        naoLancadas: 0,
-        percentual: 80,
-        situacao: "REGULAR",
-        ...overrides,
-      },
-    ],
-  };
+function criarFrequencia(overrides: Partial<FrequenciaAluno["consolidado"][number]> = {}): FrequenciaAluno {
+  return { alunoId: ALUNO, consolidado: [{
+    alunoId: ALUNO, alunoNome: "Aluno Teste", turmaDisciplinaId: OFERTA_A,
+    disciplinaId: "99999999-9999-9999-9999-999999999999", disciplinaNome: "Cálculo I",
+    totalAulas: 20, presencas: 16, faltas: 4, naoLancadas: 0, percentual: 80, situacao: "ALERTA", ...overrides,
+  }] };
 }
 
 describe("normalizarSemestre", () => {
-  it("converte separador de barra para hifen", () => {
-    expect(normalizarSemestre("2026/1")).toBe("2026-1");
+  it("mantém a normalização do código apresentado na ficha", () => {
+    expect(normalizarSemestre(" 2026/1 ")).toBe("2026-1");
   });
-
-  it("retorna string vazia para valores nulos ou indefinidos", () => {
+  it("mantém vazio para um semestre não informado", () => {
     expect(normalizarSemestre(null)).toBe("");
     expect(normalizarSemestre(undefined)).toBe("");
   });
 });
 
-describe("getNotaPorNome", () => {
-  it("encontra a avaliacao por nome parcial, sem diferenciar maiusculas/minusculas", () => {
-    const nota = criarNota({
-      avaliacoes: [
-        {
-          id: "a1",
-          nome: "PROVA INOVA - parte 1",
-          nota: 7,
-          peso: 1,
-          matricula_turma_disciplina_id: null,
-        },
-      ],
-    });
-
-    expect(getNotaPorNome(nota, "inova")).toBe(7);
+describe("montarNotasFicha - contrato acadêmico da ficha ativa", () => {
+  it("relaciona ofertas homônimas de períodos diferentes pelos UUIDs, independente da ordem das matrículas", () => {
+    const notaB = criarNota({ id: OFERTA_B, turmaDisciplinaId: OFERTA_B, matriculaTurmaDisciplinaId: VINCULO_B,
+      periodoLetivo: "2025/2", resultadoAcademico: criarResultado({ turmaDisciplinaId: OFERTA_B,
+        matriculaTurmaDisciplinaId: VINCULO_B, pontosRegularesObtidos: "84.00", pontosEfetivos: "84.00", percentualResultado: 70,
+        indicadorRegular: { percentual: 70, parcial: false, denominadorPontos: "120.00" } }) });
+    const matriculaB = criarMatricula({ turma_disciplina_id: OFERTA_B, matricula_turma_disciplina_id: VINCULO_B, semestre: "2025/2" });
+    const resultado = montarNotasFicha([criarNota(), notaB], undefined, [matriculaB, criarMatricula()]);
+    expect(resultado).toHaveLength(2);
+    expect(resultado).toEqual(expect.arrayContaining([
+      expect.objectContaining({ turmaDisciplinaId: OFERTA_A, matriculaTurmaDisciplinaId: VINCULO_A,
+        resultadoAcademico: expect.objectContaining({ pontosEfetivos: "72.00" }) }),
+      expect.objectContaining({ turmaDisciplinaId: OFERTA_B, matriculaTurmaDisciplinaId: VINCULO_B,
+        resultadoAcademico: expect.objectContaining({ pontosEfetivos: "84.00" }) }),
+    ]));
   });
 
-  it("retorna 0 quando nenhuma avaliacao corresponde ao nome", () => {
-    const nota = criarNota({ avaliacoes: [] });
-    expect(getNotaPorNome(nota, "final")).toBe(0);
+  it("não funde a frequência de outra oferta homônima com a nota existente", () => {
+    const matriculaB = criarMatricula({ turma_disciplina_id: OFERTA_B, matricula_turma_disciplina_id: VINCULO_B });
+    const resultado = montarNotasFicha([criarNota()], criarFrequencia({ turmaDisciplinaId: OFERTA_B }), [criarMatricula(), matriculaB]);
+    expect(resultado).toHaveLength(2);
+    expect(resultado).toEqual(expect.arrayContaining([
+      expect.objectContaining({ turmaDisciplinaId: OFERTA_A,
+        resultadoAcademico: expect.objectContaining({ frequencia: expect.objectContaining({ percentual: null }) }) }),
+      expect.objectContaining({ turmaDisciplinaId: OFERTA_B, matriculaTurmaDisciplinaId: VINCULO_B, resultadoAcademico: null }),
+    ]));
   });
-});
 
-describe("montarNotasFicha", () => {
-  it("combina nota da API com a frequencia da mesma disciplina, calculando faltas e percentual", () => {
-    const notas = [
-      criarNota({
-        disciplinaNome: "Calculo I",
-        media: 8,
-        avaliacoes: [
-          {
-            id: "a1",
-            nome: "Prova Final - 1a chamada",
-            nota: 8,
-            peso: 1,
-            matricula_turma_disciplina_id: "mtd-1",
-          },
-        ],
-      }),
-    ];
-
-    const resultado = montarNotasFicha(notas, criarFrequencia(), []);
-
+  it("gera uma única linha para a mesma oferta encontrada em nota, frequência e matrícula", () => {
+    const resultado = montarNotasFicha([criarNota()], criarFrequencia(), [criarMatricula()]);
     expect(resultado).toHaveLength(1);
-    expect(resultado[0]).toMatchObject({
-      disciplina: "Calculo I",
-      mediaFinal: 8,
-      provaFinal: 8,
-      faltas: 4,
-      percentualFaltas: 20,
-    });
+    expect(resultado[0]).toMatchObject({ turmaDisciplinaId: OFERTA_A, matriculaTurmaDisciplinaId: VINCULO_A });
   });
 
-  it("zera faltas e percentual quando a disciplina nao tem frequencia correspondente", () => {
-    const notas = [criarNota({ disciplinaNome: "Estrutura de Dados" })];
-
-    const resultado = montarNotasFicha(notas, undefined, []);
-
-    expect(resultado[0].faltas).toBe(0);
-    expect(resultado[0].percentualFaltas).toBe(0);
-  });
-
-  it("inclui disciplina que so tem frequencia (sem nota lancada) com notas zeradas", () => {
-    const frequencia = criarFrequencia({
-      disciplinaNome: "Banco de Dados",
-      totalAulas: 10,
-      faltas: 2,
-    });
-
-    const resultado = montarNotasFicha([], frequencia, []);
-
+  it("mostra a matrícula sem registros com resultado indisponível, sem inventar nota ou frequência zero", () => {
+    const resultado = montarNotasFicha([], undefined, [criarMatricula()]);
     expect(resultado).toHaveLength(1);
-    expect(resultado[0]).toMatchObject({
-      disciplina: "Banco de Dados",
-      mediaFinal: 0,
-      faltas: 2,
-      percentualFaltas: 20,
-    });
+    expect(resultado[0]).toMatchObject({ turmaDisciplinaId: OFERTA_A, matriculaTurmaDisciplinaId: VINCULO_A, avaliacoes: [], resultadoAcademico: null });
   });
 
-  it("inclui disciplina que so tem matricula (sem nota e sem frequencia) zerada", () => {
-    const matriculas = [
-      criarMatricula({
-        disciplina_nome: "Programacao Web",
-        matricula_turma_disciplina_id: "mtd-2",
-      }),
-    ];
+  it("preserva zero textual como lançado e null como ausência em avaliações de nomes livres", () => {
+    const nota = criarNota({ avaliacoes: [
+      { id: AVALIACAO, nome: "Projeto livre", nota: "0.00", peso: "42.00", matricula_turma_disciplina_id: VINCULO_A },
+      { id: "cccccccc-cccc-cccc-cccc-cccccccccccc", nome: "Projeto livre", nota: null, peso: "18.00", matricula_turma_disciplina_id: VINCULO_A },
+    ] });
+    const resultado = montarNotasFicha([nota], undefined, [criarMatricula()]);
+    expect(resultado[0]).toMatchObject({ avaliacoes: [
+      { id: AVALIACAO, nome: "Projeto livre", nota: "0.00", peso: "42.00" },
+      { id: "cccccccc-cccc-cccc-cccc-cccccccccccc", nome: "Projeto livre", nota: null, peso: "18.00" },
+    ] });
+  });
 
-    const resultado = montarNotasFicha([], undefined, matriculas);
+  it("transporta nota suficiente com frequência pendente sem promovê-la a aprovação conjunta pelo alias legado", () => {
+    const resultado = montarNotasFicha([criarNota({ media: 100, situacao: "APROVADO" })], undefined, []);
+    expect(resultado[0]).toMatchObject({ resultadoAcademico: {
+      resultadoPorNota: "SUFICIENTE", aprovacaoDisciplina: "PENDENTE",
+      frequencia: { percentual: null, requisito: "PENDENTE" }, motivos: ["FREQUENCIA_PENDENTE"],
+    } });
+  });
 
+  it("mantém indicador parcial de 100% sem pontos efetivos, aprovação ou recuperação antecipada", () => {
+    const parcial = criarResultado({ planoCompleto: false, etapaRegularCompleta: false, avaliacoesRegulares: 2, avaliacoesLancadas: 1,
+      avaliacoesSemNota: [AVALIACAO], pontosRegularesObtidos: "12.00", pontosMaximosLancados: "12.00",
+      indicadorRegular: { percentual: 100, parcial: true, denominadorPontos: "12.00" },
+      pontosEfetivos: null, percentualResultado: null, resultadoPorNota: "EM_ANDAMENTO", elegivelRecuperacaoPorNota: false,
+      motivos: ["PLANO_INCOMPLETO", "NOTAS_PENDENTES", "FREQUENCIA_PENDENTE"] });
+    const resultado = montarNotasFicha([criarNota({ resultadoAcademico: parcial })], undefined, []);
+    expect(resultado[0]).toMatchObject({ resultadoAcademico: parcial });
+  });
+
+  it("preserva a melhor recuperação após retificação regular sem somar ou recalcular o resultado do servidor", () => {
+    const recuperada = criarResultado({ pontosRegularesObtidos: "70.00", pontosRecuperacao: "80.00", pontosEfetivos: "80.00",
+      indicadorRegular: { percentual: 58.33, parcial: false, denominadorPontos: "120.00" }, percentualResultado: 66.67,
+      elegivelRecuperacaoPorNota: true, frequencia: { presencas: 19, faltas: 1, percentual: 95, situacao: "REGULAR", requisito: "SUFICIENTE" },
+      aprovacaoDisciplina: "APROVADA", motivos: [] });
+    const resultado = montarNotasFicha([criarNota({ media: 58.33, resultadoAcademico: recuperada })], undefined, []);
+    expect(resultado[0]).toMatchObject({ resultadoAcademico: recuperada });
+  });
+
+  it("preserva frequência insuficiente do resultado canônico mesmo que o consolidado legado indique outra situação", () => {
+    const reprovacao = criarResultado({ frequencia: { presencas: 10, faltas: 10, percentual: 50,
+      situacao: "RISCO_REPROVACAO", requisito: "INSUFICIENTE" }, aprovacaoDisciplina: "NAO_APROVADA", motivos: ["FREQUENCIA_INSUFICIENTE"] });
+    const resultado = montarNotasFicha([criarNota({ resultadoAcademico: reprovacao })], criarFrequencia(), []);
+    expect(resultado[0]).toMatchObject({ resultadoAcademico: reprovacao });
+  });
+
+  it("mantém centésimos além do inteiro seguro e corte de três casas sem coerção numérica", () => {
+    const nota = criarNota({ resultadoAcademico: criarResultado({ totalPontos: "9007199254740993.02", cortePontos: "5404319552844595.812",
+      avaliacoesRegulares: 1, avaliacoesLancadas: 1, pontosRegularesObtidos: "9007199254740993.01", pontosMaximosLancados: "9007199254740993.02",
+      pontosEfetivos: "9007199254740993.01", percentualResultado: 100, valorMaximoRecuperacao: "9007199254740993.02",
+      indicadorRegular: { percentual: 100, parcial: false, denominadorPontos: "9007199254740993.02" } }), avaliacoes: [
+      { id: AVALIACAO, nome: "Entrega exata", nota: "9007199254740993.01", peso: "9007199254740993.02", matricula_turma_disciplina_id: VINCULO_A },
+    ] });
+    const resultado = montarNotasFicha([nota], undefined, []);
+    expect(resultado[0]).toMatchObject({ resultadoAcademico: { cortePontos: "5404319552844595.812", pontosEfetivos: "9007199254740993.01" },
+      avaliacoes: [{ nota: "9007199254740993.01", peso: "9007199254740993.02" }] });
+    expect(nota.avaliacoes[0].nota).toBe("9007199254740993.01");
+  });
+
+  it("filtra o período apresentado sem usar nome homônimo para trocar o UUID da matrícula", () => {
+    const notaB = criarNota({ id: OFERTA_B, turmaDisciplinaId: OFERTA_B, matriculaTurmaDisciplinaId: VINCULO_B, periodoLetivo: "2025/2",
+      resultadoAcademico: criarResultado({ turmaDisciplinaId: OFERTA_B, matriculaTurmaDisciplinaId: VINCULO_B }) });
+    const matriculaB = criarMatricula({ turma_disciplina_id: OFERTA_B, matricula_turma_disciplina_id: VINCULO_B, semestre: "2025/2" });
+    const resultado = montarNotasFicha([criarNota(), notaB], undefined, [matriculaB, criarMatricula()], "2026-1");
     expect(resultado).toHaveLength(1);
-    expect(resultado[0]).toMatchObject({
-      disciplina: "Programacao Web",
-      mediaFinal: 0,
-      faltas: 0,
-      matriculaTurmaDisciplinaId: "mtd-2",
-    });
-  });
-
-  it("nao duplica a disciplina quando ela aparece em notas, frequencia e matricula ao mesmo tempo", () => {
-    const notas = [criarNota({ disciplinaNome: "Calculo I" })];
-    const frequencia = criarFrequencia({ disciplinaNome: "Calculo I" });
-    const matriculas = [criarMatricula({ disciplina_nome: "Calculo I" })];
-
-    const resultado = montarNotasFicha(notas, frequencia, matriculas);
-
-    expect(resultado).toHaveLength(1);
-  });
-
-  it("associa matriculaTurmaDisciplinaId quando a nota corresponde a uma matricula pelo nome da disciplina", () => {
-    const notas = [criarNota({ disciplinaNome: "Calculo I" })];
-    const matriculas = [
-      criarMatricula({
-        disciplina_nome: "Calculo I",
-        matricula_turma_disciplina_id: "mtd-9",
-      }),
-    ];
-
-    const resultado = montarNotasFicha(notas, undefined, matriculas);
-
-    expect(resultado[0].matriculaTurmaDisciplinaId).toBe("mtd-9");
-  });
-
-  it("filtra notas de outro semestre, mas mantem as que nao tem semestre definido", () => {
-    const notas = [
-      criarNota({ disciplinaNome: "Calculo I", periodoLetivo: "2026/1" }),
-      criarNota({ disciplinaNome: "Fisica I", periodoLetivo: "2025/2" }),
-    ];
-    const matriculas = [
-      criarMatricula({ disciplina_nome: "Programacao Web" }),
-    ];
-
-    const resultado = montarNotasFicha(notas, undefined, matriculas, "2026-1");
-
-    const disciplinas = resultado.map((nota) => nota.disciplina);
-    expect(disciplinas).toContain("Calculo I");
-    expect(disciplinas).toContain("Programacao Web");
-    expect(disciplinas).not.toContain("Fisica I");
+    expect(resultado[0]).toMatchObject({ turmaDisciplinaId: OFERTA_A, matriculaTurmaDisciplinaId: VINCULO_A });
   });
 });

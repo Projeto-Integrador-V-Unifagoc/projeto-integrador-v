@@ -1,4 +1,4 @@
-import type { AbaFicha, AlunoFicha, NotaAluno } from "./types";
+import type { AbaFicha, AlunoFicha } from "./types";
 
 export const alunoMock: AlunoFicha = {
   nome: "Joao Pedro Vidal dos Santos",
@@ -17,7 +17,7 @@ export const alunoMock: AlunoFicha = {
   semestre: "2026-1",
 };
 
-export const notasMock: NotaAluno[] = [
+export const notasMock = [
   {
     disciplina: "Aspectos Sociologicos e Antropologicos",
     mediaFinal: 13,

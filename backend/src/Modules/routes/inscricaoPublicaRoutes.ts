@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
-import { validarRecaptcha, limitarSolicitacoes } from '../../middlewares/recaptcha';
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -105,7 +104,7 @@ inscricaoPublicaRouter.get("/publico/inscricao/email", async (req, res) => {
     }
 });
 
-inscricaoPublicaRouter.post("/publico/inscricao", limitarSolicitacoes(10), validarRecaptcha, async (req, res) => {
+inscricaoPublicaRouter.post("/publico/inscricao", async (req, res) => {
     try {
         const dados = req.body ?? {};
 

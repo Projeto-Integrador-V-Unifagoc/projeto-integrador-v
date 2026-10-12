@@ -1,3 +1,4 @@
+import { ValidacaoEstrutura } from "../gateways/EscritaEstruturaAcademica";
 import { v4 as uuidv4 } from "uuid";
 import { CursoRepository } from "../../modulo-facul-dp-curso/repository/CursoRepository";
 import { TurmaCommand } from "../models/Turma";
@@ -13,23 +14,23 @@ export class TurmaService {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(data.cursoId);
 
         if (!curso) {
-            throw new Error("Curso nao encontrado");
+            throw new ValidacaoEstrutura("Curso nao encontrado");
         }
 
         const periodoLetivo = await this.periodoLetivoRepository.buscarPeriodoLetivoRegistroPorId(data.periodoLetivoId);
 
         if (!periodoLetivo) {
-            throw new Error("Periodo letivo nao encontrado");
+            throw new ValidacaoEstrutura("Periodo letivo nao encontrado");
         }
 
         if (Number(data.capacidadeAlunos) <= 0) {
-            throw new Error("Capacidade de alunos deve ser maior que zero");
+            throw new ValidacaoEstrutura("Capacidade de alunos deve ser maior que zero");
         }
 
         const periodoCurricular = Number(data.periodoCurricular);
 
         if (!Number.isInteger(periodoCurricular) || periodoCurricular < 1 || periodoCurricular > 12) {
-            throw new Error("Periodo curricular deve estar entre 1 e 12");
+            throw new ValidacaoEstrutura("Periodo curricular deve estar entre 1 e 12");
         }
     }
 
@@ -43,7 +44,7 @@ export class TurmaService {
         );
 
         if (turmaExistente) {
-            throw new Error("Ja existe turma com esta sigla para o curso e periodo letivo informados");
+            throw new ValidacaoEstrutura("Ja existe turma com esta sigla para o curso e periodo letivo informados");
         }
 
         const turma: TurmaCommand = {
@@ -101,19 +102,19 @@ export class TurmaService {
             );
 
             if (turmaExistente) {
-                throw new Error("Ja existe turma com esta sigla para o curso e periodo letivo informados");
+                throw new ValidacaoEstrutura("Ja existe turma com esta sigla para o curso e periodo letivo informados");
             }
         }
 
         return await this.turmaRepository.atualizarTurma(id, {
-            periodo_letivo_id: payload.periodoLetivoId,
-            curso_id: payload.cursoId,
-            periodo_curricular: Number(payload.periodoCurricular),
-            descricao: payload.descricao,
-            sigla: payload.sigla,
-            capacidade_alunos: Number(payload.capacidadeAlunos),
-            turno: payload.turno,
-            status: payload.status
+            periodo_letivo_id: data.periodoLetivoId != null ? payload.periodoLetivoId : undefined,
+            curso_id: data.cursoId != null ? payload.cursoId : undefined,
+            periodo_curricular: data.periodoCurricular != null ? Number(payload.periodoCurricular) : undefined,
+            descricao: data.descricao != null ? payload.descricao : undefined,
+            sigla: data.sigla != null ? payload.sigla : undefined,
+            capacidade_alunos: data.capacidadeAlunos != null ? Number(payload.capacidadeAlunos) : undefined,
+            turno: data.turno != null ? payload.turno : undefined,
+            status: data.status != null ? payload.status : undefined
         });
     }
 

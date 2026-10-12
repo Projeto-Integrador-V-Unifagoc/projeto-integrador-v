@@ -1,3 +1,4 @@
+import { responderErroEstrutura } from "./erroEstrutura";
 import { TurmaDisciplinaService } from "../service/TurmaDisciplinaService";
 
 export class TurmaDisciplinaController {
@@ -8,7 +9,7 @@ export class TurmaDisciplinaController {
             const turmaDisciplina = await this.turmaDisciplinaService.criarTurmaDisciplina(req.params.id, req.body);
             res.status(201).json(turmaDisciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 
@@ -17,7 +18,7 @@ export class TurmaDisciplinaController {
             const turmaDisciplinas = await this.turmaDisciplinaService.listarTurmaDisciplinasPorTurmaId(req.params.id);
             res.status(200).json(turmaDisciplinas);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 
@@ -35,7 +36,7 @@ export class TurmaDisciplinaController {
 
             res.status(200).json(turmaDisciplina);
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 
@@ -52,7 +53,7 @@ export class TurmaDisciplinaController {
 
             res.status(204).send();
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            responderErroEstrutura(res, error);
         }
     }
 }

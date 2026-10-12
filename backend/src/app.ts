@@ -9,6 +9,7 @@ import { DisciplinaController } from "./Modules/modulo-disciplinas/controller/Di
 import { professorRouter } from "./Modules/routes/professorRoutes";
 import { homeAlunoRouter } from "./Modules/routes/homeAlunoRoutes";
 import { avaliacaoRouter } from "./Modules/routes/avaliacaoRoutes";
+import { regraPontuacaoRouter } from "./Modules/routes/regraPontuacaoRoutes";
 import { frequenciaRouter } from "./Modules/routes/frequenciaRoutes";
 import { notasRouter } from "./Modules/routes/notasRoutes";
 import { matriculaRouter } from "./Modules/routes/matriculaRoutes";
@@ -41,6 +42,7 @@ export const app = express();
 
 app.use(cors({ origin: "*" }));
 app.use(express.json());
+app.use("/regras-pontuacao", regraPontuacaoRouter);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });

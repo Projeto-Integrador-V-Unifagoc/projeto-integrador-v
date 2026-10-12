@@ -1,6 +1,8 @@
 import { Knex } from "knex"
 import axios from "axios"
 import { createRequire } from "node:module"
+import { configurarAmbienteTeste, estaEmModoTeste } from "../src/config/ambienteTeste"
+import { validarDestinoPostgresTeste } from "../src/test-helpers/disputaAcademica"
 
 const SCHEMA = "piv"
 const TAMANHO_LOTE = 1000
@@ -52,11 +54,17 @@ async function buscarNoIbge(): Promise<Cidade[]> {
 
 export async function seed(knex: Knex): Promise<void> {
     let cidades: Cidade[] = []
-
-    try {
-        cidades = await buscarNoIbge()
-    } catch (error) {
-        cidades = []
+    if (estaEmModoTeste()) {
+        if (process.env.ACADEMICO_MODO_TESTE !== "true") throw new Error("O seed sintético exige ACADEMICO_MODO_TESTE=true.")
+        configurarAmbienteTeste()
+        validarDestinoPostgresTeste(knex)
+        cidades = CIDADES_LOCAIS
+    } else {
+        try {
+            cidades = await buscarNoIbge()
+        } catch (error) {
+            cidades = []
+        }
     }
 
     if (cidades.length < CIDADES_LOCAIS.length) {

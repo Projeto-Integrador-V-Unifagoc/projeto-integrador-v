@@ -1,3 +1,5 @@
+import { formatarPontos } from "../../utils/pontos";
+
 export type Aviso = { tipo: "success" | "error" | "info" | "warning"; texto: string };
 
 // Perfil do usuário logado em minúsculas; usado para diferenciar secretaria, professor e aluno.
@@ -18,9 +20,7 @@ export const mensagemErro = (erro: unknown) => {
 export const formatarMedia = (valor: number | null | undefined) =>
   valor == null ? "—" : `${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(valor)}%`;
 
-// Valor numérico de uma nota (pontos) em pt-BR com duas casas decimais.
-export const formatarNotaValor = (valor: number) =>
-  new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valor);
+export const formatarNotaValor = (valor: string) => formatarPontos(valor);
 
 // Texto da nota para leitura: diferencia explicitamente "Não lançada" de zero.
-export const formatarNota = (valor: number | null | undefined) => (valor == null ? "Não lançada" : formatarNotaValor(valor));
+export const formatarNota = (valor: string | null | undefined) => (valor == null ? "Não lançada" : formatarNotaValor(valor));

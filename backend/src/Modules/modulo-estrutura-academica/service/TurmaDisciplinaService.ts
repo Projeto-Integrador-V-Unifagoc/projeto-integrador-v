@@ -1,3 +1,4 @@
+import { ValidacaoEstrutura } from "../gateways/EscritaEstruturaAcademica";
 import { v4 as uuidv4 } from "uuid";
 import { TurmaDisciplinaCommand } from "../models/TurmaDisciplina";
 import { CursoDisciplinaRepository } from "../repository/CursoDisciplinaRepository";
@@ -15,23 +16,23 @@ export class TurmaDisciplinaService {
         const turma = await this.turmaRepository.buscarTurmaPorId(turmaId);
 
         if (!turma) {
-            throw new Error("Turma nao encontrada");
+            throw new ValidacaoEstrutura("Turma nao encontrada");
         }
 
         const cursoDisciplina = await this.cursoDisciplinaRepository.buscarCursoDisciplinaPorId(data.cursoDisciplinaId);
 
         if (!cursoDisciplina) {
-            throw new Error("Associacao curso disciplina nao encontrada");
+            throw new ValidacaoEstrutura("Associacao curso disciplina nao encontrada");
         }
 
         if (cursoDisciplina.curso.id !== turma.curso.id) {
-            throw new Error("A disciplina informada nao pertence a matriz curricular do curso da turma");
+            throw new ValidacaoEstrutura("A disciplina informada nao pertence a matriz curricular do curso da turma");
         }
 
         const professor = await this.professorRepository.buscarProfessorAtivoPorId(data.professorId);
 
         if (!professor) {
-            throw new Error("Professor nao encontrado");
+            throw new ValidacaoEstrutura("Professor nao encontrado");
         }
 
         const turmaDisciplinaExistente = await this.turmaDisciplinaRepository.buscarTurmaDisciplinaPorTurmaECursoDisciplina(
@@ -40,7 +41,7 @@ export class TurmaDisciplinaService {
         );
 
         if (turmaDisciplinaExistente) {
-            throw new Error("Disciplina ja adicionada a esta turma");
+            throw new ValidacaoEstrutura("Disciplina ja adicionada a esta turma");
         }
 
         const turmaDisciplina: TurmaDisciplinaCommand = {
@@ -58,7 +59,7 @@ export class TurmaDisciplinaService {
         const turma = await this.turmaRepository.buscarTurmaRegistroPorId(turmaId);
 
         if (!turma) {
-            throw new Error("Turma nao encontrada");
+            throw new ValidacaoEstrutura("Turma nao encontrada");
         }
 
         return await this.turmaDisciplinaRepository.listarTurmaDisciplinasPorTurmaId(turmaId);
@@ -68,7 +69,7 @@ export class TurmaDisciplinaService {
         const turma = await this.turmaRepository.buscarTurmaRegistroPorId(turmaId);
 
         if (!turma) {
-            throw new Error("Turma nao encontrada");
+            throw new ValidacaoEstrutura("Turma nao encontrada");
         }
 
         const turmaDisciplinaAtual = await this.turmaDisciplinaRepository.buscarTurmaDisciplinaPorId(turmaDisciplinaId);
@@ -81,7 +82,7 @@ export class TurmaDisciplinaService {
             const professor = await this.professorRepository.buscarProfessorAtivoPorId(data.professorId);
 
             if (!professor) {
-                throw new Error("Professor nao encontrado");
+                throw new ValidacaoEstrutura("Professor nao encontrado");
             }
         }
 

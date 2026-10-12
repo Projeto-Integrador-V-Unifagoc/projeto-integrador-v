@@ -1,137 +1,59 @@
 import type { NotaAluno } from "../../components/FichaAluno";
-import type {
-  FrequenciaAluno as FrequenciaAlunoResponse,
-  MatriculaDisciplinaFicha,
-  NotaFicha,
-} from "../../services/ficha-api";
+import type { FrequenciaAluno, MatriculaDisciplinaFicha, NotaFicha } from "../../services/ficha-api";
 
-export type NotaComSemestre = NotaAluno & {
-  semestre?: string;
-};
-
-export function normalizarSemestre(semestre?: string | number | null) {
-  if (semestre === undefined || semestre === null) return "";
-  return String(semestre).trim().replace("/", "-");
+export type NotaComSemestre = NotaAluno & { semestre?: string };
+export function normalizarSemestre(value?: string | null) {
+  return value == null ? "" : String(value).trim().replace("/", "-");
 }
 
-export function getNotaPorNome(nota: NotaFicha, nome: string) {
-  return (
-    nota.avaliacoes.find((avaliacao) =>
-      avaliacao.nome.toLowerCase().includes(nome.toLowerCase()),
-    )?.nota ?? 0
-  );
-}
-
+/** Organiza a apresentação por identidade; o resultado acadêmico permanece o recebido. */
 export function montarNotasFicha(
-  notasApiResponse: NotaFicha[],
-  frequencia?: FrequenciaAlunoResponse,
-  matriculas: MatriculaDisciplinaFicha[] = [],
-  semestre?: string,
+  notas: NotaFicha[], frequencia?: FrequenciaAluno,
+  matriculas: MatriculaDisciplinaFicha[] = [], semestre?: string,
 ): NotaAluno[] {
-  const semestreNormalizado = normalizarSemestre(semestre);
-  const frequenciaPorDisciplina = new Map(
-    (frequencia?.consolidado ?? []).map((item) => [item.disciplinaNome, item]),
-  );
+  const linhas = new Map<string, NotaComSemestre>();
+  const chave = (oferta: string, vinculo: string | null) => `${oferta}:${vinculo ?? ""}`;
+  const semestreMatricula = (m?: MatriculaDisciplinaFicha) => normalizarSemestre(m?.semestre || m?.periodo_letivo_codigo || m?.periodo_codigo);
 
-  const notasDaApi: NotaComSemestre[] = notasApiResponse.map((nota) => {
-    const disciplinaNome = nota.disciplinaNome ?? nota.disciplinaId ?? "Desconhecida";
-    const frequenciaDisciplina = frequenciaPorDisciplina.get(
-      disciplinaNome as string,
-    );
-    // try to associate the matricula_turma_disciplina_id for this discipline
-    const matriculaMatch = matriculas.find((m) => {
-      if (!m) return false;
-      const nomeMat = String(m.disciplina_nome ?? "").toLowerCase();
-      const nomeNota = String(disciplinaNome ?? "").toLowerCase();
-      if (nomeMat && nomeNota && nomeMat === nomeNota) return true;
-      return false;
+  for (const nota of notas) {
+    const matricula = matriculas.find((m) => m.turma_disciplina_id === nota.turmaDisciplinaId
+      && m.matricula_turma_disciplina_id === nota.matriculaTurmaDisciplinaId);
+    linhas.set(chave(nota.turmaDisciplinaId, nota.matriculaTurmaDisciplinaId), {
+      disciplina: nota.disciplinaNome || nota.disciplinaId || "Disciplina não informada",
+      turmaNome: nota.turmaNome, professorNome: nota.professorNome,
+      turmaDisciplinaId: nota.turmaDisciplinaId,
+      matriculaTurmaDisciplinaId: nota.matriculaTurmaDisciplinaId,
+      avaliacoes: nota.avaliacoes.map((a) => ({ ...a })),
+      resultadoAcademico: nota.resultadoAcademico ?? null,
+      semestre: normalizarSemestre(nota.periodoLetivo) || semestreMatricula(matricula),
     });
-    return {
-      disciplina: disciplinaNome,
-      mediaFinal: Number(nota.media ?? 0),
-      avaliacao: nota.avaliacoes.reduce(
-        (total, avaliacao) => total + Number(avaliacao.nota ?? 0),
-        0,
-      ),
-      avaliacoes:
-        nota.avaliacoes?.map((a) => ({
-          id: a.id,
-          nome: a.nome,
-          nota: a.nota,
-          peso: a.peso,
-          matricula_turma_disciplina_id:
-            a.matricula_turma_disciplina_id ?? null,
-        })) ?? [],
-      matriculaTurmaDisciplinaId: matriculaMatch?.matricula_turma_disciplina_id,
-      provaFinal: getNotaPorNome(nota, "final"),
-      provaInova: getNotaPorNome(nota, "inova"),
-      provaSegundaChamada: getNotaPorNome(nota, "segunda"),
-      conhecimentosGerais: getNotaPorNome(nota, "conhecimento"),
-      faltas: Number(frequenciaDisciplina?.faltas ?? 0),
-      percentualFaltas:
-        frequenciaDisciplina && frequenciaDisciplina.totalAulas > 0
-          ? Number(
-              (
-                (frequenciaDisciplina.faltas /
-                  frequenciaDisciplina.totalAulas) *
-                100
-              ).toFixed(2),
-            )
-          : 0,
-      semestre: normalizarSemestre(nota.periodoLetivo),
-    };
-  });
+  }
 
-  const disciplinasComNota = new Set(notasDaApi.map((nota) => nota.disciplina));
-  const notasPorFrequencia: NotaComSemestre[] = (frequencia?.consolidado ?? [])
-    .filter((item) => !disciplinasComNota.has(item.disciplinaNome))
-    .map((item) => ({
-      disciplina: item.disciplinaNome,
-      mediaFinal: 0,
-      avaliacao: 0,
-      avaliacoes: [],
-      provaFinal: 0,
-      provaInova: 0,
-      provaSegundaChamada: 0,
-      conhecimentosGerais: 0,
-      faltas: Number(item.faltas ?? 0),
-      percentualFaltas:
-        item.totalAulas > 0
-          ? Number(((item.faltas / item.totalAulas) * 100).toFixed(2))
-          : 0,
-    }));
+  for (const matricula of matriculas) {
+    const oferta = matricula.turma_disciplina_id;
+    if (!oferta) continue;
+    const vinculo = matricula.matricula_turma_disciplina_id;
+    const id = chave(oferta, vinculo);
+    if (linhas.has(id)) continue;
+    linhas.set(id, {
+      disciplina: matricula.disciplina_nome || matricula.disciplina_id || "Disciplina não informada",
+      turmaNome: matricula.turma_sigla, professorNome: matricula.professor_nome,
+      turmaDisciplinaId: oferta, matriculaTurmaDisciplinaId: vinculo,
+      avaliacoes: [], resultadoAcademico: null, semestre: semestreMatricula(matricula),
+    });
+  }
 
-  const disciplinasConhecidas = new Set([
-    ...notasDaApi.map((nota) => nota.disciplina),
-    ...notasPorFrequencia.map((nota) => nota.disciplina),
-  ]);
-  const notasPorMatricula: NotaComSemestre[] = matriculas
-    .filter(
-      (matricula) =>
-        !!matricula.disciplina_nome &&
-        !disciplinasConhecidas.has(matricula.disciplina_nome),
-    )
-    .map((matricula) => ({
-      disciplina: matricula.disciplina_nome as string,
-      mediaFinal: 0,
-      avaliacao: 0,
-      avaliacoes: [],
-      provaFinal: 0,
-      provaInova: 0,
-      provaSegundaChamada: 0,
-      conhecimentosGerais: 0,
-      faltas: 0,
-      percentualFaltas: 0,
-      semestre: normalizarSemestre(matricula.semestre),
-      matriculaTurmaDisciplinaId: matricula.matricula_turma_disciplina_id ?? null,
-    }));
-
-  return [...notasDaApi, ...notasPorFrequencia, ...notasPorMatricula]
-    .filter(
-      (nota) =>
-        !semestreNormalizado ||
-        !nota.semestre ||
-        nota.semestre === semestreNormalizado,
-    )
-    .map(({ semestre: _semestre, ...nota }) => nota);
+  for (const item of frequencia?.consolidado ?? []) {
+    if ([...linhas.values()].some((linha) => linha.turmaDisciplinaId === item.turmaDisciplinaId)) continue;
+    linhas.set(chave(item.turmaDisciplinaId, null), {
+      disciplina: item.disciplinaNome, turmaDisciplinaId: item.turmaDisciplinaId,
+      matriculaTurmaDisciplinaId: null, avaliacoes: [], resultadoAcademico: null,
+    });
+  }
+  const filtro = normalizarSemestre(semestre);
+  return [...linhas.values()].filter((linha) => !filtro || !linha.semestre || linha.semestre === filtro)
+    .map((linha) => ({ disciplina: linha.disciplina, turmaNome: linha.turmaNome, professorNome: linha.professorNome,
+      periodoLetivo: linha.semestre || null, turmaDisciplinaId: linha.turmaDisciplinaId,
+      matriculaTurmaDisciplinaId: linha.matriculaTurmaDisciplinaId,
+      avaliacoes: linha.avaliacoes, resultadoAcademico: linha.resultadoAcademico }));
 }

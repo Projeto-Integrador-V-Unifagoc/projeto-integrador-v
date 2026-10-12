@@ -1,87 +1,50 @@
-import { test, expect } from "../fixtures/test.js";
-import { criarPlano100, lancarNotaLote, obterLancamento } from "../helpers/dominio.js";
+import { test, expect, consultarResultadoJornada } from "../fixtures/test.js";
+import { fecharDb } from "../helpers/db.js";
+import { criarPlanoRegular, lancarNotaLote, lancarPontosRegulares, registrarFrequenciaCompleta } from "../helpers/dominio.js";
 
-/**
- * E2E-J03 — Reprovação por nota (spec §10, §9.2). Plano completo, média parcial
- * < 60 e recuperação também < 60 ⇒ REPROVADO. Inclui o teste de coerência da
- * ficha (defeito §17.1): a regra legada diverge da regra §9.
- */
-test.describe("E2E-J03 Reprovação por nota @journey", () => {
-  test("média parcial e recuperação abaixo de 60 resultam em REPROVADO nas leituras autoritativas", async ({
-    novoCenario,
-  }) => {
-    const cenario = await novoCenario();
-    const { aluno } = await cenario.matricularAluno();
-    const plano = await criarPlano100(cenario.apiProfessor, cenario.turmaDisciplinaId);
+test.afterAll(fecharDb);
 
-    // Plano completo com média parcial ~42 (< 60).
-    const lotes: Array<[string, number]> = [
-      [plano.provas[0], 10],
-      [plano.provas[1], 10],
-      [plano.provas[2], 10],
-      [plano.tpi, 2],
-      [plano.trabalho, 10],
-    ];
-    for (const [avaliacaoId, valor] of lotes) {
-      const r = await lancarNotaLote(cenario.apiProfessor, avaliacaoId, [{ alunoId: aluno.id, valor }]);
-      expect(r.status, JSON.stringify(r.body)).toBe(200);
-    }
-
-    const recuperacao = await cenario.apiProfessor.get(
-      `/notas/turmas/${cenario.turmaDisciplinaId}/recuperacao`,
-    );
-    const recuperacaoId = recuperacao.body.recuperacaoAvaliacaoId;
-    expect(recuperacaoId).toBeTruthy();
-    await obterLancamento(cenario.apiProfessor, recuperacaoId);
-
-    // Recuperação também abaixo de 60.
-    const loteRec = await lancarNotaLote(cenario.apiProfessor, recuperacaoId, [
-      { alunoId: aluno.id, valor: 40 },
-    ]);
-    expect(loteRec.status, JSON.stringify(loteRec.body)).toBe(200);
-
-    const rendimento = await cenario.apiProfessor.get(
-      `/notas/turmas/${cenario.turmaDisciplinaId}/rendimento`,
-    );
-    const linha = rendimento.body.alunos.find((a: any) => a.alunoId === aluno.id);
-    expect(linha.situacao).toBe("REPROVADO");
-    expect(linha.mediaFinal).toBeLessThan(60);
-
-    // Boletim do aluno coerente com o rendimento.
-    const boletim = await cenario.apiSecretaria.get(`/notas/alunos/${aluno.id}`);
-    expect(boletim.body.disciplinas[0].situacao).toBe("REPROVADO");
-  });
-
-  test("ficha reflete a reprovação por nota coerente com a regra §9 (§17.1 corrigido)", async ({
-    novoCenario,
-  }) => {
-    const cenario = await novoCenario();
-    const { aluno } = await cenario.matricularAluno();
-    const plano = await criarPlano100(cenario.apiProfessor, cenario.turmaDisciplinaId);
-    const lotes: Array<[string, number]> = [
-      [plano.provas[0], 10],
-      [plano.provas[1], 10],
-      [plano.provas[2], 10],
-      [plano.tpi, 2],
-      [plano.trabalho, 10],
-    ];
-    for (const [avaliacaoId, valor] of lotes) {
-      await lancarNotaLote(cenario.apiProfessor, avaliacaoId, [{ alunoId: aluno.id, valor }]);
-    }
-    // Recuperação também abaixo de 60 ⇒ REPROVADO (§9).
-    const recuperacao = await cenario.apiProfessor.get(
-      `/notas/turmas/${cenario.turmaDisciplinaId}/recuperacao`,
-    );
-    const recuperacaoId = recuperacao.body.recuperacaoAvaliacaoId;
-    await obterLancamento(cenario.apiProfessor, recuperacaoId);
-    await lancarNotaLote(cenario.apiProfessor, recuperacaoId, [{ alunoId: aluno.id, valor: 40 }]);
-
-    const ficha = await cenario.apiSecretaria.get(`/alunos/${aluno.id}/ficha`);
+test.describe("E2E-J03 Insuficiência por nota e corte exato @journey", () => {
+  test("regular60/120 e REC48 conservam60 e não aprovam, inclusive na ficha", async ({ novoCenario }) => {
+    const c = await novoCenario({ regraPontuacao: "120" }); const aluno = await c.matricularAluno();
+    const plano = await criarPlanoRegular(c.apiProfessor, c.turmaDisciplinaId);
+    await lancarPontosRegulares(c.apiProfessor, plano, aluno.aluno.id, "60.00");
+    await registrarFrequenciaCompleta(c.apiProfessor, c.turmaDisciplinaId, [aluno.aluno.id], 3, 1);
+    const recuperacao = await c.apiProfessor.get("/notas/turmas/" + c.turmaDisciplinaId + "/recuperacao");
+    expect(recuperacao.status).toBe(200); expect(recuperacao.body.valorMaximoRecuperacao).toBe("120.00");
+    expect((await lancarNotaLote(c.apiProfessor, recuperacao.body.recuperacaoAvaliacaoId,
+      [{ alunoId: aluno.aluno.id, valor: "48.00" }])).status).toBe(200);
+    const resultado = await consultarResultadoJornada(c, aluno);
+    expect(resultado).toMatchObject({ pontosRegularesObtidos: "60.00", pontosRecuperacao: "48.00",
+      pontosEfetivos: "60.00", percentualResultado: 50, resultadoPorNota: "INSUFICIENTE", aprovacaoDisciplina: "NAO_APROVADA",
+      frequencia: { presencas: 3, faltas: 1, percentual: 75, situacao: "ALERTA", requisito: "SUFICIENTE" },
+    });
+    const ficha = await c.apiSecretaria.get("/alunos/" + aluno.aluno.id + "/ficha");
     expect(ficha.status).toBe(200);
-    const disc = (ficha.body.notas ?? []).find((n: any) => n.disciplinaId === cenario.disciplinaId);
-    expect(disc, "ficha não trouxe a disciplina avaliada").toBeTruthy();
-    // Regra §9 (escala 0–100, aprovação >= 60): média 42 e recuperação 40 ⇒ reprovado.
-    expect(disc.situacao).toBe("reprovado");
-    expect(Number(disc.media)).toBeLessThan(60);
+    expect(ficha.body.notas.find((n: any) => n.resultadoAcademico?.turmaDisciplinaId === c.turmaDisciplinaId)?.resultadoAcademico).toEqual(resultado);
   });
+
+  for (const caso of [
+    { modelo: "300", total: "300.00", abaixo: "179.99", corte: "180.00", percentualAbaixo: 60, indice: 2, corrigir: "60.00", suficiente: "180.00" },
+    { modelo: "100.01", total: "100.01", abaixo: "60.00", corte: "60.006", percentualAbaixo: 59.99, indice: 3, corrigir: "0.01", suficiente: "60.01" },
+  ] as const) {
+    test(caso.abaixo + "/" + caso.total + " fica abaixo do corte" + caso.corte + "; retificação exata o atinge", async ({ novoCenario }) => {
+      const c = await novoCenario({ regraPontuacao: caso.modelo }); const aluno = await c.matricularAluno();
+      const plano = await criarPlanoRegular(c.apiProfessor, c.turmaDisciplinaId);
+      await lancarPontosRegulares(c.apiProfessor, plano, aluno.aluno.id, caso.abaixo);
+      await registrarFrequenciaCompleta(c.apiProfessor, c.turmaDisciplinaId, [aluno.aluno.id], 9, 1);
+      const antes = await consultarResultadoJornada(c, aluno);
+      expect(antes).toMatchObject({ totalPontos: caso.total, cortePontos: caso.corte, pontosEfetivos: caso.abaixo,
+        percentualResultado: caso.percentualAbaixo, resultadoPorNota: "EM_RECUPERACAO", elegivelRecuperacaoPorNota: true,
+        aprovacaoDisciplina: "PENDENTE", etapaRegularCompleta: true,
+      });
+      expect((await lancarNotaLote(c.apiProfessor, plano.avaliacoes[caso.indice].id,
+        [{ alunoId: aluno.aluno.id, valor: caso.corrigir }])).status).toBe(200);
+      const depois = await consultarResultadoJornada(c, aluno);
+      expect(depois).toMatchObject({ cortePontos: caso.corte, pontosEfetivos: caso.suficiente,
+        resultadoPorNota: "SUFICIENTE", aprovacaoDisciplina: "APROVADA", elegivelRecuperacaoPorNota: false,
+      });
+      if (caso.modelo === "300") expect(depois.percentualResultado).toBe(antes.percentualResultado);
+    });
+  }
 });
