@@ -45,5 +45,5 @@ function run(args, label) {
 
 run(["migrate:latest", "--knexfile", "knexfile.ts"], "migrations");
 run(["seed:run", "--knexfile", "knexfile.ts", "--specific=cidades.ts"], "seed cidades");
-run(["seed:run", "--knexfile", "knexfile.ts", "--specific=usuario_inicial.ts"], "seed usuário secretaria");
+run(["seed:run", "--knexfile", "knexfile.ts", "--specific=20260512000000_usuario_inicial.ts"], "seed usuário secretaria");
 console.log("\n✔ Banco E2E pronto.");

@@ -34,6 +34,8 @@ export interface OpcoesPgIntegration {
   fronteiraHistorica?: boolean;
   /** Schema expandido sem adoção/guards, para incompatibilidades de precisão sintéticas. */
   fronteiraExpandida?: boolean;
+  /** Mantém a base somente migrada para testar a sequência completa de seeds do CLI. */
+  semSeedsEssenciais?: boolean;
 }
 
 function knexCli(args: string[], databaseUrl: string, label: string, fronteira?: "historica" | "expandida"): void {
@@ -84,8 +86,10 @@ export async function startPgIntegration(opcoes: OpcoesPgIntegration = {}): Prom
 
     const fronteira = opcoes.fronteiraHistorica ? "historica" : opcoes.fronteiraExpandida ? "expandida" : undefined;
     knexCli(["migrate:latest"], databaseUrl, "migrate:latest", fronteira);
-    knexCli(["seed:run", "--specific=cidades.ts"], databaseUrl, "seed cidades");
-    knexCli(["seed:run", "--specific=usuario_inicial.ts"], databaseUrl, "seed usuario_inicial");
+    if (!opcoes.semSeedsEssenciais) {
+      knexCli(["seed:run", "--specific=cidades.ts"], databaseUrl, "seed cidades");
+      knexCli(["seed:run", "--specific=20260512000000_usuario_inicial.ts"], databaseUrl, "seed usuario_inicial");
+    }
 
     const db = knexLib({
       client: "pg",

@@ -20,6 +20,7 @@
         "start": "node dist/src/app.js",
         "migrate": "node -r ts-node/register node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
         "seed": "node -r ts-node/register node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
+        "seed:recriar-demo": "node -r ts-node/register node_modules/knex/bin/cli.js seed:run --knexfile knexfile.manual.ts --specific=popular_banco.ts",
         "test": "vitest run --project unit",
         "test:watch": "vitest --project unit",
         "test:coverage": "vitest run --project unit --coverage",

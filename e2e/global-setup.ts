@@ -28,7 +28,7 @@ export default async function globalSetup() {
     });
     if (login.status() !== 200) {
       throw new Error(
-        `Login da secretaria falhou (HTTP ${login.status()}). Rode o seed usuario_inicial.ts no banco E2E.`,
+        `Login da secretaria falhou (HTTP ${login.status()}). Rode o seed 20260512000000_usuario_inicial.ts no banco E2E.`,
       );
     }
   } finally {

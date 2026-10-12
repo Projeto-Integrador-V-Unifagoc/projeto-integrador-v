@@ -6,7 +6,7 @@ import { bearer } from "../../../test-helpers/httpAuth";
 
 /**
  * Integração do fluxo de autenticação (projeto `integration`).
- * Sobe Postgres real via Testcontainers, aplica migrations + seed `usuario_inicial`
+ * Sobe Postgres real via Testcontainers, aplica migrations + seed `20260512000000_usuario_inicial`
  * (secretaria `suporte@unieduca.com.br` / `unieduca2026`) e exercita as rotas
  * `/login`, `/me`, `/cadastro`, `/usuarios` de ponta a ponta.
  *

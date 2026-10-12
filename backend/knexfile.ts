@@ -46,6 +46,7 @@ const commonConfig: Knex.Config = {
   },
   seeds: {
     directory: "./seeds",
+    recursive: false,
   },
 };
 
