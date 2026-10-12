@@ -6,10 +6,12 @@ import { RefreshCw, Save, ShieldCheck } from "lucide-react";
 import Button from "../../components/Button";
 import { Card } from "../../components/Card";
 import Container from "../../components/Container";
+import ConfirmacaoDialog from "../../components/ConfirmacaoDialog/ConfirmacaoDialog";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
 import { useNota } from "../../hooks/use-nota";
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import {
   type AlunoLancamento,
   type AlunoRecuperacao,
@@ -80,6 +82,7 @@ function EditorNota({ params, erro, onRascunho, bloqueada = false }: {
 
 export default function LancamentoNotas() {
   const api = useNota();
+  const confirmacao = useConfirmacao();
   const { notificar } = useNotificacao();
   const tema = useTheme();
   const larguraResultado = useMediaQuery(tema.breakpoints.down("md")) ? 260 : 440;
@@ -154,9 +157,17 @@ export default function LancamentoNotas() {
     return () => removeEventListener("beforeunload", sair);
   }, [alterado, alteradoRec]);
 
+  function confirmarDescarte() {
+    return confirmacao.solicitar({
+      titulo: "Descartar alterações?",
+      mensagem: "Descartar alterações ainda não salvas nas notas?",
+      textoConfirmar: "Descartar",
+    });
+  }
+
   async function carregarLancamento() {
     if (!avaliacaoId) return;
-    if (alterado && !confirm("Descartar alterações ainda não salvas?")) return;
+    if (alterado && !(await confirmarDescarte())) return;
     const leitura = ++leituraLanc.current;
     try {
       const r = await api.obterLancamento(avaliacaoId);
@@ -197,7 +208,7 @@ export default function LancamentoNotas() {
 
   async function carregarRecuperacao(opcoes: { aposSalvar?: boolean } = {}) {
     if (!turmaId) return;
-    if (alteradoRec && !opcoes.aposSalvar && !confirm("Descartar alterações ainda não salvas?")) return;
+    if (alteradoRec && !opcoes.aposSalvar && !(await confirmarDescarte())) return;
     const leitura = ++leituraRecuperacao.current;
     try {
       const r = await api.obterRecuperacao(turmaId);
@@ -439,8 +450,9 @@ export default function LancamentoNotas() {
                   SelectProps={{ SelectDisplayProps: { "aria-labelledby": "notas-oferta-label" } }}
                   value={turmaId}
                   disabled={api.carregando || enviandoLote}
-                  onChange={(e) => {
-                    if ((alterado || alteradoRec) && !confirm("Descartar alterações ainda não salvas?")) return;
+                  onChange={async (e) => {
+                    const novaTurmaId = e.target.value;
+                    if ((alterado || alteradoRec) && !(await confirmarDescarte())) return;
                     leituraLanc.current += 1;
                     leituraRendimento.current += 1;
                     leituraRecuperacao.current += 1;
@@ -450,8 +462,8 @@ export default function LancamentoNotas() {
                     setRendimento(undefined); setRecuperacao(undefined); setLinhasRec([]);
                     setAlteradoRec(false); setAlteradasRec(new Set());
                     setAutorizar(false); setMotivoAutorizacao("");
-                    setTurmaId(e.target.value);
-                    const nova = atribuicoes.find((a) => a.turmaDisciplinaId === e.target.value);
+                    setTurmaId(novaTurmaId);
+                    const nova = atribuicoes.find((a) => a.turmaDisciplinaId === novaTurmaId);
                     setAvaliacaoId(nova?.avaliacoes[0]?.id || "");
                   }}
                 >
@@ -464,10 +476,11 @@ export default function LancamentoNotas() {
               </Grid>
               {aba === 0 && (
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField select id="notas-avaliacao" label="Avaliação" SelectProps={{ SelectDisplayProps: { "aria-labelledby": "notas-avaliacao-label" } }} value={avaliacaoId} disabled={api.carregando || enviandoLote} onChange={(e) => {
-                    if (alterado && !confirm("Descartar alterações ainda não salvas?")) return;
+                  <TextField select id="notas-avaliacao" label="Avaliação" SelectProps={{ SelectDisplayProps: { "aria-labelledby": "notas-avaliacao-label" } }} value={avaliacaoId} disabled={api.carregando || enviandoLote} onChange={async (e) => {
+                    const novaAvaliacaoId = e.target.value;
+                    if (alterado && !(await confirmarDescarte())) return;
                     leituraLanc.current += 1; rascunhosLanc.current = {}; setAlterado(false); setErrosLanc({}); setLinhas([]); setLancamento(undefined);
-                    setAvaliacaoId(e.target.value);
+                    setAvaliacaoId(novaAvaliacaoId);
                   }}>
                     {(atribuicao?.avaliacoes ?? [])
                       .filter((av) => av.tipo !== "RECUPERACAO")
@@ -630,6 +643,8 @@ export default function LancamentoNotas() {
         )}
       </Stack>
 
+      <ConfirmacaoDialog aberto={confirmacao.aberto} configuracao={confirmacao.configuracao}
+        onConfirmar={confirmacao.aceitar} onCancelar={confirmacao.cancelar} />
       <AutorizacaoDialog
         open={autorizar}
         motivo={motivoAutorizacao}

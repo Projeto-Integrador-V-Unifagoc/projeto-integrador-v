@@ -76,6 +76,11 @@ async function editar(nome: string, valor: string, confirmar = true) {
 async function salvar() {
   await userEvent.setup().click(screen.getByRole("button", { name: /^salvar lote$/i }));
 }
+async function aceitarDescarte() {
+  const dialogo = await screen.findByRole("dialog", { name: "Descartar alterações?" });
+  await userEvent.setup().click(within(dialogo).getByRole("button", { name: "Descartar" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -93,6 +98,117 @@ beforeEach(() => {
   }));
 });
 afterEach(() => { cleanup(); localStorage.clear(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+describe("Notas - confirmações visuais de descarte", () => {
+  it("mantém avaliação e rascunho ao cancelar e troca somente após confirmar", async () => {
+    const lista = opcoes();
+    const destino = "40000000-0000-4000-8000-000000000002";
+    lista.atribuicoes[0].avaliacoes.push({ ...lista.atribuicoes[0].avaliacoes[0], id: destino, descricao: "Segunda avaliação" });
+    api.listarOpcoes.mockResolvedValue(lista);
+    await pronta();
+    await editar("Ana Sintética", "12");
+    const user = userEvent.setup();
+    const escolher = async () => {
+      await user.click(screen.getByRole("combobox", { name: "Avaliação" }));
+      await user.click(screen.getByRole("option", { name: /Segunda avaliação/ }));
+      return screen.findByRole("dialog", { name: "Descartar alterações?" });
+    };
+    let dialogo = await escolher();
+    expect(api.obterLancamento).toHaveBeenCalledTimes(1);
+    await user.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("combobox", { name: "Avaliação" })).toHaveTextContent("Quarto módulo");
+    expect(celulaNota("Ana Sintética")).toHaveTextContent("12,00");
+    dialogo = await escolher();
+    await user.click(within(dialogo).getByRole("button", { name: "Descartar" }));
+    await waitFor(() => expect(api.obterLancamento).toHaveBeenLastCalledWith(destino));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("combobox", { name: "Avaliação" })).toHaveTextContent("Segunda avaliação");
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it("mantém oferta e notas ao fechar o modal e só consulta a nova oferta após aceitar", async () => {
+    const lista = opcoes();
+    const destino = "10000000-0000-4000-8000-000000000002";
+    const avaliacaoDestino = "40000000-0000-4000-8000-000000000002";
+    lista.atribuicoes.push({ ...lista.atribuicoes[0], turmaDisciplinaId: destino, turma: { ...lista.atribuicoes[0].turma, sigla: "ENG-2" },
+      avaliacoes: [{ ...lista.atribuicoes[0].avaliacoes[0], id: avaliacaoDestino }] });
+    api.listarOpcoes.mockResolvedValue(lista);
+    await pronta();
+    await editar("Ana Sintética", "12");
+    const user = userEvent.setup();
+    const escolher = async () => {
+      await user.click(screen.getByRole("combobox", { name: "Turma e disciplina" }));
+      await user.click(screen.getByRole("option", { name: /ENG-2/ }));
+      return screen.findByRole("dialog", { name: "Descartar alterações?" });
+    };
+    let dialogo = await escolher();
+    await user.click(within(dialogo).getByRole("button", { name: "Fechar diálogo" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("combobox", { name: "Turma e disciplina" })).toHaveTextContent("ENG-1");
+    expect(celulaNota("Ana Sintética")).toHaveTextContent("12,00");
+    expect(api.obterLancamento).toHaveBeenCalledTimes(1);
+    dialogo = await escolher();
+    await user.click(within(dialogo).getByRole("button", { name: "Descartar" }));
+    await waitFor(() => expect(api.obterLancamento).toHaveBeenLastCalledWith(avaliacaoDestino));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it("preserva um lote rejeitado ao cancelar a recarga e consulta novamente após confirmar", async () => {
+    api.salvarLote.mockRejectedValue(erroRest(422, "LOTE_INVALIDO", "Lote rejeitado."));
+    await pronta();
+    await editar("Ana Sintética", "12");
+    await salvar();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Recarregar notas" }));
+    let dialogo = await screen.findByRole("dialog", { name: "Descartar alterações?" });
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(celulaNota("Ana Sintética")).toHaveTextContent("12,00");
+    expect(api.obterLancamento).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "Recarregar notas" }));
+    dialogo = await screen.findByRole("dialog", { name: "Descartar alterações?" });
+    await user.click(within(dialogo).getByRole("button", { name: "Descartar" }));
+    await waitFor(() => expect(api.obterLancamento).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(celulaNota("Ana Sintética")).toHaveTextContent("Não lançada");
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it("preserva a recuperação ao cancelar sua recarga e substitui o rascunho somente após aceitar", async () => {
+    api.obterRendimento.mockResolvedValue({ turmaDisciplinaId: OFERTA, avaliacoes: [], alunos: [] });
+    api.obterRecuperacao.mockResolvedValue({ turmaDisciplinaId: OFERTA, recuperacaoAvaliacaoId: AVALIACAO,
+      valorMaximoRecuperacao: "300.00", periodoLetivo: { codigo: "2026.2", fechado: false },
+      alunos: [{ ...grade().alunos[0], notaRecuperacao: null, resultadoAcademico: resultadoAcademico() }] });
+    await pronta();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Recuperação" }));
+    const linha = await screen.findByRole("row", { name: /Ana Sintética/ });
+    const indice = screen.getByRole("columnheader", { name: "Recuperação" }).getAttribute("aria-colindex");
+    await user.dblClick(within(linha).getAllByRole("gridcell").find(c => c.getAttribute("aria-colindex") === indice)!);
+    await user.type(await screen.findByRole("textbox", { name: "Nota de Ana Sintética" }), "80");
+    await user.keyboard("{Enter}");
+    const recarregar = async () => {
+      await user.click(screen.getByRole("tab", { name: "Rendimento" }));
+      await user.click(screen.getByRole("tab", { name: "Recuperação" }));
+      return screen.findByRole("dialog", { name: "Descartar alterações?" });
+    };
+    let dialogo = await recarregar();
+    await user.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Salvar recuperação" })).toBeEnabled();
+    expect(screen.getByRole("row", { name: /Ana Sintética/ })).toHaveTextContent("80,00");
+    expect(api.obterRecuperacao).toHaveBeenCalledTimes(1);
+    dialogo = await recarregar();
+    await user.click(within(dialogo).getByRole("button", { name: "Descartar" }));
+    await waitFor(() => expect(api.obterRecuperacao).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Salvar recuperação" })).toBeDisabled();
+    expect(api.salvarLote).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
+  });
+});
 
 function resultadoAcademico(overrides: Partial<ResultadoAcademico> = {}): ResultadoAcademico {
   return {
@@ -222,6 +338,7 @@ describe("Rendimento e recuperação - consulta explícita do resultado canônic
     }
     await user.click(screen.getByRole("combobox", { name: "Turma e disciplina" }));
     await user.click(screen.getByRole("option", { name: "ENG-2 — Algoritmos — 2026.2" }));
+    if (aba === "Recuperação") await aceitarDescarte();
     expect(await screen.findByText("Nova oferta indisponível.")).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Turma e disciplina" })).toHaveTextContent("ENG-2");
     expect(screen.queryByRole("row", { name: /Ana Sintética/ })).not.toBeInTheDocument();
@@ -426,6 +543,7 @@ describe("Lançamento - pontos textuais e lote atômico", () => {
     expect(await screen.findByRole("textbox", { name: "Nota de Bruno Sintético" })).toHaveValue("22,00");
     expect(api.obterLancamento).toHaveBeenCalledTimes(1);
     await userEvent.setup().click(screen.getByRole("button", { name: /^recarregar notas$/i }));
+    await aceitarDescarte();
     await waitFor(() => expect(api.obterLancamento).toHaveBeenCalledTimes(2));
     expect(api.salvarLote).toHaveBeenCalledTimes(1);
     expect(celulaNota("Ana Sintética")).toHaveTextContent("Não lançada");
@@ -456,6 +574,7 @@ describe("Lançamento - pontos textuais e lote atômico", () => {
     expect(api.obterLancamento).toHaveBeenCalledTimes(1);
     api.obterLancamento.mockResolvedValue(grade({ podeEditar: false, periodoLetivo: { codigo: "2026.2", status: "encerrado", fechado: true } }));
     await userEvent.setup().click(screen.getByRole("button", { name: /^recarregar notas$/i }));
+    await aceitarDescarte();
     await waitFor(() => expect(api.obterLancamento).toHaveBeenCalledTimes(2));
     expect(api.salvarLote).toHaveBeenCalledTimes(1);
     expect(celulaNota("Ana Sintética")).toHaveTextContent("Não lançada");
