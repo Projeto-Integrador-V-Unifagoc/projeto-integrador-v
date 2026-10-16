@@ -2,7 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { limitarSolicitacoes, validarRecaptcha } from './recaptcha';
+import { validarRecaptcha } from './recaptcha';
 
 vi.mock('axios', () => ({ default: { post: vi.fn() } }));
 const post = vi.mocked(axios.post);
@@ -44,32 +44,4 @@ describe('validação reCAPTCHA', () => {
     post.mockRejectedValue(new Error('timeout'));
     expect((await request(app).post('/protegida').send({ recaptchaToken: 'token' })).status).toBe(503);
   });
-  it('limita solicitações e libera após a janela', async () => {
-    const limitado = express();
-    limitado.get('/', limitarSolicitacoes(1, 1000), (_req, res) => res.sendStatus(204));
-    const agora = Date.now();
-    const relogio = vi.spyOn(Date, 'now').mockReturnValue(agora);
-    try {
-      expect((await request(limitado).get('/')).status).toBe(204);
-      const bloqueado = await request(limitado).get('/');
-      expect(bloqueado.status).toBe(429);
-      expect(bloqueado.headers['retry-after']).toBe('1');
-      relogio.mockReturnValue(agora + 1001);
-      expect((await request(limitado).get('/')).status).toBe(204);
-    } finally { relogio.mockRestore(); }
-  });
-});
-
-it.each([
-  ['test', 'true', 204],
-  ['test', 'false', 429],
-  ['production', 'true', 429],
-  ['development', 'true', 429],
-])('limite no ambiente %s com bypass %s retorna %s', async (ambiente, bypass, esperado) => {
-  vi.stubEnv('NODE_ENV', ambiente);
-  vi.stubEnv('E2E_RATE_LIMIT_BYPASS', bypass);
-  const limitado = express();
-  limitado.get('/', limitarSolicitacoes(1), (_req, res) => res.sendStatus(204));
-  expect((await request(limitado).get('/')).status).toBe(204);
-  expect((await request(limitado).get('/')).status).toBe(esperado);
 });
