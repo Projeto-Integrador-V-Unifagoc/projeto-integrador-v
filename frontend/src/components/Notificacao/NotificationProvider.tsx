@@ -2,11 +2,16 @@ import {
     createContext,
     useCallback,
     useContext,
+    useEffect,
     useMemo,
     useState,
     type ReactNode,
 } from "react";
 import { Alert, Snackbar, type AlertColor } from "@mui/material";
+import {
+    EVENTO_LIMITE_REQUISICOES,
+    type DetalheLimite,
+} from "../../services/limite-requisicoes";
 
 type Severidade = AlertColor;
 
@@ -43,6 +48,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         if (motivo === "clickaway") return;
         setEstado((s) => ({ ...s, aberto: false }));
     }, []);
+
+    // Bloqueio global da API (429 do limite global): as telas que carregam
+    // dados em segundo plano nem sempre exibem o erro, então avisa aqui.
+    useEffect(() => {
+        const avisar = (evento: Event) => {
+            const { global, mensagem } = (evento as CustomEvent<DetalheLimite>).detail;
+            if (global) notificar(mensagem, "warning");
+        };
+        window.addEventListener(EVENTO_LIMITE_REQUISICOES, avisar);
+        return () => window.removeEventListener(EVENTO_LIMITE_REQUISICOES, avisar);
+    }, [notificar]);
 
     const valor = useMemo(() => ({ notificar }), [notificar]);
 

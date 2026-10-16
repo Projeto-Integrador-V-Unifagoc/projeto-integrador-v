@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import RecaptchaCheckbox from '../../components/RecaptchaCheckbox';
 import { useRecaptcha } from '../../hooks/use-recaptcha';
+import { useEsperaLimite } from '../../hooks/use-espera-limite';
+import { formatarEspera } from '../../services/limite-requisicoes';
 import { useNavigate, Link } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Stack, Paper, useTheme } from "@mui/material";
 import Container from "../../components/Container";
@@ -14,13 +16,14 @@ export const Login = () => {
     const [senha, setSenha] = useState('');
     const [enviando, setEnviando] = useState(false);
     const recaptcha = useRecaptcha();
+    const espera = useEsperaLimite('POST /login');
     const navigate = useNavigate();
     const { notificar } = useNotificacao();
     const theme = useTheme();
 
     const handleLogin = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (enviando || !recaptcha.token) return;
+        if (enviando || espera > 0 || !recaptcha.token) return;
         setEnviando(true);
 
         try {
@@ -104,14 +107,14 @@ export const Login = () => {
                         <RecaptchaCheckbox key={recaptcha.versao} onChange={recaptcha.setToken} />
                         <Button
                             type="submit"
-                            disabled={enviando || !recaptcha.token}
+                            disabled={enviando || espera > 0 || !recaptcha.token}
                             variant="contained"
                             color="primary"
                             size="large"
                             fullWidth
                             sx={{ py: 1.5, fontWeight: 'bold' }}
                         >
-                            Acessar
+                            {espera > 0 ? `Tente novamente em ${formatarEspera(espera)}` : 'Acessar'}
                         </Button>
                     </Stack>
                 </Box>
