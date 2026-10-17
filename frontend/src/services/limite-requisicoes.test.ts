@@ -103,6 +103,75 @@ describe("configurarLimiteDeRequisicoes", () => {
     });
 });
 
+describe("configurarLimiteDeRequisicoes: o que conta e o que não conta", () => {
+    function ok(config: InternalAxiosRequestConfig) {
+        return Promise.resolve({ data: {}, status: 200, statusText: "OK", headers: {}, config });
+    }
+
+    it("só as escritas passam pelo balde de fichas", async () => {
+        const balde = new BaldeDeFichas(100, 100);
+        const aguardar = vi.spyOn(balde, "aguardar");
+        const api = axios.create({ baseURL: "/api", adapter: ok });
+        configurarLimiteDeRequisicoes(api, balde);
+
+        await api.get("/alunos");
+        expect(aguardar).not.toHaveBeenCalled();
+
+        await api.post("/alunos", {});
+        await api.put("/alunos/1", {});
+        await api.patch("/alunos/1", {});
+        await api.delete("/alunos/1");
+        expect(aguardar).toHaveBeenCalledTimes(4);
+    });
+
+    it("erros que não são 429 não criam bloqueio", async () => {
+        const adapter = vi.fn<AxiosAdapter>((config) =>
+            Promise.reject(
+                new AxiosError("500", "ERR_BAD_RESPONSE", config, undefined, {
+                    status: 500, statusText: "Erro", headers: {}, config, data: { error: "falhou" },
+                }),
+            ),
+        );
+        const api = instancia(adapter);
+
+        await expect(api.post("/login", {})).rejects.toMatchObject({ response: { status: 500 } });
+        adapter.mockImplementationOnce(() => Promise.reject(new AxiosError("Network Error", "ERR_NETWORK")));
+        await expect(api.post("/login", {})).rejects.toMatchObject({ code: "ERR_NETWORK" });
+
+        expect(segundosAteLiberar("POST /login")).toBe(0);
+        expect(adapter).toHaveBeenCalledTimes(2);
+    });
+
+    it("429 sem Retry-After bloqueia pela espera padrão e usa a mensagem genérica", async () => {
+        const eventos: DetalheLimite[] = [];
+        const ouvir = (e: Event) => eventos.push((e as CustomEvent<DetalheLimite>).detail);
+        window.addEventListener(EVENTO_LIMITE_REQUISICOES, ouvir);
+
+        try {
+            const api = instancia((config) =>
+                Promise.reject(
+                    new AxiosError("429", "ERR_BAD_REQUEST", config, undefined, {
+                        status: 429, statusText: "Too Many Requests", headers: {}, config, data: "",
+                    }),
+                ),
+            );
+
+            await expect(api.post("/recuperacao-senha", {})).rejects.toBeInstanceOf(AxiosError);
+            expect(segundosAteLiberar("POST /recuperacao-senha")).toBe(30);
+            expect(eventos).toEqual([
+                {
+                    chave: "POST /recuperacao-senha",
+                    segundos: 30,
+                    mensagem: "Muitas solicitações. Tente novamente em 30 segundos.",
+                    global: false,
+                },
+            ]);
+        } finally {
+            window.removeEventListener(EVENTO_LIMITE_REQUISICOES, ouvir);
+        }
+    });
+});
+
 describe("BaldeDeFichas", () => {
     it("deixa passar a rajada até a capacidade e depois espera a reposição", async () => {
         let agora = 0;

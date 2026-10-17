@@ -116,6 +116,39 @@ describe('criarLimitador', () => {
     expect((await request(falha).post('/')).status).toBe(429);
   });
 
+  it('com ignorarSucesso um acerto que termina depois da virada não desconta da janela nova', async () => {
+    const tempo = relogio();
+    let liberar!: () => void;
+    let chegou!: () => void;
+    const segurada = new Promise<void>((resolve) => { liberar = resolve; });
+    const naRota = new Promise<void>((resolve) => { chegou = resolve; });
+
+    const app = express();
+    app.post('/', limitador({ maximo: 3, agora: tempo.agora, ignorarSucesso: true }), async (req, res) => {
+      if (req.query.lenta) {
+        chegou();
+        await segurada;
+        res.sendStatus(200);
+        return;
+      }
+      res.sendStatus(401);
+    });
+
+    const lenta = request(app).post('/?lenta=1').then((r) => r);
+    await naRota;
+
+    // A virada passa a contagem para "anterior" (1); a falha conta na janela nova.
+    tempo.avancar(1000);
+    expect((await request(app).post('/')).status).toBe(401);
+
+    liberar();
+    expect((await lenta).status).toBe(200);
+
+    // Se o acerto tivesse descontado a falha da janela nova, a 4ª ainda passaria: 1 + 2 = 3 → bloqueia.
+    expect((await request(app).post('/')).status).toBe(401);
+    expect((await request(app).post('/')).status).toBe(429);
+  });
+
   it('ao atingir o teto de chaves descarta a mais antiga em vez de bloquear', async () => {
     const tempo = relogio();
     const app = montar(limitador({
