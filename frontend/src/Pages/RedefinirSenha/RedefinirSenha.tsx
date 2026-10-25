@@ -17,6 +17,8 @@ import CampoSenha from '../../components/CampoSenha';
 import Container from '../../components/Container';
 import FavIcon from '../../../public/assets/favIcon.svg';
 import { authService } from '../../services/auth-services';
+import { formatarEspera } from '../../services/limite-requisicoes';
+import { useEsperaLimite } from '../../hooks/use-espera-limite';
 import { obterErroSenha } from '../../utils/senha';
 
 export default function RedefinirSenha() {
@@ -28,6 +30,7 @@ export default function RedefinirSenha() {
   const [confirmarSenha, setConfirmarSenha] =
     useState('');
   const [enviando, setEnviando] = useState(false);
+  const espera = useEsperaLimite('POST /redefinir-senha');
   const [erro, setErro] = useState('');
   const [senhaAlterada, setSenhaAlterada] =
     useState(false);
@@ -205,7 +208,7 @@ export default function RedefinirSenha() {
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={enviando || !token}
+                disabled={enviando || espera > 0 || !token}
                 sx={{
                   width: '100%',
                   py: 1.5,
@@ -215,7 +218,9 @@ export default function RedefinirSenha() {
               >
                 {enviando
                   ? 'Alterando...'
-                  : 'Redefinir senha'}
+                  : espera > 0
+                    ? `Tente novamente em ${formatarEspera(espera)}`
+                    : 'Redefinir senha'}
               </Button>
             </Stack>
           </Box>

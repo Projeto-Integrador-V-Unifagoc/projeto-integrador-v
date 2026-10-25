@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import RecaptchaCheckbox from '../../components/RecaptchaCheckbox';
 import { useRecaptcha } from '../../hooks/use-recaptcha';
+import { useEsperaLimite } from '../../hooks/use-espera-limite';
+import { formatarEspera } from '../../services/limite-requisicoes';
 import { Link } from 'react-router-dom';
 
 import {
@@ -23,6 +25,7 @@ export default function EsqueceuSenha() {
   const [email, setEmail] = useState('');
   const [enviando, setEnviando] = useState(false);
   const recaptcha = useRecaptcha();
+  const espera = useEsperaLimite('POST /recuperacao-senha');
   const [solicitacaoEnviada, setSolicitacaoEnviada] =
     useState(false);
 
@@ -33,7 +36,7 @@ export default function EsqueceuSenha() {
     event: React.FormEvent
   ) {
     event.preventDefault();
-    if (enviando || !recaptcha.token) return;
+    if (enviando || espera > 0 || !recaptcha.token) return;
 
     try {
       setEnviando(true);
@@ -166,7 +169,7 @@ export default function EsqueceuSenha() {
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={enviando || !recaptcha.token}
+                disabled={enviando || espera > 0 || !recaptcha.token}
                 sx={{
                   width: '100%',
                   py: 1.5,
@@ -175,7 +178,9 @@ export default function EsqueceuSenha() {
               >
                 {enviando
                   ? 'Enviando...'
-                  : 'Enviar link de recuperação'}
+                  : espera > 0
+                    ? `Tente novamente em ${formatarEspera(espera)}`
+                    : 'Enviar link de recuperação'}
               </Button>
             </Stack>
           </Box>

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { configurarLimiteDeRequisicoes } from "./limite-requisicoes";
 
 const TOKEN_KEY = "@UniEduca:token";
 
@@ -22,3 +23,5 @@ apiAutenticada.interceptors.request.use((config) => {
     }
     return config;
 });
+
+configurarLimiteDeRequisicoes(apiAutenticada);

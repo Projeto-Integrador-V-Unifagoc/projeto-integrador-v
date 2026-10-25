@@ -1,6 +1,8 @@
 import { useState } from "react";
 import RecaptchaCheckbox from '../../components/RecaptchaCheckbox';
 import { useRecaptcha } from '../../hooks/use-recaptcha';
+import { useEsperaLimite } from '../../hooks/use-espera-limite';
+import { formatarEspera } from '../../services/limite-requisicoes';
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import { Settings } from "lucide-react";
@@ -19,6 +21,7 @@ export default function PainelLogin() {
     const [erro, setErro] = useState(state?.semPermissao ? "Seu perfil não tem acesso ao painel do site." : "");
     const [enviando, setEnviando] = useState(false);
     const recaptcha = useRecaptcha();
+    const espera = useEsperaLimite("POST /login");
 
     if (localStorage.getItem("@UniEduca:token") && ehAdministrativo() && !state?.semPermissao) {
         return <Navigate to="/painel" replace />;
@@ -26,7 +29,7 @@ export default function PainelLogin() {
 
     async function entrar(evento: React.FormEvent) {
         evento.preventDefault();
-        if (enviando || !recaptcha.token) return;
+        if (enviando || espera > 0 || !recaptcha.token) return;
         setErro("");
         setEnviando(true);
 
@@ -125,11 +128,15 @@ export default function PainelLogin() {
                         <Button
                             type="submit"
                             variant="contained"
-                            disabled={enviando || !recaptcha.token}
+                            disabled={enviando || espera > 0 || !recaptcha.token}
                             fullWidth
                             sx={{ width: "100%", height: 50, borderRadius: 2, fontSize: 15 }}
                         >
-                            {enviando ? "Entrando..." : "Entrar no painel"}
+                            {enviando
+                                ? "Entrando..."
+                                : espera > 0
+                                    ? `Tente novamente em ${formatarEspera(espera)}`
+                                    : "Entrar no painel"}
                         </Button>
 
                         <Button
