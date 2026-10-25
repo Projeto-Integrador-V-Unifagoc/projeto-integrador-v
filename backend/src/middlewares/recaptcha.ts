@@ -6,6 +6,16 @@ export const validarRecaptcha: RequestHandler = async (
   res,
   next
 ) => {
+  // Não confia em X-Forwarded-Host/IP: exige conexão e Host locais em desenvolvimento.
+  const ambiente = process.env.NODE_ENV || 'development';
+  const hostLocal = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(req.headers.host || '');
+  const conexaoLocal = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(
+    req.socket.remoteAddress || ''
+  );
+  if (ambiente === 'development' && hostLocal && conexaoLocal) {
+    return next();
+  }
+
   // Ignora o reCAPTCHA somente no ambiente automatizado de testes.
   if (
     process.env.NODE_ENV === 'test' &&

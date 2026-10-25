@@ -48,6 +48,8 @@ interface CampoSenhaProps {
     mostrarRequisitos?: boolean;
     fullWidth?: boolean;
     autoComplete?: string;
+    required?: boolean;
+    disabled?: boolean;
 }
 
 export default function CampoSenha({
@@ -60,15 +62,16 @@ export default function CampoSenha({
     mostrarRequisitos = false,
     fullWidth = true,
     autoComplete = "new-password",
+    required,
+    disabled,
 }: CampoSenhaProps) {
     const [visivel, setVisivel] = useState(false);
-
-    const { indice, percentual } = medirForca(value);
-    const nivel = NIVEIS[indice];
 
     return (
         <Box sx={{ width: fullWidth ? "100%" : "auto" }}>
             <TextField
+                required={required}
+                disabled={disabled}
                 label={label}
                 type={visivel ? "text" : "password"}
                 value={value}
@@ -82,6 +85,7 @@ export default function CampoSenha({
                         <InputAdornment position="end">
                             <IconButton
                                 onClick={() => setVisivel((v) => !v)}
+                                disabled={disabled}
                                 edge="end"
                                 aria-label={visivel ? "Ocultar senha" : "Mostrar senha"}
                                 tabIndex={-1}
@@ -93,59 +97,69 @@ export default function CampoSenha({
                 }}
             />
 
-            {mostrarForca && value.length > 0 && (
-                <Box sx={{ mt: 1.2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.6}>
-                        <Typography sx={{ fontSize: ".78rem", color: "text.secondary" }}>
-                            Força da senha
-                        </Typography>
-                        <Typography sx={{ fontSize: ".78rem", fontWeight: 700, color: nivel.cor }}>
-                            {nivel.rotulo}
-                        </Typography>
-                    </Stack>
-
-                    <LinearProgress
-                        variant="determinate"
-                        value={percentual}
-                        sx={{
-                            height: 6,
-                            borderRadius: 999,
-                            bgcolor: "#e6ebf0",
-                            "& .MuiLinearProgress-bar": {
-                                borderRadius: 999,
-                                bgcolor: nivel.cor,
-                                transition: "transform 300ms ease, background-color 300ms ease",
-                            },
-                        }}
-                    />
-                </Box>
-            )}
-
-            {mostrarRequisitos && value.length > 0 && (
-                <Box
-                    sx={{
-                        mt: 1.4,
-                        display: "grid",
-                        gap: 0.6,
-                        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
-                    }}
-                >
-                    {REGRAS_SENHA.map((regra) => {
-                        const ok = regra.valida(value);
-
-                        return (
-                            <Stack key={regra.rotulo} direction="row" spacing={0.8} alignItems="center">
-                                {ok ? <Check size={14} color="#1f8a4c" /> : <X size={14} color="#b0bac4" />}
-                                <Typography
-                                    sx={{ fontSize: ".78rem", color: ok ? "#1f8a4c" : "text.secondary" }}
-                                >
-                                    {regra.rotulo}
-                                </Typography>
-                            </Stack>
-                        );
-                    })}
-                </Box>
-            )}
+            <IndicadoresSenha value={value} mostrarForca={mostrarForca} mostrarRequisitos={mostrarRequisitos} />
         </Box>
     );
+}
+
+export function IndicadoresSenha({ value, mostrarForca = true, mostrarRequisitos = true }: {
+    value: string; mostrarForca?: boolean; mostrarRequisitos?: boolean;
+}) {
+    const { indice, percentual } = medirForca(value);
+    const nivel = NIVEIS[indice];
+    return <Box sx={{ textAlign: "left" }}>
+        {mostrarForca && value.length > 0 && (
+            <Box sx={{ mt: 1.2 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.6}>
+                    <Typography sx={{ fontSize: ".78rem", color: "text.secondary" }}>
+                        Força da senha
+                    </Typography>
+                    <Typography sx={{ fontSize: ".78rem", fontWeight: 700, color: nivel.cor }}>
+                        {nivel.rotulo}
+                    </Typography>
+                </Stack>
+
+                <LinearProgress
+                    variant="determinate"
+                    value={percentual}
+                    sx={{
+                        height: 6,
+                        borderRadius: 999,
+                        bgcolor: "#e6ebf0",
+                        "& .MuiLinearProgress-bar": {
+                            borderRadius: 999,
+                            bgcolor: nivel.cor,
+                            transition: "transform 300ms ease, background-color 300ms ease",
+                        },
+                    }}
+                />
+            </Box>
+        )}
+
+        {mostrarRequisitos && value.length > 0 && (
+            <Box
+                sx={{
+                    mt: 1.4,
+                    display: "grid",
+                    gap: 0.6,
+                    gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
+                }}
+            >
+                {REGRAS_SENHA.map((regra) => {
+                    const ok = regra.valida(value);
+
+                    return (
+                        <Stack key={regra.rotulo} direction="row" spacing={0.8} alignItems="center">
+                            {ok ? <Check size={14} color="#1f8a4c" /> : <X size={14} color="#b0bac4" />}
+                            <Typography
+                                sx={{ fontSize: ".78rem", color: ok ? "#1f8a4c" : "text.secondary" }}
+                            >
+                                {regra.rotulo}
+                            </Typography>
+                        </Stack>
+                    );
+                })}
+            </Box>
+        )}
+    </Box>;
 }
