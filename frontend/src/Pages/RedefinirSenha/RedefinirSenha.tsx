@@ -10,17 +10,14 @@ import {
   Button,
   Paper,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 
+import CampoSenha from '../../components/CampoSenha';
 import Container from '../../components/Container';
 import FavIcon from '../../../public/assets/favIcon.svg';
 import { authService } from '../../services/auth-services';
-import {
-  MENSAGEM_REQUISITOS_SENHA,
-  obterErroSenha,
-} from '../../utils/senha';
+import { obterErroSenha } from '../../utils/senha';
 
 export default function RedefinirSenha() {
   const [searchParams] = useSearchParams();
@@ -182,27 +179,22 @@ export default function RedefinirSenha() {
         ) : (
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={2}>
-              <TextField
+              <CampoSenha
                 label="Nova senha"
-                type="password"
                 value={novaSenha}
-                onChange={(event) =>
-                  setNovaSenha(event.target.value)
-                }
+                onChange={setNovaSenha}
                 required
                 fullWidth
                 disabled={enviando || !token}
                 error={novaSenha.length > 0 && obterErroSenha(novaSenha) !== null}
-                helperText={MENSAGEM_REQUISITOS_SENHA}
+                mostrarForca
+                mostrarRequisitos
               />
 
-              <TextField
+              <CampoSenha
                 label="Confirmar nova senha"
-                type="password"
                 value={confirmarSenha}
-                onChange={(event) =>
-                  setConfirmarSenha(event.target.value)
-                }
+                onChange={setConfirmarSenha}
                 required
                 fullWidth
                 disabled={enviando || !token}
