@@ -12,6 +12,7 @@ const renderWidget = vi.fn((_container: HTMLElement, options: Record<string, unk
 });
 
 beforeEach(() => {
+  vi.stubEnv('DEV', false);
   vi.stubEnv('VITE_RECAPTCHA_SITE_KEY', 'publica-checkbox');
   vi.stubGlobal('matchMedia', vi.fn(() => ({
     matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn(),

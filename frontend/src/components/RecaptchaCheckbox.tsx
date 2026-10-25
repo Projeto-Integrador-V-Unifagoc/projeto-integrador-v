@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Box, Button, Typography, useMediaQuery } from '@mui/material';
-import { carregarRecaptcha } from '../services/recaptcha';
+import { carregarRecaptcha, dispensarRecaptchaLocal } from '../services/recaptcha';
 
 interface Props {
   onChange: (token: string) => void;
@@ -12,8 +12,10 @@ export default function RecaptchaCheckbox({ onChange }: Props) {
   const [carregando, setCarregando] = useState(true);
   const [tentativa, setTentativa] = useState(0);
   const compacto = useMediaQuery('(max-width:599px)');
+  const dispensado = dispensarRecaptchaLocal();
 
   useEffect(() => {
+    if (dispensado) return;
     const container = containerRef.current;
     if (!container) return;
     let ativo = true;
@@ -64,7 +66,9 @@ export default function RecaptchaCheckbox({ onChange }: Props) {
       widget.remove();
       onChange('');
     };
-  }, [onChange, compacto, tentativa]);
+  }, [onChange, compacto, tentativa, dispensado]);
+
+  if (dispensado) return null;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>

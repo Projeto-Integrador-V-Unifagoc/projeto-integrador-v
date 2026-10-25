@@ -11,6 +11,11 @@ declare global {
 
 let carregamento: Promise<Recaptcha> | undefined;
 
+export function dispensarRecaptchaLocal(): boolean {
+  return import.meta.env.DEV &&
+    ['localhost', '127.0.0.1', '[::1]', '::1'].includes(window.location.hostname);
+}
+
 export function carregarRecaptcha(): Promise<Recaptcha> {
   if (window.grecaptcha?.render) return Promise.resolve(window.grecaptcha);
   if (carregamento) return carregamento;
