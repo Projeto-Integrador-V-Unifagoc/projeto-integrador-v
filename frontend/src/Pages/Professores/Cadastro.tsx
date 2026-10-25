@@ -18,7 +18,7 @@ import type { DisciplinaResponse } from "../../models/disciplina-model";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
 import type { CursoResponse } from "../../models/curso-model";
 import type { FaculdadeResponse } from "../../models/faculdade-model";
-import type { CriarProfessorDTO } from "../../models/professor-model";
+import type { CriarProfessorDTO, Professor } from "../../models/professor-model";
 import ProfessorFormFields from "./ProfessorFormFields";
 import { professorSchema } from "../../validators/professor-schema";
 import { sugerirFaculdade } from "./sugerir-faculdade";
@@ -34,9 +34,18 @@ function getMensagemErro(error: unknown, fallback: string) {
         (error instanceof Error ? error.message : "") || fallback;
 }
 
-export default function Cadastro() {
+type CadastroProps = {
+    // Quando informados, o cadastro roda embutido (ex.: modal da turma) em vez de navegar pela rota.
+    disciplinaInicial?: DisciplinaSelecionada;
+    onConcluido?: (professor: Professor) => void;
+    onCancelar?: () => void;
+};
+
+export default function Cadastro({ disciplinaInicial, onConcluido, onCancelar }: CadastroProps = {}) {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState<ProfessorFormData>(initialProfessorFormData);
+    const [formData, setFormData] = useState<ProfessorFormData>(() => disciplinaInicial
+        ? { ...initialProfessorFormData, disciplinaIds: [disciplinaInicial.id], disciplinasSelecionadas: [disciplinaInicial] }
+        : initialProfessorFormData);
     const [errors, setErrors] = useState<Partial<Record<keyof ProfessorFormData, string>>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -74,6 +83,11 @@ export default function Cadastro() {
             setFaculdades(faculdadesResponse);
             setCidades(cidadesResponse);
             setCidadeOptions(mapearCidades(cidadesResponse));
+            if (disciplinaInicial) {
+                // Disciplina ja vem preenchida, entao aplica a sugestao de faculdade como se tivesse sido escolhida.
+                const sugestao = sugerirFaculdade([disciplinaInicial.id], cursoDisciplinasResponse, cursosResponse);
+                setFormData((previous) => previous.faculdadeSugerida ? { ...previous, faculdade_id: sugestao?.id || "" } : previous);
+            }
         } catch (error) {
             setErrorMessage(getMensagemErro(error, "Não foi possível carregar as opções do cadastro."));
         } finally {
@@ -186,7 +200,11 @@ export default function Cadastro() {
                 cidade_id: formData.cidade_id, estado: formData.uf, cep: formData.cep.trim(),
                 disciplinaIds: formData.disciplinaIds, faculdade_id: formData.faculdade_id || undefined,
             };
-            await professorApi.criar(payload);
+            const professor = await professorApi.criar(payload);
+            if (onConcluido) {
+                onConcluido(professor);
+                return;
+            }
             setSuccessMessage("Professor cadastrado com sucesso!");
             setTimeout(() => navigate("/professores/lista"), 900);
         } catch (error) {
@@ -211,7 +229,7 @@ export default function Cadastro() {
                         loadingCidades={loadingCidades} loadingCep={buscandoCep} required />
                     <Stack direction={{ xs: "column-reverse", sm: "row" }} justifyContent="flex-end" gap={1}
                         sx={{ "& > button": { width: { xs: "100%", sm: 75 } } }}>
-                        <Button variant="outlined" onClick={() => navigate("/professores/lista")} disabled={isLoading}>Cancelar</Button>
+                        <Button variant="outlined" onClick={() => (onCancelar ? onCancelar() : navigate("/professores/lista"))} disabled={isLoading}>Cancelar</Button>
                         <Button variant="contained" onClick={gravarAlteracoes} isLoading={isLoading}>Salvar</Button>
                     </Stack>
                 </Stack>

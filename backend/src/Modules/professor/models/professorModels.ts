@@ -21,4 +21,5 @@ export interface FiltroProfessor {
 export interface ProfessorOpcao {
   id: string;
   nome: string;
+  disciplinas: { id: string; nome: string }[];
 }

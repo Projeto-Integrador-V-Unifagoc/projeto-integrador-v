@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { Alert, IconButton, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { Pencil, Trash2 } from "lucide-react";
@@ -50,8 +51,14 @@ export default function Disciplinas() {
       setAlerta({ tipo: "success", mensagem: "Disciplina removida com sucesso!" })
       setDisciplinaParaExcluir(null)
       void carregarDisciplinas()
-    } catch {
-      setAlerta({ tipo: "error", mensagem: "Nao foi possivel remover a disciplina." })
+    } catch (error) {
+      const mensagem =
+        axios.isAxiosError(error) && error.response?.data?.error
+          ? error.response.data.error
+          : "Nao foi possivel remover a disciplina."
+
+      setDisciplinaParaExcluir(null)
+      setAlerta({ tipo: "error", mensagem })
     }
   }
 

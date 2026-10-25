@@ -68,6 +68,27 @@ async function validarRelacionamentos(dados: CriarProfessorDTO | AtualizarProfes
   }
 }
 
+// Impede tirar do cadastro uma disciplina que o professor ainda ministra em turma ativa ou planejada.
+// Ofertas encerradas ficam como historico e nao bloqueiam.
+async function validarRemocaoDeDisciplinas(id: string, dados: AtualizarProfessor, atual: any) {
+  if (dados.disciplinaIds === undefined) return;
+  const novas = new Set(dados.disciplinaIds);
+  const removidas = ((atual?.disciplinas ?? []) as { id: string }[])
+    .map((disciplina) => disciplina.id)
+    .filter((disciplinaId) => !novas.has(disciplinaId));
+  if (!removidas.length) return;
+
+  const ofertas = await professorRepository.listarOfertasEmAndamentoPorDisciplinas(id, removidas);
+  if (!ofertas.length) return;
+
+  const porDisciplina = new Map<string, string[]>();
+  for (const oferta of ofertas) porDisciplina.set(oferta.disciplina, [...(porDisciplina.get(oferta.disciplina) ?? []), oferta.turma]);
+  const detalhes = [...porDisciplina].map(([disciplina, turmas]) => `${disciplina} (turmas ${turmas.join(', ')})`).join('; ');
+  throw new ConflictError(
+    `Não é possível remover disciplinas que o professor ainda ministra: ${detalhes}. Troque o professor nessas turmas antes de remover a disciplina.`,
+  );
+}
+
 function traduzirErroBanco(erro: any): never {
   if (erro?.code === '23505') throw new ConflictError('Já existe um professor cadastrado com este CPF.');
   if (erro?.code === '23503') throw new ValidationError('Relacionamento acadêmico inválido.');
@@ -103,8 +124,20 @@ async function atualizar(id: string, payload: AtualizarProfessor) {
     if (existente && existente.id !== id) throw new ConflictError('Já existe um professor cadastrado com este CPF.');
   }
   await validarRelacionamentos(dados, atual);
+  await validarRemocaoDeDisciplinas(id, dados, atual);
   try { return await professorRepository.atualizar(id, dados); }
   catch (erro) { traduzirErroBanco(erro); }
+}
+
+// Habilita o professor em mais uma disciplina, usado ao montar a oferta de uma turma.
+async function vincularDisciplina(id: string, disciplinaId: unknown) {
+  if (typeof disciplinaId !== 'string' || !UUID.test(disciplinaId)) throw new ValidationError('Disciplina inválida.');
+  const professor = await buscarPorId(id);
+  if (!professor.ativo) throw new ValidationError('Professor inativo não pode receber disciplinas.');
+  const [disciplina] = await professorRepository.buscarDisciplinasAtivasPorIds([disciplinaId]);
+  if (!disciplina) throw new ValidationError('Disciplina inexistente ou inativa.');
+  await professorRepository.vincularDisciplina(id, disciplinaId);
+  return professorRepository.buscarPorId(id);
 }
 
 async function definirAtivo(id: string, ativo: boolean) {
@@ -112,4 +145,4 @@ async function definirAtivo(id: string, ativo: boolean) {
   return professorRepository.definirAtivo(id, ativo);
 }
 
-export const professorService = { listarTodos, listarOpcoes, buscarPorId, criar, atualizar, definirAtivo };
+export const professorService = { listarTodos, listarOpcoes, buscarPorId, criar, atualizar, vincularDisciplina, definirAtivo };

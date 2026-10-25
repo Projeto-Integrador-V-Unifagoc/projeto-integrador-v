@@ -224,7 +224,6 @@ export async function seed(knex: Knex): Promise<void> {
       id: ids.professor,
       usuario_id: ids.professorUsuario,
       pessoa_id: ids.professorPessoa,
-      curso_id: ids.curso,
       faculdade_id: ids.faculdade,
     })
     .onConflict("id")
@@ -243,6 +242,11 @@ export async function seed(knex: Knex): Promise<void> {
     )
     .onConflict("codigo")
     .merge();
+  
+  await knex(`${SCHEMA}.professor_disciplina`)
+  .insert(disciplinas.map((d) => ({ professor_id: ids.professor, disciplina_id: d.id })))
+  .onConflict(["professor_id", "disciplina_id"])
+  .ignore();
 
   await knex(`${SCHEMA}.periodo_letivo`)
     .insert({

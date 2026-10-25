@@ -40,10 +40,11 @@ export const professorRepository = {
   },
 
   async listarOpcoes() {
-    return baseQuery()
+    const professores = await baseQuery()
       .where('piv.professor.ativo', true)
       .select('piv.professor.id', 'piv.pessoa.nome')
       .orderBy('piv.pessoa.nome');
+    return anexarDisciplinas(professores);
   },
 
   async buscarPorId(id: string) {
@@ -130,5 +131,34 @@ export const professorRepository = {
 
   async buscarProfessorAtivoPorId(id: string) {
     return db('piv.professor').select('id', 'ativo').where({ id, ativo: true }).first();
+  },
+
+  // Acrescenta uma disciplina sem mexer nas demais; repetir o vinculo nao gera erro.
+  async vincularDisciplina(professorId: string, disciplinaId: string) {
+    await db('piv.professor_disciplina')
+      .insert({ professor_id: professorId, disciplina_id: disciplinaId })
+      .onConflict(['professor_id', 'disciplina_id'])
+      .ignore();
+  },
+
+  // Ofertas ativas ou planejadas em que o professor responde por alguma das disciplinas informadas.
+  async listarOfertasEmAndamentoPorDisciplinas(professorId: string, disciplinaIds: string[]) {
+    if (!disciplinaIds.length) return [];
+    return db('piv.turma_disciplina')
+      .join('piv.curso_disciplina', 'piv.turma_disciplina.curso_disciplina_id', 'piv.curso_disciplina.id')
+      .join('piv.disciplinas', 'piv.curso_disciplina.disciplina_id', 'piv.disciplinas.id')
+      .join('piv.turma', 'piv.turma_disciplina.turma_id', 'piv.turma.id')
+      .where('piv.turma_disciplina.professor_id', professorId)
+      .whereIn('piv.curso_disciplina.disciplina_id', disciplinaIds)
+      .whereIn('piv.turma_disciplina.status', ['ativa', 'planejada'])
+      .select('piv.disciplinas.nome as disciplina', 'piv.turma.sigla as turma')
+      .orderBy(['piv.disciplinas.nome', 'piv.turma.sigla']);
+  },
+
+  async professorLecionaDisciplina(professorId: string, disciplinaId: string) {
+    const vinculo = await db('piv.professor_disciplina')
+      .where({ professor_id: professorId, disciplina_id: disciplinaId })
+      .first('id');
+    return !!vinculo;
   },
 };

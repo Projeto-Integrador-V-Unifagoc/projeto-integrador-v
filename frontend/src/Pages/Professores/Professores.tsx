@@ -70,6 +70,7 @@ export default function Professores() {
     const [errors, setErrors] = useState<Partial<Record<keyof ProfessorEditData, string>>>({});
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [erroEdicao, setErroEdicao] = useState<string | null>(null);
     const [searchValue, setSearchValue] = useState("");
     const [filtroAtivo, setFiltroAtivo] = useState<"todos" | "ativos" | "inativos">("todos");
     const [filters, setFilters] = useState<{ codigo?: string; matricula?: string; periodo?: string }>({});
@@ -198,6 +199,7 @@ export default function Professores() {
             cep: professor.cep || "",
         });
         setErrors({});
+        setErroEdicao(null);
         setDialogEditOpen(true);
     }
 
@@ -262,6 +264,7 @@ export default function Professores() {
         if (!professorSelecionado || !(await validarEdicao())) return;
         setLoadingSalvar(true);
         setErrorMessage(null);
+        setErroEdicao(null);
         try {
             const payload: AtualizarProfessorDTO = {
                 nome: editData.nome.trim(),
@@ -282,7 +285,8 @@ export default function Professores() {
             setSuccessMessage("Professor atualizado com sucesso!");
             setDialogEditOpen(false);
         } catch (error) {
-            setErrorMessage(getMensagemErro(error, "Erro ao atualizar professor."));
+            // O dialogo continua aberto no erro, entao a mensagem vai dentro dele.
+            setErroEdicao(getMensagemErro(error, "Erro ao atualizar professor."));
         } finally {
             setLoadingSalvar(false);
         }
@@ -418,6 +422,11 @@ export default function Professores() {
                     <Dialog.ActionClose onClose={() => setDialogEditOpen(false)} />
                 </Dialog.Header>
                 <Dialog.Content>
+                    {erroEdicao && (
+                        <Alert severity="error" onClose={() => setErroEdicao(null)} sx={{ mb: 2 }}>
+                            {erroEdicao}
+                        </Alert>
+                    )}
                     <ProfessorFormFields
                         data={editData}
                         errors={errors}

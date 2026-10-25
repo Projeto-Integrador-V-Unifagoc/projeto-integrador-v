@@ -129,6 +129,34 @@ describe('professorService', () => {
     expect(criado.cpf).toBe('00000000604');
   });
 
+  describe('vincularDisciplina', () => {
+    beforeEach(() => {
+      professorRepository.buscarPorId = async () => ({ id: ids.professor, ativo: true, disciplinas: [] } as any);
+    });
+
+    it('acrescenta a disciplina ao professor ativo', async () => {
+      let vinculado: any;
+      professorRepository.vincularDisciplina = async (professorId: string, disciplinaId: string) => { vinculado = { professorId, disciplinaId }; };
+      await professorService.vincularDisciplina(ids.professor, ids.disciplina);
+      expect(vinculado).toEqual({ professorId: ids.professor, disciplinaId: ids.disciplina });
+    });
+
+    it('rejeita disciplina com id invalido', async () => {
+      await expect(professorService.vincularDisciplina(ids.professor, 'abc')).rejects.toThrow(/Disciplina inválida/);
+      await expect(professorService.vincularDisciplina(ids.professor, undefined)).rejects.toThrow(/Disciplina inválida/);
+    });
+
+    it('rejeita professor inativo', async () => {
+      professorRepository.buscarPorId = async () => ({ id: ids.professor, ativo: false } as any);
+      await expect(professorService.vincularDisciplina(ids.professor, ids.disciplina)).rejects.toThrow(/inativo/);
+    });
+
+    it('rejeita disciplina inexistente ou inativa', async () => {
+      professorRepository.buscarDisciplinasAtivasPorIds = async () => [];
+      await expect(professorService.vincularDisciplina(ids.professor, ids.disciplina)).rejects.toThrow(/inexistente ou inativa/);
+    });
+  });
+
   describe('atualizar', () => {
     beforeEach(() => {
       professorRepository.buscarPorId = async () => ({ id: ids.professor, cidade_id: '3652500' } as any);
@@ -157,6 +185,45 @@ describe('professorService', () => {
       professorRepository.atualizar = async (_id: string, dados: any) => (recebido = dados, dados as any);
       await professorService.atualizar(ids.professor, { disciplinaIds: [ids.disciplina] });
       expect(recebido.disciplinaIds).toEqual([ids.disciplina]);
+    });
+
+    it('bloqueia remover disciplina que o professor ministra em turma ativa ou planejada', async () => {
+      const outra = '44444444-4444-4444-8444-444444444444';
+      let consultado: any;
+      let salvou = false;
+      professorRepository.buscarPorId = async () => ({ id: ids.professor, cidade_id: '3652500', disciplinas: [{ id: ids.disciplina }, { id: outra }] } as any);
+      professorRepository.listarOfertasEmAndamentoPorDisciplinas = async (id: string, disciplinaIds: string[]) => (
+        consultado = { id, disciplinaIds },
+        [{ disciplina: 'Algoritmos', turma: 'ADS5A' }, { disciplina: 'Algoritmos', turma: 'ADS5B' }]
+      ) as any;
+      professorRepository.atualizar = async () => (salvou = true, {} as any);
+
+      await expect(professorService.atualizar(ids.professor, { disciplinaIds: [ids.disciplina] }))
+        .rejects.toMatchObject({ status: 409, message: expect.stringMatching(/Algoritmos \(turmas ADS5A, ADS5B\)/) });
+      expect(consultado).toEqual({ id: ids.professor, disciplinaIds: [outra] });
+      expect(salvou).toBe(false);
+    });
+
+    it('permite remover disciplina sem turmas em andamento', async () => {
+      const outra = '44444444-4444-4444-8444-444444444444';
+      let recebido: any;
+      professorRepository.buscarPorId = async () => ({ id: ids.professor, cidade_id: '3652500', disciplinas: [{ id: ids.disciplina }, { id: outra }] } as any);
+      professorRepository.listarOfertasEmAndamentoPorDisciplinas = async () => [];
+      professorRepository.atualizar = async (_id: string, dados: any) => (recebido = dados, dados as any);
+
+      await professorService.atualizar(ids.professor, { disciplinaIds: [ids.disciplina] });
+      expect(recebido.disciplinaIds).toEqual([ids.disciplina]);
+    });
+
+    it('nao consulta turmas quando nenhuma disciplina e removida', async () => {
+      let consultou = false;
+      professorRepository.buscarPorId = async () => ({ id: ids.professor, cidade_id: '3652500', disciplinas: [{ id: ids.disciplina }] } as any);
+      professorRepository.listarOfertasEmAndamentoPorDisciplinas = async () => (consultou = true, []);
+      professorRepository.atualizar = async (_id: string, dados: any) => dados as any;
+
+      await professorService.atualizar(ids.professor, { disciplinaIds: [ids.disciplina] });
+      await professorService.atualizar(ids.professor, { logradouro: 'Rua Nova' });
+      expect(consultou).toBe(false);
     });
 
     it('traduz erro de banco ao atualizar', async () => {

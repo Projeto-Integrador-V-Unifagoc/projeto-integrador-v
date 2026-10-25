@@ -46,4 +46,5 @@ export interface AtualizarProfessorDTO {
 export interface ProfessorOpcao {
     id: string
     nome: string
+    disciplinas: { id: string; nome: string }[]
 }
