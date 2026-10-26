@@ -6,27 +6,88 @@ const uuidPrimary = (table: Knex.CreateTableBuilder, db: Knex) => {
   table.uuid("id").primary().defaultTo(db.raw("gen_random_uuid()"));
 };
 
+const dropTableCascade = async (db: Knex, tableName: string, schema = SCHEMA) => {
+  await db.raw(`DROP TABLE IF EXISTS ${schema}.${tableName} CASCADE`);
+};
+
+const dropPublicTableCascade = async (db: Knex, tableName: string) => {
+  await db.raw(`DROP TABLE IF EXISTS public.${tableName} CASCADE`);
+};
+
+const dropPivTables = async (db: Knex) => {
+  const tables = [
+    "matricula_documento",
+    "documento",
+    "avaliacao",
+    "aluno_turma",
+    "frequencia",
+    "aula",
+    "matricula_turma_disciplina",
+    "matricula",
+    "turma_disciplina",
+    "turma",
+    "curso_disciplina",
+    "periodo_letivo",
+    "aluno",
+    "professor",
+    "disciplinas",
+    "pessoa",
+    "curso",
+    "departamento",
+    "faculdade",
+    "status_disciplina",
+    "status_matricula",
+    "local",
+    "usuario",
+    "cidade",
+  ];
+
+  for (const table of tables) {
+    await dropTableCascade(db, table);
+  }
+};
+
+const dropPublicTables = async (db: Knex) => {
+  const tables = [
+    "matricula_documento",
+    "documento",
+    "avaliacao",
+    "aluno_turma",
+    "frequencia",
+    "aula",
+    "matricula_turma_disciplina",
+    "matricula",
+    "turma_disciplina",
+    "turma",
+    "curso_disciplina",
+    "periodo_letivo",
+    "aluno",
+    "professor",
+    "disciplinas",
+    "pessoa",
+    "curso",
+    "departamento",
+    "faculdade",
+    "status_disciplina",
+    "status_matricula",
+    "local",
+    "usuario",
+    "cidade",
+    "alunos",
+    "usuarios",
+    "pessoas",
+  ];
+
+  for (const table of tables) {
+    await dropPublicTableCascade(db, table);
+  }
+};
+
 export async function up(db: Knex): Promise<void> {
   await db.raw('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
   await db.raw(`CREATE SCHEMA IF NOT EXISTS ${SCHEMA}`);
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aula");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("avaliacao");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno_turma");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("turma");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("professor");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("disciplinas");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("pessoa");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("curso");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("departamento");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("faculdade");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("frequencia");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("local");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("usuario");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("cidade");
-  await db.schema.dropTableIfExists("alunos");
-  await db.schema.dropTableIfExists("usuarios");
-  await db.schema.dropTableIfExists("pessoas");
+  await dropPivTables(db);
+  await dropPublicTables(db);
 
   await db.schema.withSchema(SCHEMA).createTable("cidade", (table) => {
     uuidPrimary(table, db);
@@ -163,19 +224,5 @@ export async function up(db: Knex): Promise<void> {
 }
 
 export async function down(db: Knex): Promise<void> {
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aula");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("avaliacao");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno_turma");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("turma");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("professor");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("disciplinas");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("pessoa");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("curso");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("departamento");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("faculdade");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("frequencia");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("local");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("usuario");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("cidade");
+  await dropPivTables(db);
 }

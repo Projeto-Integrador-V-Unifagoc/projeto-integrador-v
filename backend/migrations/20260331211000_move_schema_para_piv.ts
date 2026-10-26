@@ -6,43 +6,81 @@ const uuidPrimary = (table: Knex.CreateTableBuilder, db: Knex) => {
   table.uuid("id").primary().defaultTo(db.raw("gen_random_uuid()"));
 };
 
+const dropTableCascade = async (db: Knex, tableName: string, schema = SCHEMA) => {
+  await db.raw(`DROP TABLE IF EXISTS ${schema}.${tableName} CASCADE`);
+};
+
+const dropPublicTableCascade = async (db: Knex, tableName: string) => {
+  await db.raw(`DROP TABLE IF EXISTS public.${tableName} CASCADE`);
+};
+
 const dropPivTables = async (db: Knex) => {
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aula");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("avaliacao");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno_turma");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("turma");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("aluno");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("professor");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("disciplinas");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("pessoa");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("curso");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("departamento");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("faculdade");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("frequencia");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("local");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("usuario");
-  await db.schema.withSchema(SCHEMA).dropTableIfExists("cidade");
+  const tables = [
+    "matricula_documento",
+    "documento",
+    "avaliacao",
+    "aluno_turma",
+    "frequencia",
+    "aula",
+    "matricula_turma_disciplina",
+    "matricula",
+    "turma_disciplina",
+    "turma",
+    "curso_disciplina",
+    "periodo_letivo",
+    "aluno",
+    "professor",
+    "disciplinas",
+    "pessoa",
+    "curso",
+    "departamento",
+    "faculdade",
+    "status_disciplina",
+    "status_matricula",
+    "local",
+    "usuario",
+    "cidade",
+  ];
+
+  for (const table of tables) {
+    await dropTableCascade(db, table);
+  }
 };
 
 const dropPublicTables = async (db: Knex) => {
-  await db.schema.dropTableIfExists("aula");
-  await db.schema.dropTableIfExists("avaliacao");
-  await db.schema.dropTableIfExists("aluno_turma");
-  await db.schema.dropTableIfExists("turma");
-  await db.schema.dropTableIfExists("aluno");
-  await db.schema.dropTableIfExists("professor");
-  await db.schema.dropTableIfExists("disciplinas");
-  await db.schema.dropTableIfExists("pessoa");
-  await db.schema.dropTableIfExists("curso");
-  await db.schema.dropTableIfExists("departamento");
-  await db.schema.dropTableIfExists("faculdade");
-  await db.schema.dropTableIfExists("frequencia");
-  await db.schema.dropTableIfExists("local");
-  await db.schema.dropTableIfExists("usuario");
-  await db.schema.dropTableIfExists("cidade");
-  await db.schema.dropTableIfExists("alunos");
-  await db.schema.dropTableIfExists("usuarios");
-  await db.schema.dropTableIfExists("pessoas");
+  const tables = [
+    "matricula_documento",
+    "documento",
+    "avaliacao",
+    "aluno_turma",
+    "frequencia",
+    "aula",
+    "matricula_turma_disciplina",
+    "matricula",
+    "turma_disciplina",
+    "turma",
+    "curso_disciplina",
+    "periodo_letivo",
+    "aluno",
+    "professor",
+    "disciplinas",
+    "pessoa",
+    "curso",
+    "departamento",
+    "faculdade",
+    "status_disciplina",
+    "status_matricula",
+    "local",
+    "usuario",
+    "cidade",
+    "alunos",
+    "usuarios",
+    "pessoas",
+  ];
+
+  for (const table of tables) {
+    await dropPublicTableCascade(db, table);
+  }
 };
 
 const createPivTables = async (db: Knex) => {

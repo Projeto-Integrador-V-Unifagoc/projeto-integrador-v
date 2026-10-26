@@ -29,11 +29,9 @@ import SearchTextField from "../../components/SearchTextField/SearchTextField";
 import usuarioApi from "../../services/usuario-api";
 import { Perfil } from "../../enums/perfil";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
+import { IndicadoresSenha } from "../../components/CampoSenha";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
-import {
-  MENSAGEM_REQUISITOS_SENHA,
-  obterErroSenha,
-} from "../../utils/senha";
+import { obterErroSenha } from "../../utils/senha";
 
 export default function Usuarios() {
   const [open, setOpen] = useState(false);
@@ -481,59 +479,62 @@ export default function Usuarios() {
                 </TextField>
               )}
 
-              <TextField
-                label={isEditing ? "Nova Senha (opcional)" : "Senha"}
-                required={!isEditing}
-                type={mostrarSenha ? "text" : "password"}
-                autoComplete="new-password"
-                fullWidth
-                error={
-                  usuarioForm.senha.length > 0 &&
-                  obterErroSenha(usuarioForm.senha) !== null
-                }
-                helperText={
-                  usuarioForm.senha
-                    ? MENSAGEM_REQUISITOS_SENHA
-                    : isEditing
-                      ? "Deixe em branco para não alterar"
-                      : 'Defina uma senha ou clique em "Gerar senha".'
-                }
-                value={usuarioForm.senha}
-                onChange={(e) =>
-                  setUsuarioForm({ ...usuarioForm, senha: e.target.value })
-                }
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title={mostrarSenha ? "Ocultar" : "Mostrar"}>
-                          <IconButton
-                            edge="end"
-                            onClick={() => setMostrarSenha((v) => !v)}
-                          >
-                            {mostrarSenha ? (
-                              <EyeOff size={18} />
-                            ) : (
-                              <Eye size={18} />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Copiar senha">
-                          <span>
+              <Box>
+                <TextField
+                  label={isEditing ? "Nova Senha (opcional)" : "Senha"}
+                  required={!isEditing}
+                  type={mostrarSenha ? "text" : "password"}
+                  autoComplete="new-password"
+                  fullWidth
+                  error={
+                    usuarioForm.senha.length > 0 &&
+                    obterErroSenha(usuarioForm.senha) !== null
+                  }
+                  helperText={
+                    usuarioForm.senha
+                      ? undefined
+                      : isEditing
+                        ? "Deixe em branco para não alterar"
+                        : 'Defina uma senha ou clique em "Gerar senha".'
+                  }
+                  value={usuarioForm.senha}
+                  onChange={(e) =>
+                    setUsuarioForm({ ...usuarioForm, senha: e.target.value })
+                  }
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title={mostrarSenha ? "Ocultar" : "Mostrar"}>
                             <IconButton
                               edge="end"
-                              onClick={copiarSenha}
-                              disabled={!usuarioForm.senha}
+                              onClick={() => setMostrarSenha((v) => !v)}
                             >
-                              <Copy size={18} />
+                              {mostrarSenha ? (
+                                <EyeOff size={18} />
+                              ) : (
+                                <Eye size={18} />
+                              )}
                             </IconButton>
-                          </span>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
+                          </Tooltip>
+                          <Tooltip title="Copiar senha">
+                            <span>
+                              <IconButton
+                                edge="end"
+                                onClick={copiarSenha}
+                                disabled={!usuarioForm.senha}
+                              >
+                                <Copy size={18} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+                <IndicadoresSenha value={usuarioForm.senha} />
+              </Box>
 
               <Button
                 variant="outlined"

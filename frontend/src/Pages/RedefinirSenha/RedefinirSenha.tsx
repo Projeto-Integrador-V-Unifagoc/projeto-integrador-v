@@ -10,17 +10,16 @@ import {
   Button,
   Paper,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 
+import CampoSenha from '../../components/CampoSenha';
 import Container from '../../components/Container';
 import FavIcon from '../../../public/assets/favIcon.svg';
 import { authService } from '../../services/auth-services';
-import {
-  MENSAGEM_REQUISITOS_SENHA,
-  obterErroSenha,
-} from '../../utils/senha';
+import { formatarEspera } from '../../services/limite-requisicoes';
+import { useEsperaLimite } from '../../hooks/use-espera-limite';
+import { obterErroSenha } from '../../utils/senha';
 
 export default function RedefinirSenha() {
   const [searchParams] = useSearchParams();
@@ -31,6 +30,7 @@ export default function RedefinirSenha() {
   const [confirmarSenha, setConfirmarSenha] =
     useState('');
   const [enviando, setEnviando] = useState(false);
+  const espera = useEsperaLimite('POST /redefinir-senha');
   const [erro, setErro] = useState('');
   const [senhaAlterada, setSenhaAlterada] =
     useState(false);
@@ -182,27 +182,22 @@ export default function RedefinirSenha() {
         ) : (
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={2}>
-              <TextField
+              <CampoSenha
                 label="Nova senha"
-                type="password"
                 value={novaSenha}
-                onChange={(event) =>
-                  setNovaSenha(event.target.value)
-                }
+                onChange={setNovaSenha}
                 required
                 fullWidth
                 disabled={enviando || !token}
                 error={novaSenha.length > 0 && obterErroSenha(novaSenha) !== null}
-                helperText={MENSAGEM_REQUISITOS_SENHA}
+                mostrarForca
+                mostrarRequisitos
               />
 
-              <TextField
+              <CampoSenha
                 label="Confirmar nova senha"
-                type="password"
                 value={confirmarSenha}
-                onChange={(event) =>
-                  setConfirmarSenha(event.target.value)
-                }
+                onChange={setConfirmarSenha}
                 required
                 fullWidth
                 disabled={enviando || !token}
@@ -213,7 +208,7 @@ export default function RedefinirSenha() {
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={enviando || !token}
+                disabled={enviando || espera > 0 || !token}
                 sx={{
                   width: '100%',
                   py: 1.5,
@@ -223,7 +218,9 @@ export default function RedefinirSenha() {
               >
                 {enviando
                   ? 'Alterando...'
-                  : 'Redefinir senha'}
+                  : espera > 0
+                    ? `Tente novamente em ${formatarEspera(espera)}`
+                    : 'Redefinir senha'}
               </Button>
             </Stack>
           </Box>

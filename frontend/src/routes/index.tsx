@@ -43,6 +43,7 @@ import CadastroProfessores from "../Pages/Professores/Cadastro";
 import Frequencia from "../Pages/Frequencia/Frequencia";
 import LancamentoNotas from "../Pages/Notas/LancamentoNotas";
 import MinhasNotas from "../Pages/Notas/MinhasNotas";
+import MinhaAgenda from "../Pages/Agenda/MinhaAgenda";
 import Matriculas from "../Pages/Matricula/Matriculas";
 import Documentos from "../Pages/Documentos/Documentos";
 import Inscricao from "../Pages/Inscricao/Inscricao";
@@ -284,6 +285,15 @@ export default function AppRoutes() {
           element={
             <RouteByRole perfisPermitidos={["aluno"]}>
               <MinhasNotas />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/minha-agenda"
+          element={
+            <RouteByRole perfisPermitidos={["aluno"]}>
+              <MinhaAgenda />
             </RouteByRole>
           }
         />

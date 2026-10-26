@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import RecaptchaCheckbox from '../../components/RecaptchaCheckbox';
+import { useRecaptcha } from '../../hooks/use-recaptcha';
+import { useEsperaLimite } from '../../hooks/use-espera-limite';
+import { formatarEspera } from '../../services/limite-requisicoes';
 import { Link } from 'react-router-dom';
 
 import {
@@ -20,6 +24,8 @@ import { useNotificacao } from '../../components/Notificacao/NotificationProvide
 export default function EsqueceuSenha() {
   const [email, setEmail] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const recaptcha = useRecaptcha();
+  const espera = useEsperaLimite('POST /recuperacao-senha');
   const [solicitacaoEnviada, setSolicitacaoEnviada] =
     useState(false);
 
@@ -30,23 +36,25 @@ export default function EsqueceuSenha() {
     event: React.FormEvent
   ) {
     event.preventDefault();
+    if (enviando || espera > 0 || !recaptcha.token) return;
 
     try {
       setEnviando(true);
       setSolicitacaoEnviada(false);
 
       await authService.solicitarRecuperacaoSenha(
-        email.trim()
+        email.trim(), recaptcha.token
       );
 
       setSolicitacaoEnviada(true);
     } catch (error: any) {
       notificar(
-        error.response?.data?.error ||
+        error.response?.data?.error || error.message ||
           'Não foi possível solicitar a recuperação de senha.',
         'error'
       );
     } finally {
+      recaptcha.resetar();
       setEnviando(false);
     }
   }
@@ -155,12 +163,13 @@ export default function EsqueceuSenha() {
                 disabled={enviando}
               />
 
+              <RecaptchaCheckbox key={recaptcha.versao} onChange={recaptcha.setToken} />
               <Button
                 type="submit"
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={enviando}
+                disabled={enviando || espera > 0 || !recaptcha.token}
                 sx={{
                   width: '100%',
                   py: 1.5,
@@ -169,7 +178,9 @@ export default function EsqueceuSenha() {
               >
                 {enviando
                   ? 'Enviando...'
-                  : 'Enviar link de recuperação'}
+                  : espera > 0
+                    ? `Tente novamente em ${formatarEspera(espera)}`
+                    : 'Enviar link de recuperação'}
               </Button>
             </Stack>
           </Box>

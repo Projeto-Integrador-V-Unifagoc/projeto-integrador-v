@@ -29,6 +29,8 @@ import { TurmaDisciplinaController } from "./Modules/modulo-estrutura-academica/
 import { RelatorioController } from "./Modules/modulo-relatorios/controllers/RelatorioController";
 import { obterJwtSecret } from "./config/jwt";
 import { ConfiguracaoSmtpService } from "./Modules/configuracao-email/service/ConfiguracaoSmtpService";
+import { lerTrustProxy } from "./config/trustProxy";
+import { limiteGlobal } from "./config/limitesRequisicoes";
 
 const PORT = process.env.PORT || 3000;
 obterJwtSecret();
@@ -39,12 +41,23 @@ new ConfiguracaoSmtpService()
 
 export const app = express();
 
-app.use(cors({ origin: "*" }));
+// Atrás do proxy reverso, `req.ip` precisa ser o IP do cliente para o rate limit.
+app.set("trust proxy", lerTrustProxy(process.env.TRUST_PROXY));
+
+app.use(
+  cors({
+    origin: "*",
+    exposedHeaders: ["Retry-After", "RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "RateLimit-Policy"],
+  }),
+);
 app.use(express.json());
 
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
+
+// Fica depois do /health para o healthcheck do container nunca ser limitado.
+app.use(limiteGlobal);
 
 app.use(authRoutes);
 app.use(siteRouter);

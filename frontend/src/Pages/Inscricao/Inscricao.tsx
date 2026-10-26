@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import RecaptchaCheckbox from '../../components/RecaptchaCheckbox';
+import { useRecaptcha } from '../../hooks/use-recaptcha';
+import { useEsperaLimite } from '../../hooks/use-espera-limite';
+import { formatarEspera } from '../../services/limite-requisicoes';
 import {
     Alert,
     AppBar,
@@ -186,6 +190,8 @@ export default function Inscricao() {
     const [carregandoMatriz, setCarregandoMatriz] = useState(false);
     const [documentos, setDocumentos] = useState<DocumentoUpload[]>([]);
     const [enviando, setEnviando] = useState(false);
+    const recaptcha = useRecaptcha();
+    const espera = useEsperaLimite("POST /publico/inscricao");
     const [verificandoCpf, setVerificandoCpf] = useState(false);
     const [erros, setErros] = useState<Record<string, string>>({});
     const [snackbar, setSnackbar] = useState<{ aberto: boolean; mensagem: string; severidade: "success" | "error" }>({
@@ -369,6 +375,7 @@ export default function Inscricao() {
     }
 
     async function handleEnviar() {
+        if (enviando || espera > 0 || !recaptcha.token) return;
         const pendencias = [validarStep(0), validarStep(1), validarStep(2), validarStep(3)]
             .reduce((acc, atual) => ({ ...acc, ...atual }), {});
 
@@ -405,7 +412,7 @@ export default function Inscricao() {
                 },
             };
 
-            const alunoCreated = await inscricaoPublicaApi.inscrever(payload);
+            const alunoCreated = await inscricaoPublicaApi.inscrever(payload, recaptcha.token);
 
             for (const doc of documentos) {
                 await inscricaoPublicaApi.enviarDocumento(alunoCreated.id, doc.tipo, doc.arquivo);
@@ -431,6 +438,7 @@ export default function Inscricao() {
 
             setSnackbar({ aberto: true, mensagem, severidade: "error" });
         } finally {
+            recaptcha.resetar();
             setEnviando(false);
         }
     }
@@ -1072,6 +1080,11 @@ export default function Inscricao() {
                     }}
                 >
                     {stepContent[activeStep]}
+                    {activeStep === 4 && (
+                        <Box mt={3}>
+                            <RecaptchaCheckbox key={recaptcha.versao} onChange={recaptcha.setToken} />
+                        </Box>
+                    )}
 
                     {activeStep < 5 && (
                         <Stack
@@ -1106,9 +1119,10 @@ export default function Inscricao() {
                                     variant="contained"
                                     sx={{ width: "auto", minWidth: 210, height: 46, borderRadius: 2 }}
                                     isLoading={enviando}
+                                    disabled={enviando || espera > 0 || !recaptcha.token}
                                     onClick={() => void handleEnviar()}
                                 >
-                                    Confirmar inscrição
+                                    {espera > 0 ? `Tente novamente em ${formatarEspera(espera)}` : "Confirmar inscrição"}
                                 </Button>
                             )}
                         </Stack>

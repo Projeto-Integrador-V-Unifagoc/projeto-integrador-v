@@ -1,5 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
+import { validarRecaptcha } from '../../middlewares/recaptcha';
+import {
+    limiteConsultaPublica,
+    limiteDocumentosPublicos,
+    limiteInscricao,
+} from '../../config/limitesRequisicoes';
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -66,7 +72,7 @@ inscricaoPublicaRouter.get("/publico/cursos/:id/matriz-curricular", async (req, 
     }
 });
 
-inscricaoPublicaRouter.get("/publico/inscricao/cpf/:cpf", async (req, res) => {
+inscricaoPublicaRouter.get("/publico/inscricao/cpf/:cpf", limiteConsultaPublica, async (req, res) => {
     try {
         const cpf = String(req.params.cpf ?? "").replace(/\D/g, "");
 
@@ -88,7 +94,7 @@ inscricaoPublicaRouter.get("/publico/inscricao/cpf/:cpf", async (req, res) => {
     }
 });
 
-inscricaoPublicaRouter.get("/publico/inscricao/email", async (req, res) => {
+inscricaoPublicaRouter.get("/publico/inscricao/email", limiteConsultaPublica, async (req, res) => {
     try {
         const email = String(req.query.valor ?? "").trim().toLowerCase();
 
@@ -104,7 +110,7 @@ inscricaoPublicaRouter.get("/publico/inscricao/email", async (req, res) => {
     }
 });
 
-inscricaoPublicaRouter.post("/publico/inscricao", async (req, res) => {
+inscricaoPublicaRouter.post("/publico/inscricao", limiteInscricao, validarRecaptcha, async (req, res) => {
     try {
         const dados = req.body ?? {};
 
@@ -127,7 +133,7 @@ inscricaoPublicaRouter.post("/publico/inscricao", async (req, res) => {
     }
 });
 
-inscricaoPublicaRouter.get("/publico/inscricao/:alunoId/documentos-recusados", async (req, res) => {
+inscricaoPublicaRouter.get("/publico/inscricao/:alunoId/documentos-recusados", limiteDocumentosPublicos, async (req, res) => {
     try {
         const aluno = await db("aluno").where({ id: req.params.alunoId }).first();
 
@@ -171,7 +177,7 @@ const receberArquivo = (req: any, res: any, next: any) =>
         next();
     });
 
-inscricaoPublicaRouter.post("/publico/inscricao/documentos", receberArquivo, async (req, res) => {
+inscricaoPublicaRouter.post("/publico/inscricao/documentos", limiteDocumentosPublicos, receberArquivo, async (req, res) => {
     const arquivo = req.file;
     let persistido = false;
 

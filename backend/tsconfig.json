@@ -8,6 +8,7 @@
     "target": "ES6",
     "esModuleInterop": true,
     "moduleResolution": "node",
+    "skipLibCheck": true,
     "rootDir": ".",
     "outDir": "./dist"
   },
