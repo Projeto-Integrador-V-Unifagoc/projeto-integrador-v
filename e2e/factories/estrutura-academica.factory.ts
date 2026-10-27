@@ -65,11 +65,19 @@ export async function criarDisciplina(
   runId: string,
   opcoes: { cargaHoraria?: number; codigo?: string } = {},
 ) {
+  const cargaHoraria = opcoes.cargaHoraria ?? 60;
   const resposta = await api.post("/disciplinas", {
     body: {
       codigo: opcoes.codigo ?? ids.codigo("DIS", runId),
       nome: `Disciplina ${runId}`,
-      cargaHoraria: opcoes.cargaHoraria ?? 60,
+      cargaHoraria,
+      areaConhecimento: "FORMACAO_GERAL",
+      ementa: `Ementa da disciplina de teste ${runId}.`,
+      cargaHorariaTeorica: cargaHoraria,
+      cargaHorariaPratica: 0,
+      cargaHorariaLaboratorio: 0,
+      cargaHorariaExtensao: 0,
+      competencias: [],
     },
   });
   return exigirCriado<{ id: string; codigo: string }>("disciplina", resposta);
