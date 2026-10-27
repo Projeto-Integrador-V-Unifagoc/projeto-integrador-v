@@ -56,7 +56,7 @@ describe("Política de autorização — rotas Express reais @int", () => {
     const comSecretaria = await request(app)
       .post("/disciplinas")
       .set("Authorization", bearer("secretaria"))
-      .send({ codigo: "AUTZ-101", nome: "Autorização OK", cargaHoraria: 30 });
+      .send({ codigo: "AUTZ-101", nome: "Autorização OK", areaConhecimento: "FORMACAO_GERAL", ementa: "Ementa", cargaHoraria: 30, cargaHorariaTeorica: 30, cargaHorariaPratica: 0, cargaHorariaLaboratorio: 0, cargaHorariaExtensao: 0, competencias: [] });
     expect(comSecretaria.status).toBe(201);
   });
 

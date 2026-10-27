@@ -80,7 +80,7 @@ export default function StatusMatriculaLista() {
             <Typography color="text.secondary">Lista de status de disciplina e de curso.</Typography>
           </Stack>
 
-          <Button variant="contained" style={{ height: "45px", width: "80px" }} onClick={() => navigate("/statusCadastro")}>Cadastrar status</Button>
+          <Button variant="contained" sx={{ height: 40, width: "auto", minWidth: 146, whiteSpace: "nowrap" }} onClick={() => navigate("/statusCadastro")}>Cadastrar status</Button>
         </Box>
 
         <Card.Root>

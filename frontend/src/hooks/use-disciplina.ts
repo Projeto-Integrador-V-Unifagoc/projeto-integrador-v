@@ -55,6 +55,15 @@ export function useDisciplina() {
     }
   }
 
+  const alterarStatus = async (id: string, ativo: boolean) => {
+    setCarregando(true)
+    try {
+      return await disciplinaApi.alterarStatus(id, ativo)
+    } finally {
+      setCarregando(false)
+    }
+  }
+
   return {
     carregando,
     listarDisciplinas,
@@ -62,5 +71,6 @@ export function useDisciplina() {
     criarDisciplina,
     atualizarDisciplina,
     removerDisciplina,
+    alterarStatus,
   }
 }

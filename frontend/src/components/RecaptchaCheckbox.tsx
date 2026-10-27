@@ -77,7 +77,7 @@ export default function RecaptchaCheckbox({ onChange }: Props) {
       {erro && (
         <Alert severity="warning" sx={{ width: '100%', boxSizing: 'border-box' }}>
           {erro}
-          <Button type="button" size="small" onClick={() => {
+          <Button type="button" size="small" sx={{ width: "auto", minWidth: 124, whiteSpace: "nowrap" }} onClick={() => {
             setErro('');
             setCarregando(true);
             setTentativa(atual => atual + 1);

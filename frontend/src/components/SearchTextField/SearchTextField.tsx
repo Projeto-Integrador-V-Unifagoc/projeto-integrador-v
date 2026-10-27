@@ -188,7 +188,7 @@ export default function SearchTextField(props: SearchTextFieldProps) {
           <Button
             variant="contained"
             onClick={handleAddClick}
-            sx={{ width: isMobile ? "100%" : "80px" }}
+            sx={{ width: isMobile ? "100%" : "auto", minWidth: 96, height: 36, whiteSpace: "nowrap" }}
           >
             Adicionar
           </Button>

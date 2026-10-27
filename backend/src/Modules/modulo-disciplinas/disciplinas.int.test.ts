@@ -31,7 +31,12 @@ describe("Disciplinas — CRUD + Postgres real @int", () => {
     const res = await request(app)
       .post("/disciplinas")
       .set("Authorization", auth())
-      .send({ codigo: "INT-POO", nome: "Programação Orientada a Objetos", cargaHoraria: "60", preRequisito: null });
+      .send({
+        codigo: "INT-POO", nome: "Programação Orientada a Objetos", areaConhecimento: "COMPUTACAO",
+        ementa: "Objetos, classes e encapsulamento.", cargaHoraria: 60, cargaHorariaTeorica: 40,
+        cargaHorariaPratica: 10, cargaHorariaLaboratorio: 10, cargaHorariaExtensao: 0,
+        preRequisito: null, competencias: [],
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBeTruthy();
@@ -65,7 +70,7 @@ describe("Disciplinas — CRUD + Postgres real @int", () => {
     const res = await request(app)
       .put(`/disciplinas/${disciplinaId}`)
       .set("Authorization", auth())
-      .send({ nome: "POO (revisada)", cargaHoraria: 80 });
+      .send({ nome: "POO (revisada)", cargaHoraria: 80, cargaHorariaTeorica: 60, cargaHorariaPratica: 10, cargaHorariaLaboratorio: 10, cargaHorariaExtensao: 0 });
     expect(res.status).toBe(200);
 
     const porId = await request(app).get(`/disciplinas/${disciplinaId}`).set("Authorization", auth());

@@ -18,7 +18,12 @@ export function Footer({ children }: StackProps) {
             minHeight={{ xs: "96px", sm: "48px" }}
             sx={{
                 backgroundColor: '#F4F4F4',
-                "& > button": { width: { xs: "100%", sm: "auto" }, minWidth: 88 }
+                "& > button": {
+                    width: { xs: "100%", sm: "auto" },
+                    minWidth: 88,
+                    height: 36,
+                    whiteSpace: "nowrap",
+                }
             }}
         >
             {children}

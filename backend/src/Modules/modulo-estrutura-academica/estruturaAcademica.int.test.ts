@@ -81,7 +81,7 @@ describe("Estrutura acadêmica — cadeia de FKs + Postgres real @int", () => {
     const res = await request(app)
       .post("/disciplinas")
       .set("Authorization", auth())
-      .send({ codigo: `DIS-${sufixo}`, nome: "Banco de Dados", cargaHoraria: 60 });
+      .send({ codigo: `DIS-${sufixo}`, nome: "Banco de Dados", areaConhecimento: "COMPUTACAO", ementa: "Fundamentos de bancos de dados.", cargaHoraria: 60, cargaHorariaTeorica: 40, cargaHorariaPratica: 0, cargaHorariaLaboratorio: 20, cargaHorariaExtensao: 0, competencias: [] });
     expect(res.status).toBe(201);
     ids.disciplina = res.body.id;
   });
