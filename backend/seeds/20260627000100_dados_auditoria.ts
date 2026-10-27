@@ -400,7 +400,6 @@ export async function seed(knex: Knex): Promise<void> {
         id: auditId(500 + index),
         usuario_id: auditId(300 + index),
         pessoa_id: auditId(400 + index),
-        curso_id: auditId(200 + (index % cursos.length)),
         faculdade_id: ids.faculdade,
         ativo: true,
       })),
@@ -419,6 +418,15 @@ export async function seed(knex: Knex): Promise<void> {
     );
 
     await inserir(trx, "disciplinas", disciplinas, "codigo");
+
+    const professorDisciplinas = cursos.flatMap((curso, cursoIndex) =>
+      curso.disciplinas.map((_, disciplinaIndex) => ({
+        professor_id: auditId(500 + ((cursoIndex * 2 + disciplinaIndex) % professores.length)),
+        disciplina_id: auditId(600 + cursoIndex * 10 + disciplinaIndex),
+      }))
+    );
+
+    await inserir(trx, "professor_disciplina", professorDisciplinas, ["professor_id", "disciplina_id"]);
 
     await inserir(
       trx,

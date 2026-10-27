@@ -58,7 +58,7 @@ test.describe("Avaliações @api", () => {
   test("professor não cria avaliação em turma-disciplina de outro professor (403)", async ({ novoCenario, runId }) => {
     const cenario = await novoCenario();
     const outro = await criarProfessorComLogin(cenario.apiSecretaria, `${runId}x`, {
-      cursoId: cenario.cursoId,
+      disciplinaIds: [cenario.disciplinaId],
       cidadeIbge: cenario.cidade.ibge,
       uf: cenario.cidade.uf,
     });

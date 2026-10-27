@@ -11,6 +11,14 @@ export class TurmaDisciplinaService {
     cursoDisciplinaRepository = new CursoDisciplinaRepository();
     professorRepository = professorRepository;
 
+    private async validarProfessorLecionaDisciplina(professorId: string, disciplinaId: string) {
+        const leciona = await this.professorRepository.professorLecionaDisciplina(professorId, disciplinaId);
+
+        if (!leciona) {
+            throw new Error("O professor selecionado nao leciona esta disciplina");
+        }
+    }
+
     async criarTurmaDisciplina(turmaId: string, data: any) {
         const turma = await this.turmaRepository.buscarTurmaPorId(turmaId);
 
@@ -33,6 +41,8 @@ export class TurmaDisciplinaService {
         if (!professor) {
             throw new Error("Professor nao encontrado");
         }
+
+        await this.validarProfessorLecionaDisciplina(data.professorId, cursoDisciplina.disciplina.id);
 
         const turmaDisciplinaExistente = await this.turmaDisciplinaRepository.buscarTurmaDisciplinaPorTurmaECursoDisciplina(
             turmaId,
@@ -82,6 +92,14 @@ export class TurmaDisciplinaService {
 
             if (!professor) {
                 throw new Error("Professor nao encontrado");
+            }
+
+            // So valida na troca: manter o professor atual nao pode travar uma edicao so de status.
+            if (data.professorId !== turmaDisciplinaAtual.professor?.id) {
+                await this.validarProfessorLecionaDisciplina(
+                    data.professorId,
+                    turmaDisciplinaAtual.curso_disciplina.disciplina.id
+                );
             }
         }
 

@@ -20,6 +20,26 @@ const CAMPOS_ACADEMICOS = [
 export class DisciplinaService {
     disciplinaRepository = new DisciplinaRepository();
 
+    private traduzirErroRemocao(error: any) {
+        const codigo = error?.code;
+        const textoErro = [error?.constraint, error?.message, error?.detail].map((valor) => String(valor ?? "")).join(" ");
+
+        if (textoErro.includes("professor_disciplina_disciplina_id_foreign")) {
+            return "Nao e possivel remover a disciplina porque ela esta vinculada a professores.";
+        }
+
+        // curso_disciplina e removida em cascata, mas turma_disciplina bloqueia (RESTRICT).
+        if (textoErro.includes("turma_disciplina_curso_disciplina_id_foreign")) {
+            return "Nao e possivel remover a disciplina porque ela esta sendo usada em turmas.";
+        }
+
+        if (codigo === "23503" || textoErro.includes("violates RESTRICT setting of foreign key constraint")) {
+            return "Nao e possivel remover a disciplina, pois ela possui registros vinculados.";
+        }
+
+        return null;
+    }
+
     async criarDisciplina(data: any) {
         const codigo = this.textoObrigatorio(data.codigo, "Informe o codigo da disciplina").toUpperCase();
         if (await this.disciplinaRepository.buscarDisciplinaPorCodigo(codigo)) {
@@ -110,7 +130,20 @@ export class DisciplinaService {
             (erro as any).status = 409;
             throw erro;
         }
-        return this.disciplinaRepository.removerDisciplina(id);
+
+        try {
+            return await this.disciplinaRepository.removerDisciplina(id);
+        } catch (error: any) {
+            const mensagemTraduzida = this.traduzirErroRemocao(error);
+
+            if (mensagemTraduzida) {
+                const erro = new Error(mensagemTraduzida);
+                (erro as any).status = 409;
+                throw erro;
+            }
+
+            throw error;
+        }
     }
 
     async alterarStatus(id: string, ativo: boolean) {

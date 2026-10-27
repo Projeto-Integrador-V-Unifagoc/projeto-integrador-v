@@ -32,6 +32,11 @@ export const professorApi = {
         return response.data;
     },
 
+    async vincularDisciplina(id: string, disciplinaId: string): Promise<Professor> {
+        const response = await api.post<Professor>(`/professores/${id}/disciplinas`, { disciplinaId });
+        return response.data;
+    },
+
     async deletar(id: string): Promise<void> {
         await api.delete(`/professores/${id}`);
     },

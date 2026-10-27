@@ -10,7 +10,12 @@ function criar(overrides: {
 } = {}) {
   const turmaDisciplinaRepository = {
     buscarTurmaDisciplinaPorTurmaECursoDisciplina: async () => null,
-    buscarTurmaDisciplinaPorId: async () => ({ id: "td1", turma: { id: "t1" } }),
+    buscarTurmaDisciplinaPorId: async () => ({
+      id: "td1",
+      turma: { id: "t1" },
+      professor: { id: "prof1" },
+      curso_disciplina: { id: "cd1", disciplina: { id: "d1" } },
+    }),
     criarTurmaDisciplina: async (data: any) => data,
     listarTurmaDisciplinasPorTurmaId: async () => [],
     atualizarTurmaDisciplina: async (_id: string, data: any) => data,
@@ -23,11 +28,12 @@ function criar(overrides: {
     ...overrides.turma,
   };
   const cursoDisciplinaRepository = {
-    buscarCursoDisciplinaPorId: async () => ({ id: "cd1", curso: { id: "c1" } }),
+    buscarCursoDisciplinaPorId: async () => ({ id: "cd1", curso: { id: "c1" }, disciplina: { id: "d1" } }),
     ...overrides.cursoDisciplina,
   };
   const professorRepository = {
     buscarProfessorAtivoPorId: async () => ({ id: "prof1", ativo: true }),
+    professorLecionaDisciplina: async (_professorId: string, _disciplinaId: string) => true,
     ...overrides.professor,
   };
   const service = new TurmaDisciplinaService();
@@ -70,6 +76,15 @@ describe("TurmaDisciplinaService.criarTurmaDisciplina", () => {
     await assert.rejects(() => service.criarTurmaDisciplina("t1", { ...input }), /Professor nao encontrado/);
   });
 
+  it("rejeita professor que nao leciona a disciplina", async () => {
+    let consultado: string[] = [];
+    const { service } = criar({
+      professor: { professorLecionaDisciplina: async (professorId: string, disciplinaId: string) => ((consultado = [professorId, disciplinaId]), false) },
+    });
+    await assert.rejects(() => service.criarTurmaDisciplina("t1", { ...input }), /nao leciona esta disciplina/);
+    assert.deepEqual(consultado, ["prof1", "d1"]);
+  });
+
   it("rejeita disciplina ja adicionada a turma", async () => {
     const { service } = criar({ turmaDisciplina: { buscarTurmaDisciplinaPorTurmaECursoDisciplina: async () => ({ id: "td0" }) } });
     await assert.rejects(() => service.criarTurmaDisciplina("t1", { ...input }), /ja adicionada a esta turma/);
@@ -101,6 +116,27 @@ describe("TurmaDisciplinaService.atualizarTurmaDisciplina", () => {
     });
     await service.atualizarTurmaDisciplina("t1", "td1", { status: "encerrada" });
     assert.equal(chamouBuscaProfessor, false);
+    assert.equal(salvo.status, "encerrada");
+  });
+
+  it("rejeita troca para professor que nao leciona a disciplina", async () => {
+    let consultado: string[] = [];
+    const { service } = criar({
+      professor: { professorLecionaDisciplina: async (professorId: string, disciplinaId: string) => ((consultado = [professorId, disciplinaId]), false) },
+    });
+    await assert.rejects(() => service.atualizarTurmaDisciplina("t1", "td1", { professorId: "prof2" }), /nao leciona esta disciplina/);
+    assert.deepEqual(consultado, ["prof2", "d1"]);
+  });
+
+  it("mantem o professor atual sem exigir o vinculo de disciplina", async () => {
+    let salvo: any;
+    let consultouVinculo = false;
+    const { service } = criar({
+      turmaDisciplina: { atualizarTurmaDisciplina: async (_id: string, d: any) => ((salvo = d), d) },
+      professor: { professorLecionaDisciplina: async () => ((consultouVinculo = true), false) },
+    });
+    await service.atualizarTurmaDisciplina("t1", "td1", { professorId: "prof1", status: "encerrada" });
+    assert.equal(consultouVinculo, false);
     assert.equal(salvo.status, "encerrada");
   });
 

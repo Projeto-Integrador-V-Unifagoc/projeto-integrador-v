@@ -224,7 +224,6 @@ export async function seed(knex: Knex): Promise<void> {
       id: ids.professor,
       usuario_id: ids.professorUsuario,
       pessoa_id: ids.professorPessoa,
-      curso_id: ids.curso,
       faculdade_id: ids.faculdade,
     })
     .onConflict("id")
@@ -244,9 +243,21 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict("codigo")
     .merge();
 
-  await knex(`${SCHEMA}.periodo_letivo`)
-    .insert({
-      id: ids.periodoLetivo,
+  await knex(`${SCHEMA}.professor_disciplina`)
+    .insert(disciplinas.map((d) => ({ professor_id: ids.professor, disciplina_id: d.id })))
+    .onConflict(["professor_id", "disciplina_id"])
+    .ignore();
+
+  // So pode existir um periodo por ano/semestre. O popular_banco.ts (que roda depois) recria o
+  // 2026/1 com outro codigo, entao numa segunda execucao dos seeds reaproveita o periodo existente.
+  const periodoExistente = await knex(`${SCHEMA}.periodo_letivo`)
+    .where({ ano: 2026, semestre: 1 })
+    .first("id");
+  const periodoLetivoId: string = periodoExistente?.id ?? ids.periodoLetivo;
+
+  if (!periodoExistente) {
+    await knex(`${SCHEMA}.periodo_letivo`).insert({
+      id: periodoLetivoId,
       codigo: "2026/1-REL",
       ano: 2026,
       semestre: 1,
@@ -254,9 +265,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_fim: "2026-06-30",
       ativo: true,
       status: "ativo",
-    })
-    .onConflict("codigo")
-    .merge();
+    });
+  }
 
   await knex(`${SCHEMA}.curso_disciplina`)
     .insert(
@@ -276,7 +286,7 @@ export async function seed(knex: Knex): Promise<void> {
   await knex(`${SCHEMA}.turma`)
     .insert({
       id: ids.turma,
-      periodo_letivo_id: ids.periodoLetivo,
+      periodo_letivo_id: periodoLetivoId,
       curso_id: ids.curso,
       periodo_curricular: 5,
       descricao: "ADS 5 Periodo 2026/1",

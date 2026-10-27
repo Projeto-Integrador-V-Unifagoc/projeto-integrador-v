@@ -89,4 +89,41 @@ describe("DisciplinaService remocao", () => {
     const { service } = criar();
     assert.equal(await service.removerDisciplina("d1"), 1);
   });
+
+  it("traduz o bloqueio por professores vinculados", async () => {
+    const { service } = criar({
+      removerDisciplina: async () => {
+        throw { code: "23503", constraint: "professor_disciplina_disciplina_id_foreign" };
+      },
+    });
+    await assert.rejects(() => service.removerDisciplina("d1"), /vinculada a professores/);
+  });
+
+  it("traduz o bloqueio por turmas que usam a disciplina", async () => {
+    const { service } = criar({
+      removerDisciplina: async () => {
+        throw { code: "23503", constraint: "turma_disciplina_curso_disciplina_id_foreign" };
+      },
+    });
+    await assert.rejects(() => service.removerDisciplina("d1"), /sendo usada em turmas/);
+  });
+
+  it("traduz outros erros de foreign key (codigo 23503)", async () => {
+    const { service } = criar({
+      removerDisciplina: async () => {
+        throw { code: "23503", constraint: "outra_tabela_disciplina_id_foreign" };
+      },
+    });
+    await assert.rejects(() => service.removerDisciplina("d1"), /possui registros vinculados/);
+  });
+
+  it("repassa erros que nao sao de foreign key", async () => {
+    const erro = new Error("conexao perdida");
+    const { service } = criar({
+      removerDisciplina: async () => {
+        throw erro;
+      },
+    });
+    await assert.rejects(() => service.removerDisciplina("d1"), (recebido) => recebido === erro);
+  });
 });

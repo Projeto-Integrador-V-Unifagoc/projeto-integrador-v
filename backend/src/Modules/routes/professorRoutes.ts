@@ -10,6 +10,7 @@ professorRouter.get('/', professorController.listarTodos);
 professorRouter.post('/', professorController.criar);
 professorRouter.get('/:id', professorController.buscarPorId);
 professorRouter.put('/:id', professorController.atualizar);
+professorRouter.post('/:id/disciplinas', professorController.vincularDisciplina);
 professorRouter.delete('/:id', professorController.inativar);
 professorRouter.patch('/:id/reativar', professorController.reativar);
 
