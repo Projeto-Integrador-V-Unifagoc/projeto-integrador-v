@@ -1,25 +1,28 @@
-import { Grid } from "@mui/material";
+import { Autocomplete, Chip, Grid, MenuItem, Stack } from "@mui/material";
 
 import SearchableSelect, {
     type SelectOption,
 } from "../../components/SearchableSelect/SearchableSelect";
 import TextField from "../../components/TextField";
-import type { ProfessorFormData } from "./professor-form-model";
+import Button from "../../components/Button";
+import type { DisciplinaSelecionada, ProfessorFormData } from "./professor-form-model";
 
 type ProfessorFormErrors = Partial<Record<keyof ProfessorFormData, string>>;
 
 interface ProfessorFormFieldsProps {
     data: ProfessorFormData;
     errors: ProfessorFormErrors;
-    cursoOptions: SelectOption[];
+    disciplinaOptions: DisciplinaSelecionada[];
+    faculdadeOptions: { id: string; nome: string }[];
     cidadeOptions: SelectOption[];
     onChange: (field: keyof ProfessorFormData, value: string) => void;
-    onSearchCurso: (query: string) => void;
+    onChangeDisciplinas: (selecionadas: DisciplinaSelecionada[]) => void;
+    onChangeFaculdade: (faculdadeId: string) => void;
     onSearchCidade: (query: string) => void;
-    onSelectCurso: (option: SelectOption) => void;
     onSelectCidade: (option: SelectOption) => void;
-    loadingCursos?: boolean;
+    onBuscarCep: () => void;
     loadingCidades?: boolean;
+    loadingCep?: boolean;
     required?: boolean;
 }
 
@@ -28,15 +31,17 @@ const helper = (message?: string) => message || " ";
 export default function ProfessorFormFields({
     data,
     errors,
-    cursoOptions,
+    disciplinaOptions,
+    faculdadeOptions,
     cidadeOptions,
     onChange,
-    onSearchCurso,
+    onChangeDisciplinas,
+    onChangeFaculdade,
     onSearchCidade,
-    onSelectCurso,
     onSelectCidade,
-    loadingCursos = false,
+    onBuscarCep,
     loadingCidades = false,
+    loadingCep = false,
     required = false,
 }: ProfessorFormFieldsProps) {
     const field = (
@@ -70,36 +75,87 @@ export default function ProfessorFormFields({
             </Grid>
 
             <Grid size={{ xs: 12, sm: 6, md: 6 }}>
-                <SearchableSelect
-                    label="Curso"
-                    placeholder="Buscar curso"
-                    value={data.curso_id}
-                    displayValue={data.curso_nome}
-                    options={cursoOptions}
-                    onSearch={onSearchCurso}
-                    onSelect={onSelectCurso}
-                    loading={loadingCursos}
-                    error={Boolean(errors.curso_id)}
-                    helperText={helper(errors.curso_id)}
-                    required={required}
+                <Autocomplete
+                    multiple
+                    options={disciplinaOptions}
+                    getOptionLabel={(option) => option.nome}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    value={data.disciplinasSelecionadas}
+                    onChange={(_event, value) => onChangeDisciplinas(value)}
+                    renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                            <Chip label={option.nome} size="small" {...getTagProps({ index })} />
+                        ))
+                    }
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Disciplinas"
+                            placeholder="Buscar disciplinas"
+                            required={required}
+                            error={Boolean(errors.disciplinaIds)}
+                            helperText={helper(errors.disciplinaIds)}
+                            sx={{
+                                "& .MuiOutlinedInput-root": {
+                                    height: "auto",
+                                    minHeight: 36,
+                                    flexWrap: "wrap",
+                                    paddingTop: "4px",
+                                    paddingBottom: "4px",
+                                },
+                            }}
+                        />
+                    )}
                 />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 6 }}>
                 <TextField
+                    select
                     label="Faculdade"
-                    value={data.faculdade_nome}
-                    disabled
+                    value={data.faculdade_id}
+                    onChange={(event) => onChangeFaculdade(event.target.value)}
                     required={required}
                     error={Boolean(errors.faculdade_id)}
-                    helperText={errors.faculdade_id || (!data.faculdade_nome ? "Definida automaticamente pelo curso" : " ")}
-                />
+                    helperText={helper(errors.faculdade_id)}
+                >
+                    {faculdadeOptions.map((faculdade) => (
+                        <MenuItem key={faculdade.id} value={faculdade.id}>
+                            {faculdade.nome}
+                        </MenuItem>
+                    ))}
+                </TextField>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 6 }}>{field("logradouro", "Logradouro")}</Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>{field("bairro", "Bairro")}</Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Stack direction="row" spacing={1} alignItems="flex-start">
+                    {field("cep", "CEP", {
+                        onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                            onChange("cep", event.target.value.replace(/\D/g, "").slice(0, 8)),
+                        onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+                            if (event.key === "Enter") {
+                                event.preventDefault();
+                                onBuscarCep();
+                            }
+                        },
+                        inputProps: { inputMode: "numeric", maxLength: 8 },
+                        sx: { flex: 1 },
+                    })}
+                    <Button
+                        variant="outlined"
+                        sx={{ minWidth: 130, height: 36, flexShrink: 0 }}
+                        onClick={onBuscarCep}
+                        isLoading={loadingCep}
+                        disabled={data.cep.replace(/\D/g, "").length !== 8}
+                    >
+                        Buscar CEP
+                    </Button>
+                </Stack>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>{field("logradouro", "Logradouro")}</Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>{field("bairro", "Bairro")}</Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>{field("numero", "Número")}</Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 7 }}>
                 <SearchableSelect
                     label="Cidade"
                     placeholder="Buscar cidade"
@@ -118,13 +174,6 @@ export default function ProfessorFormFields({
                 {field("uf", "UF", {
                     onChange: (event: React.ChangeEvent<HTMLInputElement>) => onChange("uf", event.target.value.toUpperCase()),
                     inputProps: { maxLength: 2 },
-                })}
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4, md: 4 }}>
-                {field("cep", "CEP", {
-                    onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
-                        onChange("cep", event.target.value.replace(/\D/g, "").slice(0, 8)),
-                    inputProps: { inputMode: "numeric", maxLength: 8 },
                 })}
             </Grid>
         </Grid>

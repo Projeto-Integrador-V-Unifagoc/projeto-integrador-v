@@ -241,14 +241,14 @@ describe("AutenticacaoService.getMe", () => {
     mockRepo({
       buscarPorId: async () => ({ id: "u1", nome: "S", email: "s@x.com", senha: "hash", tipo_usuario: "professor" }),
       buscarProfessorPorUsuario: async () => ({
-        pessoa_nome: "Prof Um", cpf: "222", curso_nome: "ADS", curso_codigo: "ADS01", faculdade_nome: "Unieduca",
+        pessoa_nome: "Prof Um", cpf: "222", disciplinas: ["Cálculo I"], faculdade_nome: "Unieduca",
       }),
     });
     const me = await autenticacaoService.getMe("u1");
     assert.deepEqual(me.pessoa, {
       nome: "Prof Um", cpf: "222", data_nascimento: null, logradouro: null, numero: null, bairro: null, estado: null, cep: null,
     });
-    assert.deepEqual(me.academico, { curso: "ADS", curso_codigo: "ADS01", faculdade: "Unieduca" });
+    assert.deepEqual(me.academico, { disciplinas: ["Cálculo I"], faculdade: "Unieduca" });
   });
 
   it("preenche academico com nulos quando os dados do aluno/professor vinculado estao incompletos", async () => {
@@ -267,7 +267,7 @@ describe("AutenticacaoService.getMe", () => {
       buscarProfessorPorUsuario: async () => ({}),
     });
     const me2 = await autenticacaoService.getMe("u1");
-    assert.deepEqual(me2.academico, { curso: null, curso_codigo: null, faculdade: null });
+    assert.deepEqual(me2.academico, { disciplinas: [], faculdade: null });
   });
 
   it("mantem pessoa/academico nulos quando professor vinculado nao e encontrado", async () => {

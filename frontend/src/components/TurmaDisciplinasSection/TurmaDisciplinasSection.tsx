@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { Alert, Grid, IconButton, MenuItem, Stack, Typography } from "@mui/material";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, UserPlus } from "lucide-react";
+import { AtrelarProfessorDialog } from "./AtrelarProfessorDialog";
 import { ValidationError } from "yup";
 import DataTable from "../DataTable/DataTable";
 import Button from "../Button";
@@ -43,6 +45,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   const [registroExclusao, setRegistroExclusao] = useState<TurmaDisciplinaResponse | null>(null);
   const [form, setForm] = useState<FormType>(initialForm);
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [atrelarAberto, setAtrelarAberto] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState<"todas" | "ativa" | "planejada" | "encerrada">("todas");
   const { carregando, listarDisciplinasDaTurma, criarDisciplinaDaTurma, atualizarDisciplinaDaTurma, removerDisciplinaDaTurma } = useTurma();
   const { listarMatrizCurricularPorCursoId } = useCursoDisciplina();
@@ -75,6 +78,34 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
     return disciplinasMatriz.filter((item) => !idsEmUso.has(item.id) || item.id === form.cursoDisciplinaId);
   }, [disciplinasMatriz, disciplinasTurma, form.cursoDisciplinaId]);
 
+  const disciplinaSelecionada = useMemo(
+    () => disciplinasMatriz.find((item) => item.id === form.cursoDisciplinaId)?.disciplina
+      ?? registroEdicao?.curso_disciplina.disciplina
+      ?? null,
+    [disciplinasMatriz, form.cursoDisciplinaId, registroEdicao],
+  );
+  const disciplinaSelecionadaId = disciplinaSelecionada?.id;
+
+  // So aparecem os professores que lecionam a disciplina escolhida. Na edicao o professor atual
+  // continua na lista (marcado) para nao sumir do campo: so ocorre em oferta encerrada ou anterior
+  // a regra, ja que o cadastro do professor bloqueia remover disciplina de oferta em andamento.
+  const professoresDisponiveis = useMemo(() => {
+    if (!disciplinaSelecionadaId) {
+      return [];
+    }
+
+    const lecionam = professores
+      .filter((professor) => professor.disciplinas.some((disciplina) => disciplina.id === disciplinaSelecionadaId))
+      .map((professor) => ({ ...professor, semVinculo: false }));
+
+    const atual = registroEdicao?.professor;
+    if (atual && !lecionam.some((professor) => professor.id === atual.id)) {
+      lecionam.push({ id: atual.id, nome: atual.nome, disciplinas: [], semVinculo: true });
+    }
+
+    return lecionam;
+  }, [professores, disciplinaSelecionadaId, registroEdicao]);
+
   const disciplinasTurmaOrdenadas = [...disciplinasTurma]
     .filter((item) => filtroStatus === "todas" || item.status === filtroStatus)
     .sort((a, b) => {
@@ -87,7 +118,24 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
       return a.professor.nome.localeCompare(b.professor.nome);
     });
 
+  // O cadastro do professor pode ter mudado com a turma aberta; recarrega antes de cada atribuicao.
+  function recarregarProfessores() {
+    void listarOpcoes().then(setProfessores).catch(() => undefined);
+  }
+
+  async function concluirAtrelamento(professorId: string) {
+    try {
+      setProfessores(await listarOpcoes());
+    } catch {
+      // Sem a lista nova o professor nao apareceria no campo; o backend ja gravou o vinculo.
+    }
+    setForm((prev) => ({ ...prev, professorId }));
+    setErros((prev) => ({ ...prev, professorId: "" }));
+    setAtrelarAberto(false);
+  }
+
   function abrirDialogoCriacao() {
+    recarregarProfessores();
     setRegistroEdicao(null);
     setForm(initialForm);
     setErros({});
@@ -95,6 +143,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
   }
 
   function abrirDialogoEdicao(item: TurmaDisciplinaResponse) {
+    recarregarProfessores();
     setRegistroEdicao(item);
     setForm({
       cursoDisciplinaId: item.curso_disciplina.id,
@@ -135,8 +184,13 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
       setDialogoAberto(false);
       setForm(initialForm);
       void carregarDados();
-    } catch {
-      setAlerta({ tipo: "error", mensagem: "Nao foi possivel salvar a disciplina da turma." });
+    } catch (error) {
+      const mensagem =
+        axios.isAxiosError(error) && error.response?.data?.error
+          ? error.response.data.error
+          : "Nao foi possivel salvar a disciplina da turma.";
+
+      setAlerta({ tipo: "error", mensagem });
     }
   }
 
@@ -249,7 +303,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
                 value={form.cursoDisciplinaId}
                 error={!!erros.cursoDisciplinaId}
                 helperText={erros.cursoDisciplinaId}
-                onChange={(e) => setForm((prev) => ({ ...prev, cursoDisciplinaId: e.target.value }))}
+                onChange={(e) => setForm((prev) => ({ ...prev, cursoDisciplinaId: e.target.value, professorId: "" }))}
               >
                 {disciplinasDisponiveis.map((item) => (
                   <MenuItem key={item.id} value={item.id}>
@@ -264,23 +318,41 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
               )}
             </Grid>
             <Grid size={12}>
-              <TextField
-                required
-                label="Professor"
-                select
-                value={form.professorId}
-                error={!!erros.professorId}
-                helperText={erros.professorId}
-                onChange={(e) => setForm((prev) => ({ ...prev, professorId: e.target.value }))}
-              >
-                {professores.map((professor) => (
-                  <MenuItem key={professor.id} value={professor.id}>
-                    {professor.nome}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Stack direction={{ xs: "column", sm: "row" }} gap={1} alignItems={{ xs: "stretch", sm: "flex-start" }}>
+                <TextField
+                  required
+                  fullWidth
+                  sx={{ flex: 1 }}
+                  label="Professor"
+                  select
+                  disabled={!disciplinaSelecionadaId}
+                  value={form.professorId}
+                  error={!!erros.professorId}
+                  helperText={erros.professorId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, professorId: e.target.value }))}
+                >
+                  {professoresDisponiveis.map((professor) => (
+                    <MenuItem key={professor.id} value={professor.id}>
+                      {professor.semVinculo ? `${professor.nome} (nao leciona mais esta disciplina)` : professor.nome}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <Button
+                  variant="outlined"
+                  startIcon={<UserPlus size={16} />}
+                  disabled={!disciplinaSelecionadaId}
+                  onClick={() => setAtrelarAberto(true)}
+                  sx={{ width: "auto", minWidth: 170, alignSelf: { sm: "stretch" }, whiteSpace: "nowrap", flexShrink: 0 }}
+                >
+                  Atrelar professor
+                </Button>
+              </Stack>
               <Typography variant="caption" color="text.secondary">
-                O professor selecionado deve existir no cadastro academico para que a oferta seja salva.
+                {!disciplinaSelecionadaId
+                  ? "Escolha a disciplina para ver os professores que a lecionam."
+                  : professoresDisponiveis.length === 0
+                    ? "Nenhum professor leciona esta disciplina. Use \"Atrelar professor\" para habilitar um."
+                    : "Somente professores que lecionam esta disciplina. Para outro professor, use \"Atrelar professor\"."}
               </Typography>
             </Grid>
             <Grid size={12}>
@@ -305,6 +377,14 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
           <Button variant="contained" onClick={salvar} isLoading={carregando}>Salvar</Button>
         </Dialog.Footer>
       </Dialog.Root>
+
+      <AtrelarProfessorDialog
+        open={atrelarAberto}
+        disciplina={disciplinaSelecionada}
+        professores={professores}
+        onClose={() => setAtrelarAberto(false)}
+        onAtrelado={(professorId) => void concluirAtrelamento(professorId)}
+      />
 
       <Dialog.Root open={!!registroExclusao} onClose={() => setRegistroExclusao(null)} maxWidth="xs">
         <Dialog.Header>

@@ -36,6 +36,11 @@ async function atualizar(req: Request, res: Response) {
   catch (erro) { return responderErro(res, erro, 'Erro ao atualizar professor'); }
 }
 
+async function vincularDisciplina(req: Request, res: Response) {
+  try { return res.json(await professorService.vincularDisciplina(String(req.params.id), req.body?.disciplinaId)); }
+  catch (erro) { return responderErro(res, erro, 'Erro ao vincular disciplina ao professor'); }
+}
+
 async function inativar(req: Request, res: Response) {
   try { await professorService.definirAtivo(String(req.params.id), false); return res.status(204).send(); }
   catch (erro) { return responderErro(res, erro, 'Erro ao inativar professor'); }
@@ -46,4 +51,4 @@ async function reativar(req: Request, res: Response) {
   catch (erro) { return responderErro(res, erro, 'Erro ao reativar professor'); }
 }
 
-export const professorController = { listarTodos, listarOpcoes, buscarPorId, criar, atualizar, inativar, reativar };
+export const professorController = { listarTodos, listarOpcoes, buscarPorId, criar, atualizar, vincularDisciplina, inativar, reativar };

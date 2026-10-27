@@ -56,9 +56,10 @@ export async function montarCenario(
     status: opcoes.statusPeriodo ?? "ativo",
   });
   const profComLogin = await criarProfessorComLogin(apiSecretaria, runId, {
-    cursoId: curso.id,
+    disciplinaIds: [disciplina.id],
     cidadeIbge: cidade.ibge,
     uf: cidade.uf,
+    faculdadeId: faculdade.id,
   });
   const turma = await estrutura.criarTurma(apiSecretaria, runId, {
     periodoLetivoId: periodo.id,

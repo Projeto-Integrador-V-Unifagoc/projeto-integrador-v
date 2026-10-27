@@ -1,13 +1,18 @@
+export interface DisciplinaSelecionada {
+    id: string;
+    nome: string;
+}
+
 export interface ProfessorFormData {
     nome: string;
     cpf: string;
     dataNascimento: string;
-    curso_id: string;
+    disciplinaIds: string[];
+    disciplinasSelecionadas: DisciplinaSelecionada[];
     faculdade_id: string;
+    faculdadeSugerida: boolean;
     cidade_id: string;
     uf: string;
-    curso_nome: string;
-    faculdade_nome: string;
     cidade_nome: string;
     logradouro: string;
     bairro: string;
@@ -19,12 +24,12 @@ export const initialProfessorFormData: ProfessorFormData = {
     nome: "",
     cpf: "",
     dataNascimento: "",
-    curso_id: "",
+    disciplinaIds: [],
+    disciplinasSelecionadas: [],
     faculdade_id: "",
+    faculdadeSugerida: true,
     cidade_id: "",
     uf: "",
-    curso_nome: "",
-    faculdade_nome: "",
     cidade_nome: "",
     logradouro: "",
     bairro: "",

@@ -202,6 +202,7 @@ export async function seed(db: Knex): Promise<void> {
     await piv("turma_disciplina").delete();
     await piv("turma").delete();
     await piv("aluno").delete();
+    await piv("professor_disciplina").delete();
     await piv("professor").delete();
     await piv("curso_disciplina").delete();
     await piv("site_curso").delete();
@@ -336,11 +337,17 @@ export async function seed(db: Knex): Promise<void> {
             .insert({
                 usuario_id: usuario.id,
                 pessoa_id: pessoa.id,
-                curso_id: cursosCriados[cursoCodigo].id,
                 faculdade_id: faculdade.id,
                 ativo: true,
             })
             .returning("*");
+
+        await piv("professor_disciplina").insert(
+            matrizPorCurso[cursoCodigo].map((matriz: any) => ({
+                professor_id: professor.id,
+                disciplina_id: matriz.disciplina_id,
+            })),
+        );
 
         professoresPorCurso[cursoCodigo].push(professor);
     }

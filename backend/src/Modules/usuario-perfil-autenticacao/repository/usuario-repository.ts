@@ -74,11 +74,10 @@ export class UsuarioRepository {
       .first();
   }
 
-  // Busca o professor vinculado a um usuário (professor.usuario_id), trazendo pessoa, curso e faculdade.
+  // Busca o professor vinculado a um usuário (professor.usuario_id), trazendo pessoa, disciplinas e faculdade.
   async buscarProfessorPorUsuario(usuarioId: string) {
-    return await db('piv.professor')
+    const professor = await db('piv.professor')
       .leftJoin('piv.pessoa', 'professor.pessoa_id', 'pessoa.id')
-      .leftJoin('piv.curso', 'professor.curso_id', 'curso.id')
       .leftJoin('piv.faculdade', 'professor.faculdade_id', 'faculdade.id')
       .where('professor.usuario_id', usuarioId)
       .select(
@@ -92,11 +91,16 @@ export class UsuarioRepository {
         'pessoa.bairro',
         'pessoa.estado',
         'pessoa.cep',
-        'curso.nome as curso_nome',
-        'curso.codigo as curso_codigo',
         'faculdade.nome as faculdade_nome'
       )
       .first();
+    if (!professor) return professor;
+    const disciplinas = await db('piv.professor_disciplina')
+      .join('piv.disciplinas', 'piv.professor_disciplina.disciplina_id', 'piv.disciplinas.id')
+      .where('piv.professor_disciplina.professor_id', professor.vinculo_id)
+      .select('piv.disciplinas.nome')
+      .orderBy('piv.disciplinas.nome');
+    return { ...professor, disciplinas: disciplinas.map((disciplina) => disciplina.nome) };
   }
 
   // Lista alunos que ainda não possuem login vinculado (usuario_id nulo).

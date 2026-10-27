@@ -8,7 +8,7 @@ export interface CriarProfessorDTO {
   cidade_id: string;
   estado: string;
   cep: string;
-  curso_id: string;
+  disciplinaIds: string[];
   faculdade_id?: string;
 }
 
@@ -21,6 +21,5 @@ export interface FiltroProfessor {
 export interface ProfessorOpcao {
   id: string;
   nome: string;
-  curso_id: string;
-  curso_nome: string;
+  disciplinas: { id: string; nome: string }[];
 }

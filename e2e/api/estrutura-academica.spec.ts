@@ -151,7 +151,7 @@ test.describe("Estrutura acadêmica @api", () => {
       });
       const profCurso = await import("../factories/professor.factory.js");
       const prof = await profCurso.criarProfessor(apiSecretaria, runId, {
-        cursoId: cursoB.id,
+        disciplinaIds: [disc.id],
         cidadeIbge: cidade.ibge,
         uf: cidade.uf,
       });
