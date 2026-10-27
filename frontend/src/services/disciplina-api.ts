@@ -1,13 +1,13 @@
 import { api } from "../lib/axios"
-import type { CriarDisciplinaRequest } from "../models/disciplina-model"
+import type { CriarDisciplinaRequest, DisciplinaResponse } from "../models/disciplina-model"
 
 export const disciplinaApi = {
-  async listarDisciplinas() {
+  async listarDisciplinas(): Promise<DisciplinaResponse[]> {
     const response = await api.get("/disciplinas")
     return response.data
   },
 
-  async buscarDisciplinaPorId(id: string) {
+  async buscarDisciplinaPorId(id: string): Promise<DisciplinaResponse> {
     const response = await api.get(`/disciplinas/${id}`)
     return response.data
   },
@@ -24,6 +24,11 @@ export const disciplinaApi = {
 
   async removerDisciplina(id: string) {
     const response = await api.delete(`/disciplinas/${id}`)
+    return response.data
+  },
+
+  async alterarStatus(id: string, ativo: boolean) {
+    const response = await api.patch(`/disciplinas/${id}/status`, { ativo })
     return response.data
   },
 }

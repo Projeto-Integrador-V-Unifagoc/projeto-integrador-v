@@ -59,7 +59,20 @@ export class DisciplinaController {
 
             res.status(204).send();
         } catch (error) {
-            res.status(400).json({ error: (error as Error).message });
+            res.status((error as any).status ?? 400).json({ error: (error as Error).message });
+        }
+    }
+
+    async alterarStatus(req: any, res: any) {
+        if (typeof req.body?.ativo !== "boolean") {
+            return res.status(400).json({ error: "Informe o status ativo" });
+        }
+        try {
+            const disciplina = await this.disciplinaService.alterarStatus(req.params.id, req.body.ativo);
+            if (!disciplina) return res.status(404).json({ error: "Disciplina não encontrada" });
+            return res.status(200).json(disciplina);
+        } catch (error) {
+            return res.status(400).json({ error: (error as Error).message });
         }
     }
 }

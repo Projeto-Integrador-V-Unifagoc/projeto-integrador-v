@@ -367,8 +367,8 @@ export default function DisciplinaDetalhesDrawer({
         </Box>
 
         <Divider />
-        <Stack direction={{ xs: "column", sm: "row" }} gap={1.25} pb={1}>
-          <Button variant="contained" endIcon={<ArrowRight size={16} />} onClick={onAbrirBoletim}>Abrir boletim completo</Button>
+        <Stack direction={{ xs: "column", sm: "row" }} gap={1.25} pb={1} sx={{ "& > button": { width: { xs: "100%", sm: "auto" }, minWidth: 150, height: 36, whiteSpace: "nowrap" } }}>
+          <Button variant="contained" endIcon={<ArrowRight size={16} />} onClick={onAbrirBoletim} sx={{ minWidth: 210 }}>Abrir boletim completo</Button>
           <Button variant="outlined" endIcon={<ArrowRight size={16} />} onClick={onAbrirFrequencia}>Ver frequência</Button>
         </Stack>
       </Stack>

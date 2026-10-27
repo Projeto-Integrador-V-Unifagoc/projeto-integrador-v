@@ -24,6 +24,7 @@ import type { LucideIcon } from "lucide-react";
 import { Card } from "../../components/Card";
 import Container from "../../components/Container";
 import StudentDashboard from "./StudentDashboard";
+import ProfessorDashboard from "./ProfessorDashboard";
 
 interface UsuarioLocal {
   nome?: string;
@@ -110,6 +111,7 @@ export default function Home() {
   const ehProfessor = perfil === "professor";
 
   if (isAluno) return <StudentDashboard userName={userName} />;
+  if (ehProfessor) return <ProfessorDashboard userName={userName} />;
 
   const atalhos: Atalho[] = [
     { label: "Tarefas", descricao: "Acompanhe atividades e pendências", href: "/tarefas/lista", icon: ClipboardList, podeVer: ehAdmin },

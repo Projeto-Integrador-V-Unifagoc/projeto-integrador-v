@@ -8,6 +8,7 @@ import CursoController from "./Modules/modulo-facul-dp-curso/controller/CursoCon
 import { DisciplinaController } from "./Modules/modulo-disciplinas/controller/DisciplinaController";
 import { professorRouter } from "./Modules/routes/professorRoutes";
 import { homeAlunoRouter } from "./Modules/routes/homeAlunoRoutes";
+import { homeProfessorRouter } from "./Modules/routes/homeProfessorRoutes";
 import { avaliacaoRouter } from "./Modules/routes/avaliacaoRoutes";
 import { frequenciaRouter } from "./Modules/routes/frequenciaRoutes";
 import { notasRouter } from "./Modules/routes/notasRoutes";
@@ -15,6 +16,7 @@ import { matriculaRouter } from "./Modules/routes/matriculaRoutes";
 import { documentoRouter } from "./Modules/routes/documentoRoutes";
 import { configuracaoEmailRouter } from "./Modules/routes/configuracaoEmailRoutes";
 import { inscricaoPublicaRouter } from "./Modules/routes/inscricaoPublicaRoutes";
+import { competenciaRouter } from "./Modules/routes/competenciaRoutes";
 import { siteRouter } from "./Modules/site/routes/siteRoutes";
 import { FichaController } from "./Modules/modulo-ficha/controller/FichaController";
 import authRoutes from "./Modules/usuario-perfil-autenticacao/routes/auth-routes";
@@ -62,6 +64,7 @@ app.use(limiteGlobal);
 app.use(authRoutes);
 app.use(siteRouter);
 app.use(inscricaoPublicaRouter);
+app.use(competenciaRouter);
 
 const alunoController = new AlunoController();
 const cidadeController = new CidadeController();
@@ -207,6 +210,9 @@ app.get("/disciplinas/:id", autenticar, (req, res) =>
 app.put("/disciplinas/:id", autenticar, soSecretaria, (req, res) =>
   disciplinaController.atualizarDisciplina(req, res),
 );
+app.patch("/disciplinas/:id/status", autenticar, soSecretaria, (req, res) =>
+  disciplinaController.alterarStatus(req, res),
+);
 app.delete("/disciplinas/:id", autenticar, soSecretaria, (req, res) =>
   disciplinaController.removerDisciplina(req, res),
 );
@@ -259,6 +265,7 @@ app.use("/avaliacoes", avaliacaoRouter);
 app.use("/frequencias", frequenciaRouter);
 app.use("/notas", notasRouter);
 app.use(homeAlunoRouter);
+app.use(homeProfessorRouter);
 app.use(matriculaRouter);
 app.use(documentoRouter);
 app.use(configuracaoEmailRouter);
