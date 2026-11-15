@@ -26,9 +26,13 @@ describe("Sidebar", () => {
     expect(screen.queryByRole("link", { name: "Alunos" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Pessoas e vínculos" }));
-    expect(screen.getByRole("button", { name: "Estrutura acadêmica" })).toHaveAttribute("aria-expanded", "false");
-    await waitFor(() => expect(screen.queryByRole("link", { name: "Disciplinas" })).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Estrutura acadêmica" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: "Disciplinas" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Alunos" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pessoas e vínculos" }));
+    await waitFor(() => expect(screen.queryByRole("link", { name: "Alunos" })).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Disciplinas" })).toBeInTheDocument();
   });
 
   it("abre somente o grupo da página atual e destaca o item selecionado", () => {

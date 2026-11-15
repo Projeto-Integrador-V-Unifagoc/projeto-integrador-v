@@ -28,7 +28,7 @@ import {
   UserStar,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface SidebarProps {
   expandido: boolean;
@@ -147,7 +147,7 @@ export default function Sidebar({ expandido, onNavigate }: SidebarProps) {
   );
 
   const alternarGrupo = (id: string) => {
-    setGruposAbertos((atuais) => atuais[id] ? {} : { [id]: true });
+    setGruposAbertos((atuais) => ({ ...atuais, [id]: !atuais[id] }));
   };
 
   return (
@@ -198,7 +198,8 @@ export default function Sidebar({ expandido, onNavigate }: SidebarProps) {
                     disableHoverListener={expandido}
                   >
                     <ListItemButton
-                      href={href}
+                      component={Link}
+                      to={href}
                       selected={rotaAtiva(pathname, href)}
                       onClick={onNavigate}
                       sx={{
