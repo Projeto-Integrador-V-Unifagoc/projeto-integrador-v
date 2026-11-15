@@ -26,6 +26,7 @@ import { Card } from "../../components/Card";
 import Container from "../../components/Container";
 import StudentDashboard from "./StudentDashboard";
 import ProfessorDashboard from "./ProfessorDashboard";
+import CoordinationDashboard from "./CoordinationDashboard";
 
 interface UsuarioLocal {
   nome?: string;
@@ -113,6 +114,7 @@ export default function Home() {
 
   if (isAluno) return <StudentDashboard userName={userName} />;
   if (ehProfessor) return <ProfessorDashboard userName={userName} />;
+  if (ehAdmin) return <CoordinationDashboard userName={userName} />;
 
   const atalhos: Atalho[] = [
     { label: "Tarefas", descricao: "Acompanhe atividades e pendências", href: "/tarefas/lista", icon: ClipboardList, podeVer: ehAdmin },

@@ -35,6 +35,7 @@ import { lerTrustProxy } from "./config/trustProxy";
 import { limiteGlobal } from "./config/limitesRequisicoes";
 import { MatrizCurricularController } from "./Modules/matriz-curricular/controller/MatrizCurricularController";
 import { horarioOfertaRouter } from "./Modules/routes/horarioOfertaRoutes";
+import { homeCoordenacaoRouter } from "./Modules/routes/homeCoordenacaoRoutes";
 
 const PORT = process.env.PORT || 3000;
 obterJwtSecret();
@@ -68,6 +69,7 @@ app.use(siteRouter);
 app.use(inscricaoPublicaRouter);
 app.use(competenciaRouter);
 app.use(horarioOfertaRouter);
+app.use(homeCoordenacaoRouter);
 
 const alunoController = new AlunoController();
 const cidadeController = new CidadeController();
