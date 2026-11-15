@@ -15,6 +15,7 @@ import { notasRouter } from "./Modules/routes/notasRoutes";
 import { matriculaRouter } from "./Modules/routes/matriculaRoutes";
 import { documentoRouter } from "./Modules/routes/documentoRoutes";
 import { configuracaoEmailRouter } from "./Modules/routes/configuracaoEmailRoutes";
+import { assistenteRouter } from "./Modules/routes/assistenteRoutes";
 import { inscricaoPublicaRouter } from "./Modules/routes/inscricaoPublicaRoutes";
 import { competenciaRouter } from "./Modules/routes/competenciaRoutes";
 import { siteRouter } from "./Modules/site/routes/siteRoutes";
@@ -269,6 +270,7 @@ app.use(homeProfessorRouter);
 app.use(matriculaRouter);
 app.use(documentoRouter);
 app.use(configuracaoEmailRouter);
+app.use(assistenteRouter);
 
 // Sob Vitest (testes de integração com supertest) o app é apenas importado,
 // nunca escuta numa porta. Em execução normal (`tsx src/app.ts`, `npm start`,

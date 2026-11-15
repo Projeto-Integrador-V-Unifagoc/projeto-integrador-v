@@ -27,6 +27,10 @@
         "test:all": "vitest run"
     },
     "dependencies": {
+        "@langchain/anthropic": "1.6.0",
+        "@langchain/core": "1.3.2",
+        "@langchain/google-genai": "2.3.4",
+        "@langchain/openai": "1.8.0",
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
         "axios": "^1.14.0",
