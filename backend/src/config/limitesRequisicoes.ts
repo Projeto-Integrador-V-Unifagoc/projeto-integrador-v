@@ -72,3 +72,15 @@ export const limiteDocumentosPublicos = criarLimitador({
   janelaMs: QUINZE_MINUTOS,
   mensagem: 'Muitos envios de documentos em pouco tempo. Aguarde alguns minutos e tente novamente.',
 });
+
+// Cada mensagem ao assistente custa uma chamada paga ao provedor de IA: limite por usuário logado.
+export const limiteAssistente = criarLimitador({
+  nome: 'assistente',
+  maximo: lerInteiro(process.env.RATE_LIMIT_ASSISTENTE_MAX, 20),
+  janelaMs: lerInteiro(process.env.RATE_LIMIT_ASSISTENTE_JANELA_MS, QUINZE_MINUTOS),
+  chave: (req) => {
+    const id = (req as any).user?.id;
+    return id === undefined ? undefined : `usuario:${id}`;
+  },
+  mensagem: 'Você enviou muitas mensagens ao assistente. Aguarde alguns minutos e tente novamente.',
+});

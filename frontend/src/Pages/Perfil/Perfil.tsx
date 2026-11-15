@@ -13,8 +13,9 @@ import {
   Typography,
 } from "@mui/material";
 
-import { Settings, UserRound } from "lucide-react";
+import { Bot, Settings, UserRound } from "lucide-react";
 import ConfiguracaoEmailDialog from "../../components/ConfiguracaoEmail/ConfiguracaoEmailDialog";
+import ConfiguracaoIaDialog from "../../components/ConfiguracaoIa/ConfiguracaoIaDialog";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
 import { authService } from "../../services/auth-services";
 
@@ -71,6 +72,7 @@ export default function Perfil() {
   const [perfil, setPerfil] = useState<PerfilData | null>(null);
   const [loading, setLoading] = useState(true);
   const [configuracaoAberta, setConfiguracaoAberta] = useState(false);
+  const [configuracaoIaAberta, setConfiguracaoIaAberta] = useState(false);
   const { notificar } = useNotificacao();
 
   useEffect(() => {
@@ -191,12 +193,30 @@ export default function Perfil() {
               </IconButton>
             </Tooltip>
           )}
+
+          {ehAdministrativo && (
+            <Tooltip title="Configurar assistente de IA">
+              <IconButton
+                color="primary"
+                onClick={() => setConfiguracaoIaAberta(true)}
+                aria-label="Configurar assistente de IA"
+                sx={{ bgcolor: "#e9ecef", "&:hover": { bgcolor: "#dde1e6" } }}
+              >
+                <Bot size={20} />
+              </IconButton>
+            </Tooltip>
+          )}
         </Stack>
       </Stack>
 
       <ConfiguracaoEmailDialog
         aberto={configuracaoAberta}
         onFechar={() => setConfiguracaoAberta(false)}
+      />
+
+      <ConfiguracaoIaDialog
+        aberto={configuracaoIaAberta}
+        onFechar={() => setConfiguracaoIaAberta(false)}
       />
 
       <Paper
