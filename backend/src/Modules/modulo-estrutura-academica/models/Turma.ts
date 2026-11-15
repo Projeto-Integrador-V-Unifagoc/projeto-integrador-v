@@ -11,6 +11,8 @@ export interface Turma {
         codigo: string
         ano: number
         semestre: number
+        data_inicio: string
+        data_fim: string
     }
     curso: {
         id: string
@@ -54,7 +56,9 @@ export class TurmaMapper {
                 id: raw.periodo_letivo_id,
                 codigo: raw.periodo_letivo_codigo,
                 ano: raw.periodo_letivo_ano,
-                semestre: raw.periodo_letivo_semestre
+                semestre: raw.periodo_letivo_semestre,
+                data_inicio: raw.periodo_letivo_data_inicio instanceof Date ? raw.periodo_letivo_data_inicio.toISOString().slice(0, 10) : String(raw.periodo_letivo_data_inicio).slice(0, 10),
+                data_fim: raw.periodo_letivo_data_fim instanceof Date ? raw.periodo_letivo_data_fim.toISOString().slice(0, 10) : String(raw.periodo_letivo_data_fim).slice(0, 10)
             },
             curso: {
                 id: raw.curso_id,

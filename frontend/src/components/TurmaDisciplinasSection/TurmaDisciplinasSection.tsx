@@ -17,11 +17,14 @@ import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-mode
 import type { ProfessorOpcao } from "../../models/professor-model";
 import type { TurmaDisciplinaResponse } from "../../models/turma-model";
 import type { GridColDef } from "@mui/x-data-grid";
+import { HorariosTurma } from "../HorariosTurma/HorariosTurma";
 
 type Props = {
   turmaId: string
   cursoId: string
   matrizCurricularId: string
+  periodoInicio: string
+  periodoFim: string
 }
 
 type FormType = {
@@ -36,7 +39,7 @@ const initialForm: FormType = {
   status: "ativa",
 };
 
-export function TurmaDisciplinasSection({ turmaId, cursoId, matrizCurricularId }: Props) {
+export function TurmaDisciplinasSection({ turmaId, cursoId, matrizCurricularId, periodoInicio, periodoFim }: Props) {
   const [disciplinasTurma, setDisciplinasTurma] = useState<TurmaDisciplinaResponse[]>([]);
   const [disciplinasMatriz, setDisciplinasMatriz] = useState<CursoDisciplinaResponse[]>([]);
   const [professores, setProfessores] = useState<ProfessorOpcao[]>([]);
@@ -282,6 +285,8 @@ export function TurmaDisciplinasSection({ turmaId, cursoId, matrizCurricularId }
           </Stack>
         </Card.Content>
       </Card.Root>
+
+      <HorariosTurma turmaId={turmaId} ofertas={disciplinasTurma} periodoInicio={periodoInicio} periodoFim={periodoFim} />
 
       <Dialog.Root open={dialogoAberto} onClose={() => setDialogoAberto(false)} maxWidth="sm">
         <Dialog.Header>

@@ -1,5 +1,5 @@
 import { api } from "../lib/axios";
-import type { TurmaDisciplinaRequest, TurmaRequest } from "../models/turma-model";
+import type { HorarioOfertaRequest, TurmaDisciplinaRequest, TurmaRequest } from "../models/turma-model";
 
 export const turmaApi = {
   async listarTurmas() {
@@ -45,5 +45,24 @@ export const turmaApi = {
   async removerDisciplinaDaTurma(id: string, turmaDisciplinaId: string) {
     const response = await api.delete(`/turmas/${id}/disciplinas/${turmaDisciplinaId}`);
     return response.data;
+  },
+
+  async listarHorariosTurma(turmaId: string) {
+    const response = await api.get(`/turmas/${turmaId}/horarios`);
+    return response.data;
+  },
+
+  async criarHorario(ofertaId: string, data: HorarioOfertaRequest) {
+    const response = await api.post(`/turmas-disciplinas/${ofertaId}/horarios`, data);
+    return response.data;
+  },
+
+  async atualizarHorario(id: string, data: HorarioOfertaRequest) {
+    const response = await api.put(`/horarios-ofertas/${id}`, data);
+    return response.data;
+  },
+
+  async removerHorario(id: string) {
+    await api.delete(`/horarios-ofertas/${id}`);
   },
 };

@@ -13,6 +13,8 @@ export class TurmaRepository {
                 "periodo_letivo.codigo as periodo_letivo_codigo",
                 "periodo_letivo.ano as periodo_letivo_ano",
                 "periodo_letivo.semestre as periodo_letivo_semestre",
+                "periodo_letivo.data_inicio as periodo_letivo_data_inicio",
+                "periodo_letivo.data_fim as periodo_letivo_data_fim",
                 "curso.id as curso_id",
                 "curso.codigo as curso_codigo",
                 "curso.nome as curso_nome",

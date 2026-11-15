@@ -47,6 +47,7 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
   const [cursos, setCursos] = useState<CursoResponse[]>([]);
   const [periodosLetivos, setPeriodosLetivos] = useState<PeriodoLetivoResponse[]>([]);
   const [matrizCurricularId, setMatrizCurricularId] = useState("");
+  const [vigenciaPeriodo, setVigenciaPeriodo] = useState({ inicio: "", fim: "" });
   const navigate = useNavigate();
   const { carregando, buscarTurmaPorId, criarTurma, atualizarTurma } = useTurma();
   const { listarCursos } = useCurso();
@@ -87,6 +88,7 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
           status: turma.status,
         });
         setMatrizCurricularId(turma.matriz_curricular.id);
+        setVigenciaPeriodo({ inicio: turma.periodo_letivo.data_inicio, fim: turma.periodo_letivo.data_fim });
       } catch {
         setAlerta({
           tipo: "error",
@@ -329,7 +331,7 @@ export default function FormTurma({ turmaId }: FormTurmaProps) {
         {turmaId && (
           <>
             <Typography variant="h6">Disciplinas da Turma</Typography>
-            <TurmaDisciplinasSection turmaId={turmaId} cursoId={form.cursoId} matrizCurricularId={matrizCurricularId} />
+            <TurmaDisciplinasSection turmaId={turmaId} cursoId={form.cursoId} matrizCurricularId={matrizCurricularId} periodoInicio={vigenciaPeriodo.inicio} periodoFim={vigenciaPeriodo.fim} />
           </>
         )}
       </Stack>

@@ -34,6 +34,7 @@ import { ConfiguracaoSmtpService } from "./Modules/configuracao-email/service/Co
 import { lerTrustProxy } from "./config/trustProxy";
 import { limiteGlobal } from "./config/limitesRequisicoes";
 import { MatrizCurricularController } from "./Modules/matriz-curricular/controller/MatrizCurricularController";
+import { horarioOfertaRouter } from "./Modules/routes/horarioOfertaRoutes";
 
 const PORT = process.env.PORT || 3000;
 obterJwtSecret();
@@ -66,6 +67,7 @@ app.use(authRoutes);
 app.use(siteRouter);
 app.use(inscricaoPublicaRouter);
 app.use(competenciaRouter);
+app.use(horarioOfertaRouter);
 
 const alunoController = new AlunoController();
 const cidadeController = new CidadeController();
