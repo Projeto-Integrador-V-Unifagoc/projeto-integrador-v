@@ -79,6 +79,65 @@ test.describe("Avaliações @api", () => {
     expect((await cenario.apiProfessor.put(`/avaliacoes/${id}`, { body: { valor: 15 } })).status).toBe(200);
     expect((await cenario.apiProfessor.del(`/avaliacoes/${id}`)).status).toBe(204);
   });
+
+  test("mapeia competências da disciplina e bloqueia alteração depois de lançar nota", async ({ novoCenario, runId }) => {
+    const cenario = await novoCenario();
+    const competencia = await cenario.apiSecretaria.post("/competencias", {
+      body: {
+        codigo: `COMP-AV-${runId}`.slice(0, 40),
+        nome: `Competência avaliada ${runId}`,
+        descricao: "Competência usada para validar o mapeamento da avaliação.",
+        tipo: "TECNICA",
+      },
+    });
+    expect(competencia.status).toBe(201);
+
+    const disciplina = await cenario.apiSecretaria.put(`/disciplinas/${cenario.disciplinaId}`, {
+      body: {
+        competencias: [{ competenciaId: competencia.body.id, nivelEsperado: "DESENVOLVER", obrigatoria: true, ordem: 0 }],
+      },
+    });
+    expect(disciplina.status).toBe(200);
+
+    const disponiveis = await cenario.apiProfessor.get(`/avaliacoes/atribuicoes/${cenario.turmaDisciplinaId}/competencias`);
+    expect(disponiveis.status).toBe(200);
+    expect(disponiveis.body.map((item: any) => item.competencia_id)).toContain(competencia.body.id);
+
+    const criada = await cenario.apiProfessor.post("/avaliacoes", {
+      body: {
+        tipo_avaliacao: "TRABALHO",
+        descricao_avaliacao: "Trabalho por competência",
+        data_lancamento: hoje,
+        valor: 10,
+        turma_disciplina_id: cenario.turmaDisciplinaId,
+        competencias: [{ competencia_id: competencia.body.id, peso_percentual: 100 }],
+      },
+    });
+    expect(criada.status).toBe(201);
+    expect(criada.body.competencias).toHaveLength(1);
+    expect(Number(criada.body.competencias[0].peso_percentual)).toBe(100);
+
+    const matricula = await cenario.matricularAluno();
+    expect((await lancarNotaLote(cenario.apiProfessor, criada.body.id, [{ alunoId: matricula.aluno.id, valor: 8 }])).status).toBe(200);
+
+    const detalheTurma = await cenario.apiProfessor.get(`/me/professor/turmas/${cenario.turmaDisciplinaId}`);
+    expect(detalheTurma.status).toBe(200);
+    const desempenhoTurma = detalheTurma.body.desempenhoCompetencias.find((item: any) => item.id === competencia.body.id);
+    expect(desempenhoTurma).toMatchObject({ media: 80, cobertura: 100, classificacao: "ADEQUADO" });
+    expect(desempenhoTurma.fontes[0]).toMatchObject({ id: criada.body.id, pesoPercentual: 100 });
+
+    const detalheAluno = await cenario.apiProfessor.get(
+      `/me/professor/turmas/${cenario.turmaDisciplinaId}/alunos/${matricula.aluno.id}`,
+    );
+    expect(detalheAluno.status).toBe(200);
+    expect(detalheAluno.body.competencias[0]).toMatchObject({ media: 80, cobertura: 100, classificacao: "ADEQUADO" });
+
+    const bloqueada = await cenario.apiProfessor.put(`/avaliacoes/${criada.body.id}`, {
+      body: { competencias: [] },
+    });
+    expect(bloqueada.status).toBe(409);
+    expect(JSON.stringify(bloqueada.body)).toMatch(/competencias|pesos|notas/i);
+  });
 });
 
 test.describe("Notas em lote @api", () => {

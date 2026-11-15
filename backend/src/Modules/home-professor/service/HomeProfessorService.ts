@@ -3,6 +3,8 @@ import { calcularBoletim, type AvaliacaoResumo } from "../../notas/models/Nota";
 import { CRITERIOS_PROFESSOR, type NivelAtencaoProfessor } from "../models/HomeProfessor";
 import { HomeProfessorRepository } from "../repository/HomeProfessorRepository";
 
+const CRITERIOS_COMPETENCIA = { coberturaMinima: 50, dificuldadeAbaixoDe: 60, atencaoAbaixoDe: 75 } as const;
+
 export class HomeProfessorService {
   repository = new HomeProfessorRepository();
 
@@ -27,6 +29,13 @@ export class HomeProfessorService {
       .filter((aluno: any) => aluno.nivel === "CRITICO" || aluno.nivel === "ATENCAO")
       .map((aluno: any) => ({ ...aluno, turmaDisciplinaId: item.id, disciplinaNome: item.disciplina.nome, turmaSigla: item.turma.sigla })))
       .sort((a: any, b: any) => this.prioridade(a.nivel) - this.prioridade(b.nivel));
+    const competenciasEmDificuldade = atribuicoes.flatMap((item: any) =>
+      this.montarDesempenhoCompetencias(dados, item.id)
+        .filter((competencia: any) => competencia.classificacao === "DIFICULDADE" || competencia.classificacao === "ATENCAO")
+        .map((competencia: any) => ({
+          ...competencia, turmaDisciplinaId: item.id, disciplinaNome: item.disciplina.nome, turmaSigla: item.turma.sigla,
+        })),
+    ).sort((a: any, b: any) => (a.media ?? 101) - (b.media ?? 101));
 
     return {
       professor,
@@ -44,6 +53,8 @@ export class HomeProfessorService {
       atribuicoes: atribuicoes.map(({ alunos: _alunos, ...item }: any) => item),
       avaliacoesProximas: this.avaliacoesProximas(dados.avaliacoes, atribuicoes),
       alunosEmAtencao: alertas.slice(0, 12),
+      competenciasEmDificuldade: competenciasEmDificuldade.slice(0, 12),
+      proximasAulas: this.proximasAulas(dados.horarios),
       geradoEm: new Date().toISOString(),
     };
   }
@@ -55,10 +66,15 @@ export class HomeProfessorService {
       const dados = await this.carregar(professor.id, String((periodo as any).id), turmaDisciplinaId);
       const [atribuicao] = this.montarAtribuicoes(dados);
       if (atribuicao) {
+        const desempenhoCompetencias = this.montarDesempenhoCompetencias(dados, atribuicao.id);
         return {
           ...atribuicao,
           periodo: this.periodo(periodo),
-          competencias: await this.repository.listarCompetencias(atribuicao.disciplina.id),
+          competencias: dados.competenciasPlanejadas
+            .filter((item: any) => String(item.turma_disciplina_id) === atribuicao.id)
+            .map((item: any) => ({ id: String(item.competencia_id), codigo: item.codigo, nome: item.nome, tipo: item.tipo, nivel_esperado: item.nivel_esperado, obrigatoria: Boolean(item.obrigatoria) })),
+          criteriosCompetencia: CRITERIOS_COMPETENCIA,
+          desempenhoCompetencias,
         };
       }
     }
@@ -110,6 +126,15 @@ export class HomeProfessorService {
       const vencidas = pendentes.filter((item: any) =>
         item.dataDevolucao && new Date(`${item.dataDevolucao}T23:59:59`).getTime() <= Date.now(),
       );
+      const competencias = this.montarDesempenhoCompetencias(dados, turmaDisciplinaId, alunoId);
+      const pontosCompetencia = competencias
+        .filter((item: any) => item.classificacao === "DIFICULDADE" || item.classificacao === "ATENCAO")
+        .map((item: any) => ({
+          id: `competencia-${item.id}`,
+          severidade: item.classificacao === "DIFICULDADE" ? "ATENCAO" : "INFORMATIVO",
+          titulo: `${item.codigo} · ${item.nome}`,
+          descricao: `Aproveitamento de ${item.media}% com ${item.cobertura}% de cobertura nas avaliações mapeadas.`,
+        }));
 
       return {
         aluno: { id: aluno.id, matricula: aluno.matricula, nome: aluno.nome },
@@ -131,7 +156,9 @@ export class HomeProfessorService {
           totalAvaliacoes: avaliacoes.length,
         },
         criterios: CRITERIOS_PROFESSOR,
-        pontosAtencao: this.pontosAtencao(aluno, pendentes.length, vencidas.length),
+        criteriosCompetencia: CRITERIOS_COMPETENCIA,
+        pontosAtencao: [...this.pontosAtencao(aluno, pendentes.length, vencidas.length), ...pontosCompetencia],
+        competencias,
         avaliacoes,
       };
     }
@@ -145,7 +172,11 @@ export class HomeProfessorService {
       this.repository.listarNotas(professorId, periodoId, turmaDisciplinaId),
       this.repository.listarFrequencias(professorId, periodoId, turmaDisciplinaId),
       this.repository.listarAvaliacoes(professorId, periodoId, turmaDisciplinaId),
-    ]).then(([atribuicoes, alunos, notas, frequencias, avaliacoes]) => ({ atribuicoes, alunos, notas, frequencias, avaliacoes }));
+      this.repository.listarCompetenciasPlanejadas(professorId, periodoId, turmaDisciplinaId),
+      this.repository.listarAvaliacoesCompetencias(professorId, periodoId, turmaDisciplinaId),
+      this.repository.listarHorarios(professorId, periodoId, turmaDisciplinaId),
+    ]).then(([atribuicoes, alunos, notas, frequencias, avaliacoes, competenciasPlanejadas, avaliacoesCompetencias, horarios]) =>
+      ({ atribuicoes, alunos, notas, frequencias, avaliacoes, competenciasPlanejadas, avaliacoesCompetencias, horarios }));
   }
 
   private montarAtribuicoes(dados: any) {
@@ -214,6 +245,109 @@ export class HomeProfessorService {
     });
   }
 
+  private montarDesempenhoCompetencias(dados: any, turmaDisciplinaId: string, alunoId?: string) {
+    const planejadas = dados.competenciasPlanejadas.filter(
+      (item: any) => String(item.turma_disciplina_id) === String(turmaDisciplinaId),
+    );
+    const alunos = dados.alunos.filter(
+      (item: any) => String(item.turma_disciplina_id) === String(turmaDisciplinaId),
+    );
+    const alunosAnalisados = alunoId ? alunos.filter((item: any) => String(item.aluno_id) === String(alunoId)) : alunos;
+    const notas = new Map<string, number>(
+      dados.notas.map((item: any) => [
+        `${String(item.matricula_turma_disciplina_id)}:${String(item.avaliacao_id)}`,
+        Number(item.nota_valor),
+      ]),
+    );
+
+    return planejadas.map((competencia: any) => {
+      const fontesBase = dados.avaliacoesCompetencias.filter((item: any) =>
+        String(item.turma_disciplina_id) === String(turmaDisciplinaId) &&
+        String(item.competencia_id) === String(competencia.competencia_id),
+      );
+      const pontosPlanejados = fontesBase.reduce(
+        (total: number, item: any) => total + Number(item.valor) * Number(item.peso_percentual) / 100,
+        0,
+      );
+      const resultados = alunosAnalisados.map((aluno: any) => {
+        let pontosComNota = 0;
+        let somaPonderada = 0;
+        const fontes = fontesBase.map((fonte: any) => {
+          const chave = `${String(aluno.matricula_turma_disciplina_id)}:${String(fonte.avaliacao_id)}`;
+          const nota = notas.get(chave);
+          const pontosCompetencia = Number(fonte.valor) * Number(fonte.peso_percentual) / 100;
+          const aproveitamento = nota === undefined || Number(fonte.valor) <= 0 ? null : 100 * nota / Number(fonte.valor);
+          if (aproveitamento !== null) {
+            pontosComNota += pontosCompetencia;
+            somaPonderada += aproveitamento * pontosCompetencia;
+          }
+          return {
+            id: String(fonte.avaliacao_id),
+            titulo: fonte.descricao_avaliacao || fonte.tipo_avaliacao,
+            tipo: fonte.tipo_avaliacao,
+            valor: Number(fonte.valor),
+            pesoPercentual: Number(fonte.peso_percentual),
+            pontosCompetencia: this.numero(pontosCompetencia),
+            dataDevolucao: this.dataIso(fonte.data_devolucao),
+            nota: nota ?? null,
+            aproveitamento: this.numero(aproveitamento),
+          };
+        });
+        const cobertura = pontosPlanejados > 0 ? 100 * pontosComNota / pontosPlanejados : 0;
+        const media = pontosComNota > 0 ? somaPonderada / pontosComNota : null;
+        return {
+          alunoId: String(aluno.aluno_id), media: this.numero(media), cobertura: this.numero(cobertura) ?? 0,
+          pontosComNota: this.numero(pontosComNota) ?? 0, fontes,
+        };
+      });
+      const alunosComDados = resultados.filter((item: any) => item.media !== null);
+      const media = this.media(alunosComDados.map((item: any) => Number(item.media)));
+      const pontosComNota = resultados.reduce((total: number, item: any) => total + item.pontosComNota, 0);
+      const totalPlanejado = pontosPlanejados * alunosAnalisados.length;
+      const cobertura = totalPlanejado > 0 ? this.numero(100 * pontosComNota / totalPlanejado) ?? 0 : 0;
+      const classificacao = this.classificarCompetencia(media, cobertura);
+      const distribuicao = { dificuldade: 0, atencao: 0, adequado: 0, semDados: 0 };
+      for (const item of resultados) {
+        const faixa = this.classificarCompetencia(item.media, item.cobertura);
+        if (faixa === "DIFICULDADE") distribuicao.dificuldade += 1;
+        else if (faixa === "ATENCAO") distribuicao.atencao += 1;
+        else if (faixa === "ADEQUADO") distribuicao.adequado += 1;
+        else distribuicao.semDados += 1;
+      }
+      const fontes = fontesBase.map((fonte: any) => {
+        const detalhes = resultados.map((item: any) => item.fontes.find((f: any) => f.id === String(fonte.avaliacao_id)));
+        const comNota = detalhes.filter((item: any) => item?.aproveitamento !== null);
+        return {
+          id: String(fonte.avaliacao_id), titulo: fonte.descricao_avaliacao || fonte.tipo_avaliacao,
+          tipo: fonte.tipo_avaliacao, valor: Number(fonte.valor), pesoPercentual: Number(fonte.peso_percentual),
+          pontosCompetencia: this.numero(Number(fonte.valor) * Number(fonte.peso_percentual) / 100),
+          dataDevolucao: this.dataIso(fonte.data_devolucao), notasLancadas: comNota.length,
+          notasEsperadas: alunosAnalisados.length,
+          media: this.media(comNota.map((item: any) => Number(item.aproveitamento))),
+        };
+      });
+      const individual = alunoId ? resultados[0] : null;
+      return {
+        id: String(competencia.competencia_id), codigo: competencia.codigo, nome: competencia.nome,
+        tipo: competencia.tipo, nivelEsperado: competencia.nivel_esperado, obrigatoria: Boolean(competencia.obrigatoria),
+        media: individual?.media ?? media,
+        cobertura: individual?.cobertura ?? cobertura,
+        pontosPlanejados: this.numero(pontosPlanejados) ?? 0,
+        pontosComNota: individual?.pontosComNota ?? this.numero(alunosAnalisados.length ? pontosComNota / alunosAnalisados.length : 0) ?? 0,
+        alunosComDados: alunosComDados.length, totalAlunos: alunosAnalisados.length,
+        classificacao: individual ? this.classificarCompetencia(individual.media, individual.cobertura) : classificacao,
+        distribuicao, fontes: individual?.fontes ?? fontes,
+      };
+    });
+  }
+
+  private classificarCompetencia(media: number | null, cobertura: number) {
+    if (media === null || cobertura < CRITERIOS_COMPETENCIA.coberturaMinima) return "DADOS_INSUFICIENTES" as const;
+    if (media < CRITERIOS_COMPETENCIA.dificuldadeAbaixoDe) return "DIFICULDADE" as const;
+    if (media < CRITERIOS_COMPETENCIA.atencaoAbaixoDe) return "ATENCAO" as const;
+    return "ADEQUADO" as const;
+  }
+
   private avaliacoesProximas(avaliacoes: any[], atribuicoes: any[]) {
     const nomes = new Map(atribuicoes.map((item: any) => [item.id, item]));
     const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
@@ -232,6 +366,23 @@ export class HomeProfessorService {
           notasLancadas: Number(item.notas_lancadas), notasEsperadas: atribuicao?.totalAlunos ?? 0,
         };
       });
+  }
+
+  private proximasAulas(horarios: any[]) {
+    const agora = new Date();
+    const inicioHoje = new Date(agora); inicioHoje.setHours(0, 0, 0, 0);
+    return horarios.flatMap((item: any) => {
+      for (let deslocamento = 0; deslocamento <= 7; deslocamento += 1) {
+        const data = new Date(inicioHoje); data.setDate(inicioHoje.getDate() + deslocamento);
+        const diaSemana = data.getDay() === 0 ? 7 : data.getDay();
+        const iso = data.toISOString().slice(0, 10);
+        if (diaSemana !== Number(item.dia_semana) || iso < this.dataIso(item.vigencia_inicio)! || iso > this.dataIso(item.vigencia_fim)!) continue;
+        const inicio = new Date(`${iso}T${String(item.hora_inicio).slice(0, 5)}:00`);
+        if (inicio.getTime() <= agora.getTime()) continue;
+        return [{ id: String(item.id), turmaDisciplinaId: String(item.turma_disciplina_id), data: iso, horaInicio: String(item.hora_inicio).slice(0, 5), horaFim: String(item.hora_fim).slice(0, 5), local: item.local ?? null, turmaSigla: item.turma_sigla, disciplinaCodigo: item.disciplina_codigo, disciplinaNome: item.disciplina_nome, instante: inicio.getTime() }];
+      }
+      return [];
+    }).sort((a: any, b: any) => a.instante - b.instante).slice(0, 8).map(({ instante: _instante, ...item }: any) => item);
   }
 
   private dataIso(valor: unknown) {
@@ -283,7 +434,7 @@ export class HomeProfessorService {
         turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0,
         lancamentosPendentes: 0, avaliacoesIncompletas: 0, notasFaltantes: 0,
       },
-      atribuicoes: [], avaliacoesProximas: [], alunosEmAtencao: [], geradoEm: new Date().toISOString(),
+      atribuicoes: [], avaliacoesProximas: [], alunosEmAtencao: [], competenciasEmDificuldade: [], proximasAulas: [], geradoEm: new Date().toISOString(),
     };
   }
 

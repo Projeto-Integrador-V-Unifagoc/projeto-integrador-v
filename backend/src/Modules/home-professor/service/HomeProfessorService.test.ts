@@ -18,6 +18,9 @@ function service(overrides: Record<string, any> = {}) {
     listarFrequencias: async () => [{ turma_disciplina_id: "td1", matricula_turma_disciplina_id: "mtd1", presencas: 7, faltas: 3 }],
     listarAvaliacoes: async () => [{ id: "av1", turma_disciplina_id: "td1", tipo_avaliacao: "TRABALHO", descricao_avaliacao: "Trabalho", valor: 50, notas_lancadas: 1 }],
     listarCompetencias: async () => [],
+    listarCompetenciasPlanejadas: async () => [],
+    listarAvaliacoesCompetencias: async () => [],
+    listarHorarios: async () => [],
     ...overrides,
   };
   const instance = new HomeProfessorService();
@@ -88,5 +91,27 @@ describe("HomeProfessorService", () => {
       () => service().detalheAluno(reqProfessor, "td1", "outro-aluno"),
       /aluno nao encontrado/i,
     );
+  });
+
+  it("calcula desempenho por competencia e preserva baixa cobertura como dados insuficientes", async () => {
+    const base = {
+      listarCompetenciasPlanejadas: async () => [{
+        turma_disciplina_id: "td1", competencia_id: "comp1", codigo: "COMP-01", nome: "Raciocínio lógico",
+        tipo: "TECNICA", nivel_esperado: "INTERMEDIARIO", obrigatoria: true,
+      }],
+      listarAvaliacoesCompetencias: async () => [{
+        turma_disciplina_id: "td1", avaliacao_id: "av1", competencia_id: "comp1", peso_percentual: 100,
+        tipo_avaliacao: "TRABALHO", descricao_avaliacao: "Trabalho", valor: 50,
+      }],
+    };
+    const detalhe = await service(base).detalhe(reqProfessor, "td1");
+    assert.equal(detalhe.desempenhoCompetencias[0].media, 60);
+    assert.equal(detalhe.desempenhoCompetencias[0].cobertura, 100);
+    assert.equal(detalhe.desempenhoCompetencias[0].classificacao, "ATENCAO");
+    assert.equal(detalhe.desempenhoCompetencias[0].fontes[0].titulo, "Trabalho");
+
+    const semNotas = await service({ ...base, listarNotas: async () => [] }).detalhe(reqProfessor, "td1");
+    assert.equal(semNotas.desempenhoCompetencias[0].media, null);
+    assert.equal(semNotas.desempenhoCompetencias[0].classificacao, "DADOS_INSUFICIENTES");
   });
 });

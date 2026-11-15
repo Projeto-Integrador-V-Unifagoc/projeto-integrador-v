@@ -1,6 +1,18 @@
 export type NivelAtencaoProfessor = "CRITICO" | "ATENCAO" | "REGULAR" | "SEM_DADOS";
 
 export interface PeriodoProfessor { id: string; codigo: string; ano: number; semestre: number; ativo: boolean; status: string }
+export type ClassificacaoCompetencia = "DADOS_INSUFICIENTES" | "DIFICULDADE" | "ATENCAO" | "ADEQUADO";
+export interface DesempenhoCompetenciaProfessor {
+  id: string; codigo: string; nome: string; tipo: string; nivelEsperado: string; obrigatoria: boolean;
+  media: number | null; cobertura: number; pontosPlanejados: number; pontosComNota: number;
+  alunosComDados: number; totalAlunos: number; classificacao: ClassificacaoCompetencia;
+  distribuicao: { dificuldade: number; atencao: number; adequado: number; semDados: number };
+  fontes: Array<{
+    id: string; titulo: string; tipo: string; valor: number; pesoPercentual: number; pontosCompetencia: number | null;
+    dataDevolucao: string | null; notasLancadas?: number; notasEsperadas?: number; media?: number | null;
+    nota?: number | null; aproveitamento?: number | null;
+  }>;
+}
 export interface AlunoProfessor { id: string; matricula: number; nome: string; media: number | null; frequencia: number | null; nivel: NivelAtencaoProfessor; motivo: string }
 export interface AtribuicaoProfessor {
   id: string;
@@ -24,12 +36,16 @@ export interface DashboardProfessor {
   atribuicoes: AtribuicaoProfessor[];
   avaliacoesProximas: Array<{ id: string; turmaDisciplinaId: string; titulo: string; tipo: string; data: string; valor: number; disciplinaNome: string; turmaSigla: string; notasLancadas: number; notasEsperadas: number }>;
   alunosEmAtencao: Array<AlunoProfessor & { turmaDisciplinaId: string; disciplinaNome: string; turmaSigla: string }>;
+  competenciasEmDificuldade: Array<DesempenhoCompetenciaProfessor & { turmaDisciplinaId: string; disciplinaNome: string; turmaSigla: string }>;
+  proximasAulas: Array<{ id: string; turmaDisciplinaId: string; data: string; horaInicio: string; horaFim: string; local: string | null; turmaSigla: string; disciplinaCodigo: string; disciplinaNome: string }>;
   geradoEm: string;
 }
 export interface DetalheAtribuicaoProfessor extends AtribuicaoProfessor {
   periodo: PeriodoProfessor;
   alunos: AlunoProfessor[];
   competencias: Array<{ id: string; codigo: string; nome: string; tipo: string; nivel_esperado: string; obrigatoria: boolean }>;
+  criteriosCompetencia: { coberturaMinima: number; dificuldadeAbaixoDe: number; atencaoAbaixoDe: number };
+  desempenhoCompetencias: DesempenhoCompetenciaProfessor[];
 }
 
 export interface DetalheAlunoAtencaoProfessor {
@@ -52,12 +68,14 @@ export interface DetalheAlunoAtencaoProfessor {
     totalAvaliacoes: number;
   };
   criterios: DashboardProfessor["criterios"];
+  criteriosCompetencia: { coberturaMinima: number; dificuldadeAbaixoDe: number; atencaoAbaixoDe: number };
   pontosAtencao: Array<{
     id: string;
     severidade: "CRITICO" | "ATENCAO" | "INFORMATIVO";
     titulo: string;
     descricao: string;
   }>;
+  competencias: DesempenhoCompetenciaProfessor[];
   avaliacoes: Array<{
     id: string;
     titulo: string;
