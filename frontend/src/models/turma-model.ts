@@ -17,6 +17,12 @@ export interface TurmaResponse {
     codigo: string
     nome: string
   }
+  matriz_curricular: {
+    id: string
+    codigo: string
+    versao: string
+    status: string
+  }
 }
 
 export interface TurmaRequest {

@@ -17,6 +17,12 @@ export interface Turma {
         codigo: string
         nome: string
     }
+    matriz_curricular: {
+        id: string
+        codigo: string
+        versao: string
+        status: string
+    }
     created_at?: string
     updated_at?: string
 }
@@ -25,6 +31,7 @@ export interface TurmaCommand {
     id: string
     periodo_letivo_id: string
     curso_id: string
+    matriz_curricular_id: string
     periodo_curricular: number
     descricao: string
     sigla: string
@@ -53,6 +60,12 @@ export class TurmaMapper {
                 id: raw.curso_id,
                 codigo: raw.curso_codigo,
                 nome: raw.curso_nome
+            },
+            matriz_curricular: {
+                id: raw.matriz_curricular_id,
+                codigo: raw.matriz_codigo,
+                versao: raw.matriz_versao,
+                status: raw.matriz_status
             },
             created_at: raw.created_at,
             updated_at: raw.updated_at

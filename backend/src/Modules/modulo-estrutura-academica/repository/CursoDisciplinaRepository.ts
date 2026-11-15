@@ -5,12 +5,17 @@ export class CursoDisciplinaRepository {
     private baseQuery() {
         return db("curso_disciplina")
             .join("curso", "curso_disciplina.curso_id", "=", "curso.id")
+            .join("matriz_curricular", "curso_disciplina.matriz_curricular_id", "=", "matriz_curricular.id")
             .join("disciplinas", "curso_disciplina.disciplina_id", "=", "disciplinas.id")
             .select(
                 "curso_disciplina.*",
                 "curso.id as curso_id",
                 "curso.codigo as curso_codigo",
                 "curso.nome as curso_nome",
+                "matriz_curricular.id as matriz_curricular_id",
+                "matriz_curricular.codigo as matriz_codigo",
+                "matriz_curricular.versao as matriz_versao",
+                "matriz_curricular.status as matriz_status",
                 "disciplinas.id as disciplina_id",
                 "disciplinas.codigo as disciplina_codigo",
                 "disciplinas.nome as disciplina_nome",
@@ -36,7 +41,7 @@ export class CursoDisciplinaRepository {
         return rows.map(CursoDisciplinaMapper.toDomain);
     }
 
-    async listarMatrizCurricularPorCursoId(cursoId: string, periodo?: number) {
+    async listarMatrizCurricularPorCursoId(cursoId: string, periodo?: number, matrizCurricularId?: string) {
         let query = this.baseQuery()
             .where("curso_disciplina.curso_id", cursoId)
             .orderBy("curso_disciplina.periodo_ideal", "asc")
@@ -44,6 +49,11 @@ export class CursoDisciplinaRepository {
 
         if (periodo !== undefined) {
             query = query.where("curso_disciplina.periodo_ideal", periodo);
+        }
+        if (matrizCurricularId) {
+            query = query.where("curso_disciplina.matriz_curricular_id", matrizCurricularId);
+        } else {
+            query = query.where("matriz_curricular.status", "VIGENTE");
         }
 
         const rows = await query;
@@ -64,9 +74,9 @@ export class CursoDisciplinaRepository {
             .first();
     }
 
-    async buscarCursoDisciplinaPorCursoEDisciplina(curso_id: string, disciplina_id: string) {
+    async buscarCursoDisciplinaPorMatrizEDisciplina(matriz_curricular_id: string, disciplina_id: string) {
         return await db("curso_disciplina")
-            .where({ curso_id, disciplina_id })
+            .where({ matriz_curricular_id, disciplina_id })
             .first();
     }
 

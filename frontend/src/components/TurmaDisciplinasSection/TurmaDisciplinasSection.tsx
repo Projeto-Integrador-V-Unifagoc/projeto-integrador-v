@@ -21,6 +21,7 @@ import type { GridColDef } from "@mui/x-data-grid";
 type Props = {
   turmaId: string
   cursoId: string
+  matrizCurricularId: string
 }
 
 type FormType = {
@@ -35,7 +36,7 @@ const initialForm: FormType = {
   status: "ativa",
 };
 
-export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
+export function TurmaDisciplinasSection({ turmaId, cursoId, matrizCurricularId }: Props) {
   const [disciplinasTurma, setDisciplinasTurma] = useState<TurmaDisciplinaResponse[]>([]);
   const [disciplinasMatriz, setDisciplinasMatriz] = useState<CursoDisciplinaResponse[]>([]);
   const [professores, setProfessores] = useState<ProfessorOpcao[]>([]);
@@ -58,7 +59,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
 
     const [disciplinasTurmaResponse, matrizResponse, professoresResponse] = await Promise.all([
       listarDisciplinasDaTurma(turmaId),
-      listarMatrizCurricularPorCursoId(cursoId),
+      listarMatrizCurricularPorCursoId(cursoId, matrizCurricularId),
       listarOpcoes(),
     ]);
 
@@ -71,7 +72,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
     void (async () => {
       await carregarDados();
     })();
-  }, [turmaId, cursoId]);
+  }, [turmaId, cursoId, matrizCurricularId]);
 
   const disciplinasDisponiveis = useMemo(() => {
     const idsEmUso = new Set(disciplinasTurma.map((item) => item.curso_disciplina.id));

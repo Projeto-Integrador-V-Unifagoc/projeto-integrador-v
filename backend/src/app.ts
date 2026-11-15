@@ -33,6 +33,7 @@ import { obterJwtSecret } from "./config/jwt";
 import { ConfiguracaoSmtpService } from "./Modules/configuracao-email/service/ConfiguracaoSmtpService";
 import { lerTrustProxy } from "./config/trustProxy";
 import { limiteGlobal } from "./config/limitesRequisicoes";
+import { MatrizCurricularController } from "./Modules/matriz-curricular/controller/MatrizCurricularController";
 
 const PORT = process.env.PORT || 3000;
 obterJwtSecret();
@@ -80,6 +81,7 @@ const turmaController = new TurmaController();
 const turmaDisciplinaController = new TurmaDisciplinaController();
 const relatorioController = new RelatorioController();
 const fichaController = new FichaController();
+const matrizCurricularController = new MatrizCurricularController();
 
 // Política de autorização (spec §8, §17.4):
 // - escritas administrativas exigem secretaria/admin (`autenticar` + `soSecretaria`);
@@ -139,6 +141,9 @@ app.post("/periodos-letivos", autenticar, soSecretaria, (req, res) =>
 app.post("/curso-disciplina", autenticar, soSecretaria, (req, res) =>
   cursoDisciplinaController.criarCursoDisciplina(req, res),
 );
+app.post("/cursos/:cursoId/matrizes", autenticar, soSecretaria, matrizCurricularController.criar);
+app.put("/matrizes-curriculares/:id", autenticar, soSecretaria, matrizCurricularController.atualizar);
+app.post("/matrizes-curriculares/:id/publicar", autenticar, soSecretaria, matrizCurricularController.publicar);
 app.post("/turmas", autenticar, soSecretaria, (req, res) =>
   turmaController.criarTurma(req, res),
 );
@@ -194,6 +199,8 @@ app.get("/cursos/:id", autenticar, (req, res) =>
 app.get("/cursos/:id/matriz-curricular", autenticar, (req, res) =>
   cursoDisciplinaController.listarMatrizCurricularPorCursoId(req, res),
 );
+app.get("/cursos/:cursoId/matrizes", autenticar, matrizCurricularController.listar);
+app.get("/matrizes-curriculares/:id", autenticar, matrizCurricularController.buscar);
 app.put("/cursos/:id", autenticar, soSecretaria, (req, res) =>
   cursoController.atualizarCurso(req, res),
 );

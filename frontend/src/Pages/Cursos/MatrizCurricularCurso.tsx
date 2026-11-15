@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Alert, Checkbox, FormControlLabel, Grid, IconButton, MenuItem, Stack, Typography } from "@mui/material";
+import axios from "axios";
+import { Alert, Checkbox, Chip, FormControlLabel, Grid, IconButton, MenuItem, Stack, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { Pencil, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
@@ -16,7 +17,7 @@ import { useCursoDisciplina } from "../../hooks/use-curso-disciplina";
 import { cursoDisciplinaSchema } from "../../validators/curso-disciplina-schema";
 import type { CursoResponse } from "../../models/curso-model";
 import type { DisciplinaResponse } from "../../models/disciplina-model";
-import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
+import type { CursoDisciplinaResponse, MatrizCurricularResponse } from "../../models/curso-disciplina-model";
 
 type FormType = {
   disciplinaId: string
@@ -32,12 +33,20 @@ const initialForm: FormType = {
   cargaHoraria: "",
 };
 
+const hoje = new Date().toISOString().slice(0, 10);
+const initialMatrizForm = { codigo: "", versao: "", vigenciaInicio: hoje, copiarAtual: true };
+
 export default function MatrizCurricularCurso() {
   const { id } = useParams();
   const cursoId = id ?? "";
   const [curso, setCurso] = useState<CursoResponse | null>(null);
   const [disciplinas, setDisciplinas] = useState<DisciplinaResponse[]>([]);
   const [matriz, setMatriz] = useState<CursoDisciplinaResponse[]>([]);
+  const [matrizes, setMatrizes] = useState<MatrizCurricularResponse[]>([]);
+  const [matrizSelecionadaId, setMatrizSelecionadaId] = useState("");
+  const [dialogoMatrizAberto, setDialogoMatrizAberto] = useState(false);
+  const [confirmarPublicacao, setConfirmarPublicacao] = useState(false);
+  const [formMatriz, setFormMatriz] = useState(initialMatrizForm);
   const [filtroPeriodoIdeal, setFiltroPeriodoIdeal] = useState("");
   const [filtroObrigatoria, setFiltroObrigatoria] = useState<"todas" | "sim" | "nao">("todas");
   const [alerta, setAlerta] = useState<{ tipo: "success" | "error"; mensagem: string } | null>(null);
@@ -48,29 +57,73 @@ export default function MatrizCurricularCurso() {
   const [erros, setErros] = useState<Record<string, string>>({});
   const { buscarCursoPorId } = useCurso();
   const { listarDisciplinas } = useDisciplina();
-  const { carregando, listarMatrizCurricularPorCursoId, criarCursoDisciplina, atualizarCursoDisciplina, removerCursoDisciplina } = useCursoDisciplina();
+  const { carregando, listarMatrizCurricularPorCursoId, criarCursoDisciplina, atualizarCursoDisciplina, removerCursoDisciplina, listarMatrizes, criarMatriz, publicarMatriz } = useCursoDisciplina();
 
   async function carregarDados() {
     if (!cursoId) {
       return;
     }
 
+    const matrizesResponse: MatrizCurricularResponse[] = await listarMatrizes(cursoId);
+    const selecionada = matrizesResponse.find((item) => item.id === matrizSelecionadaId)
+      ?? matrizesResponse.find((item) => item.status === "VIGENTE")
+      ?? matrizesResponse[0];
     const [cursoResponse, disciplinasResponse, matrizResponse] = await Promise.all([
       buscarCursoPorId(cursoId),
       listarDisciplinas(),
-      listarMatrizCurricularPorCursoId(cursoId),
+      listarMatrizCurricularPorCursoId(cursoId, selecionada?.id),
     ]);
 
     setCurso(cursoResponse);
     setDisciplinas(disciplinasResponse);
     setMatriz(matrizResponse);
+    setMatrizes(matrizesResponse);
+    if (selecionada && selecionada.id !== matrizSelecionadaId) setMatrizSelecionadaId(selecionada.id);
   }
 
   useEffect(() => {
     void (async () => {
       await carregarDados();
     })();
-  }, [cursoId]);
+    // Os métodos dos hooks atuais não são memoizados; as chaves abaixo controlam a recarga sem criar loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cursoId, matrizSelecionadaId]);
+
+  const matrizSelecionada = matrizes.find((item) => item.id === matrizSelecionadaId) ?? null;
+  const editavel = matrizSelecionada?.status === "RASCUNHO";
+
+  async function salvarNovaMatriz() {
+    if (!formMatriz.codigo.trim() || !formMatriz.versao.trim() || !formMatriz.vigenciaInicio) {
+      setAlerta({ tipo: "error", mensagem: "Informe código, versão e início da vigência." });
+      return;
+    }
+    try {
+      const nova = await criarMatriz(cursoId, {
+        codigo: formMatriz.codigo,
+        versao: formMatriz.versao,
+        vigenciaInicio: formMatriz.vigenciaInicio,
+        matrizOrigemId: formMatriz.copiarAtual ? matrizSelecionadaId : undefined,
+      });
+      setDialogoMatrizAberto(false);
+      setFormMatriz(initialMatrizForm);
+      setMatrizSelecionadaId(nova.id);
+      setAlerta({ tipo: "success", mensagem: "Nova versão criada em rascunho." });
+    } catch (error) {
+      setAlerta({ tipo: "error", mensagem: axios.isAxiosError(error) ? error.response?.data?.error ?? "Não foi possível criar a matriz." : "Não foi possível criar a matriz." });
+    }
+  }
+
+  async function publicarSelecionada() {
+    if (!matrizSelecionada) return;
+    try {
+      await publicarMatriz(matrizSelecionada.id, true);
+      setConfirmarPublicacao(false);
+      setAlerta({ tipo: "success", mensagem: "Matriz publicada e definida como vigente." });
+      await carregarDados();
+    } catch (error) {
+      setAlerta({ tipo: "error", mensagem: axios.isAxiosError(error) ? error.response?.data?.error ?? "Não foi possível publicar a matriz." : "Não foi possível publicar a matriz." });
+    }
+  }
 
   function abrirDialogoCriacao() {
     setRegistroEdicao(null);
@@ -137,6 +190,7 @@ export default function MatrizCurricularCurso() {
       } else {
         await criarCursoDisciplina({
           cursoId,
+          matrizCurricularId: matrizSelecionadaId,
           disciplinaId: form.disciplinaId,
           periodoIdeal: Number(form.periodoIdeal),
           obrigatoria: form.obrigatoria,
@@ -216,10 +270,10 @@ export default function MatrizCurricularCurso() {
       sortable: false,
       renderCell: (params) => (
         <>
-          <IconButton onClick={() => abrirDialogoEdicao(params.row)} color="primary">
+          <IconButton disabled={!editavel} onClick={() => abrirDialogoEdicao(params.row)} color="primary">
             <Pencil size={18} />
           </IconButton>
-          <IconButton onClick={() => setRegistroExclusao(params.row)} color="error">
+          <IconButton disabled={!editavel} onClick={() => setRegistroExclusao(params.row)} color="error">
             <Trash2 size={18} />
           </IconButton>
         </>
@@ -235,6 +289,29 @@ export default function MatrizCurricularCurso() {
         </Typography>
 
         {alerta && <Alert severity={alerta.tipo}>{alerta.mensagem}</Alert>}
+
+        <Card.Root>
+          <Card.Header><Card.Title>Versões da matriz</Card.Title></Card.Header>
+          <Card.Content>
+            <Grid container spacing={2} alignItems="center">
+              <Grid size={{ xs: 12, md: 5 }}>
+                <TextField label="Matriz selecionada" select value={matrizSelecionadaId} onChange={(e) => setMatrizSelecionadaId(e.target.value)}>
+                  {matrizes.map((item) => <MenuItem key={item.id} value={item.id}>{item.codigo} · {item.versao} · {item.status}</MenuItem>)}
+                </TextField>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                {matrizSelecionada && <Stack direction="row" gap={1} flexWrap="wrap"><Chip color={matrizSelecionada.status === "VIGENTE" ? "success" : matrizSelecionada.status === "RASCUNHO" ? "warning" : "default"} label={matrizSelecionada.status} /><Chip variant="outlined" label={`${matrizSelecionada.total_disciplinas} disciplinas`} /><Chip variant="outlined" label={`${matrizSelecionada.carga_horaria_total}h`} /><Chip variant="outlined" label={`${matrizSelecionada.total_turmas} turmas`} /></Stack>}
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Stack direction="row" justifyContent={{ md: "flex-end" }} gap={1}>
+                  <Button variant="outlined" onClick={() => setDialogoMatrizAberto(true)} sx={{ width: "auto", whiteSpace: "nowrap" }}>Nova versão</Button>
+                  {editavel && <Button variant="contained" onClick={() => setConfirmarPublicacao(true)} sx={{ width: "auto" }}>Publicar</Button>}
+                </Stack>
+              </Grid>
+            </Grid>
+            {matrizSelecionada?.status !== "RASCUNHO" && <Alert severity="info" sx={{ mt: 2 }}>Matrizes publicadas preservam o histórico e são somente leitura. Crie uma nova versão para alterar disciplinas.</Alert>}
+          </Card.Content>
+        </Card.Root>
 
         <Card.Root>
           <Card.Header>
@@ -304,6 +381,7 @@ export default function MatrizCurricularCurso() {
                 <Button
                   variant="contained"
                   onClick={abrirDialogoCriacao}
+                  disabled={!editavel}
                   sx={{ width: "auto", minWidth: 170, whiteSpace: "nowrap" }}
                 >
                   Adicionar Disciplina
@@ -412,6 +490,25 @@ export default function MatrizCurricularCurso() {
           <Button variant="outlined" onClick={() => setRegistroExclusao(null)}>Cancelar</Button>
           <Button variant="contained" color="error" onClick={confirmarExclusao}>Excluir</Button>
         </Dialog.Footer>
+      </Dialog.Root>
+
+      <Dialog.Root open={dialogoMatrizAberto} onClose={() => setDialogoMatrizAberto(false)} maxWidth="sm">
+        <Dialog.Header><Dialog.Title>Nova versão da matriz</Dialog.Title><Dialog.ActionClose onClose={() => setDialogoMatrizAberto(false)} /></Dialog.Header>
+        <Dialog.Content>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField label="Código" required value={formMatriz.codigo} onChange={(e) => setFormMatriz((atual) => ({ ...atual, codigo: e.target.value }))} placeholder="Ex.: ADS-2027-1" /></Grid>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField label="Versão" required value={formMatriz.versao} onChange={(e) => setFormMatriz((atual) => ({ ...atual, versao: e.target.value }))} placeholder="Ex.: 2027.1" /></Grid>
+            <Grid size={12}><TextField label="Início da vigência" type="date" required value={formMatriz.vigenciaInicio} onChange={(e) => setFormMatriz((atual) => ({ ...atual, vigenciaInicio: e.target.value }))} InputLabelProps={{ shrink: true }} /></Grid>
+            <Grid size={12}><FormControlLabel control={<Checkbox checked={formMatriz.copiarAtual} onChange={(e) => setFormMatriz((atual) => ({ ...atual, copiarAtual: e.target.checked }))} />} label="Copiar disciplinas da matriz selecionada" /></Grid>
+          </Grid>
+        </Dialog.Content>
+        <Dialog.Footer><Button variant="outlined" onClick={() => setDialogoMatrizAberto(false)}>Cancelar</Button><Button variant="contained" onClick={() => void salvarNovaMatriz()}>Criar rascunho</Button></Dialog.Footer>
+      </Dialog.Root>
+
+      <Dialog.Root open={confirmarPublicacao} onClose={() => setConfirmarPublicacao(false)} maxWidth="sm">
+        <Dialog.Header><Dialog.Title>Publicar nova matriz</Dialog.Title><Dialog.ActionClose onClose={() => setConfirmarPublicacao(false)} /></Dialog.Header>
+        <Dialog.Content><Alert severity="warning">A matriz vigente atual será encerrada. Turmas existentes continuarão vinculadas à versão anterior e somente novas turmas usarão a nova matriz.</Alert></Dialog.Content>
+        <Dialog.Footer><Button variant="outlined" onClick={() => setConfirmarPublicacao(false)}>Cancelar</Button><Button variant="contained" onClick={() => void publicarSelecionada()}>Confirmar publicação</Button></Dialog.Footer>
       </Dialog.Root>
     </Container>
   );

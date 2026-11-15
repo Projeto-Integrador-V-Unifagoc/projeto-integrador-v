@@ -4,6 +4,12 @@ export interface CursoDisciplina {
     obrigatoria: boolean
     carga_horaria: number
     ativo: boolean
+    matriz_curricular: {
+        id: string
+        codigo: string
+        versao: string
+        status: string
+    }
     curso: {
         id: string
         codigo: string
@@ -24,6 +30,7 @@ export interface CursoDisciplina {
 export interface CursoDisciplinaCommand {
     id: string
     curso_id: string
+    matriz_curricular_id: string
     disciplina_id: string
     periodo_ideal?: number
     obrigatoria?: boolean
@@ -39,6 +46,12 @@ export class CursoDisciplinaMapper {
             obrigatoria: raw.obrigatoria,
             carga_horaria: raw.carga_horaria,
             ativo: raw.ativo,
+            matriz_curricular: {
+                id: raw.matriz_curricular_id,
+                codigo: raw.matriz_codigo,
+                versao: raw.matriz_versao,
+                status: raw.matriz_status
+            },
             curso: {
                 id: raw.curso_id,
                 codigo: raw.curso_codigo,
