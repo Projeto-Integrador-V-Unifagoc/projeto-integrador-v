@@ -1,6 +1,6 @@
 import { avaliacaoRepository } from "../repository/avaliacaoRepository.js";
-import type { AtualizarAvaliacaoDTO, Avaliacao, ContextoAvaliacao, CriarAvaliacaoDTO, TipoAvaliacao } from "../models/avaliacaoModels.js";
-import { AvaliacaoForbiddenError, AvaliacaoNotFoundError, AvaliacaoValidationError } from "../errors/avaliacaoErrors.js";
+import type { AtualizarAvaliacaoDTO, Avaliacao, AvaliacaoCompetencia, ContextoAvaliacao, CriarAvaliacaoDTO, TipoAvaliacao } from "../models/avaliacaoModels.js";
+import { AvaliacaoConflictError, AvaliacaoForbiddenError, AvaliacaoNotFoundError, AvaliacaoValidationError } from "../errors/avaliacaoErrors.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_PROVAS = 3;
@@ -30,6 +30,50 @@ function validarDados(dados: CriarAvaliacaoDTO) {
   if (!dados.data_lancamento || Number.isNaN(Date.parse(String(dados.data_lancamento)))) throw new AvaliacaoValidationError("Data de lancamento invalida.");
   if (dados.data_devolucao && Number.isNaN(Date.parse(String(dados.data_devolucao)))) throw new AvaliacaoValidationError("Data de devolucao invalida.");
   if (dados.data_devolucao && new Date(dados.data_devolucao) < new Date(dados.data_lancamento)) throw new AvaliacaoValidationError("A data de devolucao nao pode ser anterior ao lancamento.");
+}
+
+function normalizarCompetencias(valor: unknown): AvaliacaoCompetencia[] | undefined {
+  if (valor === undefined) return undefined;
+  if (!Array.isArray(valor)) throw new AvaliacaoValidationError("Competencias da avaliacao invalidas.");
+  const ids = new Set<string>();
+  const competencias = valor.map((item: any) => {
+    const competenciaId = String(item?.competencia_id ?? item?.competenciaId ?? "").trim();
+    validarUuid(competenciaId, "competencia_id");
+    if (ids.has(competenciaId)) throw new AvaliacaoValidationError("Competencia repetida na avaliacao.");
+    ids.add(competenciaId);
+    const peso = Number(item?.peso_percentual ?? item?.pesoPercentual);
+    if (!Number.isFinite(peso) || peso <= 0 || peso > 100) {
+      throw new AvaliacaoValidationError("O peso de cada competencia deve ser maior que zero e menor ou igual a 100.");
+    }
+    return { competencia_id: competenciaId, peso_percentual: Number(peso.toFixed(2)) };
+  });
+  if (competencias.length) {
+    const soma = competencias.reduce((total, item) => total + item.peso_percentual, 0);
+    if (Math.abs(soma - 100) > 0.005) {
+      throw new AvaliacaoValidationError("Os pesos das competencias devem totalizar 100%.");
+    }
+  }
+  return competencias;
+}
+
+function mesmoMapeamento(atual: AvaliacaoCompetencia[], proposto: AvaliacaoCompetencia[]) {
+  const ordenar = (itens: AvaliacaoCompetencia[]) => itens
+    .map((item) => ({ competencia_id: String(item.competencia_id), peso_percentual: Number(Number(item.peso_percentual).toFixed(2)) }))
+    .sort((a, b) => a.competencia_id.localeCompare(b.competencia_id));
+  return JSON.stringify(ordenar(atual)) === JSON.stringify(ordenar(proposto));
+}
+
+async function validarCompetenciasDaAtribuicao(
+  turmaDisciplinaId: string,
+  competencias: AvaliacaoCompetencia[],
+  executor: any,
+) {
+  if (!competencias.length) return;
+  const disponiveis = await avaliacaoRepository.buscarCompetenciasDisponiveis(turmaDisciplinaId, executor);
+  const idsDisponiveis = new Set(disponiveis.map((item) => String(item.competencia_id)));
+  if (competencias.some((item) => !idsDisponiveis.has(item.competencia_id))) {
+    throw new AvaliacaoValidationError("A avaliacao so pode usar competencias vinculadas a sua disciplina.");
+  }
 }
 
 function validarRegras(candidato: CriarAvaliacaoDTO, avaliacoes: Avaliacao[], idAtual?: string) {
@@ -77,6 +121,16 @@ async function listarAtribuicoes(contexto: ContextoAvaliacao) {
   return avaliacaoRepository.listarAtribuicoes(await professorDoContexto(contexto));
 }
 
+async function listarCompetenciasDaAtribuicao(turmaDisciplinaId: string, contexto: ContextoAvaliacao) {
+  validarUuid(turmaDisciplinaId, "turma_disciplina_id");
+  const professorId = await professorDoContexto(contexto);
+  const atribuicao = await avaliacaoRepository.buscarAtribuicaoPorId(turmaDisciplinaId);
+  if (!atribuicao) throw new AvaliacaoValidationError("Turma/disciplina inexistente.");
+  validarAtribuicaoAtiva(atribuicao);
+  validarPermissao(professorId, atribuicao);
+  return avaliacaoRepository.buscarCompetenciasDisponiveis(turmaDisciplinaId);
+}
+
 async function buscarPorId(id: string, contexto: ContextoAvaliacao) {
   validarUuid(id, "ID");
   const [avaliacao, professorId] = await Promise.all([avaliacaoRepository.buscarPorId(id), professorDoContexto(contexto)]);
@@ -86,7 +140,8 @@ async function buscarPorId(id: string, contexto: ContextoAvaliacao) {
 }
 
 async function criar(dados: CriarAvaliacaoDTO, contexto: ContextoAvaliacao) {
-  const payload = normalizarPayload(dados);
+  const competencias = normalizarCompetencias(dados.competencias) ?? [];
+  const payload = { ...normalizarPayload(dados), competencias };
   validarDados(payload);
   const professorId = await professorDoContexto(contexto);
   try {
@@ -97,7 +152,11 @@ async function criar(dados: CriarAvaliacaoDTO, contexto: ContextoAvaliacao) {
       validarAtribuicaoAtiva(atribuicao);
       validarPermissao(professorId, atribuicao);
       validarRegras(payload, await avaliacaoRepository.buscarPorTurmaDisciplina(payload.turma_disciplina_id, trx));
-      return avaliacaoRepository.criar(payload, trx);
+      await validarCompetenciasDaAtribuicao(payload.turma_disciplina_id, competencias, trx);
+      const criada = await avaliacaoRepository.criar(payload, trx);
+      await avaliacaoRepository.substituirCompetencias(criada.id, competencias, trx);
+      if (!competencias.length) return { ...criada, competencias: [] };
+      return (await avaliacaoRepository.buscarPorId(criada.id, trx)) ?? { ...criada, competencias };
     });
   } catch (erro: any) {
     if (erro?.code === "23503") throw new AvaliacaoValidationError("Relacionamento academico invalido.");
@@ -108,6 +167,8 @@ async function criar(dados: CriarAvaliacaoDTO, contexto: ContextoAvaliacao) {
 async function atualizar(id: string, dados: AtualizarAvaliacaoDTO, contexto: ContextoAvaliacao) {
   validarUuid(id, "ID");
   if (!dados || Object.keys(dados).length === 0) throw new AvaliacaoValidationError("Nenhum campo enviado para atualizacao.");
+  const competenciasEnviadas = Object.prototype.hasOwnProperty.call(dados, "competencias");
+  const competenciasNormalizadas = normalizarCompetencias(dados.competencias);
   const professorId = await professorDoContexto(contexto);
   return avaliacaoRepository.transacao(async (trx) => {
     await avaliacaoRepository.bloquearAvaliacao(id, trx);
@@ -120,18 +181,30 @@ async function atualizar(id: string, dados: AtualizarAvaliacaoDTO, contexto: Con
     if (!atribuicao) throw new AvaliacaoValidationError("Turma/disciplina inexistente.");
     validarAtribuicaoAtiva(atribuicao);
     validarPermissao(professorId, atribuicao);
+    const competenciasAtuais = await avaliacaoRepository.listarCompetenciasDaAvaliacao(id, trx);
+    const competenciasFinais = competenciasEnviadas ? competenciasNormalizadas ?? [] : competenciasAtuais;
+    if (competenciasEnviadas && !mesmoMapeamento(competenciasAtuais, competenciasFinais) && await avaliacaoRepository.possuiNotas(id, trx)) {
+      throw new AvaliacaoConflictError("As competencias e os pesos nao podem ser alterados porque esta avaliacao ja possui notas.");
+    }
+    await validarCompetenciasDaAtribuicao(destino, competenciasFinais, trx);
     const payload = normalizarPayload({
       tipo_avaliacao: dados.tipo_avaliacao ?? atual.tipo_avaliacao,
       descricao_avaliacao: dados.descricao_avaliacao ?? atual.descricao_avaliacao ?? "",
       data_lancamento: dados.data_lancamento ?? atual.data_lancamento,
       valor: dados.valor ?? Number(atual.valor), data_devolucao: dados.data_devolucao !== undefined ? dados.data_devolucao : atual.data_devolucao,
       turma_disciplina_id: destino,
+      competencias: competenciasEnviadas ? competenciasFinais : undefined,
     });
     validarDados(payload);
     validarRegras(payload, await avaliacaoRepository.buscarPorTurmaDisciplina(destino, trx), id);
     const resultado = await avaliacaoRepository.atualizar(id, payload, trx);
     if (!resultado) throw new AvaliacaoNotFoundError();
-    return resultado;
+    const mapeamentoAlterado = competenciasEnviadas && !mesmoMapeamento(competenciasAtuais, competenciasFinais);
+    if (mapeamentoAlterado) {
+      await avaliacaoRepository.substituirCompetencias(id, competenciasFinais, trx);
+    }
+    if (!mapeamentoAlterado) return resultado;
+    return (await avaliacaoRepository.buscarPorId(id, trx)) ?? { ...resultado, competencias: competenciasFinais };
   });
 }
 
@@ -148,4 +221,4 @@ async function deletar(id: string, contexto: ContextoAvaliacao) {
   });
 }
 
-export const avaliacaoService = { listar, listarAtribuicoes, buscarPorId, criar, atualizar, deletar };
+export const avaliacaoService = { listar, listarAtribuicoes, listarCompetenciasDaAtribuicao, buscarPorId, criar, atualizar, deletar };

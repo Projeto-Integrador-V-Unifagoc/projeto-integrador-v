@@ -16,3 +16,7 @@ export class AvaliacaoForbiddenError extends AvaliacaoError {
 export class AvaliacaoNotFoundError extends AvaliacaoError {
   constructor(message = "Avaliacao nao encontrada.") { super(message, 404); }
 }
+
+export class AvaliacaoConflictError extends AvaliacaoError {
+  constructor(message: string) { super(message, 409); }
+}

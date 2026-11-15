@@ -5,16 +5,18 @@ import {
   Box,
   Chip,
   CircularProgress,
+  Divider,
   Grid,
   IconButton,
   InputAdornment,
   MenuItem,
   Stack,
   Tooltip,
+  Paper,
   Typography,
 } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
-import { ClipboardCheck, FileText, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { ClipboardCheck, FileText, Pencil, Plus, Search, ShieldCheck, Target, Trash2, X } from "lucide-react";
 import axios from "axios";
 import { ValidationError } from "yup";
 import Button from "../../components/Button";
@@ -23,15 +25,17 @@ import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import { Dialog } from "../../components/Dialog";
 import TextField from "../../components/TextField";
-import type { AtribuicaoAvaliacao, Avaliacao, CriarAvaliacaoDTO, TipoAvaliacao } from "../../models/avaliacao-model";
+import type { AtribuicaoAvaliacao, Avaliacao, AvaliacaoCompetencia, CompetenciaDisponivelAvaliacao, CriarAvaliacaoDTO, TipoAvaliacao } from "../../models/avaliacao-model";
 import { avaliacaoApi } from "../../services/avaliacao-api";
 import { COR_TIPO_AVALIACAO, formatarDataPtBr, formatarPontos, ROTULO_TIPO_AVALIACAO, type TipoAvaliacaoVisual } from "../../utils/avaliacao";
 import { avaliacaoSchema } from "../../validators/avaliacao-schema";
+import { somarPesosCompetencias, validarPesosCompetencias } from "./avaliacao-competencias";
 
 const tipos: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
-type FormState = { turma_disciplina_id: string; tipo_avaliacao: TipoAvaliacao; descricao_avaliacao: string; valor: number | ""; data_lancamento: string; data_devolucao: string };
+type CompetenciaForm = Omit<AvaliacaoCompetencia, "peso_percentual"> & { peso_percentual: number | "" };
+type FormState = { turma_disciplina_id: string; tipo_avaliacao: TipoAvaliacao; descricao_avaliacao: string; valor: number | ""; data_lancamento: string; data_devolucao: string; competencias: CompetenciaForm[] };
 type FormErrors = Partial<Record<keyof FormState, string>>;
-const formInicial: FormState = { turma_disciplina_id: "", tipo_avaliacao: "PROVA", descricao_avaliacao: "", valor: 20, data_lancamento: "", data_devolucao: "" };
+const formInicial: FormState = { turma_disciplina_id: "", tipo_avaliacao: "PROVA", descricao_avaliacao: "", valor: 20, data_lancamento: "", data_devolucao: "", competencias: [] };
 
 const mensagemErro = (erro: unknown, fallback: string) => axios.isAxiosError(erro) && typeof erro.response?.data?.mensagem === "string" ? erro.response.data.mensagem : erro instanceof Error ? erro.message : fallback;
 const nomeAtribuicao = (item: AtribuicaoAvaliacao) => `${item.turma_sigla || item.turma_descricao} - ${item.disciplina_nome}`;
@@ -57,6 +61,11 @@ export default function Avaliacoes() {
   const [saving, setSaving] = useState(false);
   const [excluir, setExcluir] = useState<Avaliacao | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [competenciasDisponiveis, setCompetenciasDisponiveis] = useState<CompetenciaDisponivelAvaliacao[]>([]);
+  const [competenciaSelecionada, setCompetenciaSelecionada] = useState("");
+  const [loadingCompetencias, setLoadingCompetencias] = useState(false);
+  const [competenciasErro, setCompetenciasErro] = useState<string | null>(null);
+  const [mapeamentoBloqueado, setMapeamentoBloqueado] = useState(false);
 
   const carregarAtribuicoes = useCallback(async () => {
     setLoadingAtribuicoes(true); setErro(null);
@@ -80,6 +89,16 @@ export default function Avaliacoes() {
 
   useEffect(() => { void carregarAtribuicoes(); }, [carregarAtribuicoes]);
   useEffect(() => { void carregarAvaliacoes(contextoId); }, [carregarAvaliacoes, contextoId]);
+  useEffect(() => {
+    if (!contextoId) { setCompetenciasDisponiveis([]); return; }
+    let ativo = true;
+    setLoadingCompetencias(true);
+    void avaliacaoApi.listarCompetenciasDaAtribuicao(contextoId)
+      .then((itens) => { if (ativo) setCompetenciasDisponiveis(itens); })
+      .catch(() => { if (ativo) setCompetenciasDisponiveis([]); })
+      .finally(() => { if (ativo) setLoadingCompetencias(false); });
+    return () => { ativo = false; };
+  }, [contextoId]);
 
   // Recupera\u00e7\u00e3o \u00e9 avalia\u00e7\u00e3o substitutiva: n\u00e3o comp\u00f5e o somat\u00f3rio nem a listagem dos 100 pontos regulares.
   const avaliacoesRegulares = useMemo(() => avaliacoes.filter((a) => (a.tipo_avaliacao as TipoAvaliacaoVisual) !== "RECUPERACAO"), [avaliacoes]);
@@ -93,8 +112,32 @@ export default function Avaliacoes() {
     return avaliacoesRegulares.filter((a) => [a.tipo_avaliacao, a.descricao_avaliacao ?? "", a.valor, formatarDataPtBr(a.data_lancamento), formatarDataPtBr(a.data_devolucao)].some((v) => String(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(termo)));
   }, [avaliacoesRegulares, busca]);
 
-  const abrirCadastro = () => { setEditingId(null); setForm({ ...formInicial, turma_disciplina_id: contextoId }); setFormErro(null); setFormErrors({}); setDialogOpen(true); };
-  const abrirEdicao = (a: Avaliacao) => { setEditingId(a.id); setForm({ turma_disciplina_id: a.turma_disciplina_id, tipo_avaliacao: a.tipo_avaliacao, descricao_avaliacao: a.descricao_avaliacao ?? "", valor: Number(a.valor), data_lancamento: a.data_lancamento.slice(0, 10), data_devolucao: a.data_devolucao?.slice(0, 10) ?? "" }); setFormErro(null); setFormErrors({}); setDialogOpen(true); };
+  const abrirCadastro = () => { setEditingId(null); setForm({ ...formInicial, turma_disciplina_id: contextoId, competencias: [] }); setCompetenciaSelecionada(""); setCompetenciasErro(null); setMapeamentoBloqueado(false); setFormErro(null); setFormErrors({}); setDialogOpen(true); };
+  const abrirEdicao = (a: Avaliacao) => { setEditingId(a.id); setForm({ turma_disciplina_id: a.turma_disciplina_id, tipo_avaliacao: a.tipo_avaliacao, descricao_avaliacao: a.descricao_avaliacao ?? "", valor: Number(a.valor), data_lancamento: a.data_lancamento.slice(0, 10), data_devolucao: a.data_devolucao?.slice(0, 10) ?? "", competencias: (a.competencias ?? []).map((item) => ({ ...item, peso_percentual: Number(item.peso_percentual) })) }); setCompetenciaSelecionada(""); setCompetenciasErro(null); setMapeamentoBloqueado(Boolean(a.possui_notas)); setFormErro(null); setFormErrors({}); setDialogOpen(true); };
+
+  const somaPesos = somarPesosCompetencias(form.competencias);
+  const competenciasParaAdicionar = competenciasDisponiveis.filter((item) => !form.competencias.some((selecionada) => selecionada.competencia_id === item.competencia_id));
+
+  function adicionarCompetencia() {
+    if (!competenciaSelecionada || mapeamentoBloqueado) return;
+    const item = competenciasDisponiveis.find((competencia) => competencia.competencia_id === competenciaSelecionada);
+    if (!item) return;
+    const pesoSugerido = form.competencias.length === 0 ? 100 : Math.max(0, Number((100 - somaPesos).toFixed(2)));
+    setForm((atual) => ({ ...atual, competencias: [...atual.competencias, { ...item, peso_percentual: pesoSugerido }] }));
+    setCompetenciaSelecionada("");
+    setCompetenciasErro(null);
+  }
+
+  function alterarPeso(competenciaId: string, valor: string) {
+    setForm((atual) => ({ ...atual, competencias: atual.competencias.map((item) => item.competencia_id === competenciaId ? { ...item, peso_percentual: valor === "" ? "" : Number(valor) } : item) }));
+    setCompetenciasErro(null);
+  }
+
+  function removerCompetencia(competenciaId: string) {
+    if (mapeamentoBloqueado) return;
+    setForm((atual) => ({ ...atual, competencias: atual.competencias.filter((item) => item.competencia_id !== competenciaId) }));
+    setCompetenciasErro(null);
+  }
 
   function alterarForm(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = event.target;
@@ -112,7 +155,26 @@ export default function Avaliacoes() {
     try {
       await avaliacaoSchema.validate(form, { abortEarly: false });
       setFormErrors({});
-      const payload: CriarAvaliacaoDTO = { ...form, valor: Number(form.valor), descricao_avaliacao: form.descricao_avaliacao.trim(), data_devolucao: form.data_devolucao || null };
+      const erroPesos = validarPesosCompetencias(form.competencias);
+      if (erroPesos) {
+        setCompetenciasErro(erroPesos);
+        return;
+      }
+      const dadosForm = {
+        turma_disciplina_id: form.turma_disciplina_id,
+        tipo_avaliacao: form.tipo_avaliacao,
+        descricao_avaliacao: form.descricao_avaliacao,
+        valor: form.valor,
+        data_lancamento: form.data_lancamento,
+        data_devolucao: form.data_devolucao,
+      };
+      const payload: CriarAvaliacaoDTO = {
+        ...dadosForm,
+        valor: Number(form.valor),
+        descricao_avaliacao: form.descricao_avaliacao.trim(),
+        data_devolucao: form.data_devolucao || null,
+        ...(mapeamentoBloqueado ? {} : { competencias: form.competencias.map((item) => ({ competencia_id: item.competencia_id, peso_percentual: Number(item.peso_percentual) })) }),
+      };
       if (editingId) await avaliacaoApi.atualizar(editingId, payload); else await avaliacaoApi.criar(payload);
       setContextoId(payload.turma_disciplina_id);
       await carregarAvaliacoes(payload.turma_disciplina_id);
@@ -141,6 +203,7 @@ export default function Avaliacoes() {
     { field: "valor", headerName: "Valor", width: 110, valueFormatter: (v) => formatarPontos(Number(v)) },
     { field: "data_lancamento", headerName: "Lançamento", width: 130, valueFormatter: (v) => formatarDataPtBr(String(v)) },
     { field: "data_devolucao", headerName: "Devolução", width: 125, valueFormatter: (v) => formatarDataPtBr(v ? String(v) : null) },
+    { field: "competencias", headerName: "Competências", width: 145, sortable: false, renderCell: ({ row }) => <Chip size="small" color={row.competencias?.length ? "primary" : "default"} variant="outlined" label={row.competencias?.length ? `${row.competencias.length} mapeada${row.competencias.length === 1 ? "" : "s"}` : "Sem mapeamento"} /> },
     { field: "acoes", headerName: "Ações", width: 112, sortable: false, filterable: false, renderCell: ({ row }) => <Stack direction="row" spacing={0.5}><Tooltip title="Editar"><IconButton aria-label={`Editar avaliação ${row.descricao_avaliacao || ROTULO_TIPO_AVALIACAO[row.tipo_avaliacao as TipoAvaliacao]}`} size="small" color="primary" onClick={() => abrirEdicao(row)}><Pencil size={16} aria-hidden="true" /></IconButton></Tooltip><Tooltip title="Excluir"><IconButton aria-label={`Excluir avaliação ${row.descricao_avaliacao || ROTULO_TIPO_AVALIACAO[row.tipo_avaliacao as TipoAvaliacao]}`} size="small" color="error" onClick={() => setExcluir(row)}><Trash2 size={16} aria-hidden="true" /></IconButton></Tooltip></Stack> },
   ];
 
@@ -183,6 +246,34 @@ export default function Avaliacoes() {
       <Grid size={{ xs: 12, sm: 6 }}><TextField label="Data de lançamento" name="data_lancamento" type="date" value={form.data_lancamento} onChange={alterarForm} error={Boolean(formErrors.data_lancamento)} InputLabelProps={{ shrink: true }} helperText={formErrors.data_lancamento || " "} sx={campoSx} /></Grid>
       <Grid size={{ xs: 12, sm: 6 }}><TextField label="Data de devolução" name="data_devolucao" type="date" value={form.data_devolucao} onChange={alterarForm} error={Boolean(formErrors.data_devolucao)} inputProps={{ min: form.data_lancamento }} InputLabelProps={{ shrink: true }} helperText={formErrors.data_devolucao || " "} sx={campoSx} /></Grid>
     </Grid>
+    <Divider />
+    <Box>
+      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} gap={1} mb={1.5}>
+        <Box><Stack direction="row" alignItems="center" gap={0.75}><Target size={18} aria-hidden="true" /><Typography fontWeight={800}>Competências avaliadas</Typography></Stack><Typography variant="caption" color="text.secondary">Mapeamento opcional nesta fase; quando utilizado, os pesos devem totalizar 100%.</Typography></Box>
+        <Chip size="small" color={!form.competencias.length ? "default" : Math.abs(somaPesos - 100) <= 0.005 ? "success" : "warning"} label={!form.competencias.length ? "Sem mapeamento" : `${formatarNumeroIndicador(somaPesos)}% de 100%`} />
+      </Stack>
+      {mapeamentoBloqueado && <Alert severity="warning" sx={{ mb: 1.5 }}>Esta avaliação já possui notas. As competências e os pesos estão disponíveis somente para consulta.</Alert>}
+      {competenciasErro && <Alert severity="error" sx={{ mb: 1.5 }}>{competenciasErro}</Alert>}
+      {loadingCompetencias ? <Stack direction="row" alignItems="center" gap={1} py={1}><CircularProgress size={18} /><Typography variant="body2">Carregando competências da disciplina...</Typography></Stack> : competenciasDisponiveis.length ? (
+        <Stack direction={{ xs: "column", sm: "row" }} alignItems="flex-start" gap={1} mb={1.5}>
+          <TextField select label="Adicionar competência" value={competenciaSelecionada} onChange={(e) => setCompetenciaSelecionada(e.target.value)} disabled={mapeamentoBloqueado || !competenciasParaAdicionar.length} sx={{ flex: 1 }}>
+            {competenciasParaAdicionar.map((item) => <MenuItem key={item.competencia_id} value={item.competencia_id}>{item.codigo} — {item.nome}</MenuItem>)}
+          </TextField>
+          <Button variant="outlined" startIcon={<Plus size={16} />} onClick={adicionarCompetencia} disabled={mapeamentoBloqueado || !competenciaSelecionada} sx={{ width: { xs: "100%", sm: "auto" }, minWidth: 120, height: 36, whiteSpace: "nowrap" }}>Adicionar</Button>
+        </Stack>
+      ) : <Alert severity="info" sx={{ mb: 1.5 }}>A disciplina ainda não possui competências planejadas. A avaliação pode ser salva sem mapeamento.</Alert>}
+      <Stack gap={1}>
+        {form.competencias.map((item) => (
+          <Paper key={item.competencia_id} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+            <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ sm: "center" }} gap={1.5}>
+              <Box flex={1} minWidth={0}><Typography fontWeight={750}>{item.nome || item.codigo || "Competência"}</Typography><Typography variant="caption" color="text.secondary">{item.codigo}{item.nivel_esperado ? ` · ${String(item.nivel_esperado).toLowerCase()}` : ""}</Typography></Box>
+              <TextField label="Peso (%)" type="number" value={item.peso_percentual} onChange={(e) => alterarPeso(item.competencia_id, e.target.value)} disabled={mapeamentoBloqueado} inputProps={{ min: 0.01, max: 100, step: 0.01 }} sx={{ width: { xs: "100%", sm: 130 } }} />
+              <Tooltip title="Remover competência"><span><IconButton aria-label={`Remover competência ${item.nome || item.codigo || "selecionada"}`} color="error" disabled={mapeamentoBloqueado} onClick={() => removerCompetencia(item.competencia_id)}><X size={18} /></IconButton></span></Tooltip>
+            </Stack>
+          </Paper>
+        ))}
+      </Stack>
+    </Box>
   </Stack></Dialog.Content><Dialog.Footer><Button variant="outlined" disabled={saving} onClick={() => setDialogOpen(false)}>Cancelar</Button><Button variant="contained" disabled={saving} isLoading={saving} onClick={salvar}>Salvar</Button></Dialog.Footer></Dialog.Root>
 
   <Dialog.Root open={Boolean(excluir)} onClose={() => !deleting && setExcluir(null)} maxWidth="xs" aria-labelledby="dialog-exclusao-title"><Dialog.Header><Dialog.Title><span id="dialog-exclusao-title">Confirmar exclusão</span></Dialog.Title><Dialog.ActionClose onClose={() => !deleting && setExcluir(null)} /></Dialog.Header><Dialog.Content><Typography>Tem certeza que deseja excluir <strong>{excluir?.descricao_avaliacao || "esta avaliação"}</strong>? Esta ação não pode ser desfeita.</Typography></Dialog.Content><Dialog.Footer><Button variant="outlined" disabled={deleting} onClick={() => setExcluir(null)}>Cancelar</Button><Button variant="contained" color="error" disabled={deleting} isLoading={deleting} onClick={confirmarExclusao}>Excluir</Button></Dialog.Footer></Dialog.Root>
