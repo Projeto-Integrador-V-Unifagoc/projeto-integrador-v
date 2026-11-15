@@ -126,9 +126,16 @@ export default function ConfiguracaoIaDialog({ aberto, onFechar }: ConfiguracaoI
             <Dialog.Content>
                 <Stack spacing={2.5}>
                     <Typography variant="body2" color="text.secondary">
-                        O assistente responde dúvidas de uso do sistema para alunos, professores e secretaria. Ele não
-                        consulta nem altera dados acadêmicos.
+                        O assistente responde dúvidas de uso do sistema e consulta dados acadêmicos de quem está
+                        conversando, dentro das permissões de cada perfil: o aluno vê só os próprios dados, e o
+                        professor, só as turmas dele. Ele não altera nenhum dado.
                     </Typography>
+
+                    <Alert severity="info" variant="outlined">
+                        Para responder, o assistente envia ao provedor escolhido as perguntas e os dados consultados,
+                        como nomes de alunos, notas e frequência. Confira se o uso desse provedor está de acordo com a
+                        política de privacidade da instituição antes de ativar.
+                    </Alert>
 
                     {erro && <Alert severity="error" onClose={() => setErro("")}>{erro}</Alert>}
                     {sucesso && <Alert severity="success" onClose={() => setSucesso("")}>{sucesso}</Alert>}

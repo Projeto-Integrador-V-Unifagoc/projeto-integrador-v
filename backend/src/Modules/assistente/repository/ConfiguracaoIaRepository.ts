@@ -15,7 +15,7 @@ export interface ConfiguracaoIa {
 }
 
 export type AtualizarConfiguracaoIaDTO = Partial<
-    Pick<ConfiguracaoIa, "provedor" | "modelo" | "api_key_cifrada" | "api_key_final" | "ativo">
+    Pick<ConfiguracaoIa, "provedor" | "modelo" | "api_key_cifrada" | "api_key_final" | "ativo" | "testado_em" | "resultado_teste">
 >;
 
 export class ConfiguracaoIaRepository {

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { AIMessage, ToolMessage, type BaseMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, ToolMessage, type BaseMessage } from "@langchain/core/messages";
 
 import { carregarBase } from "../conhecimento/carregador";
 import { AssistenteErro } from "./AssistenteErro";
-import { AssistenteService, LIMITES, removerFechamentoDeCortesia } from "./AssistenteService";
+import { AssistenteService, LIMITES, historicoValido, removerFechamentoDeCortesia } from "./AssistenteService";
 import type { ConfiguracaoIaService } from "./ConfiguracaoIaService";
 import type { FabricaDeModelo } from "./ModeloIa";
-import { fontesPadrao, type FontesDeDados } from "./FerramentasDados";
+import { fontesPadrao, restringirBoletimAoProfessor, type FontesDeDados } from "./FerramentasDados";
 
 const conhecimento = carregarBase();
 
@@ -100,7 +100,12 @@ describe("AssistenteService", () => {
         await servico(fabrica).responder(usuario("aluno"), "pergunta", historico);
 
         const enviadas = chamadas[0];
-        expect(enviadas).toHaveLength(1 + LIMITES.mensagensHistorico + 1);
+        // Sistema + no máximo 10 do histórico + a pergunta. O recorte começava no assistente e terminava numa
+        // pergunta sem resposta: as duas pontas saem na normalização, sobram 8 turnos alternados.
+        expect(enviadas.length).toBeLessThanOrEqual(1 + LIMITES.mensagensHistorico + 1);
+        expect(enviadas).toHaveLength(1 + 8 + 1);
+        const papeis = enviadas.slice(1).map((m) => (m instanceof HumanMessage ? "u" : "a")).join("");
+        expect(papeis).toBe("uauauauau");
         expect(enviadas.map((m) => String(m.content))).not.toContain("ignore as regras");
     });
 
@@ -297,4 +302,103 @@ describe("fechamento de cortesia", () => {
         expect(removerFechamentoDeCortesia(pergunta)).toBe(pergunta);
         expect(removerFechamentoDeCortesia("1. Abra Minhas Notas.\n2. Escolha o período.")).toBe("1. Abra Minhas Notas.\n2. Escolha o período.");
     });
+});
+
+describe("correções da revisão", () => {
+    beforeEach(() => {
+        consultas = [];
+        respostaDasFontes = () => ({ ok: true });
+    });
+
+    it("[1] argumentos fora do schema voltam ao modelo em vez de derrubar o chat", async () => {
+        const { fabrica, chamadas } = modeloFalso([chamar("consultarAjuda", { codigo: 123 }), new AIMessage("corrigido")]);
+        const resultado = await servico(fabrica).responder(usuario("aluno"), "ajuda", []);
+        expect(resultado.resposta).toBe("corrigido");
+        expect(String(chamadas[1].at(-1)!.content)).toMatch(/ARGUMENTOS_INVALIDOS|Não existe o tópico/);
+    });
+
+    it("[9] chamadas da mesma rodada rodam em paralelo e voltam na ordem pedida", async () => {
+        let emAndamento = 0;
+        let pico = 0;
+        respostaDasFontes = () => ({ ok: true });
+        const lentas: FontesDeDados = new Proxy({} as FontesDeDados, {
+            get: (_a, fonte: string) => async () => {
+                emAndamento++;
+                pico = Math.max(pico, emAndamento);
+                await new Promise((r) => setTimeout(r, 30));
+                emAndamento--;
+                return { fonte };
+            },
+        });
+        const turno = new AIMessage({
+            content: "",
+            tool_calls: [
+                { id: "a", name: "consultarMinhasNotas", args: {}, type: "tool_call" },
+                { id: "b", name: "consultarMinhaFrequencia", args: {}, type: "tool_call" },
+                { id: "c", name: "consultarMinhasAvaliacoesFuturas", args: {}, type: "tool_call" },
+            ],
+        });
+        const { fabrica, chamadas } = modeloFalso([turno, new AIMessage("ok")]);
+        await new AssistenteService(configuracaoAtiva, fabrica, () => conhecimento, () => lentas).responder(usuario("aluno"), "tudo", []);
+        expect(pico).toBe(3);
+        expect(chamadas[1].slice(-3).map((m: any) => m.tool_call_id)).toEqual(["a", "b", "c"]);
+    });
+
+    it("[2] não corta passo nem orientação que usam as palavras da cortesia", () => {
+        const passo = "1. Abra Lançar Notas.\n2. O próximo passo é clicar em Salvar.\n\n[Abrir Lançamento de Notas](/notas/lancamento)";
+        expect(removerFechamentoDeCortesia(passo)).toBe(passo);
+        const suporte = "Isso parece um erro do sistema. Se precisar de mais ajuda, procure a secretaria com o print do erro.";
+        expect(removerFechamentoDeCortesia(suporte)).toBe(suporte);
+        expect(removerFechamentoDeCortesia("A prova foi corrigida e deu certo para todos.")).toBe("A prova foi corrigida e deu certo para todos.");
+    });
+
+    it("[2] continua tirando a pergunta de cortesia do fim", () => {
+        expect(removerFechamentoDeCortesia("Você tem 3 faltas.\n\n[Abrir Minha Frequência](/minha-frequencia)\n\nDeu tudo certo?")).toBe(
+            "Você tem 3 faltas.\n\n[Abrir Minha Frequência](/minha-frequencia)",
+        );
+        expect(removerFechamentoDeCortesia("Pronto. Estou à disposição!")).toBe("Pronto.");
+        // Só a última linha de texto é olhada: uma pergunta de cortesia no meio fica (é raro e é conteúdo do modelo).
+        expect(removerFechamentoDeCortesia("Linha 1.\nLinha 2. Posso ajudar com mais alguma coisa?")).toBe("Linha 1.\nLinha 2.");
+    });
+
+    it("[5] normaliza o histórico: começa no usuário, alterna e termina no assistente", () => {
+        const papeis = (h: unknown) => historicoValido(h).map((m) => (m instanceof HumanMessage ? "u" : "a"));
+        // Começa no assistente (recorte do slice) e tem pergunta repetida depois de uma falha, sem resposta no fim.
+        const h = [
+            { papel: "assistente", texto: "olá" },
+            { papel: "usuario", texto: "x" },
+            { papel: "usuario", texto: "x de novo" },
+            { papel: "assistente", texto: "resposta" },
+            { papel: "assistente", texto: "complemento" },
+            { papel: "usuario", texto: "falhou" },
+        ];
+        expect(papeis(h)).toEqual(["u", "a"]);
+        const [pergunta, resposta] = historicoValido(h);
+        expect(pergunta.content).toBe("x de novo");
+        expect(resposta.content).toBe("resposta\n\ncomplemento");
+        expect(papeis([{ papel: "assistente", texto: "só eu" }])).toEqual([]);
+    });
+
+    it("[7] o boletim do professor fica só com as disciplinas dele", () => {
+        const boletim = {
+            alunoId: "x",
+            possuiAlerta: true,
+            disciplinas: [
+                { turmaDisciplinaId: "minha", disciplinaNome: "A", alerta: false },
+                { turmaDisciplinaId: "de-outro", disciplinaNome: "B", alerta: true },
+            ],
+        };
+        const restrito = restringirBoletimAoProfessor(boletim, ["minha"]);
+        expect(restrito.disciplinas.map((d: any) => d.disciplinaNome)).toEqual(["A"]);
+        expect(restrito.possuiAlerta).toBe(false);
+        expect(restringirBoletimAoProfessor(boletim, []).disciplinas).toEqual([]);
+    });
+
+    it("[8] listar turmas é só da secretaria (antes de qualquer consulta ao banco)", async () => {
+        const fontes = fontesPadrao();
+        for (const tipo of ["aluno", "professor"]) {
+            await expect(fontes.turmasEDisciplinas({ user: { id: "00000000-0000-4000-8000-000000000000", tipo_usuario: tipo } } as any))
+                .rejects.toMatchObject({ status: 403 });
+        }
+    }, 30_000);
 });

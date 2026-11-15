@@ -1,7 +1,7 @@
 import type { Request } from "express";
 import { tool } from "@langchain/core/tools";
 
-import type { PerfilAssistente } from "../conhecimento/carregador";
+import { perfilDoUsuario, type PerfilAssistente } from "../conhecimento/carregador";
 
 /**
  * Ferramentas de consulta a dados acadêmicos reais.
@@ -33,13 +33,35 @@ export interface FontesDeDados {
     buscarAlunos(req: Request, nome: string): Promise<unknown>;
 }
 
-/** Carrega os serviços só quando usados: evita ciclos de import e mantém o módulo leve nos testes. */
+/** Deixa no boletim só as disciplinas (turma/disciplina) que o professor leciona e recalcula o alerta. */
+export function restringirBoletimAoProfessor(boletim: any, turmasDoProfessor: Iterable<string>) {
+    const minhas = new Set([...turmasDoProfessor].map(String));
+    const disciplinas = (boletim?.disciplinas ?? []).filter((d: any) => minhas.has(String(d.turmaDisciplinaId)));
+    return { ...boletim, disciplinas, possuiAlerta: disciplinas.some((d: any) => Boolean(d.alerta)) };
+}
+
+/** Cria a instância uma vez, na primeira vez que for usada. */
+function preguicoso<T>(criar: () => T): () => T {
+    let instancia: T | undefined;
+    return () => (instancia ??= criar());
+}
+
+const acessoNegado = () => Object.assign(new Error("Acesso negado."), { status: 403 });
+
+/**
+ * Os serviços só são carregados quando usados (evita ciclos de import e mantém o módulo leve nos testes)
+ * e cada um é criado uma vez por conversa, não a cada consulta.
+ */
 export function fontesPadrao(): FontesDeDados {
-    const notas = () => new (require("../../notas/service/NotaService").NotaService)();
-    const frequencia = () => new (require("../../frequencia/service/FrequenciaService").FrequenciaService)();
-    const homeAluno = () => new (require("../../home-aluno/service/HomeAlunoService").HomeAlunoService)();
-    const homeProfessor = () => new (require("../../home-professor/service/HomeProfessorService").HomeProfessorService)();
-    const alunos = () => new (require("../../modulo-gestao-alunos/service/AlunoService").AlunoService)();
+    const notas = preguicoso(() => new (require("../../notas/service/NotaService").NotaService)());
+    const repositorioNotas = preguicoso(() => new (require("../../notas/repository/NotaRepository").NotaRepository)());
+    const contextoNotas = preguicoso(
+        () => new (require("../../notas/gateways/AuthContextGateway").AuthContextGateway)(repositorioNotas()),
+    );
+    const frequencia = preguicoso(() => new (require("../../frequencia/service/FrequenciaService").FrequenciaService)());
+    const homeAluno = preguicoso(() => new (require("../../home-aluno/service/HomeAlunoService").HomeAlunoService)());
+    const homeProfessor = preguicoso(() => new (require("../../home-professor/service/HomeProfessorService").HomeProfessorService)());
+    const alunos = preguicoso(() => new (require("../../modulo-gestao-alunos/service/AlunoService").AlunoService)());
 
     return {
         meuBoletim: (req) => notas().meuBoletim(req),
@@ -50,16 +72,33 @@ export function fontesPadrao(): FontesDeDados {
         alunoNaTurma: (req, td, alunoId) => homeProfessor().detalheAluno(req, td, alunoId),
         rendimentoDaTurma: (req, td) => notas().obterRendimento(td, req),
         frequenciaDaTurma: (req, td) => frequencia().consultarTurma(td, req),
-        notasDoAluno: (req, alunoId) => notas().consultarAluno(alunoId, req),
+        notasDoAluno: async (req, alunoId) => {
+            // consultarAluno autoriza o professor se ele dá aula ao aluno em ALGUMA disciplina, mas devolve o
+            // boletim inteiro. Para o professor, ficam só as disciplinas dele (como já faz a frequência).
+            const boletim: any = await notas().consultarAluno(alunoId, req);
+            const ctx = await contextoNotas().obterContexto(req);
+            if (ctx.perfil !== "professor") return boletim;
+            const minhas = (await repositorioNotas().listarAtribuicoes(ctx.professorId)).map((a: any) => String(a.id));
+            return restringirBoletimAoProfessor(boletim, minhas);
+        },
         frequenciaDoAluno: (req, alunoId) => frequencia().consultarAluno(alunoId, req),
         turmasEDisciplinas: async (req) => {
-            const resultado: any = await notas().listarOpcoes(req);
-            // As avaliações de cada turma não interessam para achar a turma e pesam muito no contexto.
-            return (resultado?.atribuicoes ?? []).map(({ avaliacoes: _a, ...turma }: any) => turma);
+            // Direto no repositório: listarOpcoes buscaria as avaliações de cada turma (N+1) só para descartá-las.
+            if (perfilDoUsuario((req as any)?.user?.tipo_usuario) !== "secretaria") throw acessoNegado();
+            const ctx = await contextoNotas().obterContexto(req);
+            if (ctx.perfil !== "secretaria") throw acessoNegado();
+            const atribuicoes: any[] = await repositorioNotas().listarAtribuicoes(undefined);
+            return atribuicoes.map((a) => ({
+                turmaDisciplinaId: a.id,
+                turma: { sigla: a.turma_sigla, descricao: a.turma_descricao },
+                disciplina: { codigo: a.disciplina_codigo, nome: a.disciplina_nome },
+                periodoLetivo: { codigo: a.periodo_codigo, status: a.periodo_status },
+                professorNome: a.professor_nome,
+            }));
         },
         buscarAlunos: async (req, nome) => {
             // O serviço de alunos não verifica perfil: a trava fica aqui, além da ferramenta só existir para a secretaria.
-            if (perfilDoToken(req) !== "secretaria") throw Object.assign(new Error("Acesso negado."), { status: 403 });
+            if (perfilDoUsuario((req as any)?.user?.tipo_usuario) !== "secretaria") throw acessoNegado();
             const lista: any[] = await alunos().listarAlunos({ nome });
             // Só o necessário para identificar o aluno: nada de CPF, endereço ou e-mail.
             return lista.slice(0, 15).map((a) => ({
@@ -71,11 +110,6 @@ export function fontesPadrao(): FontesDeDados {
             }));
         },
     };
-}
-
-function perfilDoToken(req: Request): string {
-    const tipo = String((req as any)?.user?.tipo_usuario ?? "").trim().toLowerCase();
-    return tipo === "administrador" ? "secretaria" : tipo;
 }
 
 /** Cerca de 6 mil tokens: cabe o histórico de frequência de um período inteiro sem estourar o contexto. */

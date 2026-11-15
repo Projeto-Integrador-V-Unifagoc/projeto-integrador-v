@@ -37,7 +37,12 @@ export function modeloPermitido(provedor: ProvedorIa, modelo: string): boolean {
     return modelo === "" || MODELOS_POR_PROVEDOR[provedor].some((m) => m.valor === modelo);
 }
 
-const MAX_TOKENS_RESPOSTA = 1024;
+/**
+ * Teto de tokens de saída por chamada. Precisa de folga: em modelos de raciocínio (gpt-5, Gemini "thinking")
+ * os tokens de raciocínio ocultos contam nesse limite. Com 1024, uma rodada com várias ferramentas podia
+ * gastar tudo raciocinando e devolver texto vazio. A resposta continua curta pela política do prompt.
+ */
+const MAX_TOKENS_RESPOSTA = 4096;
 
 export interface ParametrosModelo {
     provedor: ProvedorIa;
@@ -57,7 +62,8 @@ export const criarModelo: FabricaDeModelo = async ({ provedor, modelo, apiKey })
         }
         case "openai": {
             const { ChatOpenAI } = await import("@langchain/openai");
-            return new ChatOpenAI({ apiKey, model, maxTokens: MAX_TOKENS_RESPOSTA, maxRetries: 1 });
+            // Raciocínio "low": suporte e consulta não pedem raciocínio longo. Ignorado por modelos sem raciocínio.
+            return new ChatOpenAI({ apiKey, model, maxTokens: MAX_TOKENS_RESPOSTA, maxRetries: 1, reasoning: { effort: "low" } });
         }
         case "google": {
             const { ChatGoogleGenerativeAI } = await import("@langchain/google-genai");

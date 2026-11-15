@@ -93,6 +93,23 @@ describe("ConfiguracaoIaService", () => {
         expect((await servico.parametrosDeUso()).modelo).toBe("");
     });
 
+    it("[3] trocar chave, provedor ou modelo apaga o resultado do teste anterior", async () => {
+        await servico.atualizar({ provedor: "google", apiKey: "AQ.chave-a" });
+        await servico.testarConexao();
+        expect((await servico.buscarPublico()).resultadoTeste).toMatch(/^ok:/);
+
+        // Ligar/desligar não mexe na conexão: o teste continua valendo.
+        await servico.atualizar({ ativo: true });
+        expect((await servico.buscarPublico()).testadoEm).not.toBeNull();
+
+        for (const mudanca of [{ apiKey: "AQ.chave-b" }, { modelo: "gemini-flash-latest" }, { provedor: "anthropic", apiKey: "sk-ant-c" }]) {
+            await servico.testarConexao();
+            const publica = await servico.atualizar(mudanca);
+            expect(publica.testadoEm).toBeNull();
+            expect(publica.resultadoTeste).toBe("");
+        }
+    });
+
     it("entrega a chave decifrada só para uso interno, e só com o assistente ativo", async () => {
         await servico.atualizar({ apiKey: "sk-ant-abc" });
         await expect(servico.parametrosDeUso()).rejects.toMatchObject({ status: 503 });

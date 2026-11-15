@@ -123,6 +123,16 @@ export class ConfiguracaoIaService {
             throw new AssistenteErro(400, "Informe ao menos um campo para atualizar.");
         }
 
+        // O teste anterior valia para a chave/provedor/modelo antigos: mostrá-lo agora seria enganoso.
+        const mudouConexao =
+            dados.api_key_cifrada !== undefined ||
+            (dados.provedor !== undefined && dados.provedor !== atual.provedor) ||
+            (dados.modelo !== undefined && dados.modelo !== atual.modelo);
+        if (mudouConexao) {
+            dados.testado_em = null;
+            dados.resultado_teste = "";
+        }
+
         return this.publica(await this.repository.atualizar(dados));
     }
 

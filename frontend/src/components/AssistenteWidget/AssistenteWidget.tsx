@@ -99,7 +99,8 @@ export default function AssistenteWidget() {
         if (!pergunta || enviando) return;
 
         const historico = mensagens.filter((m) => m !== BOAS_VINDAS && m.texto !== BOAS_VINDAS.texto).slice(-HISTORICO_ENVIADO);
-        setMensagens((lista) => [...lista, { papel: "usuario", texto: pergunta }]);
+        const enviada: MensagemAssistente = { papel: "usuario", texto: pergunta };
+        setMensagens((lista) => [...lista, enviada]);
         setTexto("");
         setErro("");
         setEnviando(true);
@@ -108,6 +109,10 @@ export default function AssistenteWidget() {
             const { resposta } = await assistenteApi.enviar(pergunta, historico);
             setMensagens((lista) => [...lista, { papel: "assistente", texto: resposta }]);
         } catch (err) {
+            // A pergunta que falhou sai da conversa e volta para o campo: assim ela não fica no histórico sem
+            // resposta (o que deixaria duas perguntas seguidas na próxima tentativa) e a pessoa só reenvia.
+            setMensagens((lista) => lista.filter((m) => m !== enviada));
+            setTexto((atual) => atual || pergunta);
             setErro(mensagemErro(err));
         } finally {
             setEnviando(false);

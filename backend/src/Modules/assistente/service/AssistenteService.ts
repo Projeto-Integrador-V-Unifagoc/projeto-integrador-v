@@ -22,6 +22,8 @@ export const LIMITES = {
     rodadasFerramenta: 6,
     /** Tempo máximo de cada chamada ao provedor: com o modelo sobrecarregado, o SDK fica tentando por minutos. */
     tempoChamadaMs: 45_000,
+    /** Tempo máximo da conversa inteira (todas as rodadas somadas). */
+    tempoTotalMs: 90_000,
 };
 
 export interface MensagemHistorico {
@@ -46,18 +48,37 @@ export function criarConsultarAjuda(conhecimento: BaseDeConhecimento, perfil: Pe
     });
 }
 
-function historicoValido(historico: unknown): BaseMessage[] {
+/**
+ * O histórico vem do navegador e pode estar "torto": mensagem do usuário que falhou e ficou sem resposta,
+ * pergunta repetida depois de um erro, ou um recorte que começa na fala do assistente. Vários provedores
+ * (Gemini, por exemplo) recusam turnos que não alternam ou que começam pelo assistente, então aqui ele é
+ * normalizado: começa no usuário, alterna sempre e termina no assistente (a pergunta atual vem logo depois).
+ */
+export function historicoValido(historico: unknown): BaseMessage[] {
     if (!Array.isArray(historico)) return [];
-    return historico
+    const validas = historico
         .filter(
             (m): m is MensagemHistorico =>
                 m && (m.papel === "usuario" || m.papel === "assistente") && typeof m.texto === "string" && m.texto.trim() !== "",
         )
         .slice(-LIMITES.mensagensHistorico)
-        .map((m) => {
-            const texto = m.texto.slice(0, LIMITES.caracteresHistorico);
-            return m.papel === "usuario" ? new HumanMessage(texto) : new AIMessage(texto);
-        });
+        .map((m) => ({ papel: m.papel, texto: m.texto.trim().slice(0, LIMITES.caracteresHistorico) }));
+
+    const turnos: MensagemHistorico[] = [];
+    for (const m of validas) {
+        const anterior = turnos[turnos.length - 1];
+        if (!anterior && m.papel === "assistente") continue; // nunca começa pelo assistente
+        if (anterior?.papel === m.papel) {
+            // Usuário repetido: vale a pergunta mais recente (a anterior ficou sem resposta).
+            // Assistente repetido: as falas são juntadas.
+            anterior.texto = m.papel === "usuario" ? m.texto : `${anterior.texto}\n\n${m.texto}`;
+            continue;
+        }
+        turnos.push({ ...m });
+    }
+    if (turnos[turnos.length - 1]?.papel === "usuario") turnos.pop(); // pergunta sem resposta: a atual a substitui
+
+    return turnos.map((m) => (m.papel === "usuario" ? new HumanMessage(m.texto) : new AIMessage(m.texto)));
 }
 
 /**
@@ -70,27 +91,60 @@ export function manterSoLinksConhecidos(texto: string, rotas: Set<string>): stri
     );
 }
 
-const CORTESIA = /deu (tudo )?certo|pr[óo]ximo passo|posso ajudar (com|em) (mais )?(alguma|algo)|mais alguma (coisa|d[úu]vida|informa)|estou [àa] disposi|[ée] s[óo] (me )?(chamar|falar|avisar)|precisar de (mais )?ajuda/i;
+/** Pergunta de cortesia: só conta se for pergunta (termina em "?"). "O próximo passo é salvar." é conteúdo. */
+const PERGUNTA_DE_CORTESIA =
+    /deu (tudo )?certo|pr[óo]ximo passo|posso (te )?ajudar|mais alguma (coisa|d[úu]vida|informa)|precisa de (mais )?ajuda|ficou (alguma )?d[úu]vida/i;
+/** Fechamento que é só cortesia, a frase inteira, sem nenhuma orientação dentro. */
+const FECHAMENTO_DE_CORTESIA =
+    /^(estou [àa] disposi[çc][ãa]o|fico [àa] disposi[çc][ãa]o|conte comigo|qualquer (outra )?d[úu]vida,? (é|e) s[óo] (me )?(chamar|falar|perguntar)|se precisar(?: de (?:mais )?ajuda)?,? (é|e) s[óo] (me )?(chamar|falar|perguntar))[.!]?$/i;
+/** Frase que encaminha para alguém é orientação, nunca cortesia. */
+const ORIENTACAO = /secretaria|professor|suporte|coordena|equipe|print|mensagem de erro/i;
+
+const ehCortesia = (frase: string) =>
+    frase.length <= 120 &&
+    !ORIENTACAO.test(frase) &&
+    ((frase.trim().endsWith("?") && PERGUNTA_DE_CORTESIA.test(frase)) || FECHAMENTO_DE_CORTESIA.test(frase.trim()));
 
 /**
- * Tira as frases de cortesia do fim da resposta ("Deu tudo certo?", "Posso ajudar com mais alguma coisa?").
- * Só olha o fim e só remove frase curta que bate com o padrão: o conteúdo da resposta nunca é cortado.
+ * Tira a pergunta de cortesia do fim da resposta ("Deu tudo certo?", "Posso ajudar com mais alguma coisa?").
+ * Olha só a última linha de texto (ignorando a linha do link) e só remove frase que é cortesia por inteiro:
+ * passos, orientações e encaminhamentos nunca são cortados.
  */
 export function removerFechamentoDeCortesia(texto: string): string {
     const linhas = texto.trimEnd().split("\n");
-    for (let fim = linhas.length - 1; fim >= 0; fim--) {
-        const linha = linhas[fim].trim();
-        if (!linha) continue;
-        if (/^\[[^\]]+\]\([^)]+\)$/.test(linha)) continue; // a linha do link fica
+    let fim = linhas.length - 1;
+    while (fim >= 0 && (!linhas[fim].trim() || /^\[[^\]]+\]\([^)]+\)$/.test(linhas[fim].trim()))) fim--;
+    if (fim < 0) return texto.trim();
 
-        const frases = linha.split(/(?<=[.!?])\s+/);
-        let corte = frases.length;
-        while (corte > 0 && CORTESIA.test(frases[corte - 1]) && frases[corte - 1].length <= 120) corte--;
-        if (corte === frases.length) break;
-        linhas[fim] = frases.slice(0, corte).join(" ");
-        if (corte > 0) break;
-    }
+    const frases = linhas[fim].trim().split(/(?<=[.!?])\s+/);
+    let corte = frases.length;
+    while (corte > 0 && ehCortesia(frases[corte - 1])) corte--;
+    if (corte === frases.length) return texto.trim();
+
+    linhas[fim] = frases.slice(0, corte).join(" ");
     return linhas.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+type ChamadaDeFerramenta = { id?: string; name: string; args: Record<string, unknown> };
+
+/**
+ * Executa uma chamada de ferramenta sem nunca derrubar a conversa: ferramenta de outro perfil ou argumentos
+ * fora do formato (o LangChain lança ToolInputParsingException) voltam ao modelo como mensagem, e ele corrige
+ * a chamada na rodada seguinte em vez de o usuário receber um erro genérico.
+ */
+async function executarChamada(chamada: ChamadaDeFerramenta, porNome: Map<string, StructuredToolInterface>): Promise<BaseMessage> {
+    const responder = (content: string) => new ToolMessage({ tool_call_id: chamada.id ?? "", name: chamada.name, content });
+    const ferramenta = porNome.get(chamada.name);
+    if (!ferramenta) return responder("FERRAMENTA_INDISPONIVEL: essa consulta não existe para este usuário.");
+    try {
+        return await ferramenta.invoke({ ...chamada, type: "tool_call" });
+    } catch (err) {
+        console.warn(`[assistente] argumentos inválidos para ${chamada.name}:`, (err as Error)?.message);
+        return responder(
+            `ARGUMENTOS_INVALIDOS: a chamada de ${chamada.name} não segue o formato da ferramenta. ` +
+                "Confira os parâmetros (tipo e campos obrigatórios) e chame de novo.",
+        );
+    }
 }
 
 export class AssistenteService {
@@ -131,9 +185,16 @@ export class AssistenteService {
             new HumanMessage(texto),
         ];
 
+        const inicio = Date.now();
         try {
             for (let rodada = 0; rodada <= LIMITES.rodadasFerramenta; rodada++) {
-                const resposta = await comTempoLimite((signal) => modelo.invoke(mensagens, { signal }), LIMITES.tempoChamadaMs);
+                // Prazo da conversa inteira: sem ele, 7 chamadas de 45 s deixariam a pessoa esperando minutos.
+                const restante = LIMITES.tempoTotalMs - (Date.now() - inicio);
+                if (restante <= 0) throw new AssistenteErro(504, "O assistente demorou demais para responder. Tente uma pergunta mais direta.");
+                const resposta = await comTempoLimite(
+                    (signal) => modelo.invoke(mensagens, { signal }),
+                    Math.min(LIMITES.tempoChamadaMs, restante),
+                );
                 mensagens.push(resposta);
 
                 const chamadas = resposta.tool_calls ?? [];
@@ -144,18 +205,8 @@ export class AssistenteService {
                     break;
                 }
 
-                for (const chamada of chamadas) {
-                    const ferramenta = porNome.get(chamada.name);
-                    // Ferramenta que não existe para este perfil: responde sem executar nada.
-                    mensagens.push(
-                        ferramenta
-                            ? await ferramenta.invoke(chamada)
-                            : new ToolMessage({
-                                  tool_call_id: chamada.id ?? "",
-                                  content: "FERRAMENTA_INDISPONIVEL: essa consulta não existe para este usuário.",
-                              }),
-                    );
-                }
+                // As consultas de uma mesma rodada são independentes: rodam juntas e voltam na ordem pedida.
+                mensagens.push(...(await Promise.all(chamadas.map((chamada) => executarChamada(chamada, porNome)))));
             }
         } catch (err) {
             if (err instanceof AssistenteErro) throw err;
