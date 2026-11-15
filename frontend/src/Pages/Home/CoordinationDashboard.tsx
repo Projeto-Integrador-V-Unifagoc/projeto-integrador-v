@@ -13,8 +13,9 @@ import {
   GraduationCap, Layers, RefreshCw, Target, UsersRound,
 } from "lucide-react";
 import Container from "../../components/Container";
-import type { ClassificacaoCoordenacao, DashboardCoordenacao } from "../../models/home-coordenacao-model";
+import type { ClassificacaoCoordenacao, DashboardCoordenacao, DetalheCursoCoordenacao } from "../../models/home-coordenacao-model";
 import { homeCoordenacaoApi } from "../../services/home-coordenacao-api";
+import CursoCoordenacaoDialog from "./CursoCoordenacaoDialog";
 
 const percentual = (valor: number) => `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 const rotuloClassificacao = (valor: ClassificacaoCoordenacao) => ({ DADOS_INSUFICIENTES: "Dados insuficientes", DIFICULDADE: "Dificuldade", ATENCAO: "Atenção", ADEQUADO: "Adequado" })[valor];
@@ -36,6 +37,10 @@ export default function CoordinationDashboard({ userName }: { userName: string }
   const [carregando, setCarregando] = useState(true);
   const [recarregando, setRecarregando] = useState(false);
   const [erro, setErro] = useState("");
+  const [cursoAberto, setCursoAberto] = useState(false);
+  const [detalheCurso, setDetalheCurso] = useState<DetalheCursoCoordenacao | null>(null);
+  const [carregandoCurso, setCarregandoCurso] = useState(false);
+  const [erroCurso, setErroCurso] = useState("");
 
   const carregar = useCallback(async (periodoId?: string, atualizacao = false) => {
     if (atualizacao) setRecarregando(true); else setCarregando(true);
@@ -45,6 +50,17 @@ export default function CoordinationDashboard({ userName }: { userName: string }
   }, []);
 
   useEffect(() => { void carregar(); }, [carregar]);
+
+  async function abrirCurso(cursoId: string) {
+    if (!dados?.periodoSelecionado) return;
+    setCursoAberto(true);
+    setDetalheCurso(null);
+    setErroCurso("");
+    setCarregandoCurso(true);
+    try { setDetalheCurso(await homeCoordenacaoApi.detalheCurso(cursoId, dados.periodoSelecionado.id)); }
+    catch (e) { setErroCurso(mensagemErro(e)); }
+    finally { setCarregandoCurso(false); }
+  }
 
   const competenciasGrafico = useMemo(() => dados?.competencias.filter((item) => item.media !== null).slice(0, 8) ?? [], [dados]);
   const competenciasAtencao = useMemo(() => dados?.competencias.filter((item) => item.classificacao === "DIFICULDADE" || item.classificacao === "ATENCAO").slice(0, 6) ?? [], [dados]);
@@ -74,11 +90,12 @@ export default function CoordinationDashboard({ userName }: { userName: string }
       <Grid size={{ xs: 12, lg: 4 }}><Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, height: "100%" }}><Stack direction="row" alignItems="center" gap={1}><AlertTriangle size={20} color={theme.palette.warning.main} /><Typography variant="h6" fontWeight={800}>Competências em atenção</Typography></Stack><Typography variant="body2" color="text.secondary" mb={1.5}>Indicadores agregados, sem ranking de professores.</Typography><Stack divider={<Divider flexItem />}>{competenciasAtencao.length ? competenciasAtencao.map((item) => <Box key={item.id} py={1.2}><Stack direction="row" justifyContent="space-between" gap={1}><Box minWidth={0}><Typography fontWeight={750}>{item.codigo} · {item.nome}</Typography><Typography variant="caption" color="text.secondary">{item.totalOfertas} ofertas · {item.totalCursos} cursos</Typography></Box><Chip size="small" color={corClassificacao(item.classificacao)} label={rotuloClassificacao(item.classificacao)} /></Stack><Typography variant="caption">{item.media === null ? "Sem média" : `${percentual(item.media)} aproveitamento`} · {percentual(item.cobertura)} cobertura</Typography></Box>) : <Alert severity="success">Nenhuma competência com cobertura suficiente está em atenção.</Alert>}</Stack></Paper></Grid>
     </Grid>
 
-    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}><Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={1} mb={2}><Box><Typography variant="h6" fontWeight={800}>Panorama por curso</Typography><Typography variant="body2" color="text.secondary">Turmas, alunos e cobertura da grade semanal no período selecionado.</Typography></Box><Stack direction="row" gap={1} flexWrap="wrap"><Chip color="success" label={`${dados.matrizes.vigentes} matrizes vigentes`} /><Chip color="info" label={`${dados.matrizes.rascunhos} rascunhos`} /><Chip label={`${dados.matrizes.encerradas} encerradas`} /></Stack></Stack><TableContainer><Table size="small"><TableHead><TableRow><TableCell>Curso</TableCell><TableCell align="right">Turmas</TableCell><TableCell align="right">Ofertas</TableCell><TableCell align="right">Alunos</TableCell><TableCell align="right">Ofertas com horário</TableCell><TableCell align="right">Cobertura</TableCell></TableRow></TableHead><TableBody>{dados.panoramaCursos.length ? dados.panoramaCursos.map((item) => <TableRow hover key={item.id}><TableCell><Typography variant="body2" fontWeight={750}>{item.codigo} · {item.nome}</Typography></TableCell><TableCell align="right">{item.turmasAtivas}</TableCell><TableCell align="right">{item.ofertasAtivas}</TableCell><TableCell align="right">{item.alunosAtivos}</TableCell><TableCell align="right">{item.ofertasComHorario}</TableCell><TableCell align="right"><Chip size="small" color={item.coberturaHorarios === 100 ? "success" : item.coberturaHorarios > 0 ? "warning" : "default"} label={percentual(item.coberturaHorarios)} /></TableCell></TableRow>) : <TableRow><TableCell colSpan={6}><Alert severity="info">Nenhum curso possui turma ativa neste período.</Alert></TableCell></TableRow>}</TableBody></Table></TableContainer></Paper>
+    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}><Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={1} mb={2}><Box><Typography variant="h6" fontWeight={800}>Panorama por curso</Typography><Typography variant="body2" color="text.secondary">Turmas, alunos e cobertura da grade semanal no período selecionado. Abra um curso para consultar a origem dos indicadores.</Typography></Box><Stack direction="row" gap={1} flexWrap="wrap"><Chip color="success" label={`${dados.matrizes.vigentes} matrizes vigentes`} /><Chip color="info" label={`${dados.matrizes.rascunhos} rascunhos`} /><Chip label={`${dados.matrizes.encerradas} encerradas`} /></Stack></Stack><TableContainer><Table size="small"><TableHead><TableRow><TableCell>Curso</TableCell><TableCell align="right">Turmas</TableCell><TableCell align="right">Ofertas</TableCell><TableCell align="right">Alunos</TableCell><TableCell align="right">Ofertas com horário</TableCell><TableCell align="right">Cobertura</TableCell><TableCell align="right">Ação</TableCell></TableRow></TableHead><TableBody>{dados.panoramaCursos.length ? dados.panoramaCursos.map((item) => <TableRow hover key={item.id}><TableCell><Typography variant="body2" fontWeight={750}>{item.codigo} · {item.nome}</Typography></TableCell><TableCell align="right">{item.turmasAtivas}</TableCell><TableCell align="right">{item.ofertasAtivas}</TableCell><TableCell align="right">{item.alunosAtivos}</TableCell><TableCell align="right">{item.ofertasComHorario}</TableCell><TableCell align="right"><Chip size="small" color={item.coberturaHorarios === 100 ? "success" : item.coberturaHorarios > 0 ? "warning" : "default"} label={percentual(item.coberturaHorarios)} /></TableCell><TableCell align="right"><Button size="small" variant="text" endIcon={<ChevronRight size={16} />} onClick={() => void abrirCurso(item.id)} sx={{ width: "auto", whiteSpace: "nowrap" }}>Ver detalhes</Button></TableCell></TableRow>) : <TableRow><TableCell colSpan={7}><Alert severity="info">Nenhum curso possui turma ativa neste período.</Alert></TableCell></TableRow>}</TableBody></Table></TableContainer></Paper>
 
     <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}><Typography variant="h6" fontWeight={800}>Qualidade dos dados acadêmicos</Typography><Typography variant="body2" color="text.secondary" mb={2}>Pendências que reduzem a confiabilidade dos relatórios e dashboards.</Typography><Grid container spacing={1.5}>{dados.qualidade.map((item) => <Grid key={item.id} size={{ xs: 12, md: 6, lg: 4 }}><Paper variant="outlined" sx={{ p: 1.75, borderRadius: 2.5, height: "100%" }}><Stack height="100%" gap={1}><Stack direction="row" justifyContent="space-between" gap={1}><Typography fontWeight={750}>{item.titulo}</Typography><Chip size="small" color={item.quantidade === 0 ? "success" : item.severidade === "CRITICO" ? "error" : item.severidade === "ATENCAO" ? "warning" : "info"} label={String(item.quantidade)} /></Stack><Typography variant="body2" color="text.secondary">{item.descricao}</Typography><Button variant="text" endIcon={<ChevronRight size={16} />} onClick={() => navigate(item.rota)} sx={{ alignSelf: "flex-start", width: "auto", px: 0, mt: "auto" }}>Revisar cadastros</Button></Stack></Paper></Grid>)}</Grid></Paper>
 
     <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}><Typography variant="h6" fontWeight={800} mb={1.5}>Ações rápidas</Typography><Stack direction="row" gap={1} flexWrap="wrap"><Button variant="outlined" startIcon={<GraduationCap size={17} />} onClick={() => navigate("/cursos/lista")} sx={{ width: "auto" }}>Cursos e matrizes</Button><Button variant="outlined" startIcon={<Layers size={17} />} onClick={() => navigate("/turmas/lista")} sx={{ width: "auto" }}>Turmas e horários</Button><Button variant="outlined" startIcon={<Target size={17} />} onClick={() => navigate("/competencias/lista")} sx={{ width: "auto" }}>Competências</Button><Button variant="outlined" startIcon={<ClipboardCheck size={17} />} onClick={() => navigate("/relatorios/lista")} sx={{ width: "auto" }}>Relatórios</Button></Stack></Paper>
+    <CursoCoordenacaoDialog open={cursoAberto} carregando={carregandoCurso} erro={erroCurso} detalhe={detalheCurso} onClose={() => setCursoAberto(false)} />
   </Stack></Container>;
 }
 

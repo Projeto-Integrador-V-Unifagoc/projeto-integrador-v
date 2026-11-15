@@ -12,6 +12,11 @@ function service(overrides: Record<string, any> = {}) {
     listarStatusMatrizes: async () => [{ status: "VIGENTE", total: 2 }, { status: "RASCUNHO", total: 1 }],
     listarPanoramaCursos: async () => [{ id: "c1", codigo: "ADS", nome: "ADS", turmas_ativas: 2, ofertas_ativas: 4, alunos_ativos: 30, ofertas_com_horario: 3 }],
     listarDesempenhoCompetencias: async () => [{ id: "cp1", codigo: "COMP-01", nome: "Lógica", tipo: "TECNICA", total_ofertas: 2, total_cursos: 1, pontos_planejados: 100, pontos_avaliados: 80, soma_ponderada: 4400 }],
+    buscarCurso: async () => ({ id: "c1", codigo: "ADS", nome: "ADS" }),
+    listarMatrizesCurso: async () => [{ id: "mc1", codigo: "ADS-2026", versao: "2026", status: "VIGENTE", vigencia_inicio: "2026-01-01", total_disciplinas: 10, carga_horaria: 600 }],
+    listarTurmasCurso: async () => [{ id: "t1", sigla: "ADS1", descricao: "Turma 1", turno: "NOITE", periodo_curricular: 1, capacidade_alunos: 40, status: "ativa", alunos_ativos: 30, ofertas_ativas: 2, ofertas_com_horario: 1 }],
+    listarOfertasCurso: async () => [{ id: "td1", status: "ativa", turma_id: "t1", turma_sigla: "ADS1", turno: "NOITE", disciplina_id: "d1", disciplina_codigo: "ALG", disciplina_nome: "Algoritmos", professor_id: "p1", professor_nome: "Professora", total_alunos: 30, total_avaliacoes: 2, avaliacoes_mapeadas: 1 }],
+    listarHorariosCurso: async () => [{ id: "h1", turma_disciplina_id: "td1", dia_semana: 1, hora_inicio: "19:00:00", hora_fim: "20:40:00", local: "Lab 1", vigencia_inicio: "2026-08-01", vigencia_fim: "2026-12-15" }],
     ...overrides,
   };
   const instance = new HomeCoordenacaoService();
@@ -36,6 +41,20 @@ describe("HomeCoordenacaoService", () => {
 
   it("rejeita periodo inexistente", async () => {
     await assert.rejects(() => service().dashboard(reqSecretaria, "inexistente"), /nao encontrado/i);
+  });
+
+  it("detalha turmas, ofertas e horarios de um curso", async () => {
+    const resultado = await service().detalheCurso(reqSecretaria, "c1", "pl1");
+    assert.equal(resultado.curso.codigo, "ADS");
+    assert.equal(resultado.resumo.coberturaHorarios, 100);
+    assert.equal(resultado.turmas[0].coberturaHorarios, 50);
+    assert.equal(resultado.ofertas[0].horarios[0].horaInicio, "19:00");
+    assert.equal(resultado.ofertas[0].coberturaCompetencias, 50);
+    assert.equal(resultado.competencias[0].classificacao, "DIFICULDADE");
+  });
+
+  it("retorna 404 para curso inexistente", async () => {
+    await assert.rejects(() => service({ buscarCurso: async () => null }).detalheCurso(reqSecretaria, "x", "pl1"), /curso nao encontrado/i);
   });
 });
 

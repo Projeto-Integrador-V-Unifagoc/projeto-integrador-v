@@ -57,6 +57,82 @@ export class HomeCoordenacaoService {
     };
   }
 
+  async detalheCurso(req: Request, cursoId: string, periodoLetivoId?: string) {
+    this.validarAcesso(req);
+    const [curso, periodos] = await Promise.all([
+      this.repository.buscarCurso(cursoId),
+      this.repository.listarPeriodos(),
+    ]);
+    if (!curso) throw this.erro("Curso nao encontrado", 404);
+    const periodo = periodoLetivoId
+      ? periodos.find((item: any) => String(item.id) === String(periodoLetivoId))
+      : periodos.find((item: any) => Boolean(item.ativo)) ?? periodos[0];
+    if (!periodo) throw this.erro("Periodo letivo nao encontrado", 404);
+    if (periodoLetivoId && String(periodo.id) !== String(periodoLetivoId)) throw this.erro("Periodo letivo nao encontrado", 404);
+
+    const [matrizes, turmas, ofertas, horarios, competencias] = await Promise.all([
+      this.repository.listarMatrizesCurso(cursoId),
+      this.repository.listarTurmasCurso(cursoId, String(periodo.id)),
+      this.repository.listarOfertasCurso(cursoId, String(periodo.id)),
+      this.repository.listarHorariosCurso(cursoId, String(periodo.id)),
+      this.repository.listarDesempenhoCompetencias(String(periodo.id), cursoId),
+    ]);
+    const horariosPorOferta = new Map<string, any[]>();
+    for (const horario of horarios) {
+      const chave = String(horario.turma_disciplina_id);
+      if (!horariosPorOferta.has(chave)) horariosPorOferta.set(chave, []);
+      horariosPorOferta.get(chave)!.push({
+        id: String(horario.id), diaSemana: Number(horario.dia_semana),
+        horaInicio: String(horario.hora_inicio).slice(0, 5), horaFim: String(horario.hora_fim).slice(0, 5),
+        local: horario.local ?? null, vigenciaInicio: this.dataIso(horario.vigencia_inicio), vigenciaFim: this.dataIso(horario.vigencia_fim),
+      });
+    }
+    const ofertasMapeadas = ofertas.map((item: any) => {
+      const totalAvaliacoes = Number(item.total_avaliacoes ?? 0);
+      const avaliacoesMapeadas = Number(item.avaliacoes_mapeadas ?? 0);
+      return {
+        id: String(item.id), status: item.status,
+        turma: { id: String(item.turma_id), sigla: item.turma_sigla, turno: item.turno },
+        disciplina: { id: String(item.disciplina_id), codigo: item.disciplina_codigo, nome: item.disciplina_nome },
+        professor: { id: String(item.professor_id), nome: item.professor_nome },
+        totalAlunos: Number(item.total_alunos ?? 0), totalAvaliacoes, avaliacoesMapeadas,
+        coberturaCompetencias: this.percentual(avaliacoesMapeadas, totalAvaliacoes),
+        horarios: horariosPorOferta.get(String(item.id)) ?? [],
+      };
+    });
+    const totalOfertas = ofertasMapeadas.length;
+    const ofertasComHorario = ofertasMapeadas.filter((item: any) => item.horarios.length > 0).length;
+    return {
+      curso: { id: String(curso.id), codigo: curso.codigo, nome: curso.nome },
+      periodo: this.periodo(periodo),
+      resumo: {
+        turmasAtivas: turmas.length, ofertasAtivas: totalOfertas,
+        alunosAtivos: turmas.reduce((soma: number, item: any) => soma + Number(item.alunos_ativos ?? 0), 0),
+        ofertasComHorario, coberturaHorarios: this.percentual(ofertasComHorario, totalOfertas),
+      },
+      matrizes: matrizes.map((item: any) => ({
+        id: String(item.id), codigo: item.codigo, versao: item.versao, status: item.status,
+        vigenciaInicio: this.dataIso(item.vigencia_inicio), vigenciaFim: this.dataIso(item.vigencia_fim),
+        totalDisciplinas: Number(item.total_disciplinas ?? 0), cargaHoraria: Number(item.carga_horaria ?? 0),
+      })),
+      turmas: turmas.map((item: any) => {
+        const total = Number(item.ofertas_ativas ?? 0);
+        const comHorario = Number(item.ofertas_com_horario ?? 0);
+        return {
+          id: String(item.id), sigla: item.sigla, descricao: item.descricao, turno: item.turno,
+          periodoCurricular: Number(item.periodo_curricular), capacidadeAlunos: Number(item.capacidade_alunos), status: item.status,
+          alunosAtivos: Number(item.alunos_ativos ?? 0), ofertasAtivas: total, ofertasComHorario: comHorario,
+          coberturaHorarios: this.percentual(comHorario, total),
+        };
+      }),
+      ofertas: ofertasMapeadas,
+      competencias: competencias.map((item: any) => this.competencia(item))
+        .sort((a: any, b: any) => this.prioridade(a.classificacao) - this.prioridade(b.classificacao) || (a.media ?? 101) - (b.media ?? 101)),
+      criteriosCompetencia: CRITERIOS_COORDENACAO,
+      geradoEm: new Date().toISOString(),
+    };
+  }
+
   private competencia(item: any) {
     const planejados = Number(item.pontos_planejados ?? 0);
     const avaliados = Number(item.pontos_avaliados ?? 0);

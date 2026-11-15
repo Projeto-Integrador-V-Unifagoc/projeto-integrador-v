@@ -6,4 +6,5 @@ import { HomeCoordenacaoController } from "../home-coordenacao/controller/HomeCo
 const controller = new HomeCoordenacaoController();
 export const homeCoordenacaoRouter = Router();
 homeCoordenacaoRouter.get("/coordenacao/dashboard", autenticar, soSecretaria, controller.dashboard);
+homeCoordenacaoRouter.get("/coordenacao/cursos/:cursoId", autenticar, soSecretaria, controller.detalheCurso);
 

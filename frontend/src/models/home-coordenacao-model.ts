@@ -30,3 +30,27 @@ export interface DashboardCoordenacao {
   geradoEm: string;
 }
 
+export interface DetalheCursoCoordenacao {
+  curso: { id: string; codigo: string; nome: string };
+  periodo: PeriodoCoordenacao;
+  resumo: { turmasAtivas: number; ofertasAtivas: number; alunosAtivos: number; ofertasComHorario: number; coberturaHorarios: number };
+  matrizes: Array<{
+    id: string; codigo: string; versao: string; status: "RASCUNHO" | "VIGENTE" | "ENCERRADA";
+    vigenciaInicio: string | null; vigenciaFim: string | null; totalDisciplinas: number; cargaHoraria: number;
+  }>;
+  turmas: Array<{
+    id: string; sigla: string; descricao: string; turno: string; periodoCurricular: number;
+    capacidadeAlunos: number; status: string; alunosAtivos: number; ofertasAtivas: number;
+    ofertasComHorario: number; coberturaHorarios: number;
+  }>;
+  ofertas: Array<{
+    id: string; status: string; turma: { id: string; sigla: string; turno: string };
+    disciplina: { id: string; codigo: string; nome: string }; professor: { id: string; nome: string };
+    totalAlunos: number; totalAvaliacoes: number; avaliacoesMapeadas: number; coberturaCompetencias: number;
+    horarios: Array<{ id: string; diaSemana: number; horaInicio: string; horaFim: string; local: string | null; vigenciaInicio: string | null; vigenciaFim: string | null }>;
+  }>;
+  competencias: DashboardCoordenacao["competencias"];
+  criteriosCompetencia: DashboardCoordenacao["criteriosCompetencia"];
+  geradoEm: string;
+}
+
