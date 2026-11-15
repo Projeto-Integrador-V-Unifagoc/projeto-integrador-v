@@ -22,6 +22,7 @@ export class HomeProfessorService {
     const atribuicoes = this.montarAtribuicoes(dados);
     const alunosUnicos = new Set(dados.alunos.map((item: any) => String(item.aluno_id))).size;
     const lancamentosPendentes = atribuicoes.reduce((total: number, item: any) => total + item.lancamentosPendentes, 0);
+    const notasFaltantes = atribuicoes.reduce((total: number, item: any) => total + item.notasFaltantes, 0);
     const alertas = atribuicoes.flatMap((item: any) => item.alunos
       .filter((aluno: any) => aluno.nivel === "CRITICO" || aluno.nivel === "ATENCAO")
       .map((aluno: any) => ({ ...aluno, turmaDisciplinaId: item.id, disciplinaNome: item.disciplina.nome, turmaSigla: item.turma.sigla })))
@@ -37,6 +38,8 @@ export class HomeProfessorService {
         disciplinasDistintas: new Set(atribuicoes.map((item: any) => item.disciplina.id)).size,
         alunosUnicos,
         lancamentosPendentes,
+        avaliacoesIncompletas: lancamentosPendentes,
+        notasFaltantes,
       },
       atribuicoes: atribuicoes.map(({ alunos: _alunos, ...item }: any) => item),
       avaliacoesProximas: this.avaliacoesProximas(dados.avaliacoes, atribuicoes),
@@ -182,6 +185,10 @@ export class HomeProfessorService {
         const data = dataNormalizada ? new Date(`${dataNormalizada}T23:59:59`) : null;
         return Number(item.notas_lancadas) < alunos.length && (!data || data.getTime() <= Date.now());
       });
+      const notasFaltantes = vencidas.reduce(
+        (total: number, item: any) => total + Math.max(0, alunos.length - Number(item.notas_lancadas ?? 0)),
+        0,
+      );
       const medias = alunos.map((item: any) => item.media).filter((valor: any) => valor !== null);
       const frequenciasValidas = alunos.map((item: any) => item.frequencia).filter((valor: any) => valor !== null);
       return {
@@ -201,6 +208,7 @@ export class HomeProfessorService {
         alunosEmAtencao: alunos.filter((item: any) => item.nivel === "CRITICO" || item.nivel === "ATENCAO").length,
         totalAvaliacoes: avaliacoes.length,
         lancamentosPendentes: vencidas.length,
+        notasFaltantes,
         alunos,
       };
     });
@@ -271,7 +279,10 @@ export class HomeProfessorService {
     return {
       professor, periodoSelecionado: null, periodosDisponiveis: periodos.map((item) => this.periodo(item)),
       criterios: CRITERIOS_PROFESSOR,
-      resumo: { turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0, lancamentosPendentes: 0 },
+      resumo: {
+        turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0,
+        lancamentosPendentes: 0, avaliacoesIncompletas: 0, notasFaltantes: 0,
+      },
       atribuicoes: [], avaliacoesProximas: [], alunosEmAtencao: [], geradoEm: new Date().toISOString(),
     };
   }

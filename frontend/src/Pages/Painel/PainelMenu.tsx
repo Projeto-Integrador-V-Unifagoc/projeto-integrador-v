@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import { siteAdminApi } from "../../services/site-api";
 import type { SiteMenuItem } from "../../services/site-api";
 import { limparCacheSite } from "../LandingPage/useSite";
@@ -25,6 +26,7 @@ const VAZIO: Partial<SiteMenuItem> = { rotulo: "", url: "", ativo: true, externo
 
 export default function PainelMenu() {
     const { avisar, erroDe, componente } = useFeedback();
+    const { confirmar, dialogoConfirmacao } = useConfirmacao();
 
     const [itens, setItens] = useState<SiteMenuItem[]>([]);
     const [carregando, setCarregando] = useState(true);
@@ -99,7 +101,11 @@ export default function PainelMenu() {
     }
 
     async function remover(item: SiteMenuItem) {
-        if (!window.confirm(`Remover "${item.rotulo}" do menu?`)) return;
+        if (!await confirmar({
+            titulo: "Remover item do menu?",
+            mensagem: `O item "${item.rotulo}" deixará de aparecer no menu do site.`,
+            textoConfirmar: "Remover item",
+        })) return;
 
         try {
             await siteAdminApi.removerMenuItem(item.id);
@@ -238,6 +244,7 @@ export default function PainelMenu() {
                 </DialogActions>
             </Dialog>
 
+            {dialogoConfirmacao}
             {componente}
         </Box>
     );

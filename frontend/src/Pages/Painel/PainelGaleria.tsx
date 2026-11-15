@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { ExternalLink, Images, Pencil, Plus, Trash2, Upload } from "lucide-react";
 
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import { siteAdminApi, urlImagem } from "../../services/site-api";
 import type { SiteAlbum } from "../../services/site-api";
 import { limparCacheSite } from "../LandingPage/useSite";
@@ -36,6 +37,7 @@ const VAZIO: Partial<SiteAlbum> = {
 
 export default function PainelGaleria() {
     const { avisar, erroDe, componente } = useFeedback();
+    const { confirmar, dialogoConfirmacao } = useConfirmacao();
     const inputFotos = useRef<HTMLInputElement | null>(null);
 
     const [albuns, setAlbuns] = useState<SiteAlbum[]>([]);
@@ -96,7 +98,11 @@ export default function PainelGaleria() {
     }
 
     async function remover(album: SiteAlbum) {
-        if (!window.confirm(`Excluir o álbum "${album.titulo}" e todas as suas fotos?`)) return;
+        if (!await confirmar({
+            titulo: "Excluir álbum?",
+            mensagem: `O álbum "${album.titulo}" e todas as suas fotos serão excluídos permanentemente.`,
+            textoConfirmar: "Excluir álbum",
+        })) return;
 
         try {
             await siteAdminApi.removerAlbum(album.id);
@@ -396,6 +402,7 @@ export default function PainelGaleria() {
                 </DialogActions>
             </Dialog>
 
+            {dialogoConfirmacao}
             {componente}
         </Box>
     );

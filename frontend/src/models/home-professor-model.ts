@@ -10,13 +10,17 @@ export interface AtribuicaoProfessor {
   totalAlunos: number; alunosComNota: number; alunosComFrequencia: number;
   mediaTurma: number | null; frequenciaMedia: number | null; alunosEmAtencao: number;
   totalAvaliacoes: number; lancamentosPendentes: number;
+  notasFaltantes: number;
 }
 export interface DashboardProfessor {
   professor: { id: string; nome: string };
   periodoSelecionado: PeriodoProfessor | null;
   periodosDisponiveis: PeriodoProfessor[];
   criterios: { mediaMinima: number; frequenciaMinima: number; frequenciaAtencao: number };
-  resumo: { turmasAtivas: number; disciplinasDistintas: number; alunosUnicos: number; lancamentosPendentes: number };
+  resumo: {
+    turmasAtivas: number; disciplinasDistintas: number; alunosUnicos: number;
+    lancamentosPendentes: number; avaliacoesIncompletas: number; notasFaltantes: number;
+  };
   atribuicoes: AtribuicaoProfessor[];
   avaliacoesProximas: Array<{ id: string; turmaDisciplinaId: string; titulo: string; tipo: string; data: string; valor: number; disciplinaNome: string; turmaSigla: string; notasLancadas: number; notasEsperadas: number }>;
   alunosEmAtencao: Array<AlunoProfessor & { turmaDisciplinaId: string; disciplinaNome: string; turmaSigla: string }>;

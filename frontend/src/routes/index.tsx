@@ -28,6 +28,8 @@ import MatrizCurricularCurso from "../Pages/Cursos/MatrizCurricularCurso";
 import Disciplinas from "../Pages/Disciplinas/Disciplinas";
 import CadastroDisciplinas from "../Pages/Disciplinas/CadastroDisciplinas";
 import EditDisciplina from "../Pages/Disciplinas/EditDisciplina";
+import DetalheDisciplina from "../Pages/Disciplinas/DetalheDisciplina";
+import Competencias from "../Pages/Competencias/Competencias";
 
 import PeriodosLetivos from "../Pages/PeriodosLetivos/PeriodosLetivos";
 import CadastroPeriodosLetivos from "../Pages/PeriodosLetivos/CadastroPeriodosLetivos";
@@ -353,10 +355,28 @@ export default function AppRoutes() {
         />
 
         <Route
+          path="/disciplinas/:id/detalhes"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
+              <DetalheDisciplina />
+            </RouteByRole>
+          }
+        />
+
+        <Route
           path="/disciplinas/:id"
           element={
             <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
               <EditDisciplina />
+            </RouteByRole>
+          }
+        />
+
+        <Route
+          path="/competencias/lista"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_ADMIN}>
+              <Competencias />
             </RouteByRole>
           }
         />

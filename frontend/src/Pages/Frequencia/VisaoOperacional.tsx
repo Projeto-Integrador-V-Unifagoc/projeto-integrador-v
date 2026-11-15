@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Box, Chip, FormControlLabel, Grid, MenuItem, Stack, Switch, Tab, Tabs, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { CheckCheck, RefreshCw, Save, Search } from "lucide-react";
@@ -8,6 +9,7 @@ import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import { useFrequencia } from "../../hooks/use-frequencia";
 import type {
   AlunoChamada,
@@ -27,8 +29,11 @@ import {
 } from "./frequencia-utils";
 
 export default function VisaoOperacional() {
+  const [searchParams] = useSearchParams();
+  const turmaSolicitada = searchParams.get("turmaDisciplinaId") ?? "";
   const api = useFrequencia();
   const { notificar } = useNotificacao();
+  const { confirmar, dialogoConfirmacao } = useConfirmacao();
   const podeEditar = perfilLocal() === "professor";
 
   const [turmas, setTurmas] = useState<TurmaFrequencia[]>([]);
@@ -49,7 +54,7 @@ export default function VisaoOperacional() {
         if (!ativo) return;
         setTurmas(r.turmas);
         setLocais(r.locais);
-        setTurmaId(r.turmas[0]?.id || "");
+        setTurmaId(r.turmas.find((item: TurmaFrequencia) => item.id === turmaSolicitada)?.id ?? r.turmas[0]?.id ?? "");
         setLocalId(r.locais[0]?.id || "");
       } catch (e) {
         if (ativo) notificar(mensagemErro(e), "error");
@@ -59,19 +64,16 @@ export default function VisaoOperacional() {
       ativo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notificar]);
-
-  useEffect(() => {
-    const sair = (e: BeforeUnloadEvent) => {
-      if (alterado) e.preventDefault();
-    };
-    addEventListener("beforeunload", sair);
-    return () => removeEventListener("beforeunload", sair);
-  }, [alterado]);
+  }, [notificar, turmaSolicitada]);
 
   async function carregar() {
     if (!turmaId) return;
-    if (alterado && !confirm("Descartar alterações ainda não salvas?")) return;
+    if (alterado && !await confirmar({
+      titulo: "Descartar alterações?",
+      mensagem: "As alterações ainda não salvas desta chamada serão perdidas.",
+      textoConfirmar: "Descartar",
+      cor: "warning",
+    })) return;
     try {
       const r = await api.obterChamada({ turmaDisciplinaId: turmaId, data });
       setChamada(r.alunos);
@@ -93,8 +95,13 @@ export default function VisaoOperacional() {
     setAlterado(true);
   }, [alterado, notificar]);
 
-  function todosPresentes() {
-    if (!confirm("Marcar todos os alunos elegíveis como presentes?")) return;
+  async function todosPresentes() {
+    if (!await confirmar({
+      titulo: "Marcar todos como presentes?",
+      mensagem: "Todos os alunos elegíveis serão marcados como presentes. A chamada ainda precisará ser salva.",
+      textoConfirmar: "Marcar presentes",
+      cor: "primary",
+    })) return;
     setChamada((xs) => xs.map((x) => ({ ...x, status: "PRESENTE" })));
     notificar("Todos os alunos elegíveis foram marcados como presentes. Salve a chamada para confirmar.", "info");
     setAlterado(true);
@@ -339,6 +346,7 @@ export default function VisaoOperacional() {
           </Box>
         )}
       </Stack>
+      {dialogoConfirmacao}
     </Container>
   );
 }

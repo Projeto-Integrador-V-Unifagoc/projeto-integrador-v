@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import { api } from "../../lib/axios";
 import { siteAdminApi, urlImagem } from "../../services/site-api";
 import type { SiteCategoria, SiteNoticia } from "../../services/site-api";
@@ -43,6 +44,7 @@ const VAZIA: Partial<SiteNoticia> = {
 
 export default function PainelNoticias() {
     const { avisar, erroDe, componente } = useFeedback();
+    const { confirmar, dialogoConfirmacao } = useConfirmacao();
 
     const [noticias, setNoticias] = useState<SiteNoticia[]>([]);
     const [categorias, setCategorias] = useState<SiteCategoria[]>([]);
@@ -111,7 +113,11 @@ export default function PainelNoticias() {
     }
 
     async function remover(noticia: SiteNoticia) {
-        if (!window.confirm(`Excluir a notícia "${noticia.titulo}"?`)) return;
+        if (!await confirmar({
+            titulo: "Excluir notícia?",
+            mensagem: `A notícia "${noticia.titulo}" será excluída permanentemente.`,
+            textoConfirmar: "Excluir notícia",
+        })) return;
 
         try {
             await siteAdminApi.removerNoticia(noticia.id);
@@ -342,6 +348,7 @@ export default function PainelNoticias() {
                 </DialogActions>
             </Dialog>
 
+            {dialogoConfirmacao}
             {componente}
         </Box>
     );

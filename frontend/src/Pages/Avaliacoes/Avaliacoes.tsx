@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -38,6 +39,8 @@ const campoSx = { "& .MuiFormHelperText-root": { minHeight: 20, m: 0, mt: 0.5 } 
 const formatarNumeroIndicador = (valor: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(valor);
 
 export default function Avaliacoes() {
+  const [searchParams] = useSearchParams();
+  const contextoSolicitado = searchParams.get("turmaDisciplinaId") ?? "";
   const [atribuicoes, setAtribuicoes] = useState<AtribuicaoAvaliacao[]>([]);
   const [contextoId, setContextoId] = useState("");
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
@@ -60,10 +63,12 @@ export default function Avaliacoes() {
     try {
       const dados = await avaliacaoApi.listarAtribuicoes();
       setAtribuicoes(dados);
-      setContextoId((atual) => dados.some((item) => item.id === atual) ? atual : dados[0]?.id ?? "");
+      setContextoId((atual) => dados.some((item) => item.id === atual)
+        ? atual
+        : dados.find((item) => item.id === contextoSolicitado)?.id ?? dados[0]?.id ?? "");
     } catch (e) { setErro(mensagemErro(e, "Não foi possível carregar as atribuições.")); }
     finally { setLoadingAtribuicoes(false); }
-  }, []);
+  }, [contextoSolicitado]);
 
   const carregarAvaliacoes = useCallback(async (id: string) => {
     if (!id) { setAvaliacoes([]); return; }

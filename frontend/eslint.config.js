@@ -19,5 +19,19 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'alert', message: 'Use um diálogo ou uma notificação da aplicação.' },
+        { name: 'confirm', message: 'Use o ConfirmDialog da aplicação.' },
+        { name: 'prompt', message: 'Use um diálogo com campo controlado da aplicação.' },
+      ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'window', property: 'alert', message: 'Use um diálogo ou uma notificação da aplicação.' },
+        { object: 'window', property: 'confirm', message: 'Use o ConfirmDialog da aplicação.' },
+        { object: 'window', property: 'prompt', message: 'Use um diálogo com campo controlado da aplicação.' },
+      ],
+    },
   },
 ])

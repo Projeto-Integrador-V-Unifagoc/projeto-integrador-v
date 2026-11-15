@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 
 import { Box, CssBaseline, Drawer, useMediaQuery, useTheme } from "@mui/material";
 
@@ -18,6 +18,7 @@ function lerMenuExpandido(): boolean {
 }
 
 export default function MainLayout() {
+  const { pathname } = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -63,8 +64,8 @@ export default function MainLayout() {
             },
           }}
         >
-          <Box onClick={fecharMenuMobile}>
-            <Sidebar expandido />
+          <Box>
+            <Sidebar key={pathname} expandido onNavigate={fecharMenuMobile} />
           </Box>
         </Drawer>
       ) : (
@@ -76,12 +77,13 @@ export default function MainLayout() {
             backgroundColor: "white",
             transition: "all 0.3s ease",
             overflowX: "hidden",
+            overflowY: "auto",
             position: "fixed",
             paddingTop: 7,
             paddingLeft: 1,
           })}
         >
-          <Sidebar expandido={menuExpandido} />
+          <Sidebar key={pathname} expandido={menuExpandido} />
         </Box>
       )}
 

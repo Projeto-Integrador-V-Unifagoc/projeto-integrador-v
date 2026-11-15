@@ -33,6 +33,7 @@ describe("HomeProfessorService", () => {
     assert.equal(resultado.atribuicoes[0].mediaTurma, 60);
     assert.equal(resultado.atribuicoes[0].frequenciaMedia, 70);
     assert.equal(resultado.atribuicoes[0].alunosEmAtencao, 1);
+    assert.equal(resultado.resumo.notasFaltantes, 0);
   });
 
   it("bloqueia perfil que nao seja professor", async () => {
@@ -45,7 +46,10 @@ describe("HomeProfessorService", () => {
 
   it("retorna vazio quando nao ha atribuicoes", async () => {
     const resultado = await service({ listarPeriodos: async () => [] }).dashboard(reqProfessor);
-    assert.deepEqual(resultado.resumo, { turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0, lancamentosPendentes: 0 });
+    assert.deepEqual(resultado.resumo, {
+      turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0,
+      lancamentosPendentes: 0, avaliacoesIncompletas: 0, notasFaltantes: 0,
+    });
   });
 
   it("normaliza datas do PostgreSQL ao calcular pendencias e proximas avaliacoes", async () => {
@@ -60,6 +64,8 @@ describe("HomeProfessorService", () => {
     }).dashboard(reqProfessor);
 
     assert.equal(resultado.resumo.lancamentosPendentes, 1);
+    assert.equal(resultado.resumo.avaliacoesIncompletas, 1);
+    assert.equal(resultado.resumo.notasFaltantes, 1);
     assert.equal(resultado.avaliacoesProximas.length, 1);
     assert.equal(resultado.avaliacoesProximas[0].data, amanha.toISOString().slice(0, 10));
   });
