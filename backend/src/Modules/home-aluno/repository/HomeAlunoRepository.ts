@@ -69,4 +69,107 @@ export class HomeAlunoRepository {
       )
       .orderBy("a.data_devolucao", "asc");
   }
+
+  listarVinculosAtivosParaCompetencias(alunoId: string, executor: Executor = db) {
+    return executor("matricula_turma_disciplina as mtd")
+      .join("matricula as m", "mtd.matricula_id", "m.id")
+      .join("aluno as al", "m.aluno_id", "al.id")
+      .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
+      .join("turma as t", "td.turma_id", "t.id")
+      .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
+      .join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
+      .join("disciplinas as d", "cd.disciplina_id", "d.id")
+      .where("m.aluno_id", alunoId)
+      .where("pl.ativo", true)
+      .whereIn("mtd.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
+      .whereIn("td.status", STATUS_ATIVO)
+      .distinct(
+        "td.id as turma_disciplina_id",
+        "mtd.id as matricula_turma_disciplina_id",
+        "al.id as aluno_id",
+        "d.id as disciplina_id",
+        "d.codigo as disciplina_codigo",
+        "d.nome as disciplina_nome",
+        "t.sigla as turma_sigla",
+      )
+      .orderBy("d.nome");
+  }
+
+  listarCompetenciasPlanejadasDoAluno(alunoId: string, executor: Executor = db) {
+    return executor("matricula_turma_disciplina as mtd")
+      .join("matricula as m", "mtd.matricula_id", "m.id")
+      .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
+      .join("turma as t", "td.turma_id", "t.id")
+      .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
+      .join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
+      .join("disciplina_competencia as dc", "cd.disciplina_id", "dc.disciplina_id")
+      .join("competencia as c", "dc.competencia_id", "c.id")
+      .where("m.aluno_id", alunoId)
+      .where("pl.ativo", true)
+      .whereIn("mtd.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
+      .whereIn("td.status", STATUS_ATIVO)
+      .select(
+        "td.id as turma_disciplina_id",
+        "c.id as competencia_id",
+        "c.codigo",
+        "c.nome",
+        "c.tipo",
+        "dc.nivel_esperado",
+        "dc.obrigatoria",
+        "dc.ordem",
+      )
+      .orderBy("dc.ordem")
+      .orderBy("c.nome");
+  }
+
+  listarAvaliacoesCompetenciasDoAluno(alunoId: string, executor: Executor = db) {
+    return executor("matricula_turma_disciplina as mtd")
+      .join("matricula as m", "mtd.matricula_id", "m.id")
+      .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
+      .join("turma as t", "td.turma_id", "t.id")
+      .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
+      .join("avaliacao as av", "av.turma_disciplina_id", "td.id")
+      .join("avaliacao_competencia as ac", "ac.avaliacao_id", "av.id")
+      .where("m.aluno_id", alunoId)
+      .where("pl.ativo", true)
+      .whereIn("mtd.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
+      .whereIn("td.status", STATUS_ATIVO)
+      .select(
+        "td.id as turma_disciplina_id",
+        "av.id as avaliacao_id",
+        "ac.competencia_id",
+        "ac.peso_percentual",
+        "av.tipo_avaliacao",
+        "av.descricao_avaliacao",
+        "av.valor",
+        "av.data_devolucao",
+      )
+      .orderByRaw("COALESCE(av.data_devolucao, av.data_lancamento::date) ASC");
+  }
+
+  listarNotasCompetenciasDoAluno(alunoId: string, executor: Executor = db) {
+    return executor("nota as n")
+      .join("matricula_turma_disciplina as mtd", "n.matricula_turma_disciplina_id", "mtd.id")
+      .join("matricula as m", "mtd.matricula_id", "m.id")
+      .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
+      .join("turma as t", "td.turma_id", "t.id")
+      .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
+      .join("avaliacao as av", function () {
+        this.on("av.id", "=", "n.avaliacao_id").andOn("av.turma_disciplina_id", "=", "td.id");
+      })
+      .where("m.aluno_id", alunoId)
+      .where("pl.ativo", true)
+      .whereIn("mtd.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
+      .whereIn("td.status", STATUS_ATIVO)
+      .select(
+        "td.id as turma_disciplina_id",
+        "mtd.id as matricula_turma_disciplina_id",
+        "av.id as avaliacao_id",
+        "n.valor as nota_valor",
+      );
+  }
 }

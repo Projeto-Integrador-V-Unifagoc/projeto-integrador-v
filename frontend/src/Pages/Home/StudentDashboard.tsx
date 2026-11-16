@@ -37,7 +37,13 @@ import {
 } from "lucide-react";
 import Container from "../../components/Container";
 import type { MinhaFrequenciaAluno, SituacaoFrequencia } from "../../models/frequencia-model";
-import type { DisciplinaAluno, TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
+import type {
+  ClassificacaoCompetenciaAluno,
+  DesempenhoCompetenciasAluno,
+  DisciplinaAluno,
+  TarefaAluno,
+  TipoTarefa,
+} from "../../models/home-aluno-model";
 import type { BoletimAluno } from "../../models/nota-model";
 import { authService } from "../../services/auth-services";
 import { frequenciaApi } from "../../services/frequencia-api";
@@ -166,6 +172,20 @@ function rotuloNivel(nivel: NivelAtencao) {
   return "Sem dados";
 }
 
+function corCompetencia(classificacao: ClassificacaoCompetenciaAluno): "error" | "warning" | "success" | "default" {
+  if (classificacao === "DIFICULDADE") return "error";
+  if (classificacao === "ATENCAO") return "warning";
+  if (classificacao === "ADEQUADO") return "success";
+  return "default";
+}
+
+function rotuloCompetencia(classificacao: ClassificacaoCompetenciaAluno) {
+  if (classificacao === "DIFICULDADE") return "Dificuldade";
+  if (classificacao === "ATENCAO") return "Atenção";
+  if (classificacao === "ADEQUADO") return "Adequado";
+  return "Dados insuficientes";
+}
+
 function abreviarDisciplina(nome: string, limite = 24) {
   if (nome.length <= limite) return nome;
   return `${nome.slice(0, limite - 1).trimEnd()}…`;
@@ -261,6 +281,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   const [tarefas, setTarefas] = useState<TarefaAluno[]>([]);
   const [frequencia, setFrequencia] = useState<MinhaFrequenciaAluno | null>(null);
   const [boletim, setBoletim] = useState<BoletimAluno | null>(null);
+  const [desempenhoCompetencias, setDesempenhoCompetencias] = useState<DesempenhoCompetenciasAluno | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [recarregando, setRecarregando] = useState(false);
   const [erros, setErros] = useState<string[]>([]);
@@ -277,8 +298,9 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
       homeAlunoApi.minhasTarefas(),
       frequenciaApi.minhaFrequencia(),
       notaApi.meuBoletim(),
+      homeAlunoApi.meuDesempenhoCompetencias(),
     ]);
-    const [me, listaDisciplinas, listaTarefas, dadosFrequencia, dadosBoletim] = resultados;
+    const [me, listaDisciplinas, listaTarefas, dadosFrequencia, dadosBoletim, dadosCompetencias] = resultados;
     const falhas: string[] = [];
 
     if (me.status === "fulfilled") setStudentInfo(me.value.data?.academico ?? null); else falhas.push("dados do curso");
@@ -286,6 +308,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
     if (listaTarefas.status === "fulfilled") setTarefas(listaTarefas.value); else falhas.push("agenda");
     if (dadosFrequencia.status === "fulfilled") setFrequencia(dadosFrequencia.value); else falhas.push("frequência");
     if (dadosBoletim.status === "fulfilled") setBoletim(dadosBoletim.value); else falhas.push("notas");
+    if (dadosCompetencias.status === "fulfilled") setDesempenhoCompetencias(dadosCompetencias.value); else falhas.push("competências");
 
     setErros(falhas);
     setCarregando(false);
@@ -322,6 +345,22 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   const frequenciaSelecionada = frequencia?.consolidado.find(
     (item) => item.turmaDisciplinaId === disciplinaSelecionadaId,
   ) ?? null;
+  const competenciasSelecionadas = desempenhoCompetencias?.disciplinas.find(
+    (item) => item.turmaDisciplinaId === disciplinaSelecionadaId,
+  )?.competencias ?? [];
+  const competenciasDashboard = (desempenhoCompetencias?.disciplinas ?? [])
+    .flatMap((disciplina) => disciplina.competencias.map((competencia) => ({
+      ...competencia,
+      turmaDisciplinaId: disciplina.turmaDisciplinaId,
+      disciplinaCodigo: disciplina.disciplina.codigo,
+      disciplinaNome: disciplina.disciplina.nome,
+    })))
+    .sort((a, b) => {
+      const prioridade = ["DIFICULDADE", "ATENCAO", "DADOS_INSUFICIENTES", "ADEQUADO"];
+      return prioridade.indexOf(a.classificacao) - prioridade.indexOf(b.classificacao)
+        || a.disciplinaNome.localeCompare(b.disciplinaNome)
+        || a.nome.localeCompare(b.nome);
+    });
 
   const dadosGrafico = disciplinasDashboard.filter((item) => item.media !== null || item.frequencia !== null);
   const nomesGrafico = dadosGrafico.map((item) => item.nome);
@@ -509,6 +548,63 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
         </Grid>
 
         <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 3, bgcolor: "#fff" }}>
+          <SecaoTitulo
+            titulo="Meu desempenho por competência"
+            subtitulo={`O diagnóstico considera apenas competências com ao menos ${desempenhoCompetencias?.criterios.coberturaMinima ?? 50}% de cobertura nas avaliações mapeadas.`}
+          />
+          {competenciasDashboard.length ? (
+            <Stack gap={2}>
+              <Stack direction="row" gap={1} flexWrap="wrap">
+                <Chip size="small" variant="outlined" label={`${desempenhoCompetencias?.resumo.totalPlanejadas ?? 0} planejadas`} />
+                <Chip size="small" variant="outlined" color="primary" label={`${desempenhoCompetencias?.resumo.comResultados ?? 0} com resultados`} />
+                <Chip size="small" variant="outlined" color={(desempenhoCompetencias?.resumo.emAtencao ?? 0) > 0 ? "warning" : "success"} label={`${desempenhoCompetencias?.resumo.emAtencao ?? 0} em atenção`} />
+              </Stack>
+              <Grid container spacing={1.5}>
+                {competenciasDashboard.map((item) => (
+                  <Grid key={`${item.turmaDisciplinaId}-${item.id}`} size={{ xs: 12, md: 6, xl: 4 }}>
+                    <Paper
+                      variant="outlined"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Abrir detalhes de ${item.codigo} em ${item.disciplinaNome}`}
+                      onClick={() => setDisciplinaSelecionadaId(item.turmaDisciplinaId)}
+                      onKeyDown={(evento) => {
+                        if (evento.key === "Enter" || evento.key === " ") {
+                          evento.preventDefault();
+                          setDisciplinaSelecionadaId(item.turmaDisciplinaId);
+                        }
+                      }}
+                      sx={{ p: 1.75, borderRadius: 2.5, height: "100%", cursor: "pointer", "&:hover, &:focus-visible": { bgcolor: "action.hover", outline: "none", borderColor: "primary.main" } }}
+                    >
+                      <Stack direction="row" justifyContent="space-between" gap={1} alignItems="flex-start">
+                        <Box minWidth={0}>
+                          <Typography fontWeight={800}>{item.codigo} · {item.nome}</Typography>
+                          <Typography variant="caption" color="text.secondary">{item.disciplinaCodigo} · {item.disciplinaNome}</Typography>
+                        </Box>
+                        <Chip size="small" color={corCompetencia(item.classificacao)} label={rotuloCompetencia(item.classificacao)} sx={{ flexShrink: 0 }} />
+                      </Stack>
+                      <Stack gap={1.1} mt={1.5}>
+                        <Box>
+                          <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Aproveitamento</Typography><Typography variant="caption" fontWeight={800}>{fmtPercentual(item.media, 1)}</Typography></Stack>
+                          <LinearProgress variant="determinate" value={item.media ?? 0} color={item.classificacao === "DIFICULDADE" ? "error" : item.classificacao === "ATENCAO" ? "warning" : "primary"} sx={{ mt: 0.5, height: 6, borderRadius: 9 }} />
+                        </Box>
+                        <Box>
+                          <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Cobertura</Typography><Typography variant="caption" fontWeight={800}>{fmtPercentual(item.cobertura, 1)}</Typography></Stack>
+                          <LinearProgress variant="determinate" value={item.cobertura} color={item.cobertura < (desempenhoCompetencias?.criterios.coberturaMinima ?? 50) ? "warning" : "success"} sx={{ mt: 0.5, height: 6, borderRadius: 9 }} />
+                        </Box>
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" display="block" mt={1.25}>{item.fontes.length ? `${item.fontes.length} ${item.fontes.length === 1 ? "avaliação mapeada" : "avaliações mapeadas"}` : "Nenhuma avaliação mapeada ainda"}</Typography>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            </Stack>
+          ) : (
+            <Alert severity="info">As competências aparecerão quando forem vinculadas às suas disciplinas. Avaliações sem mapeamento não são atribuídas artificialmente a nenhuma competência.</Alert>
+          )}
+        </Paper>
+
+        <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 3, bgcolor: "#fff" }}>
           <SecaoTitulo titulo="Minhas disciplinas" subtitulo="Prioridade baseada na frequência e na média parcial disponíveis." acao={<Button size="small" variant="outlined" onClick={() => navigate("/minhas-notas")} sx={{ width: "auto" }}>Abrir boletim</Button>} />
           {disciplinasDashboard.length ? (
             <Grid container spacing={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2.5, overflow: "hidden" }}>
@@ -533,6 +629,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
         boletim={boletimSelecionado}
         frequencia={frequenciaSelecionada}
         tarefas={tarefas}
+        competencias={competenciasSelecionadas}
         onFechar={() => setDisciplinaSelecionadaId(null)}
         onAbrirBoletim={() => navigate("/minhas-notas")}
         onAbrirFrequencia={() => navigate("/minha-frequencia")}

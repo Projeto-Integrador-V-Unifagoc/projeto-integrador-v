@@ -39,6 +39,10 @@ function criar(overrides: Record<string, any> = {}) {
     buscarAlunoPorUsuarioId: async () => ({ id: alunoId }),
     listarDisciplinasDoAluno: async () => [disciplinaRow()],
     listarTarefasDoAluno: async () => [tarefaRow()],
+    listarVinculosAtivosParaCompetencias: async () => [],
+    listarCompetenciasPlanejadasDoAluno: async () => [],
+    listarAvaliacoesCompetenciasDoAluno: async () => [],
+    listarNotasCompetenciasDoAluno: async () => [],
     ...overrides,
   };
   return new HomeAlunoService(repository as any);
@@ -140,5 +144,82 @@ describe("HomeAlunoService autorização e isolamento por aluno", () => {
 
   it("bloqueia requisição sem identidade autenticada com 403", async () => {
     await expect(criar().minhasDisciplinas(reqSemUser)).rejects.toMatchObject({ status: 403 });
+  });
+
+  it("tambem protege o desempenho por competencia", async () => {
+    await expect(criar().meuDesempenhoCompetencias(reqProfessor)).rejects.toMatchObject({ status: 403 });
+    await expect(criar({ buscarAlunoPorUsuarioId: async () => null }).meuDesempenhoCompetencias(reqAluno)).rejects.toMatchObject({ status: 403 });
+  });
+});
+
+describe("HomeAlunoService.meuDesempenhoCompetencias", () => {
+  it("calcula somente o desempenho individual e informa a origem do indicador", async () => {
+    const vinculo = {
+      turma_disciplina_id: turmaDisciplinaId,
+      matricula_turma_disciplina_id: "mtd1",
+      aluno_id: alunoId,
+      disciplina_id: "d1",
+      disciplina_codigo: "ALG",
+      disciplina_nome: "Algoritmos",
+      turma_sigla: "ADS1A",
+    };
+    const resultado = await criar({
+      listarVinculosAtivosParaCompetencias: async (id: string) => id === alunoId ? [vinculo] : [],
+      listarCompetenciasPlanejadasDoAluno: async () => [{
+        turma_disciplina_id: turmaDisciplinaId,
+        competencia_id: "comp1",
+        codigo: "COMP-01",
+        nome: "Raciocínio lógico",
+        tipo: "TECNICA",
+        nivel_esperado: "DESENVOLVER",
+        obrigatoria: true,
+      }],
+      listarAvaliacoesCompetenciasDoAluno: async () => [{
+        turma_disciplina_id: turmaDisciplinaId,
+        avaliacao_id: "av1",
+        competencia_id: "comp1",
+        peso_percentual: 100,
+        tipo_avaliacao: "PROVA",
+        descricao_avaliacao: "Prova 1",
+        valor: 10,
+        data_devolucao: "2026-11-10",
+      }],
+      listarNotasCompetenciasDoAluno: async () => [{
+        turma_disciplina_id: turmaDisciplinaId,
+        matricula_turma_disciplina_id: "mtd1",
+        avaliacao_id: "av1",
+        nota_valor: 5,
+      }],
+    }).meuDesempenhoCompetencias(reqAluno);
+
+    expect(resultado.resumo).toEqual({ totalPlanejadas: 1, comResultados: 1, comCoberturaSuficiente: 1, emAtencao: 1 });
+    expect(resultado.disciplinas[0].competencias[0]).toMatchObject({
+      codigo: "COMP-01",
+      media: 50,
+      cobertura: 100,
+      classificacao: "DIFICULDADE",
+      totalAlunos: 1,
+    });
+    expect(resultado.disciplinas[0].competencias[0].fontes[0]).toMatchObject({
+      titulo: "Prova 1",
+      nota: 5,
+      aproveitamento: 50,
+    });
+  });
+
+  it("retorna disciplinas sem competencias sem inventar resultados", async () => {
+    const resultado = await criar({
+      listarVinculosAtivosParaCompetencias: async () => [{
+        turma_disciplina_id: turmaDisciplinaId,
+        matricula_turma_disciplina_id: "mtd1",
+        aluno_id: alunoId,
+        disciplina_id: "d1",
+        disciplina_codigo: "ALG",
+        disciplina_nome: "Algoritmos",
+        turma_sigla: "ADS1A",
+      }],
+    }).meuDesempenhoCompetencias(reqAluno);
+    expect(resultado.resumo.totalPlanejadas).toBe(0);
+    expect(resultado.disciplinas[0].competencias).toEqual([]);
   });
 });

@@ -18,4 +18,8 @@ export class HomeAlunoController {
   minhasTarefas = async (req: Request, res: Response) => {
     try { return res.json(await this.service.minhasTarefas(req)); } catch (e) { return this.erro(res, e); }
   };
+
+  meuDesempenhoCompetencias = async (req: Request, res: Response) => {
+    try { return res.json(await this.service.meuDesempenhoCompetencias(req)); } catch (e) { return this.erro(res, e); }
+  };
 }

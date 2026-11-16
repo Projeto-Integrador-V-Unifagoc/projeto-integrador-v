@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import type { ConsolidadoFrequencia } from "../../models/frequencia-model";
-import type { DisciplinaAluno, TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
+import type { ClassificacaoCompetenciaAluno, DesempenhoCompetenciaAluno, DisciplinaAluno, TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
 import {
   SITUACAO_LABEL,
   situacaoCor,
@@ -50,6 +50,7 @@ interface DisciplinaDetalhesDrawerProps {
   boletim: DisciplinaBoletim | null;
   frequencia: ConsolidadoFrequencia | null;
   tarefas: TarefaAluno[];
+  competencias: DesempenhoCompetenciaAluno[];
   onFechar: () => void;
   onAbrirBoletim: () => void;
   onAbrirFrequencia: () => void;
@@ -62,6 +63,20 @@ const percentual = (valor: number | null | undefined) =>
 
 const numero = (valor: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(valor);
+
+function corCompetencia(classificacao: ClassificacaoCompetenciaAluno): "error" | "warning" | "success" | "default" {
+  if (classificacao === "DIFICULDADE") return "error";
+  if (classificacao === "ATENCAO") return "warning";
+  if (classificacao === "ADEQUADO") return "success";
+  return "default";
+}
+
+function rotuloCompetencia(classificacao: ClassificacaoCompetenciaAluno) {
+  if (classificacao === "DIFICULDADE") return "Dificuldade";
+  if (classificacao === "ATENCAO") return "Atenção";
+  if (classificacao === "ADEQUADO") return "Adequado";
+  return "Dados insuficientes";
+}
 
 function Metrica({
   titulo,
@@ -157,6 +172,7 @@ export default function DisciplinaDetalhesDrawer({
   boletim,
   frequencia,
   tarefas,
+  competencias,
   onFechar,
   onAbrirBoletim,
   onAbrirFrequencia,
@@ -258,6 +274,52 @@ export default function DisciplinaDetalhesDrawer({
             <Metrica titulo="Notas publicadas" valor={totalAvaliacoes ? `${avaliacoesPublicadas}/${totalAvaliacoes}` : "—"} apoio="avaliações cadastradas" />
           </Grid>
         </Grid>
+
+        <Box component="section" aria-labelledby="titulo-competencias-disciplina">
+          <Typography id="titulo-competencias-disciplina" fontWeight={850}>Desempenho por competência</Typography>
+          <Typography variant="body2" color="text.secondary" mb={1.25}>O aproveitamento combina suas notas com o peso de cada competência nas avaliações. Baixa cobertura não gera diagnóstico definitivo.</Typography>
+          {competencias.length ? (
+            <Stack gap={1.25}>
+              {competencias.map((competencia) => (
+                <Paper key={competencia.id} variant="outlined" sx={{ p: 1.75, borderRadius: 2.5 }}>
+                  <Stack direction="row" justifyContent="space-between" gap={1} alignItems="flex-start">
+                    <Box minWidth={0}>
+                      <Typography variant="body2" fontWeight={850}>{competencia.codigo} · {competencia.nome}</Typography>
+                      <Typography variant="caption" color="text.secondary">Nível esperado: {competencia.nivelEsperado.toLowerCase()}</Typography>
+                    </Box>
+                    <Chip size="small" color={corCompetencia(competencia.classificacao)} label={rotuloCompetencia(competencia.classificacao)} />
+                  </Stack>
+                  <Grid container spacing={1.25} mt={0.25}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Aproveitamento</Typography><Typography variant="caption" fontWeight={800}>{percentual(competencia.media)}</Typography></Stack>
+                      <LinearProgress variant="determinate" value={competencia.media ?? 0} color={competencia.classificacao === "DIFICULDADE" ? "error" : competencia.classificacao === "ATENCAO" ? "warning" : "primary"} sx={{ mt: 0.5, height: 6, borderRadius: 9 }} />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Cobertura avaliada</Typography><Typography variant="caption" fontWeight={800}>{percentual(competencia.cobertura)}</Typography></Stack>
+                      <LinearProgress variant="determinate" value={competencia.cobertura} color={competencia.cobertura < 50 ? "warning" : "success"} sx={{ mt: 0.5, height: 6, borderRadius: 9 }} />
+                    </Grid>
+                  </Grid>
+                  <Divider sx={{ my: 1.25 }} />
+                  <Typography variant="caption" color="text.secondary" fontWeight={750}>Origem do indicador</Typography>
+                  {competencia.fontes.length ? (
+                    <Stack mt={0.5} gap={0.35}>
+                      {competencia.fontes.map((fonte) => (
+                        <Stack key={fonte.id} direction="row" justifyContent="space-between" gap={1}>
+                          <Typography variant="caption">{fonte.titulo} · peso {numero(fonte.pesoPercentual)}%</Typography>
+                          <Typography variant="caption" fontWeight={750} whiteSpace="nowrap">{fonte.nota === null ? "Aguardando nota" : `${numero(fonte.nota)} / ${numero(fonte.valor)}`}</Typography>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>Nenhuma avaliação foi mapeada para esta competência.</Typography>
+                  )}
+                </Paper>
+              ))}
+            </Stack>
+          ) : (
+            <Alert severity="info">Esta disciplina ainda não possui competências planejadas.</Alert>
+          )}
+        </Box>
 
         <Box component="section" aria-labelledby="titulo-projecao-nota">
           <Typography id="titulo-projecao-nota" fontWeight={850} mb={1}>Caminho até a média</Typography>

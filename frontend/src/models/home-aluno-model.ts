@@ -20,3 +20,50 @@ export interface TarefaAluno {
   dataVencimento: string;
   valor: number | null;
 }
+
+export type ClassificacaoCompetenciaAluno =
+  | "DADOS_INSUFICIENTES"
+  | "DIFICULDADE"
+  | "ATENCAO"
+  | "ADEQUADO";
+
+export interface DesempenhoCompetenciaAluno {
+  id: string;
+  codigo: string;
+  nome: string;
+  tipo: string;
+  nivelEsperado: string;
+  obrigatoria: boolean;
+  media: number | null;
+  cobertura: number;
+  pontosPlanejados: number;
+  pontosComNota: number;
+  classificacao: ClassificacaoCompetenciaAluno;
+  fontes: Array<{
+    id: string;
+    titulo: string;
+    tipo: string;
+    valor: number;
+    pesoPercentual: number;
+    pontosCompetencia: number | null;
+    dataDevolucao: string | null;
+    nota: number | null;
+    aproveitamento: number | null;
+  }>;
+}
+
+export interface DesempenhoCompetenciasAluno {
+  criterios: { coberturaMinima: number; dificuldadeAbaixoDe: number; atencaoAbaixoDe: number };
+  resumo: {
+    totalPlanejadas: number;
+    comResultados: number;
+    comCoberturaSuficiente: number;
+    emAtencao: number;
+  };
+  disciplinas: Array<{
+    turmaDisciplinaId: string;
+    disciplina: { id: string; codigo: string; nome: string };
+    turmaSigla: string;
+    competencias: DesempenhoCompetenciaAluno[];
+  }>;
+}
