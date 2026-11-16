@@ -1,7 +1,6 @@
-import { Box, CircularProgress, LinearProgress, Link, Stack, Typography } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { BadgeCheck, Download } from "lucide-react";
-import { CORES_DASHBOARD, DashboardPainel } from "../../../components/DashboardLayout";
+import { Box, Button, Stack, Typography } from "@mui/material";
+import { Download } from "lucide-react";
+import { CORES_DASHBOARD, DashboardPainel, ESTADOS, PESO, TIPO_DASHBOARD, sxBotaoTexto } from "../../../components/DashboardLayout";
 import { fmtPct } from "../aluno/regras-dashboard-aluno";
 import { FREQUENCIA_LIMITROFE, FREQUENCIA_MINIMA, MEDIA_REFERENCIA } from "./regras-dashboard-professor";
 import type { calcularAproveitamento } from "./regras-dashboard-professor";
@@ -10,7 +9,8 @@ type Aproveitamento = ReturnType<typeof calcularAproveitamento>;
 
 interface AproveitamentoPainelProps {
   aproveitamento: Aproveitamento;
-  geradoEm: string;
+  /** Mantido por compatibilidade: o horário aparece no rodapé do dashboard. */
+  geradoEm?: string;
   podeExportar: boolean;
   onExportar: () => void;
   onRelatorios: () => void;
@@ -18,83 +18,62 @@ interface AproveitamentoPainelProps {
 
 const fmtNumero = (valor: number) => new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(valor);
 
+/** Uma linha por métrica: rótulo, barra fina (4 px) e valor. Acento por padrão; tom de estado só abaixo do limite. */
 function Barra({ rotulo, valor, detalhe, cor }: { rotulo: string; valor: number | null; detalhe?: string; cor: string }) {
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" gap={1}>
-        <Typography variant="body2" sx={{ color: CORES_DASHBOARD.textoSuave }}>{rotulo}</Typography>
-        <Typography variant="body2" fontWeight={700}>{detalhe ?? fmtPct(valor, 1)}</Typography>
-      </Stack>
-      <LinearProgress
-        variant="determinate"
-        value={Math.min(valor ?? 0, 100)}
+    <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(64px, 96px) 64px", alignItems: "center", columnGap: 1.5, minHeight: 28 }}>
+      <Typography noWrap sx={{ fontSize: TIPO_DASHBOARD.secundario, color: CORES_DASHBOARD.textoSuave }}>{rotulo}</Typography>
+      <Box
+        role="progressbar"
         aria-label={rotulo}
-        sx={{ mt: 0.5, height: 7, borderRadius: 9, bgcolor: "#EEF2F6", "& .MuiLinearProgress-bar": { bgcolor: cor, borderRadius: 9 } }}
-      />
+        aria-valuenow={valor === null ? undefined : Math.round(valor)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        sx={{ height: 4, borderRadius: 4, bgcolor: ESTADOS.neutro.fundo, overflow: "hidden" }}
+      >
+        <Box sx={{ height: "100%", width: `${Math.min(Math.max(valor ?? 0, 0), 100)}%`, bgcolor: cor, borderRadius: 4 }} />
+      </Box>
+      <Typography noWrap sx={{ fontSize: TIPO_DASHBOARD.secundario, fontWeight: PESO.forte, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{detalhe ?? fmtPct(valor, 1)}</Typography>
     </Box>
   );
 }
 
-export default function AproveitamentoPainel({ aproveitamento, geradoEm, podeExportar, onExportar, onRelatorios }: AproveitamentoPainelProps) {
-  const theme = useTheme();
-  const corValor = (valor: number | null, limite: number) => (valor !== null && valor < limite ? theme.palette.warning.main : CORES_DASHBOARD.acento);
-  const corFreq = (valor: number | null) => (valor === null ? CORES_DASHBOARD.acento : valor < FREQUENCIA_MINIMA ? theme.palette.error.main : valor <= FREQUENCIA_LIMITROFE ? theme.palette.warning.main : theme.palette.success.main);
-  const horario = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(geradoEm));
+export default function AproveitamentoPainel({ aproveitamento, podeExportar, onExportar, onRelatorios }: AproveitamentoPainelProps) {
+  const corMedia = (valor: number | null) => (valor !== null && valor < MEDIA_REFERENCIA ? ESTADOS.atencao.ponto : CORES_DASHBOARD.acento);
+  const corFreq = (valor: number | null) => (valor === null ? CORES_DASHBOARD.acento : valor < FREQUENCIA_MINIMA ? ESTADOS.critico.ponto : valor <= FREQUENCIA_LIMITROFE ? ESTADOS.atencao.ponto : CORES_DASHBOARD.acento);
 
   return (
-    <DashboardPainel
-      titulo="Aproveitamento acadêmico"
-      acao={{ rotulo: "Ver relatórios", onClick: onRelatorios }}
-    >
-      <Stack direction="row" gap={2} alignItems="center" sx={{ p: 1.75, borderRadius: 2, border: `1px solid ${CORES_DASHBOARD.borda}` }}>
-        <Box sx={{ position: "relative", width: 72, height: 72, flexShrink: 0 }}>
-          <CircularProgress variant="determinate" value={100} size={72} thickness={4.5} sx={{ color: "#EEF2F6", position: "absolute" }} aria-hidden="true" />
-          <CircularProgress
-            variant="determinate"
-            value={Math.min(aproveitamento.mediaGeral ?? 0, 100)}
-            size={72}
-            thickness={4.5}
-            aria-label="Média parcial geral"
-            sx={{ color: corValor(aproveitamento.mediaGeral, MEDIA_REFERENCIA), position: "absolute" }}
-          />
-          <Box sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-            <Typography fontWeight={800} fontSize={15}>{fmtPct(aproveitamento.mediaGeral, 0)}</Typography>
-          </Box>
-        </Box>
-        <Box minWidth={0}>
-          <Typography variant="body2" fontWeight={700}>Média parcial</Typography>
-          <Typography variant="body2" sx={{ color: CORES_DASHBOARD.textoApagado }}>
-            {aproveitamento.escala10 !== null
-              ? `${fmtNumero(aproveitamento.escala10)} / 10 · ${aproveitamento.alunosComNota} alunos com nota`
-              : "Aguardando as primeiras notas"}
-          </Typography>
-        </Box>
+    <DashboardPainel titulo="Aproveitamento" acao={{ rotulo: "Ver relatórios", onClick: onRelatorios }}>
+      <Stack direction="row" alignItems="baseline" gap={1}>
+        <Typography sx={{ fontSize: TIPO_DASHBOARD.valorKpi, fontWeight: PESO.forte, lineHeight: 1.2, color: aproveitamento.mediaGeral !== null && aproveitamento.mediaGeral < MEDIA_REFERENCIA ? ESTADOS.atencao.texto : CORES_DASHBOARD.texto }}>
+          {fmtPct(aproveitamento.mediaGeral, 0)}
+        </Typography>
+        <Typography sx={{ fontSize: TIPO_DASHBOARD.secundario, color: CORES_DASHBOARD.textoApagado }}>
+          {aproveitamento.escala10 !== null ? `média parcial · ${fmtNumero(aproveitamento.escala10)} / 10` : "Aguardando as primeiras notas"}
+        </Typography>
       </Stack>
 
-      <Stack gap={1.75} mt={2}>
+      <Stack gap={0.5} mt={1.25}>
         <Barra
-          rotulo="Média ≥ 60%"
+          rotulo={`Média ≥ ${MEDIA_REFERENCIA}%`}
           valor={aproveitamento.percentualAcimaReferencia}
-          detalhe={aproveitamento.alunosComNota ? `${aproveitamento.alunosAcimaReferencia} de ${aproveitamento.alunosComNota} (${fmtPct(aproveitamento.percentualAcimaReferencia, 0)})` : "—"}
-          cor={CORES_DASHBOARD.marca}
+          detalhe={aproveitamento.alunosComNota ? `${aproveitamento.alunosAcimaReferencia} de ${aproveitamento.alunosComNota}` : "—"}
+          cor={CORES_DASHBOARD.acento}
         />
         {aproveitamento.porTipo.map((item) => (
-          <Barra key={item.tipo} rotulo={item.rotulo} valor={item.media} cor={corValor(item.media, MEDIA_REFERENCIA)} />
+          <Barra key={item.tipo} rotulo={item.rotulo} valor={item.media} cor={corMedia(item.media)} />
         ))}
         <Barra rotulo="Frequência agregada" valor={aproveitamento.frequenciaAgregada} cor={corFreq(aproveitamento.frequenciaAgregada)} />
       </Stack>
 
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mt="auto" pt={2} gap={1} flexWrap="wrap">
-        <Stack direction="row" gap={0.75} alignItems="center" sx={{ color: CORES_DASHBOARD.textoApagado }}>
-          <BadgeCheck size={15} aria-hidden="true" />
-          <Typography variant="caption">Atualizado às {horario}</Typography>
+      {/* O horário da atualização fica só no rodapé do dashboard. */}
+      {podeExportar && (
+        <Stack direction="row" justifyContent="flex-end" mt="auto" pt={1.5}>
+          <Button size="small" onClick={onExportar} startIcon={<Download size={14} />} sx={{ ...sxBotaoTexto, height: 26, fontSize: TIPO_DASHBOARD.legenda }}>
+            Exportar CSV
+          </Button>
         </Stack>
-        {podeExportar && (
-          <Link component="button" type="button" variant="caption" underline="hover" onClick={onExportar} sx={{ color: CORES_DASHBOARD.acento, display: "inline-flex", alignItems: "center", gap: 0.5, fontWeight: 700 }}>
-            <Download size={14} aria-hidden="true" /> Exportar CSV
-          </Link>
-        )}
-      </Stack>
+      )}
     </DashboardPainel>
   );
 }

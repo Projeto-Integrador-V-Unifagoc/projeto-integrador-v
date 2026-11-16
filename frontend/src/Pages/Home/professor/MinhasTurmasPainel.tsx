@@ -1,77 +1,63 @@
-import { Box, Stack, Typography } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { CORES_DASHBOARD, DashboardPainel } from "../../../components/DashboardLayout";
+import { useState } from "react";
+import { Box, Button, Stack, Typography } from "@mui/material";
+import { ChevronRight } from "lucide-react";
+import { CORES_DASHBOARD, DashboardPainel, LinhaPainel, ListaPainel, PESO, TIPO_DASHBOARD, sxBotaoTexto, sxSelo } from "../../../components/DashboardLayout";
 import type { AtribuicaoProfessor } from "../../../models/home-professor-model";
 import { fmtPct } from "../aluno/regras-dashboard-aluno";
 
 interface MinhasTurmasPainelProps {
   atribuicoes: AtribuicaoProfessor[];
-  /** Ofertas com pendência de nota ou chamada (para o ponto de status). */
+  /** Ofertas com pendência de nota ou chamada. */
   ofertasComPendencia: Set<string>;
   carregandoDetalhe: boolean;
   onAbrir: (atribuicao: AtribuicaoProfessor) => void;
   onAvaliacoes: () => void;
 }
 
+// Com muitas ofertas a lista estica a linha de painéis; o resto aparece em "Mostrar todas".
+const VISIVEIS = 5;
+
 export default function MinhasTurmasPainel({ atribuicoes, ofertasComPendencia, carregandoDetalhe, onAbrir, onAvaliacoes }: MinhasTurmasPainelProps) {
-  const theme = useTheme();
+  const [expandido, setExpandido] = useState(false);
+  const lista = expandido ? atribuicoes : atribuicoes.slice(0, VISIVEIS);
   return (
-    <DashboardPainel titulo="Minhas turmas" contador={atribuicoes.length || undefined} acao={{ rotulo: "Avaliações", onClick: onAvaliacoes }}>
+    <DashboardPainel titulo="Minhas turmas" contador={atribuicoes.length || undefined} acao={{ rotulo: "Avaliações", onClick: onAvaliacoes }} semPadding alturaMinima={VISIVEIS * 56 + 40}>
+      {atribuicoes.length > VISIVEIS && (
+        <Button size="small" onClick={() => setExpandido((valor) => !valor)} sx={{ ...sxBotaoTexto, order: 1, alignSelf: "flex-start", mx: 1, my: 0.5, color: CORES_DASHBOARD.textoSuave }}>
+          {expandido ? "Mostrar menos" : `Mostrar todas as ${atribuicoes.length}`}
+        </Button>
+      )}
       {atribuicoes.length ? (
-        <Stack gap={1.25}>
-          {atribuicoes.map((item) => {
-            const alerta = item.alunosEmAtencao > 0 || ofertasComPendencia.has(item.id);
+        <ListaPainel rotulo="Minhas turmas">
+          {lista.map((item) => {
             const abrir = () => { if (!carregandoDetalhe) onAbrir(item); };
+            const pendente = ofertasComPendencia.has(item.id);
             return (
-              <Box
-                key={item.id}
-                role="button"
-                tabIndex={0}
-                aria-label={`Abrir ${item.disciplina.nome} — ${item.turma.sigla}`}
-                onClick={abrir}
-                onKeyDown={(evento) => {
-                  if (evento.key === "Enter" || evento.key === " ") {
-                    evento.preventDefault();
-                    abrir();
-                  }
-                }}
-                sx={{
-                  p: 1.5,
-                  borderRadius: 2,
-                  border: `1px solid ${CORES_DASHBOARD.borda}`,
-                  cursor: carregandoDetalhe ? "progress" : "pointer",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 1.5,
-                  transition: "border-color .15s ease, background-color .15s ease",
-                  "&:hover, &:focus-visible": { borderColor: CORES_DASHBOARD.acento, bgcolor: CORES_DASHBOARD.superficieSutil, outline: "none" },
-                }}
-              >
-                <Box minWidth={0}>
-                  <Stack direction="row" gap={0.75} alignItems="center">
-                    <Typography variant="body2" fontWeight={700} sx={{ color: CORES_DASHBOARD.acento }}>{item.turma.sigla}</Typography>
-                    <Box
-                      component="span"
-                      title={alerta ? "Há alunos em atenção ou lançamentos pendentes" : "Sem pendências"}
-                      sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: alerta ? theme.palette.warning.main : theme.palette.success.main }}
-                    />
-                  </Stack>
-                  <Typography fontWeight={700} noWrap title={item.disciplina.nome}>{item.disciplina.nome}</Typography>
-                  <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>
-                    Média {fmtPct(item.mediaTurma, 1)} • Freq. {fmtPct(item.frequenciaMedia, 1)}
-                    {item.alunosEmAtencao > 0 ? ` • ${item.alunosEmAtencao} em atenção` : ""}
+              <LinhaPainel key={item.id} rotulo={`Abrir ${item.disciplina.nome} — ${item.turma.sigla}`} onClick={abrir}>
+                <Box flex={1} minWidth={0}>
+                  <Typography noWrap title={item.disciplina.nome} sx={{ fontSize: TIPO_DASHBOARD.corpo, fontWeight: PESO.forte }}>
+                    {item.disciplina.nome}
+                  </Typography>
+                  <Typography noWrap sx={{ fontSize: TIPO_DASHBOARD.legenda, color: CORES_DASHBOARD.textoApagado }}>
+                    {item.turma.sigla} · {item.totalAlunos} {item.totalAlunos === 1 ? "aluno" : "alunos"} · média {fmtPct(item.mediaTurma, 0)} · freq. {fmtPct(item.frequenciaMedia, 0)}
                   </Typography>
                 </Box>
-                <Box textAlign="right" flexShrink={0}>
-                  <Typography fontWeight={800} fontSize={20} lineHeight={1.2}>{item.totalAlunos}</Typography>
-                  <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>{item.totalAlunos === 1 ? "aluno" : "alunos"}</Typography>
-                </Box>
-              </Box>
+                <Stack direction="row" alignItems="center" gap={0.75} flexShrink={0}>
+                  {item.alunosEmAtencao > 0 ? (
+                    <Box component="span" sx={sxSelo("atencao", { ponto: true })}>{item.alunosEmAtencao} em atenção</Box>
+                  ) : pendente ? (
+                    <Box component="span" sx={sxSelo("neutro", { ponto: true })}>Pendência</Box>
+                  ) : (
+                    <Box component="span" sx={sxSelo("neutro")}>Em dia</Box>
+                  )}
+                  <ChevronRight size={16} color={CORES_DASHBOARD.iconeApagado} aria-hidden="true" />
+                </Stack>
+              </LinhaPainel>
             );
           })}
-        </Stack>
+        </ListaPainel>
       ) : (
-        <Typography variant="body2" sx={{ color: CORES_DASHBOARD.textoApagado }}>Nenhuma oferta para o filtro selecionado.</Typography>
+        <Typography sx={{ px: 2, py: 1.5, fontSize: TIPO_DASHBOARD.corpo, color: CORES_DASHBOARD.textoApagado }}>Nenhuma oferta para o filtro selecionado.</Typography>
       )}
     </DashboardPainel>
   );

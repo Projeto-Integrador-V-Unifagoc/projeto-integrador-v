@@ -1,12 +1,13 @@
-import { Box, Grid, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { ArrowUpRight, BookMarked, CalendarCheck, Sparkles, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CORES_DASHBOARD, DashboardPainel } from "../../../components/DashboardLayout";
+import { CORES_DASHBOARD, DashboardPainel, ESTADOS, PESO, TIPO_DASHBOARD, sxIconeQuadrado } from "../../../components/DashboardLayout";
 
 interface Atalho {
   titulo: string;
   descricao: string;
   icone: LucideIcon;
+  /** Atalho da IA: ícone preenchido no acento, para se destacar dos demais. */
   destaque?: boolean;
   /** Sem ação: atalho visível, inerte, com aviso de assistente indisponível. */
   onClick?: () => void;
@@ -18,6 +19,7 @@ interface AcessosRapidosAlunoProps {
   onOrientacoesIa?: () => void;
 }
 
+/** Cartão de atalho: borda, ícone em destaque, título, descrição curta e seta. */
 function CartaoAtalho({ atalho }: { atalho: Atalho }) {
   const { icone: Icone, onClick } = atalho;
   const disponivel = Boolean(onClick);
@@ -38,26 +40,27 @@ function CartaoAtalho({ atalho }: { atalho: Atalho }) {
         }}
         sx={{
           height: "100%",
+          display: "flex",
+          flexDirection: "column",
           p: 1.5,
           borderRadius: 2,
           border: `1px solid ${CORES_DASHBOARD.borda}`,
+          bgcolor: CORES_DASHBOARD.superficie,
           cursor: disponivel ? "pointer" : "default",
-          opacity: disponivel ? 1 : 0.75,
+          opacity: disponivel ? 1 : 0.7,
           transition: "border-color .15s ease, background-color .15s ease",
-          "&:hover, &:focus-visible": disponivel ? { borderColor: CORES_DASHBOARD.acento, bgcolor: CORES_DASHBOARD.superficieSutil, outline: "none" } : { outline: "none" },
+          "&:hover": disponivel ? { borderColor: CORES_DASHBOARD.acento, bgcolor: CORES_DASHBOARD.superficieSutil } : undefined,
+          "&:focus-visible": { outline: `2px solid ${CORES_DASHBOARD.acento}`, outlineOffset: 2 },
         }}
       >
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-          <Box
-            aria-hidden="true"
-            sx={{ width: 32, height: 32, borderRadius: 1.5, display: "grid", placeItems: "center", bgcolor: atalho.destaque ? CORES_DASHBOARD.acento : CORES_DASHBOARD.acentoSuave, color: atalho.destaque ? "#fff" : CORES_DASHBOARD.acento }}
-          >
+          <Box aria-hidden="true" sx={sxIconeQuadrado(atalho.destaque ? { texto: "#FFFFFF", fundo: CORES_DASHBOARD.acento } : ESTADOS.acento, 34)}>
             <Icone size={17} />
           </Box>
-          <ArrowUpRight size={16} color={CORES_DASHBOARD.textoApagado} aria-hidden="true" />
+          <ArrowUpRight size={16} color={CORES_DASHBOARD.iconeApagado} aria-hidden="true" />
         </Stack>
-        <Typography variant="body2" fontWeight={700} mt={1}>{atalho.titulo}</Typography>
-        <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>{atalho.descricao}</Typography>
+        <Typography sx={{ mt: "auto", pt: 1.25, fontSize: TIPO_DASHBOARD.corpo, fontWeight: PESO.forte, lineHeight: 1.3 }}>{atalho.titulo}</Typography>
+        <Typography sx={{ fontSize: TIPO_DASHBOARD.legenda, color: CORES_DASHBOARD.textoApagado }}>{atalho.descricao}</Typography>
       </Box>
     </Tooltip>
   );
@@ -72,16 +75,13 @@ export default function AcessosRapidosAluno({ navegar, onOrientacoesIa }: Acesso
   ];
 
   return (
-    <DashboardPainel titulo="Orientações e acessos rápidos">
-      <Grid container spacing={1.25}>
-        {atalhos.map((atalho) => (
-          <Grid key={atalho.titulo} size={6}>
-            <CartaoAtalho atalho={atalho} />
-          </Grid>
-        ))}
-      </Grid>
-      {/* Sem link "Ver relatórios": os relatórios do aluno repetem Minhas notas/Minha frequência
-          e o acesso completo já está no menu lateral "Relatórios". */}
+    <DashboardPainel titulo="Acessos rápidos">
+      {/* Sem "Ver relatórios": os relatórios do aluno repetem Minhas notas/Minha frequência
+          e o acesso completo já está no menu lateral "Relatórios".
+          Grade 2×2 que ocupa a altura do painel: os cartões crescem junto com a linha. */}
+      <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gridAutoRows: "minmax(104px, 1fr)", gap: 1.25 }}>
+        {atalhos.map((atalho) => <CartaoAtalho key={atalho.titulo} atalho={atalho} />)}
+      </Box>
     </DashboardPainel>
   );
 }

@@ -1,5 +1,4 @@
 import { Box, Button, Grid, LinearProgress, Stack, Typography } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import { ArrowRight, BookOpen, CalendarDays } from "lucide-react";
 import {
   AvisoDetalhe,
@@ -8,6 +7,9 @@ import {
   PainelDetalhe,
   SecaoDetalhe,
   SeloRisco,
+  ESTADOS,
+  sxBotaoPrimario,
+  sxBotaoSecundario,
   sxCartaoDashboard,
 } from "../../components/DashboardLayout";
 import type { GravidadeAviso } from "../../components/DashboardLayout";
@@ -79,7 +81,6 @@ export default function DisciplinaDetalhesDrawer({
   onAbrirBoletim,
   onAbrirFrequencia,
 }: DisciplinaDetalhesDrawerProps) {
-  const theme = useTheme();
   if (!disciplina) return null;
 
   const media = boletim?.mediaFinal ?? boletim?.mediaParcial ?? null;
@@ -114,10 +115,10 @@ export default function DisciplinaDetalhesDrawer({
       rotuloFechar="Fechar detalhes da disciplina"
       acoes={(
         <>
-          <Button variant="contained" disableElevation endIcon={<ArrowRight size={16} />} onClick={onAbrirBoletim} sx={{ minWidth: 200, bgcolor: CORES_DASHBOARD.acento, "&:hover": { bgcolor: CORES_DASHBOARD.acentoHover } }}>
+          <Button endIcon={<ArrowRight size={15} />} onClick={onAbrirBoletim} sx={{ ...sxBotaoPrimario, height: 36, px: 2 }}>
             Abrir boletim completo
           </Button>
-          <Button variant="outlined" endIcon={<ArrowRight size={16} />} onClick={onAbrirFrequencia} sx={{ minWidth: 150, borderColor: CORES_DASHBOARD.borda, color: "text.primary" }}>
+          <Button endIcon={<ArrowRight size={15} />} onClick={onAbrirFrequencia} sx={{ ...sxBotaoSecundario, height: 36, px: 2 }}>
             Ver frequência
           </Button>
         </>
@@ -173,7 +174,7 @@ export default function DisciplinaDetalhesDrawer({
                         variant="determinate"
                         value={Math.min(desempenho, 100)}
                         aria-label={`Aproveitamento de ${avaliacao.descricao ?? avaliacao.tipo}`}
-                        sx={{ mt: 1, height: 5, borderRadius: 5, bgcolor: "#EEF2F6", "& .MuiLinearProgress-bar": { borderRadius: 5, bgcolor: desempenho < META_PONTOS ? theme.palette.warning.main : CORES_DASHBOARD.acento } }}
+                        sx={{ mt: 1, height: 4, borderRadius: 4, bgcolor: ESTADOS.neutro.fundo, "& .MuiLinearProgress-bar": { borderRadius: 4, bgcolor: desempenho < META_PONTOS ? ESTADOS.atencao.ponto : CORES_DASHBOARD.acento } }}
                       />
                     )}
                   </Box>

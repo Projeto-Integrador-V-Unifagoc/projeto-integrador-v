@@ -1,7 +1,18 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { BookOpen, Calculator, Cpu, Database, MessageSquareText, Network, SquareTerminal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { BotaoIa, CORES_DASHBOARD, DashboardPainel, SeloRisco } from "../../../components/DashboardLayout";
+import {
+  BotaoIa,
+  CORES_DASHBOARD,
+  DashboardPainel,
+  PESO,
+  SeloRisco,
+  TIPO_DASHBOARD,
+  sxBotaoSecundario,
+  sxIconeQuadrado,
+  sxNumeroColuna,
+  sxTabelaLeve,
+} from "../../../components/DashboardLayout";
 import { fmtPct } from "./regras-dashboard-aluno";
 import type { DisciplinaPainel } from "./regras-dashboard-aluno";
 import { corFrequencia, corMedia, corTexto } from "./estilos-risco";
@@ -21,82 +32,63 @@ interface TabelaDisciplinasAlunoProps {
   onEntender?: (disciplina: DisciplinaPainel) => void;
 }
 
-function Indicador({ rotulo, valor, cor }: { rotulo: string; valor: number | null; cor: ReturnType<typeof corMedia> }) {
-  return (
-    <Box textAlign={{ xs: "left", md: "center" }} minWidth={56}>
-      <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado, letterSpacing: 0.4, textTransform: "uppercase", fontSize: 11 }}>
-        {rotulo}
-      </Typography>
-      <Typography fontWeight={700} sx={{ color: corTexto(cor) }}>{fmtPct(valor, 1)}</Typography>
-    </Box>
-  );
-}
+// Colunas: disciplina | média | frequência | ações.
+const TABELA = sxTabelaLeve("minmax(0, 1fr) 64px 64px auto");
 
 export default function TabelaDisciplinasAluno({ disciplinas, onDetalhes, onBoletim, onEntender }: TabelaDisciplinasAlunoProps) {
   return (
-    <DashboardPainel
-      titulo={`Minhas disciplinas (${disciplinas.length})`}
-      subtitulo="Ordenadas por risco"
-      acao={{ rotulo: "Boletim completo", onClick: onBoletim }}
-    >
+    <DashboardPainel titulo="Minhas disciplinas" contador={disciplinas.length || undefined} acao={{ rotulo: "Boletim completo", onClick: onBoletim }} semPadding>
       {disciplinas.length ? (
-        <Stack divider={<Box sx={{ borderTop: `1px solid ${CORES_DASHBOARD.borda}` }} />}>
-          {disciplinas.map((disciplina) => {
-            const Icone = iconeDaDisciplina(disciplina.codigo);
-            return (
-              <Box
-                key={disciplina.turmaDisciplinaId}
-                component="article"
-                aria-label={disciplina.nome}
-                sx={{
-                  py: 1.5,
-                  display: "grid",
-                  alignItems: "center",
-                  gap: { xs: 1.25, md: 2 },
-                  gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) auto auto auto", xl: "minmax(0, 1fr) auto auto auto auto" },
-                }}
-              >
-                <Stack direction="row" gap={1.5} alignItems="center" minWidth={0}>
-                  <Box aria-hidden="true" sx={{ width: 38, height: 38, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento }}>
-                    <Icone size={18} />
-                  </Box>
-                  <Box minWidth={0}>
-                    <Typography fontWeight={700} noWrap title={disciplina.nome}>{disciplina.nome}</Typography>
-                    <Typography variant="body2" noWrap sx={{ color: CORES_DASHBOARD.textoApagado }} title={disciplina.professorNome}>
-                      {disciplina.professorNome}
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                <Stack direction="row" gap={2}>
-                  <Indicador rotulo="Média" valor={disciplina.media} cor={corMedia(disciplina.media)} />
-                  <Indicador rotulo="Freq." valor={disciplina.frequencia} cor={corFrequencia(disciplina.frequencia)} />
-                </Stack>
-
-                <Box>
-                  <SeloRisco nivel={disciplina.nivel} titulo={disciplina.motivos.join(" · ")} />
+        <Box sx={TABELA.tabela}>
+          {/* Rótulos das colunas uma vez só, em vez de "Média"/"Freq." repetidos em cada linha. */}
+          <Box aria-hidden="true" sx={TABELA.cabecalho}>
+            <span>Disciplina</span>
+            <Box component="span" textAlign="right">Média</Box>
+            <Box component="span" textAlign="right">Freq.</Box>
+            <span />
+          </Box>
+          <Box component="ul" sx={TABELA.lista}>
+            {disciplinas.map((disciplina) => {
+              const Icone = iconeDaDisciplina(disciplina.codigo);
+              return (
+                <Box key={disciplina.turmaDisciplinaId} component="li" aria-label={disciplina.nome} sx={TABELA.linha}>
+                  <Stack direction="row" gap={1.5} alignItems="center" minWidth={0}>
+                    <Box aria-hidden="true" sx={sxIconeQuadrado()}>
+                      <Icone size={15} />
+                    </Box>
+                    <Box minWidth={0}>
+                      <Typography title={disciplina.nome} sx={{ fontSize: TIPO_DASHBOARD.corpo, fontWeight: PESO.forte, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {disciplina.nome}
+                      </Typography>
+                      <Stack direction="row" alignItems="center" gap={1} mt={0.25} minWidth={0}>
+                        <SeloRisco nivel={disciplina.nivel} titulo={disciplina.motivos.join(" · ")} />
+                        <Typography noWrap title={disciplina.professorNome} sx={{ fontSize: TIPO_DASHBOARD.legenda, color: CORES_DASHBOARD.textoApagado }}>
+                          {disciplina.professorNome}
+                        </Typography>
+                      </Stack>
+                    </Box>
+                  </Stack>
+                  <Typography aria-label={`Média ${fmtPct(disciplina.media, 1)}`} sx={{ ...sxNumeroColuna, color: corTexto(corMedia(disciplina.media)), textAlign: { xs: "left", sm: "right" } }}>
+                    {fmtPct(disciplina.media, 1)}
+                  </Typography>
+                  <Typography aria-label={`Frequência ${fmtPct(disciplina.frequencia, 1)}`} sx={{ ...sxNumeroColuna, color: corTexto(corFrequencia(disciplina.frequencia)), textAlign: { xs: "left", sm: "right" } }}>
+                    {fmtPct(disciplina.frequencia, 1)}
+                  </Typography>
+                  <Stack direction="row" gap={0.75} justifyContent={{ xs: "flex-start", sm: "flex-end" }}>
+                    <Button size="small" onClick={() => onDetalhes(disciplina.turmaDisciplinaId)} aria-label={`Consultar detalhes de ${disciplina.nome}`} sx={sxBotaoSecundario}>
+                      Consultar detalhes
+                    </Button>
+                    <BotaoIa rotulo="Entender meu desempenho" compacto onClick={onEntender ? () => onEntender(disciplina) : undefined} />
+                  </Stack>
                 </Box>
-
-                <Stack direction="row" gap={1} flexWrap="wrap" sx={{ gridColumn: { md: "1 / -1", xl: "auto" } }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => onDetalhes(disciplina.turmaDisciplinaId)}
-                    aria-label={`Consultar detalhes de ${disciplina.nome}`}
-                    sx={{ width: "auto", height: 32, whiteSpace: "nowrap", borderColor: CORES_DASHBOARD.borda, color: "text.primary" }}
-                  >
-                    Consultar detalhes
-                  </Button>
-                  <BotaoIa rotulo="Entender meu desempenho" compacto onClick={onEntender ? () => onEntender(disciplina) : undefined} />
-                </Stack>
-              </Box>
-            );
-          })}
-        </Stack>
+              );
+            })}
+          </Box>
+        </Box>
       ) : (
         <Stack minHeight={160} alignItems="center" justifyContent="center" gap={1} sx={{ color: CORES_DASHBOARD.textoApagado }}>
-          <BookOpen size={28} aria-hidden="true" />
-          <Typography>Nenhuma disciplina ativa no período atual.</Typography>
+          <BookOpen size={24} aria-hidden="true" />
+          <Typography sx={{ fontSize: TIPO_DASHBOARD.corpo }}>Nenhuma disciplina ativa no período atual.</Typography>
         </Stack>
       )}
     </DashboardPainel>

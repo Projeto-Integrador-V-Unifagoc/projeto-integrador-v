@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Button } from "@mui/material";
-import { AlertTriangle, BookOpen, ClipboardX, Users } from "lucide-react";
+import { AlertTriangle, ClipboardX, TrendingUp, Users } from "lucide-react";
 import Container from "../../components/Container";
 import { perguntarAoAssistente, useAssistenteDisponivel } from "../../components/AssistenteWidget/ponte";
 import { AssistenteIaCaixa, DashboardLayout, DashboardRodape } from "../../components/DashboardLayout";
@@ -17,6 +17,7 @@ import FiltrosProfessor from "./professor/FiltrosProfessor";
 import MinhasTurmasPainel from "./professor/MinhasTurmasPainel";
 import PendenciasLancamentoPainel from "./professor/PendenciasLancamentoPainel";
 import {
+  MEDIA_REFERENCIA,
   TODAS,
   calcularAproveitamento,
   filtrarPorSelecao,
@@ -109,37 +110,39 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
   const periodo = dados?.periodoSelecionado ?? null;
   const filtroAtivo = selecao.turmaId !== TODAS || selecao.disciplinaId !== TODAS;
 
+  // Cor só quando o KPI pede ação (PADRAO.md, regra 1).
   const indicadores: IndicadorDashboard[] = [
     {
       id: "turmas",
       titulo: "Turmas ativas",
       icone: Users,
       valor: String(resumo.turmas),
-      apoio: periodo ? `Período ${periodo.ativo ? "ativo" : "encerrado"}` : "Sem período letivo",
+      apoio: resumo.disciplinas ? `${plural(resumo.disciplinas, "disciplina", "disciplinas")} · ${resumirNomes(resumo.nomesDisciplinas)}` : "Nenhuma disciplina vinculada",
     },
     {
-      id: "disciplinas",
-      titulo: "Disciplinas vinculadas",
-      icone: BookOpen,
-      valor: String(resumo.disciplinas),
-      // Só mostra as ofertas quando o número difere do de disciplinas (senão repete o valor).
-      complemento: resumo.ofertas !== resumo.disciplinas ? { texto: `em ${plural(resumo.ofertas, "oferta", "ofertas")}`, tom: "neutro" } : undefined,
-      apoio: resumirNomes(resumo.nomesDisciplinas) || "Nenhuma disciplina vinculada",
+      id: "media",
+      titulo: "Média das turmas",
+      icone: TrendingUp,
+      alerta: aproveitamento.mediaGeral !== null && aproveitamento.mediaGeral < MEDIA_REFERENCIA ? "atencao" : undefined,
+      valor: fmtPct(aproveitamento.mediaGeral, 0),
+      apoio: aproveitamento.alunosComNota
+        ? `${aproveitamento.alunosAcimaReferencia} de ${aproveitamento.alunosComNota} alunos com média ≥ ${MEDIA_REFERENCIA}%`
+        : "Aguardando as primeiras notas",
     },
     {
       id: "atencao",
       titulo: "Alunos em atenção",
       icone: AlertTriangle,
-      tom: resumo.possuiCritico ? "error" : resumo.alunosEmAtencao ? "warning" : "success",
+      alerta: resumo.possuiCritico ? "critico" : resumo.alunosEmAtencao ? "atencao" : undefined,
       valor: String(resumo.alunosEmAtencao),
-      destaque: resumo.percentualAtencao !== null && resumo.alunosEmAtencao ? fmtPct(resumo.percentualAtencao, 0) : undefined,
-      apoio: `de ${plural(resumo.alunosUnicos, "aluno", "alunos")}${resumo.alunosCriticos ? ` · ${resumo.alunosCriticos} em risco alto` : ""}`,
+      complemento: resumo.percentualAtencao !== null && resumo.alunosEmAtencao ? `${fmtPct(resumo.percentualAtencao, 0)} da turma` : undefined,
+      apoio: `${resumo.alunosCriticos ? `${resumo.alunosCriticos} em risco alto · ` : ""}de ${plural(resumo.alunosUnicos, "aluno", "alunos")}`,
     },
     {
       id: "notas",
       titulo: "Notas faltantes",
       icone: ClipboardX,
-      tom: resumo.notasFaltantes ? "error" : "success",
+      alerta: resumo.notasFaltantes ? "atencao" : undefined,
       valor: String(resumo.notasFaltantes),
       apoio: resumo.avaliacoesComNotasFaltantes
         ? `em ${plural(resumo.avaliacoesComNotasFaltantes, "avaliação vencida", "avaliações vencidas")}`
@@ -147,13 +150,19 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
     },
   ];
 
+  // Resumo acionável abaixo da saudação (o que pede ação agora).
+  const resumoAcao = [
+    resumo.alunosCriticos ? plural(resumo.alunosCriticos, "aluno em risco alto", "alunos em risco alto") : null,
+    pendencias.length ? plural(pendencias.length, "pendência de lançamento", "pendências de lançamento") : null,
+  ].filter(Boolean).join(" · ") || "Nenhuma pendência no momento";
+  const horarioAtualizacao = dados ? new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(dados.geradoEm)) : null;
+
   return (
     <>
       <DashboardLayout
         carregando={carregando}
         nome={dados?.professor.nome || userName}
-        seloNome="Docente"
-        contexto={`${plural(resumo.alunosUnicos, "aluno vinculado", "alunos vinculados")} em ${plural(resumo.turmas, "turma", "turmas")}${filtroAtivo ? " (filtro aplicado)" : ""}`}
+        contexto={`${resumoAcao}${filtroAtivo ? " (filtro aplicado)" : ""}`}
         extrasCabecalho={dados && (
           <FiltrosProfessor
             periodos={dados.periodosDisponiveis}
@@ -201,7 +210,7 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
         )}
         rodape={(
           <DashboardRodape
-            status="Com base nas notas e frequências lançadas"
+            status={horarioAtualizacao ? `Atualizado às ${horarioAtualizacao}` : "Dados atualizados agora"}
             onAtualizar={() => void carregar(periodo?.id, true)}
             atualizando={recarregando}
           />

@@ -1,9 +1,12 @@
+import type { TomEstado } from "./dashboard-estilos";
+
 /** Nível de risco exibido nos dashboards (aluno e professor usam a mesma regra). */
 export type NivelRiscoVisual = "alto" | "medio" | "sem-risco" | "sem-dados";
 
-export const RISCO_VISUAL: Record<NivelRiscoVisual, { rotulo: string; cor: "error" | "warning" | "success" | "default" }> = {
-  alto: { rotulo: "Risco alto", cor: "error" },
-  medio: { rotulo: "Risco médio", cor: "warning" },
-  "sem-risco": { rotulo: "Sem risco", cor: "success" },
-  "sem-dados": { rotulo: "Sem dados", cor: "default" },
+// "Sem risco" fica neutro, não verde: a cor fica reservada para o que pede ação (PADRAO.md, regra 1).
+export const RISCO_VISUAL: Record<NivelRiscoVisual, { rotulo: string; tom: TomEstado }> = {
+  alto: { rotulo: "Risco alto", tom: "critico" },
+  medio: { rotulo: "Risco médio", tom: "atencao" },
+  "sem-risco": { rotulo: "Sem risco", tom: "neutro" },
+  "sem-dados": { rotulo: "Sem dados", tom: "neutro" },
 };

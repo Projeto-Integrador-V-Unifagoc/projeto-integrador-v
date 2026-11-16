@@ -7,6 +7,9 @@ import {
   PainelDetalhe,
   SecaoDetalhe,
   SeloRisco,
+  PESO,
+  sxBotaoPrimario,
+  sxBotaoSecundario,
   sxCartaoDashboard,
 } from "../../components/DashboardLayout";
 import type { DetalheAtribuicaoProfessor } from "../../models/home-professor-model";
@@ -42,10 +45,10 @@ export default function TurmaDetalhesDrawer({ detalhe, onFechar, onAbrirAluno, o
       rotuloFechar="Fechar detalhes da turma"
       acoes={(
         <>
-          <Button variant="contained" disableElevation endIcon={<ArrowRight size={16} />} onClick={onLancarNotas} sx={{ minWidth: 170, bgcolor: CORES_DASHBOARD.acento, "&:hover": { bgcolor: CORES_DASHBOARD.acentoHover } }}>
+          <Button endIcon={<ArrowRight size={15} />} onClick={onLancarNotas} sx={{ ...sxBotaoPrimario, height: 36, px: 2 }}>
             Lançar notas
           </Button>
-          <Button variant="outlined" endIcon={<ArrowRight size={16} />} onClick={onRegistrarFrequencia} sx={{ minWidth: 170, borderColor: CORES_DASHBOARD.borda, color: "text.primary" }}>
+          <Button endIcon={<ArrowRight size={15} />} onClick={onRegistrarFrequencia} sx={{ ...sxBotaoSecundario, height: 36, px: 2 }}>
             Registrar frequência
           </Button>
         </>
@@ -74,7 +77,7 @@ export default function TurmaDetalhesDrawer({ detalhe, onFechar, onAbrirAluno, o
                 key={item.id}
                 size="small"
                 label={`${item.codigo} · ${item.nome} (${item.nivel_esperado.toLowerCase()})`}
-                sx={{ bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento, fontWeight: 600 }}
+                sx={{ bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento, fontWeight: PESO.forte }}
               />
             ))}
           </Stack>
@@ -117,11 +120,11 @@ export default function TurmaDetalhesDrawer({ detalhe, onFechar, onAbrirAluno, o
                       <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>Matrícula {aluno.matricula}</Typography>
                     </Box>
                     <Box textAlign="right" minWidth={52}>
-                      <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado, fontSize: 10.5, textTransform: "uppercase" }}>Média</Typography>
+                      <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado, fontSize: 12 }}>Média</Typography>
                       <Typography variant="body2" fontWeight={700} sx={{ color: corTexto(corMedia(aluno.media)) }}>{fmtPct(aluno.media, 1)}</Typography>
                     </Box>
                     <Box textAlign="right" minWidth={52}>
-                      <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado, fontSize: 10.5, textTransform: "uppercase" }}>Freq.</Typography>
+                      <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado, fontSize: 12 }}>Freq.</Typography>
                       <Typography variant="body2" fontWeight={700} sx={{ color: corTexto(corFrequencia(aluno.frequencia)) }}>{fmtPct(aluno.frequencia, 1)}</Typography>
                     </Box>
                     <Box sx={{ display: { xs: "none", sm: "block" } }}>

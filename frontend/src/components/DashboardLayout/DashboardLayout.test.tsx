@@ -11,8 +11,8 @@ import type { IndicadorDashboard } from "./IndicadorCard";
 const INDICADORES: IndicadorDashboard[] = [
   { id: "a", titulo: "Indicador 1", icone: GraduationCap },
   { id: "b", titulo: "Indicador 2", icone: BookOpen },
-  { id: "c", titulo: "Indicador 3", icone: Users, tom: "warning" },
-  { id: "d", titulo: "Indicador 4", icone: ClipboardList, tom: "error", valor: "12", destaque: "5%" },
+  { id: "c", titulo: "Indicador 3", icone: Users, alerta: "atencao" },
+  { id: "d", titulo: "Indicador 4", icone: ClipboardList, alerta: "critico", valor: "12", complemento: "5%" },
 ];
 
 function renderizar(props: Partial<Parameters<typeof DashboardLayout>[0]> = {}) {

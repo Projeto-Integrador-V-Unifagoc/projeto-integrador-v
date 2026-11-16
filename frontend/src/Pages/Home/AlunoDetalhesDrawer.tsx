@@ -1,5 +1,4 @@
 import { Box, Button, Chip, Grid, LinearProgress, Skeleton, Stack, Typography } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
 import { ArrowRight, UserRound } from "lucide-react";
 import {
   AvisoDetalhe,
@@ -8,6 +7,9 @@ import {
   PainelDetalhe,
   SecaoDetalhe,
   SeloRisco,
+  ESTADOS,
+  sxBotaoPrimario,
+  sxBotaoSecundario,
   sxCartaoDashboard,
 } from "../../components/DashboardLayout";
 import type { GravidadeAviso } from "../../components/DashboardLayout";
@@ -50,7 +52,6 @@ function Carregando() {
 
 /** "Consultar detalhes" do professor: mesmo painel lateral do detalhe de disciplina do aluno. */
 export default function AlunoDetalhesDrawer({ open, carregando, erro, detalhe, onClose, onLancarNotas, onRegistrarFrequencia }: AlunoDetalhesDrawerProps) {
-  const theme = useTheme();
   const resumo = detalhe?.resumo;
 
   return (
@@ -66,12 +67,12 @@ export default function AlunoDetalhesDrawer({ open, carregando, erro, detalhe, o
       acoes={detalhe && (onLancarNotas || onRegistrarFrequencia) ? (
         <>
           {onLancarNotas && (
-            <Button variant="contained" disableElevation endIcon={<ArrowRight size={16} />} onClick={onLancarNotas} sx={{ minWidth: 170, bgcolor: CORES_DASHBOARD.acento, "&:hover": { bgcolor: CORES_DASHBOARD.acentoHover } }}>
+            <Button endIcon={<ArrowRight size={15} />} onClick={onLancarNotas} sx={{ ...sxBotaoPrimario, height: 36, px: 2 }}>
               Lançar notas
             </Button>
           )}
           {onRegistrarFrequencia && (
-            <Button variant="outlined" endIcon={<ArrowRight size={16} />} onClick={onRegistrarFrequencia} sx={{ minWidth: 170, borderColor: CORES_DASHBOARD.borda, color: "text.primary" }}>
+            <Button endIcon={<ArrowRight size={15} />} onClick={onRegistrarFrequencia} sx={{ ...sxBotaoSecundario, height: 36, px: 2 }}>
               Registrar frequência
             </Button>
           )}
@@ -134,10 +135,10 @@ export default function AlunoDetalhesDrawer({ open, carregando, erro, detalhe, o
                               label={lancada ? "Nota lançada" : "Nota não lançada"}
                               sx={{
                                 height: 20,
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: 700,
-                                bgcolor: lancada ? alpha(theme.palette.success.main, 0.12) : theme.palette.grey[100],
-                                color: lancada ? theme.palette.success.dark : "text.secondary",
+                                bgcolor: ESTADOS.neutro.fundo,
+                                color: lancada ? CORES_DASHBOARD.texto : CORES_DASHBOARD.textoApagado,
                               }}
                             />
                           </Stack>
@@ -147,7 +148,7 @@ export default function AlunoDetalhesDrawer({ open, carregando, erro, detalhe, o
                             variant="determinate"
                             value={Math.min(avaliacao.percentual, 100)}
                             aria-label={`Aproveitamento de ${avaliacao.titulo}: ${fmtPct(avaliacao.percentual, 1)}`}
-                            sx={{ mt: 1, height: 5, borderRadius: 5, bgcolor: "#EEF2F6", "& .MuiLinearProgress-bar": { borderRadius: 5, bgcolor: avaliacao.percentual < detalhe.criterios.mediaMinima ? theme.palette.warning.main : CORES_DASHBOARD.acento } }}
+                            sx={{ mt: 1, height: 4, borderRadius: 4, bgcolor: ESTADOS.neutro.fundo, "& .MuiLinearProgress-bar": { borderRadius: 4, bgcolor: avaliacao.percentual < detalhe.criterios.mediaMinima ? ESTADOS.atencao.ponto : CORES_DASHBOARD.acento } }}
                           />
                         )}
                       </Box>

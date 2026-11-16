@@ -1,6 +1,6 @@
 import { Button, IconButton, Tooltip } from "@mui/material";
 import { Sparkles } from "lucide-react";
-import { CORES_DASHBOARD } from "./dashboard-estilos";
+import { CORES_DASHBOARD, sxBotaoSecundario } from "./dashboard-estilos";
 
 export interface BotaoIaProps {
   rotulo: string;
@@ -10,29 +10,30 @@ export interface BotaoIaProps {
   compacto?: boolean;
 }
 
+// Contornado e neutro como as demais ações secundárias; só o ícone leva o acento para identificar a IA.
 export default function BotaoIa({ rotulo, onClick, compacto = false }: BotaoIaProps) {
   const disponivel = Boolean(onClick);
-  const estilo = {
-    bgcolor: CORES_DASHBOARD.acentoSuave,
-    color: CORES_DASHBOARD.acento,
-    opacity: disponivel ? 1 : 0.7,
-    cursor: disponivel ? "pointer" : "default",
-    "&:hover": { bgcolor: disponivel ? CORES_DASHBOARD.acentoSuaveHover : CORES_DASHBOARD.acentoSuave },
-  };
+  const estado = { opacity: disponivel ? 1 : 0.6, cursor: disponivel ? "pointer" : "default" };
   return (
     <Tooltip title={disponivel ? rotulo : `${rotulo} · assistente indisponível no momento`}>
       <span>
         {compacto ? (
-          <IconButton size="small" aria-label={rotulo} aria-disabled={!disponivel} onClick={disponivel ? onClick : undefined} sx={{ width: 32, height: 32, borderRadius: 1.5, ...estilo }}>
-            <Sparkles size={16} />
+          <IconButton
+            size="small"
+            aria-label={rotulo}
+            aria-disabled={!disponivel}
+            onClick={disponivel ? onClick : undefined}
+            sx={{ ...sxBotaoSecundario, ...estado, width: 30, px: 0, color: CORES_DASHBOARD.acento }}
+          >
+            <Sparkles size={15} />
           </IconButton>
         ) : (
           <Button
             size="small"
             aria-disabled={!disponivel}
             onClick={disponivel ? onClick : undefined}
-            startIcon={<Sparkles size={15} />}
-            sx={{ width: "auto", height: 32, px: 1.25, whiteSpace: "nowrap", ...estilo }}
+            startIcon={<Sparkles size={14} color={CORES_DASHBOARD.acento} />}
+            sx={{ ...sxBotaoSecundario, ...estado }}
           >
             {rotulo}
           </Button>

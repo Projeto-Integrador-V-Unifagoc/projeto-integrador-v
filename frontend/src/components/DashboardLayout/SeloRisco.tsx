@@ -1,21 +1,14 @@
-import { Chip } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { Box } from "@mui/material";
+import { sxSelo } from "./dashboard-estilos";
 import { RISCO_VISUAL } from "./risco-visual";
 import type { NivelRiscoVisual } from "./risco-visual";
 
+/** Chip com ponto ("● Risco alto"). O estado vai por texto e cor juntos (WCAG 1.4.1). */
 export default function SeloRisco({ nivel, titulo }: { nivel: NivelRiscoVisual; titulo?: string }) {
-  const { rotulo, cor } = RISCO_VISUAL[nivel];
+  const { rotulo, tom } = RISCO_VISUAL[nivel];
   return (
-    <Chip
-      size="small"
-      label={rotulo}
-      title={titulo}
-      sx={(theme) => ({
-        fontWeight: 700,
-        flexShrink: 0,
-        bgcolor: cor === "default" ? theme.palette.grey[100] : alpha(theme.palette[cor].main, 0.12),
-        color: cor === "default" ? "text.secondary" : theme.palette[cor].dark,
-      })}
-    />
+    <Box component="span" title={titulo} sx={sxSelo(tom, { ponto: true })}>
+      {rotulo}
+    </Box>
   );
 }

@@ -4,7 +4,7 @@ import { Alert } from "@mui/material";
 import { AlertTriangle, CalendarClock, TrendingUp, UserRoundCheck } from "lucide-react";
 import { perguntarAoAssistente, useAssistenteDisponivel } from "../../components/AssistenteWidget/ponte";
 import { AssistenteIaCaixa, DashboardLayout, DashboardRodape } from "../../components/DashboardLayout";
-import type { IndicadorDashboard, TomIndicador } from "../../components/DashboardLayout";
+import type { AlertaIndicador, IndicadorDashboard } from "../../components/DashboardLayout";
 import type { MinhaFrequenciaAluno } from "../../models/frequencia-model";
 import type { DisciplinaAluno, TarefaAluno } from "../../models/home-aluno-model";
 import type { BoletimAluno } from "../../models/nota-model";
@@ -19,6 +19,7 @@ import PontosAtencaoPainel from "./aluno/PontosAtencaoPainel";
 import TabelaDisciplinasAluno from "./aluno/TabelaDisciplinasAluno";
 import {
   JANELA_DEVOLUCAO_DIAS,
+  MEDIA_CRITICA,
   MEDIA_REFERENCIA,
   fmtPct,
   gerarPontosAtencao,
@@ -28,7 +29,6 @@ import {
   resumoDevolucoes,
   resumoFrequencia,
   resumoMedia,
-  resumoNiveis,
   resumirNomes,
 } from "./aluno/regras-dashboard-aluno";
 
@@ -59,6 +59,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   const [carregando, setCarregando] = useState(true);
   const [recarregando, setRecarregando] = useState(false);
   const [erros, setErros] = useState<string[]>([]);
+  const [horarioAtualizacao, setHorarioAtualizacao] = useState("");
   const [disciplinaSelecionadaId, setDisciplinaSelecionadaId] = useState<string | null>(null);
 
   const carregar = useCallback(async (atualizacao = false) => {
@@ -81,6 +82,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
     if (dadosBoletim.status === "fulfilled") setBoletim(dadosBoletim.value); else falhas.push("notas");
 
     setErros(falhas);
+    setHorarioAtualizacao(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
     setCarregando(false);
     setRecarregando(false);
   }, []);
@@ -105,56 +107,48 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   const boletimSelecionado = boletim?.disciplinas.find((item) => item.turmaDisciplinaId === disciplinaSelecionadaId) ?? null;
   const frequenciaSelecionada = frequencia?.consolidado.find((item) => item.turmaDisciplinaId === disciplinaSelecionadaId) ?? null;
 
-  const contexto = [
-    studentInfo?.matricula ? `Matrícula ${studentInfo.matricula}` : null,
-    studentInfo?.curso ?? null,
-    periodoCodigo ? `Período letivo ${periodoCodigo}` : null,
-    studentInfo?.periodo ? `${studentInfo.periodo}º período` : null,
-  ].filter(Boolean).join(" • ") || "Resumo acadêmico do seu período atual.";
+  // Resumo acionável (o que pede atenção agora), no lugar de dados cadastrais que já estão no perfil.
+  const pendencias = [
+    atencao.emAtencao.length ? plural(atencao.emAtencao.length, "disciplina em atenção", "disciplinas em atenção") : null,
+    devolucoes.vencidas.length ? plural(devolucoes.vencidas.length, "devolução atrasada", "devoluções atrasadas") : null,
+  ].filter(Boolean);
+  const contexto = pendencias.length
+    ? pendencias.join(" · ")
+    : lista.some((item) => item.nivel !== "sem-dados") ? "Tudo em dia nas suas disciplinas." : "Resumo acadêmico do seu período atual.";
 
   const piorDisciplina = atencao.emAtencao[0];
   const sugestoes = ["Como está minha frequência?", ...(piorDisciplina ? [`Por que ${piorDisciplina.nome} está em atenção?`] : [])];
 
-  const tomMedia: TomIndicador = media.media === null ? "primary" : media.media < MEDIA_REFERENCIA ? "error" : media.media < 70 ? "warning" : "primary";
-  const tomFrequencia: TomIndicador = freq.situacao === "abaixo" ? "error" : freq.situacao === "atencao" ? "warning" : freq.situacao === "ok" ? "success" : "primary";
+  // Cor só quando o KPI pede ação (PADRAO.md, regra 1). Mesmos limites da regra de risco.
+  const alertaMedia: AlertaIndicador | undefined = media.media === null ? undefined : media.media < MEDIA_CRITICA ? "critico" : media.media < MEDIA_REFERENCIA ? "atencao" : undefined;
+  const alertaFrequencia: AlertaIndicador | undefined = freq.situacao === "abaixo" ? "critico" : freq.situacao === "atencao" ? "atencao" : undefined;
 
   const indicadores: IndicadorDashboard[] = [
     {
       id: "media",
-      titulo: "Média parcial geral",
+      titulo: "Média parcial",
       icone: TrendingUp,
-      tom: tomMedia,
+      alerta: alertaMedia,
       valor: fmtPct(media.media, 1),
-      complemento: media.escala10 !== null ? { texto: `${fmtNumero(media.escala10)} / 10`, tom: "neutro" } : undefined,
+      complemento: media.escala10 !== null ? `${fmtNumero(media.escala10)} / 10` : undefined,
       apoio: media.disciplinasComNota
-        ? `Em ${plural(media.disciplinasComNota, "disciplina", "disciplinas")} com nota`
+        ? `em ${plural(media.disciplinasComNota, "disciplina", "disciplinas")} com nota`
         : "Aguardando as primeiras notas",
     },
     {
       id: "frequencia",
-      titulo: "Frequência registrada",
+      titulo: "Frequência",
       icone: UserRoundCheck,
-      tom: tomFrequencia,
+      alerta: alertaFrequencia,
       valor: fmtPct(freq.percentual, 1),
-      selo: freq.situacao === "sem-dados" ? undefined : {
-        rotulo: freq.situacao === "ok" ? "Geral OK" : freq.situacao === "atencao" ? "Atenção" : "Abaixo do mínimo",
-        tom: tomFrequencia,
-      },
-      complemento: freq.diferencaMinimo === null ? undefined : {
-        texto: `${freq.diferencaMinimo >= 0 ? "+" : "−"}${fmtNumero(Math.abs(freq.diferencaMinimo))} p.p. do mínimo`,
-        tom: freq.diferencaMinimo >= 0 ? "success" : "error",
-      },
       apoio: `${plural(freq.presencas, "presença", "presenças")} · ${plural(freq.faltas, "falta", "faltas")}`,
     },
     {
       id: "atencao",
       titulo: "Disciplinas em atenção",
       icone: AlertTriangle,
-      tom: atencao.piorNivel === "alto" ? "error" : atencao.piorNivel === "medio" ? "warning" : "primary",
+      alerta: atencao.piorNivel === "alto" ? "critico" : atencao.piorNivel === "medio" ? "atencao" : undefined,
       valor: String(atencao.emAtencao.length),
-      // O título já diz "em atenção": o selo só aparece para confirmar que está tudo em dia.
-      selo: lista.length && !atencao.emAtencao.length ? { rotulo: "Em dia", tom: "success" } : undefined,
-      complemento: atencao.piorNivel ? { texto: resumoNiveis(atencao.emAtencao), tom: atencao.piorNivel === "alto" ? "error" : "warning" } : undefined,
       apoio: atencao.emAtencao.length
         ? resumirNomes(atencao.emAtencao.map((item) => item.nome))
         : lista.some((item) => item.nivel !== "sem-dados") ? "Todas dentro das metas" : "Aguardando lançamentos",
@@ -164,7 +158,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
       titulo: "Devoluções próximas",
       icone: CalendarClock,
       valor: String(devolucoes.proximas.length),
-      complemento: { texto: `em ${JANELA_DEVOLUCAO_DIAS} dias`, tom: "neutro" },
+      complemento: `em ${JANELA_DEVOLUCAO_DIAS} dias`,
       apoio: devolucoes.vencidas.length
         ? `${plural(devolucoes.vencidas.length, "vencida", "vencidas")} sem nota`
         : "Nenhuma vencida sem nota",
@@ -176,7 +170,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
       <DashboardLayout
         carregando={carregando}
         nome={userName}
-        seloNome="Aluno de graduação"
+        seloData={[studentInfo?.curso, periodoCodigo ? `Período ${periodoCodigo}` : null].filter(Boolean).join(" · ") || undefined}
         contexto={contexto}
         assistente={<AssistenteIaCaixa placeholder="Pergunte sobre suas notas e frequência…" sugestoes={sugestoes} onEnviar={iaDisponivel ? (pergunta) => perguntarAoAssistente(pergunta) : undefined} />}
         avisos={erros.length > 0 ? <Alert severity="warning">Alguns dados não puderam ser atualizados: {erros.join(", ")}. Os demais indicadores continuam disponíveis.</Alert> : undefined}
@@ -196,7 +190,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
         painelAcoes={<AcessosRapidosAluno navegar={navigate} onOrientacoesIa={iaDisponivel ? () => perguntarAoAssistente("Quais devem ser minhas prioridades acadêmicas agora?", { tipo: "orientacoes" }) : undefined} />}
         rodape={(
           <DashboardRodape
-            status="Com base nas notas e frequências lançadas"
+            status={`Atualizado às ${horarioAtualizacao}`}
             onAtualizar={() => void carregar(true)}
             atualizando={recarregando}
           />
