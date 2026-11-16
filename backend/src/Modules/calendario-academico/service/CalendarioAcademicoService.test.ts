@@ -47,9 +47,16 @@ describe("CalendarioAcademicoService", () => {
   });
 
   it("gera de forma controlada depois da confirmacao", async () => {
-    const { service } = criar();
+    let intervaloRecebido: any;
+    const { service } = criar({
+      sincronizarAulas: async (_periodoId: string, _ocorrencias: any[], intervalo: any) => {
+        intervaloRecebido = intervalo;
+        return { criadas: 4, reativadas: 0, canceladas: 0, preservadasComChamada: 0 };
+      },
+    });
     const resultado = await service.gerarAulas("p1", { simular: false });
     expect(resultado).toMatchObject({ simulado: false, ocorrenciasPrevistas: 5, criadas: 4 });
+    expect(intervaloRecebido).toEqual({ inicio: "2026-11-01", fim: "2026-11-30" });
   });
 
   it("rejeita evento fora do periodo", async () => {

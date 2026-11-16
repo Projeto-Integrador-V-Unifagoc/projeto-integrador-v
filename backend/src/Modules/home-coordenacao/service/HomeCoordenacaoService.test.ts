@@ -35,6 +35,32 @@ describe("HomeCoordenacaoService", () => {
     assert.equal(resultado.competencias[0].classificacao, "DIFICULDADE");
   });
 
+  it("compara os indicadores com o periodo letivo imediatamente anterior", async () => {
+    const resultado = await service({
+      listarPeriodos: async () => [
+        { id: "pl2", codigo: "2026.2", ano: 2026, semestre: 2, ativo: true, status: "aberto", data_inicio: "2026-08-01", data_fim: "2026-12-15" },
+        { id: "pl1", codigo: "2026.1", ano: 2026, semestre: 1, ativo: false, status: "encerrado", data_inicio: "2026-02-01", data_fim: "2026-06-30" },
+      ],
+      resumoPeriodo: async (periodoId: string) => periodoId === "pl2"
+        ? { turmas_ativas: 3, ofertas_ativas: 5, alunos_ativos: 36, ofertas_com_horario: 4, avaliacoes: 10, avaliacoes_mapeadas: 8 }
+        : { turmas_ativas: 2, ofertas_ativas: 4, alunos_ativos: 30, ofertas_com_horario: 2, avaliacoes: 8, avaliacoes_mapeadas: 4 },
+      listarDesempenhoCompetencias: async (periodoId: string) => [{
+        id: "cp1", codigo: "COMP-01", nome: "Lógica", tipo: "TECNICA", total_ofertas: 2,
+        total_cursos: 1, pontos_planejados: 100, pontos_avaliados: 80,
+        soma_ponderada: periodoId === "pl2" ? 5600 : 4800,
+      }, {
+        id: "cp2", codigo: "COMP-02", nome: "Projetos", tipo: "TECNICA", total_ofertas: 1,
+        total_cursos: 1, pontos_planejados: 100, pontos_avaliados: 40, soma_ponderada: 2800,
+      }],
+    }).dashboard(reqSecretaria, "pl2");
+
+    assert.equal(resultado.comparacaoPeriodoAnterior?.periodo.codigo, "2026.1");
+    assert.deepEqual(resultado.comparacaoPeriodoAnterior?.resumo.alunosAtivos, { atual: 36, anterior: 30, variacao: 6 });
+    assert.deepEqual(resultado.comparacaoPeriodoAnterior?.resumo.coberturaHorarios, { atual: 80, anterior: 50, variacao: 30 });
+    assert.equal(resultado.comparacaoPeriodoAnterior?.competencias[0].variacaoMedia, 10);
+    assert.equal(resultado.comparacaoPeriodoAnterior?.competencias.find((item) => item.id === "cp2")?.variacaoMedia, null);
+  });
+
   it("bloqueia perfis sem acesso administrativo", async () => {
     await assert.rejects(() => service().dashboard({ user: { tipo_usuario: "professor" } } as any), /apenas para secretaria/i);
   });

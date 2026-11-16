@@ -43,7 +43,7 @@ export class CalendarioAcademicoService {
     const [horarios, eventos, existentes] = await Promise.all([
       this.repository.listarHorarios(periodoId),
       this.repository.listarEventos(periodoId),
-      this.repository.listarAulasGeradas(periodoId),
+      this.repository.listarAulasGeradas(periodoId, { inicio, fim }),
     ]);
     const { ocorrencias, excluidas } = this.calcularOcorrencias(horarios as any[], eventos as any[], inicio, fim);
     const chavesExistentes = new Set((existentes as any[]).map((a) => `${a.horario_turma_disciplina_id}:${this.iso(a.data)}`));
@@ -54,7 +54,7 @@ export class CalendarioAcademicoService {
       existentes: ocorrencias.filter((item) => chavesExistentes.has(`${item.horarioId}:${item.data}`)).length,
     };
     if (entrada.simular !== false) return { simulado: true, ...resumoBase };
-    return { simulado: false, ...resumoBase, ...(await this.repository.sincronizarAulas(periodoId, ocorrencias)) };
+    return { simulado: false, ...resumoBase, ...(await this.repository.sincronizarAulas(periodoId, ocorrencias, { inicio, fim })) };
   }
 
   calcularOcorrencias(horarios: any[], eventos: any[], inicio: string, fim: string) {

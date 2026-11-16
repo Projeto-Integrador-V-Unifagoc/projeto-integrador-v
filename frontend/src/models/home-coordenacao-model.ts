@@ -5,6 +5,12 @@ export interface PeriodoCoordenacao {
   dataInicio: string | null; dataFim: string | null;
 }
 
+export interface IndicadorComparativoCoordenacao {
+  atual: number;
+  anterior: number;
+  variacao: number;
+}
+
 export interface DashboardCoordenacao {
   periodoSelecionado: PeriodoCoordenacao | null;
   periodosDisponiveis: PeriodoCoordenacao[];
@@ -23,6 +29,20 @@ export interface DashboardCoordenacao {
     id: string; codigo: string; nome: string; tipo: string; media: number | null; cobertura: number;
     totalOfertas: number; totalCursos: number; classificacao: ClassificacaoCoordenacao;
   }>;
+  comparacaoPeriodoAnterior: {
+    periodo: PeriodoCoordenacao;
+    resumo: {
+      alunosAtivos: IndicadorComparativoCoordenacao;
+      ofertasAtivas: IndicadorComparativoCoordenacao;
+      coberturaHorarios: IndicadorComparativoCoordenacao;
+      coberturaCompetencias: IndicadorComparativoCoordenacao;
+    };
+    competencias: Array<{
+      id: string; codigo: string; nome: string;
+      mediaAtual: number | null; mediaAnterior: number | null; variacaoMedia: number | null;
+      coberturaAtual: number | null; coberturaAnterior: number | null;
+    }>;
+  } | null;
   qualidade: Array<{
     id: string; titulo: string; descricao: string; quantidade: number;
     severidade: "CRITICO" | "ATENCAO" | "INFORMATIVO"; rota: string;

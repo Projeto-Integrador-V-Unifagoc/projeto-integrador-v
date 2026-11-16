@@ -19,8 +19,12 @@ export class CalendarioAcademicoRepository {
       .select("h.*", "td.professor_id");
   }
 
-  listarAulasGeradas(periodoId: string, executor: Knex | Knex.Transaction = db) {
-    return executor("aula as a")
+  listarAulasGeradas(
+    periodoId: string,
+    intervalo?: { inicio: string; fim: string },
+    executor: Knex | Knex.Transaction = db,
+  ) {
+    const query = executor("aula as a")
       .join("turma_disciplina as td", "a.turma_disciplina_id", "td.id")
       .join("turma as t", "td.turma_id", "t.id")
       .leftJoin("frequencia as f", "f.aula_id", "a.id")
@@ -29,12 +33,23 @@ export class CalendarioAcademicoRepository {
       .select("a.*")
       .count({ frequencias: "f.id" })
       .groupBy("a.id");
+    if (intervalo) {
+      query.whereRaw(
+        "(a.data AT TIME ZONE 'America/Sao_Paulo')::date BETWEEN ?::date AND ?::date",
+        [intervalo.inicio, intervalo.fim],
+      );
+    }
+    return query;
   }
 
-  async sincronizarAulas(periodoId: string, ocorrencias: OcorrenciaAulaPlanejada[]) {
+  async sincronizarAulas(
+    periodoId: string,
+    ocorrencias: OcorrenciaAulaPlanejada[],
+    intervalo: { inicio: string; fim: string },
+  ) {
     return db.transaction(async (trx) => {
       await trx.raw("SELECT pg_advisory_xact_lock(hashtext(?))", [`calendario:${periodoId}`]);
-      const existentes = await this.listarAulasGeradas(periodoId, trx);
+      const existentes = await this.listarAulasGeradas(periodoId, intervalo, trx);
       const porChave = new Map(existentes.map((a: any) => [`${a.horario_turma_disciplina_id}:${this.dataIso(a.data)}`, a]));
       const chavesValidas = new Set(ocorrencias.map((item) => `${item.horarioId}:${item.data}`));
       const locais = await trx("local").select("id", "codigo");

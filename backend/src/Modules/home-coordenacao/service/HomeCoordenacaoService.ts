@@ -13,31 +13,27 @@ export class HomeCoordenacaoService {
       : periodos.find((item: any) => Boolean(item.ativo)) ?? periodos[0];
     if (periodoLetivoId && !periodo) throw this.erro("Periodo letivo nao encontrado", 404);
     if (!periodo) return this.vazio(periodos);
+    const periodoAnterior = this.encontrarPeriodoAnterior(periodos, periodo);
 
-    const [resumo, diagnostico, matrizes, panorama, competencias] = await Promise.all([
+    const [resumo, diagnostico, matrizes, panorama, competencias, resumoAnterior, competenciasAnteriores] = await Promise.all([
       this.repository.resumoPeriodo(String(periodo.id)),
       this.repository.diagnosticoQualidade(String(periodo.id)),
       this.repository.listarStatusMatrizes(),
       this.repository.listarPanoramaCursos(String(periodo.id)),
       this.repository.listarDesempenhoCompetencias(String(periodo.id)),
+      periodoAnterior ? this.repository.resumoPeriodo(String(periodoAnterior.id)) : Promise.resolve(null),
+      periodoAnterior ? this.repository.listarDesempenhoCompetencias(String(periodoAnterior.id)) : Promise.resolve([]),
     ]);
 
-    const ofertas = Number(resumo.ofertas_ativas ?? 0);
-    const avaliacoes = Number(resumo.avaliacoes ?? 0);
+    const resumoMapeado = this.resumo(resumo);
+    const competenciasMapeadas = competencias
+      .map((item: any) => this.competencia(item))
+      .sort((a: any, b: any) => this.prioridade(a.classificacao) - this.prioridade(b.classificacao) || (a.media ?? 101) - (b.media ?? 101));
     return {
       periodoSelecionado: this.periodo(periodo),
       periodosDisponiveis: periodos.map((item: any) => this.periodo(item)),
       criteriosCompetencia: CRITERIOS_COORDENACAO,
-      resumo: {
-        turmasAtivas: Number(resumo.turmas_ativas ?? 0),
-        ofertasAtivas: ofertas,
-        alunosAtivos: Number(resumo.alunos_ativos ?? 0),
-        ofertasComHorario: Number(resumo.ofertas_com_horario ?? 0),
-        coberturaHorarios: this.percentual(Number(resumo.ofertas_com_horario ?? 0), ofertas),
-        avaliacoes,
-        avaliacoesMapeadas: Number(resumo.avaliacoes_mapeadas ?? 0),
-        coberturaCompetencias: this.percentual(Number(resumo.avaliacoes_mapeadas ?? 0), avaliacoes),
-      },
+      resumo: resumoMapeado,
       matrizes: this.matrizes(matrizes),
       panoramaCursos: panorama.map((item: any) => {
         const totalOfertas = Number(item.ofertas_ativas ?? 0);
@@ -49,9 +45,16 @@ export class HomeCoordenacaoService {
           coberturaHorarios: this.percentual(comHorario, totalOfertas),
         };
       }),
-      competencias: competencias
-        .map((item: any) => this.competencia(item))
-        .sort((a: any, b: any) => this.prioridade(a.classificacao) - this.prioridade(b.classificacao) || (a.media ?? 101) - (b.media ?? 101)),
+      competencias: competenciasMapeadas,
+      comparacaoPeriodoAnterior: periodoAnterior && resumoAnterior
+        ? this.compararPeriodos(
+          periodoAnterior,
+          resumoMapeado,
+          this.resumo(resumoAnterior),
+          competenciasMapeadas,
+          competenciasAnteriores.map((item: any) => this.competencia(item)),
+        )
+        : null,
       qualidade: this.qualidade(diagnostico),
       geradoEm: new Date().toISOString(),
     };
@@ -145,6 +148,82 @@ export class HomeCoordenacaoService {
     };
   }
 
+  private resumo(item: any) {
+    const ofertas = Number(item.ofertas_ativas ?? 0);
+    const avaliacoes = Number(item.avaliacoes ?? 0);
+    const ofertasComHorario = Number(item.ofertas_com_horario ?? 0);
+    const avaliacoesMapeadas = Number(item.avaliacoes_mapeadas ?? 0);
+    return {
+      turmasAtivas: Number(item.turmas_ativas ?? 0),
+      ofertasAtivas: ofertas,
+      alunosAtivos: Number(item.alunos_ativos ?? 0),
+      ofertasComHorario,
+      coberturaHorarios: this.percentual(ofertasComHorario, ofertas),
+      avaliacoes,
+      avaliacoesMapeadas,
+      coberturaCompetencias: this.percentual(avaliacoesMapeadas, avaliacoes),
+    };
+  }
+
+  private compararPeriodos(
+    periodoAnterior: any,
+    atual: ReturnType<HomeCoordenacaoService["resumo"]>,
+    anterior: ReturnType<HomeCoordenacaoService["resumo"]>,
+    competenciasAtuais: any[],
+    competenciasAnteriores: any[],
+  ) {
+    const anterioresPorId = new Map(competenciasAnteriores.map((item) => [item.id, item]));
+    const atuaisPorId = new Map(competenciasAtuais.map((item) => [item.id, item]));
+    const ids = new Set([...atuaisPorId.keys(), ...anterioresPorId.keys()]);
+    const competencias = [...ids].map((id) => {
+      const competenciaAtual = atuaisPorId.get(id);
+      const competenciaAnterior = anterioresPorId.get(id);
+      const mediaAtual = competenciaAtual?.media ?? null;
+      const mediaAnterior = competenciaAnterior?.media ?? null;
+      const comparavel = mediaAtual !== null
+        && mediaAnterior !== null
+        && competenciaAtual?.classificacao !== "DADOS_INSUFICIENTES"
+        && competenciaAnterior?.classificacao !== "DADOS_INSUFICIENTES";
+      return {
+        id,
+        codigo: competenciaAtual?.codigo ?? competenciaAnterior?.codigo,
+        nome: competenciaAtual?.nome ?? competenciaAnterior?.nome,
+        mediaAtual,
+        mediaAnterior,
+        variacaoMedia: comparavel ? this.numero(mediaAtual - mediaAnterior) : null,
+        coberturaAtual: competenciaAtual?.cobertura ?? null,
+        coberturaAnterior: competenciaAnterior?.cobertura ?? null,
+      };
+    }).sort((a, b) => Math.abs(b.variacaoMedia ?? 0) - Math.abs(a.variacaoMedia ?? 0));
+
+    return {
+      periodo: this.periodo(periodoAnterior),
+      resumo: {
+        alunosAtivos: this.indicadorComparativo(atual.alunosAtivos, anterior.alunosAtivos),
+        ofertasAtivas: this.indicadorComparativo(atual.ofertasAtivas, anterior.ofertasAtivas),
+        coberturaHorarios: this.indicadorComparativo(atual.coberturaHorarios, anterior.coberturaHorarios),
+        coberturaCompetencias: this.indicadorComparativo(atual.coberturaCompetencias, anterior.coberturaCompetencias),
+      },
+      competencias,
+    };
+  }
+
+  private indicadorComparativo(atual: number, anterior: number) {
+    return { atual, anterior, variacao: this.numero(atual - anterior) ?? 0 };
+  }
+
+  private encontrarPeriodoAnterior(periodos: any[], selecionado: any) {
+    const ordemSelecionado = this.ordemPeriodo(selecionado);
+    return periodos
+      .filter((item) => this.ordemPeriodo(item) < ordemSelecionado)
+      .sort((a, b) => this.ordemPeriodo(b) - this.ordemPeriodo(a))[0] ?? null;
+  }
+
+  private ordemPeriodo(item: any) {
+    const dataInicio = Date.parse(String(item.data_inicio ?? item.dataInicio ?? ""));
+    return Number.isFinite(dataInicio) ? dataInicio : Number(item.ano ?? 0) * 10 + Number(item.semestre ?? 0);
+  }
+
   private qualidade(item: any) {
     return [
       { id: "disciplinas-sem-ementa", titulo: "Disciplinas sem ementa", descricao: `${item.disciplinas_sem_ementa} de ${item.disciplinas} disciplinas ativas`, quantidade: item.disciplinas_sem_ementa, severidade: "ATENCAO", rota: "/disciplinas/lista" },
@@ -183,7 +262,7 @@ export class HomeCoordenacaoService {
     return { id: String(item.id), codigo: item.codigo, ano: Number(item.ano), semestre: Number(item.semestre), ativo: Boolean(item.ativo), status: item.status, dataInicio: this.dataIso(item.data_inicio), dataFim: this.dataIso(item.data_fim) };
   }
   private vazio(periodos: any[]) {
-    return { periodoSelecionado: null, periodosDisponiveis: periodos, criteriosCompetencia: CRITERIOS_COORDENACAO, resumo: { turmasAtivas: 0, ofertasAtivas: 0, alunosAtivos: 0, ofertasComHorario: 0, coberturaHorarios: 0, avaliacoes: 0, avaliacoesMapeadas: 0, coberturaCompetencias: 0 }, matrizes: { vigentes: 0, rascunhos: 0, encerradas: 0 }, panoramaCursos: [], competencias: [], qualidade: [], geradoEm: new Date().toISOString() };
+    return { periodoSelecionado: null, periodosDisponiveis: periodos, criteriosCompetencia: CRITERIOS_COORDENACAO, resumo: { turmasAtivas: 0, ofertasAtivas: 0, alunosAtivos: 0, ofertasComHorario: 0, coberturaHorarios: 0, avaliacoes: 0, avaliacoesMapeadas: 0, coberturaCompetencias: 0 }, matrizes: { vigentes: 0, rascunhos: 0, encerradas: 0 }, panoramaCursos: [], competencias: [], comparacaoPeriodoAnterior: null, qualidade: [], geradoEm: new Date().toISOString() };
   }
   private percentual(parte: number, total: number) { return total > 0 ? this.numero(100 * parte / total) ?? 0 : 0; }
   private numero(valor: number | null) { return valor === null || !Number.isFinite(valor) ? null : Number(valor.toFixed(1)); }

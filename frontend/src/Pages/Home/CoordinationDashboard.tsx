@@ -9,8 +9,8 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import { BarChart } from "@mui/x-charts/BarChart";
 import {
-  AlertTriangle, BookOpenCheck, CalendarClock, ChevronRight, ClipboardCheck, FileBarChart,
-  GraduationCap, Layers, RefreshCw, Target, UsersRound,
+  AlertTriangle, ArrowDownRight, ArrowUpRight, BookOpenCheck, CalendarClock, ChevronRight,
+  ClipboardCheck, FileBarChart, GraduationCap, Layers, Minus, RefreshCw, Target, UsersRound,
 } from "lucide-react";
 import Container from "../../components/Container";
 import type { ClassificacaoCoordenacao, DashboardCoordenacao, DetalheCursoCoordenacao } from "../../models/home-coordenacao-model";
@@ -24,6 +24,24 @@ const mensagemErro = (erro: unknown) => axios.isAxiosError(erro) && typeof erro.
 
 function CartaoIndicador({ titulo, valor, apoio, Icone, cor }: { titulo: string; valor: string; apoio: string; Icone: typeof Layers; cor: string }) {
   return <Paper variant="outlined" sx={{ p: 2.25, height: "100%", borderRadius: 3 }}><Stack direction="row" justifyContent="space-between" gap={2}><Box minWidth={0}><Typography variant="body2" color="text.secondary" fontWeight={650}>{titulo}</Typography><Typography fontSize={29} fontWeight={850}>{valor}</Typography><Typography variant="caption" color="text.secondary">{apoio}</Typography></Box><Box sx={{ width: 42, height: 42, flexShrink: 0, borderRadius: 2, display: "grid", placeItems: "center", bgcolor: alpha(cor, .12), color: cor }}><Icone size={21} /></Box></Stack></Paper>;
+}
+
+function IndicadorTemporal({ titulo, indicador, percentualValor = false }: {
+  titulo: string;
+  indicador: { atual: number; anterior: number; variacao: number };
+  percentualValor?: boolean;
+}) {
+  const Icone = indicador.variacao > 0 ? ArrowUpRight : indicador.variacao < 0 ? ArrowDownRight : Minus;
+  const formatarNumero = (valor: number) => valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+  const formatar = (valor: number) => percentualValor ? `${formatarNumero(valor)}%` : formatarNumero(valor);
+  const variacao = `${indicador.variacao > 0 ? "+" : ""}${formatarNumero(indicador.variacao)}${percentualValor ? " p.p." : ""}`;
+  return <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 2.5, height: "100%" }}>
+    <Typography variant="caption" color="text.secondary" fontWeight={700}>{titulo}</Typography>
+    <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} mt={.5}>
+      <Box><Typography fontSize={23} fontWeight={850}>{formatar(indicador.atual)}</Typography><Typography variant="caption" color="text.secondary">Anterior: {formatar(indicador.anterior)}</Typography></Box>
+      <Chip size="small" icon={<Icone size={15} />} label={variacao} color={indicador.variacao > 0 ? "success" : indicador.variacao < 0 ? "warning" : "default"} />
+    </Stack>
+  </Paper>;
 }
 
 function Carregando() {
@@ -64,11 +82,12 @@ export default function CoordinationDashboard({ userName }: { userName: string }
 
   const competenciasGrafico = useMemo(() => dados?.competencias.filter((item) => item.media !== null).slice(0, 8) ?? [], [dados]);
   const competenciasAtencao = useMemo(() => dados?.competencias.filter((item) => item.classificacao === "DIFICULDADE" || item.classificacao === "ATENCAO").slice(0, 6) ?? [], [dados]);
+  const competenciasComparaveis = useMemo(() => dados?.comparacaoPeriodoAnterior?.competencias.filter((item) => item.variacaoMedia !== null).slice(0, 6) ?? [], [dados]);
   if (carregando) return <Container sx={{ p: 0, border: 0 }}><Carregando /></Container>;
   if (!dados) return <Container sx={{ p: 0, border: 0 }}><Alert severity="error" action={<Button color="inherit" onClick={() => void carregar()} sx={{ width: "auto", whiteSpace: "nowrap" }}>Tentar novamente</Button>}>{erro}</Alert></Container>;
 
   return <Container sx={{ p: 0, pb: 3, border: 0, overflowY: "auto" }}><Stack gap={2.5}>
-    <Paper component="header" elevation={0} sx={{ p: { xs: 2.5, md: 3 }, borderRadius: 3, color: "#fff", background: "linear-gradient(125deg, #075D78 0%, #078CAF 52%, #05B5E6 100%)", position: "relative", overflow: "hidden", "&::after": { content: '\"\"', position: "absolute", width: 260, height: 260, borderRadius: "50%", bgcolor: "rgba(255,255,255,.1)", right: -65, top: -125 } }}>
+    <Paper component="header" elevation={0} sx={{ p: { xs: 2.5, md: 3 }, borderRadius: 3, color: "#fff", background: "linear-gradient(125deg, #075D78 0%, #078CAF 52%, #05B5E6 100%)", position: "relative", overflow: "hidden", "&::after": { content: '""', position: "absolute", width: 260, height: 260, borderRadius: "50%", bgcolor: "rgba(255,255,255,.1)", right: -65, top: -125 } }}>
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", md: "center" }} gap={2} position="relative" zIndex={1}>
         <Stack direction="row" gap={2} alignItems="center"><Box sx={{ width: 52, height: 52, borderRadius: 2.5, bgcolor: "rgba(255,255,255,.18)", display: "grid", placeItems: "center" }}><FileBarChart size={27} /></Box><Box><Typography component="h1" variant="h5" fontWeight={800}>Olá, {userName}!</Typography><Typography variant="body2" sx={{ opacity: .9 }}>Visão consolidada da estrutura e do desempenho acadêmico.</Typography></Box></Stack>
         <Stack direction="row" gap={1.25} alignItems="center"><FormControl size="small" sx={{ minWidth: 155, bgcolor: "rgba(255,255,255,.96)", borderRadius: 1 }}><InputLabel>Período</InputLabel><Select label="Período" value={dados.periodoSelecionado?.id ?? ""} onChange={(e) => void carregar(String(e.target.value))}>{dados.periodosDisponiveis.map((item) => <MenuItem key={item.id} value={item.id}>{item.codigo}</MenuItem>)}</Select></FormControl><Tooltip title="Atualizar"><span><IconButton disabled={recarregando} onClick={() => void carregar(dados.periodoSelecionado?.id, true)} sx={{ color: "#fff" }}>{recarregando ? <CircularProgress size={20} color="inherit" /> : <RefreshCw size={20} />}</IconButton></span></Tooltip></Stack>
@@ -84,6 +103,22 @@ export default function CoordinationDashboard({ userName }: { userName: string }
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><CartaoIndicador titulo="Cobertura de horários" valor={percentual(dados.resumo.coberturaHorarios)} apoio={`${dados.resumo.ofertasComHorario} de ${dados.resumo.ofertasAtivas} ofertas`} Icone={CalendarClock} cor={dados.resumo.coberturaHorarios < 100 ? theme.palette.warning.main : theme.palette.success.main} /></Grid>
       <Grid size={{ xs: 12, sm: 6, lg: 3 }}><CartaoIndicador titulo="Avaliações mapeadas" valor={percentual(dados.resumo.coberturaCompetencias)} apoio={`${dados.resumo.avaliacoesMapeadas} de ${dados.resumo.avaliacoes} avaliações`} Icone={Target} cor={dados.resumo.coberturaCompetencias < 75 ? theme.palette.warning.main : theme.palette.success.main} /></Grid>
     </Grid>
+
+    {dados.comparacaoPeriodoAnterior && <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+      <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={1} mb={2}>
+        <Box><Typography variant="h6" fontWeight={800}>Evolução em relação a {dados.comparacaoPeriodoAnterior.periodo.codigo}</Typography><Typography variant="body2" color="text.secondary">Comparação automática com o período letivo imediatamente anterior. Variações percentuais são exibidas em pontos percentuais.</Typography></Box>
+        <Chip icon={<CalendarClock size={16} />} label={`${dados.comparacaoPeriodoAnterior.periodo.codigo} → ${dados.periodoSelecionado?.codigo}`} />
+      </Stack>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><IndicadorTemporal titulo="Alunos ativos" indicador={dados.comparacaoPeriodoAnterior.resumo.alunosAtivos} /></Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><IndicadorTemporal titulo="Ofertas ativas" indicador={dados.comparacaoPeriodoAnterior.resumo.ofertasAtivas} /></Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><IndicadorTemporal titulo="Cobertura de horários" indicador={dados.comparacaoPeriodoAnterior.resumo.coberturaHorarios} percentualValor /></Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}><IndicadorTemporal titulo="Avaliações mapeadas" indicador={dados.comparacaoPeriodoAnterior.resumo.coberturaCompetencias} percentualValor /></Grid>
+      </Grid>
+      <Divider sx={{ my: 2 }} />
+      <Typography fontWeight={800} mb={1}>Competências comparáveis</Typography>
+      {competenciasComparaveis.length ? <TableContainer><Table size="small"><TableHead><TableRow><TableCell>Competência</TableCell><TableCell align="right">Período anterior</TableCell><TableCell align="right">Período atual</TableCell><TableCell align="right">Variação</TableCell><TableCell align="right">Cobertura atual</TableCell></TableRow></TableHead><TableBody>{competenciasComparaveis.map((item) => <TableRow key={item.id}><TableCell><Typography variant="body2" fontWeight={750}>{item.codigo} · {item.nome}</Typography></TableCell><TableCell align="right">{percentual(item.mediaAnterior!)}</TableCell><TableCell align="right">{percentual(item.mediaAtual!)}</TableCell><TableCell align="right"><Chip size="small" color={item.variacaoMedia! > 0 ? "success" : item.variacaoMedia! < 0 ? "warning" : "default"} label={`${item.variacaoMedia! > 0 ? "+" : ""}${item.variacaoMedia!.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} p.p.`} /></TableCell><TableCell align="right">{item.coberturaAtual === null ? "—" : percentual(item.coberturaAtual)}</TableCell></TableRow>)}</TableBody></Table></TableContainer> : <Alert severity="info">Ainda não há competências com resultados suficientes nos dois períodos para comparação.</Alert>}
+    </Paper>}
 
     <Grid container spacing={2.5}>
       <Grid size={{ xs: 12, lg: 8 }}><Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, height: "100%" }}><Stack direction="row" alignItems="center" gap={1}><Target size={20} /><Typography variant="h6" fontWeight={800}>Desempenho por competência</Typography></Stack><Typography variant="body2" color="text.secondary" mb={2}>Aproveitamento consolidado apenas com notas disponíveis; cobertura inferior a {dados.criteriosCompetencia.coberturaMinima}% não gera diagnóstico.</Typography>{competenciasGrafico.length ? <BarChart height={Math.max(300, competenciasGrafico.length * 48)} layout="horizontal" yAxis={[{ scaleType: "band", data: competenciasGrafico.map((item) => item.codigo) }]} xAxis={[{ min: 0, max: 100 }]} series={[{ data: competenciasGrafico.map((item) => item.media), label: "Aproveitamento", color: theme.palette.primary.main }, { data: competenciasGrafico.map((item) => item.cobertura), label: "Cobertura", color: theme.palette.info.light }]} /> : <Alert severity="info">O gráfico aparecerá quando houver avaliações mapeadas e notas lançadas.</Alert>}</Paper></Grid>
