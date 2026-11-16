@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Alert, Checkbox, Chip, FormControlLabel, Grid, IconButton, MenuItem, Stack, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
-import { Pencil, Trash2 } from "lucide-react";
+import { GitBranch, Pencil, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { ValidationError } from "yup";
 import Container from "../../components/Container";
@@ -17,7 +17,8 @@ import { useCursoDisciplina } from "../../hooks/use-curso-disciplina";
 import { cursoDisciplinaSchema } from "../../validators/curso-disciplina-schema";
 import type { CursoResponse } from "../../models/curso-model";
 import type { DisciplinaResponse } from "../../models/disciplina-model";
-import type { CursoDisciplinaResponse, MatrizCurricularResponse } from "../../models/curso-disciplina-model";
+import type { CursoDisciplinaResponse, MatrizCurricularResponse, RequisitoCurricularResponse, TipoRequisitoCurricular } from "../../models/curso-disciplina-model";
+import RequisitosMatrizDialog from "./RequisitosMatrizDialog";
 
 type FormType = {
   disciplinaId: string
@@ -44,6 +45,8 @@ export default function MatrizCurricularCurso() {
   const [matriz, setMatriz] = useState<CursoDisciplinaResponse[]>([]);
   const [matrizes, setMatrizes] = useState<MatrizCurricularResponse[]>([]);
   const [matrizSelecionadaId, setMatrizSelecionadaId] = useState("");
+  const [requisitos, setRequisitos] = useState<RequisitoCurricularResponse[]>([]);
+  const [itemRequisitos, setItemRequisitos] = useState<CursoDisciplinaResponse | null>(null);
   const [dialogoMatrizAberto, setDialogoMatrizAberto] = useState(false);
   const [confirmarPublicacao, setConfirmarPublicacao] = useState(false);
   const [formMatriz, setFormMatriz] = useState(initialMatrizForm);
@@ -57,7 +60,7 @@ export default function MatrizCurricularCurso() {
   const [erros, setErros] = useState<Record<string, string>>({});
   const { buscarCursoPorId } = useCurso();
   const { listarDisciplinas } = useDisciplina();
-  const { carregando, listarMatrizCurricularPorCursoId, criarCursoDisciplina, atualizarCursoDisciplina, removerCursoDisciplina, listarMatrizes, criarMatriz, publicarMatriz } = useCursoDisciplina();
+  const { carregando, listarMatrizCurricularPorCursoId, criarCursoDisciplina, atualizarCursoDisciplina, removerCursoDisciplina, listarMatrizes, criarMatriz, publicarMatriz, listarRequisitos, criarRequisito, atualizarRequisito, removerRequisito } = useCursoDisciplina();
 
   async function carregarDados() {
     if (!cursoId) {
@@ -68,15 +71,17 @@ export default function MatrizCurricularCurso() {
     const selecionada = matrizesResponse.find((item) => item.id === matrizSelecionadaId)
       ?? matrizesResponse.find((item) => item.status === "VIGENTE")
       ?? matrizesResponse[0];
-    const [cursoResponse, disciplinasResponse, matrizResponse] = await Promise.all([
+    const [cursoResponse, disciplinasResponse, matrizResponse, requisitosResponse] = await Promise.all([
       buscarCursoPorId(cursoId),
       listarDisciplinas(),
       listarMatrizCurricularPorCursoId(cursoId, selecionada?.id),
+      selecionada?.id ? listarRequisitos(selecionada.id) : Promise.resolve([]),
     ]);
 
     setCurso(cursoResponse);
     setDisciplinas(disciplinasResponse);
     setMatriz(matrizResponse);
+    setRequisitos(requisitosResponse);
     setMatrizes(matrizesResponse);
     if (selecionada && selecionada.id !== matrizSelecionadaId) setMatrizSelecionadaId(selecionada.id);
   }
@@ -222,6 +227,33 @@ export default function MatrizCurricularCurso() {
     }
   }
 
+  async function adicionarRequisito(requisitoCursoDisciplinaId: string, tipo: TipoRequisitoCurricular) {
+    if (!itemRequisitos) return;
+    await criarRequisito({ cursoDisciplinaId: itemRequisitos.id, requisitoCursoDisciplinaId, tipo });
+    await carregarDados();
+    setAlerta({ tipo: "success", mensagem: "Requisito adicionado com sucesso." });
+  }
+
+  async function alterarTipoRequisito(id: string, tipo: TipoRequisitoCurricular) {
+    try {
+      await atualizarRequisito(id, tipo);
+      await carregarDados();
+      setAlerta({ tipo: "success", mensagem: "Tipo do requisito atualizado." });
+    } catch (error) {
+      setAlerta({ tipo: "error", mensagem: axios.isAxiosError(error) ? error.response?.data?.error ?? "Não foi possível atualizar o requisito." : "Não foi possível atualizar o requisito." });
+    }
+  }
+
+  async function excluirRequisito(id: string) {
+    try {
+      await removerRequisito(id);
+      await carregarDados();
+      setAlerta({ tipo: "success", mensagem: "Requisito removido com sucesso." });
+    } catch (error) {
+      setAlerta({ tipo: "error", mensagem: axios.isAxiosError(error) ? error.response?.data?.error ?? "Não foi possível remover o requisito." : "Não foi possível remover o requisito." });
+    }
+  }
+
   const disciplinasDisponiveis = disciplinas.filter((disciplina) => {
     if (registroEdicao?.disciplina.id === disciplina.id) {
       return true;
@@ -263,13 +295,17 @@ export default function MatrizCurricularCurso() {
     { field: "carga", headerName: "Carga Horaria", width: 140, valueGetter: (_, row) => row.carga_horaria },
     { field: "obrigatoria", headerName: "Obrigatoria", width: 130, valueGetter: (_, row) => (row.obrigatoria ? "Sim" : "Nao") },
     { field: "status", headerName: "Status", width: 120, valueGetter: (_, row) => (row.ativo ? "Ativa" : "Inativa") },
+    { field: "requisitos", headerName: "Requisitos", width: 115, valueGetter: (_, row) => requisitos.filter((item) => item.cursoDisciplinaId === row.id).length },
     {
       field: "acoes",
       headerName: "Acoes",
-      width: 120,
+      width: 165,
       sortable: false,
       renderCell: (params) => (
         <>
+          <IconButton aria-label={`Gerenciar requisitos de ${params.row.disciplina.nome}`} onClick={() => setItemRequisitos(params.row)} color="primary">
+            <GitBranch size={18} />
+          </IconButton>
           <IconButton disabled={!editavel} onClick={() => abrirDialogoEdicao(params.row)} color="primary">
             <Pencil size={18} />
           </IconButton>
@@ -510,6 +546,18 @@ export default function MatrizCurricularCurso() {
         <Dialog.Content><Alert severity="warning">A matriz vigente atual será encerrada. Turmas existentes continuarão vinculadas à versão anterior e somente novas turmas usarão a nova matriz.</Alert></Dialog.Content>
         <Dialog.Footer><Button variant="outlined" onClick={() => setConfirmarPublicacao(false)}>Cancelar</Button><Button variant="contained" onClick={() => void publicarSelecionada()}>Confirmar publicação</Button></Dialog.Footer>
       </Dialog.Root>
+
+      <RequisitosMatrizDialog
+        open={!!itemRequisitos}
+        item={itemRequisitos}
+        matriz={matriz}
+        requisitos={requisitos}
+        editavel={editavel}
+        onClose={() => setItemRequisitos(null)}
+        onAdicionar={adicionarRequisito}
+        onAtualizar={alterarTipoRequisito}
+        onRemover={excluirRequisito}
+      />
     </Container>
   );
 }

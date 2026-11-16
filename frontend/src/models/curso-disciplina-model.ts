@@ -64,3 +64,19 @@ export interface AtualizarCursoDisciplinaRequest {
   cargaHoraria?: number
   ativo?: boolean
 }
+
+export type TipoRequisitoCurricular = "OBRIGATORIO" | "RECOMENDADO"
+
+export interface RequisitoCurricularResponse {
+  id: string
+  tipo: TipoRequisitoCurricular
+  cursoDisciplinaId: string
+  disciplina: { id: string; codigo: string; nome: string }
+  requisito: { cursoDisciplinaId: string; id: string; codigo: string; nome: string; periodoIdeal: number | null }
+}
+
+export interface CriarRequisitoCurricularRequest {
+  cursoDisciplinaId: string
+  requisitoCursoDisciplinaId: string
+  tipo: TipoRequisitoCurricular
+}

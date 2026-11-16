@@ -36,11 +36,22 @@ export class MatrizCurricularRepository {
       if (matrizOrigemId) {
         const itens = await trx("curso_disciplina").where({ matriz_curricular_id: matrizOrigemId });
         if (itens.length) {
-          await trx("curso_disciplina").insert(itens.map((item: any) => ({
-            id: uuidv4(), curso_id: data.curso_id, matriz_curricular_id: data.id,
-            disciplina_id: item.disciplina_id, periodo_ideal: item.periodo_ideal,
-            obrigatoria: item.obrigatoria, carga_horaria: item.carga_horaria, ativo: item.ativo,
+          const clones = itens.map((item: any) => ({ origemId: String(item.id), novoId: uuidv4(), item }));
+          await trx("curso_disciplina").insert(clones.map(({ novoId, item }) => ({
+            id: novoId, curso_id: data.curso_id, matriz_curricular_id: data.id, disciplina_id: item.disciplina_id,
+            periodo_ideal: item.periodo_ideal, obrigatoria: item.obrigatoria, carga_horaria: item.carga_horaria, ativo: item.ativo,
           })));
+          const ids = clones.map((item) => item.origemId);
+          const requisitos = await trx("curso_disciplina_requisito")
+            .whereIn("curso_disciplina_id", ids)
+            .whereIn("requisito_curso_disciplina_id", ids);
+          const novosIds = new Map(clones.map((item) => [item.origemId, item.novoId]));
+          if (requisitos.length) {
+            await trx("curso_disciplina_requisito").insert(requisitos.map((requisito: any) => ({
+              id: uuidv4(), curso_disciplina_id: novosIds.get(String(requisito.curso_disciplina_id)),
+              requisito_curso_disciplina_id: novosIds.get(String(requisito.requisito_curso_disciplina_id)), tipo: requisito.tipo,
+            })));
+          }
         }
       }
       return matriz;

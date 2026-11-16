@@ -1,5 +1,5 @@
 import { api } from "../lib/axios";
-import type { AtualizarCursoDisciplinaRequest, CriarMatrizCurricularRequest, CursoDisciplinaRequest } from "../models/curso-disciplina-model";
+import type { AtualizarCursoDisciplinaRequest, CriarMatrizCurricularRequest, CriarRequisitoCurricularRequest, CursoDisciplinaRequest, TipoRequisitoCurricular } from "../models/curso-disciplina-model";
 
 export const cursoDisciplinaApi = {
   async listarCursoDisciplinas() {
@@ -40,5 +40,24 @@ export const cursoDisciplinaApi = {
   async publicarMatriz(id: string, encerrarVigente: boolean) {
     const response = await api.post(`/matrizes-curriculares/${id}/publicar`, { encerrarVigente });
     return response.data;
+  },
+
+  async listarRequisitos(matrizId: string) {
+    const response = await api.get(`/matrizes-curriculares/${matrizId}/requisitos`);
+    return response.data;
+  },
+
+  async criarRequisito(data: CriarRequisitoCurricularRequest) {
+    const response = await api.post("/requisitos-curriculares", data);
+    return response.data;
+  },
+
+  async atualizarRequisito(id: string, tipo: TipoRequisitoCurricular) {
+    const response = await api.put(`/requisitos-curriculares/${id}`, { tipo });
+    return response.data;
+  },
+
+  async removerRequisito(id: string) {
+    await api.delete(`/requisitos-curriculares/${id}`);
   },
 };
