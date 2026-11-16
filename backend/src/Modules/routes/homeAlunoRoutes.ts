@@ -11,3 +11,4 @@ homeAlunoRouter.use(autenticar);
 homeAlunoRouter.get("/me/disciplinas", controller.minhasDisciplinas);
 homeAlunoRouter.get("/me/tarefas", controller.minhasTarefas);
 homeAlunoRouter.get("/me/competencias", controller.meuDesempenhoCompetencias);
+homeAlunoRouter.get("/me/competencias/historico", controller.meuHistoricoCompetencias);

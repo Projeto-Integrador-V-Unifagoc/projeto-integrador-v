@@ -1,5 +1,5 @@
 import { api } from "../lib/axios";
-import type { DesempenhoCompetenciasAluno, DisciplinaAluno, TarefaAluno } from "../models/home-aluno-model";
+import type { DesempenhoCompetenciasAluno, DisciplinaAluno, HistoricoCompetenciasAluno, TarefaAluno } from "../models/home-aluno-model";
 
 export const homeAlunoApi = {
   minhasDisciplinas: async (): Promise<DisciplinaAluno[]> =>
@@ -8,4 +8,6 @@ export const homeAlunoApi = {
     (await api.get("/me/tarefas")).data,
   meuDesempenhoCompetencias: async (): Promise<DesempenhoCompetenciasAluno> =>
     (await api.get("/me/competencias")).data,
+  meuHistoricoCompetencias: async (): Promise<HistoricoCompetenciasAluno> =>
+    (await api.get("/me/competencias/historico")).data,
 };

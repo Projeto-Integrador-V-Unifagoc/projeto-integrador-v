@@ -41,6 +41,7 @@ import type {
   ClassificacaoCompetenciaAluno,
   DesempenhoCompetenciasAluno,
   DisciplinaAluno,
+  HistoricoCompetenciasAluno,
   TarefaAluno,
   TipoTarefa,
 } from "../../models/home-aluno-model";
@@ -61,6 +62,7 @@ import {
   type JanelaAgenda,
 } from "../Agenda/agenda-utils";
 import DisciplinaDetalhesDrawer from "./DisciplinaDetalhesDrawer";
+import CompetenciaHistoricoPanel from "./CompetenciaHistoricoPanel";
 
 interface StudentDashboardProps { userName: string }
 
@@ -282,6 +284,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   const [frequencia, setFrequencia] = useState<MinhaFrequenciaAluno | null>(null);
   const [boletim, setBoletim] = useState<BoletimAluno | null>(null);
   const [desempenhoCompetencias, setDesempenhoCompetencias] = useState<DesempenhoCompetenciasAluno | null>(null);
+  const [historicoCompetencias, setHistoricoCompetencias] = useState<HistoricoCompetenciasAluno | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [recarregando, setRecarregando] = useState(false);
   const [erros, setErros] = useState<string[]>([]);
@@ -299,8 +302,9 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
       frequenciaApi.minhaFrequencia(),
       notaApi.meuBoletim(),
       homeAlunoApi.meuDesempenhoCompetencias(),
+      homeAlunoApi.meuHistoricoCompetencias(),
     ]);
-    const [me, listaDisciplinas, listaTarefas, dadosFrequencia, dadosBoletim, dadosCompetencias] = resultados;
+    const [me, listaDisciplinas, listaTarefas, dadosFrequencia, dadosBoletim, dadosCompetencias, dadosHistorico] = resultados;
     const falhas: string[] = [];
 
     if (me.status === "fulfilled") setStudentInfo(me.value.data?.academico ?? null); else falhas.push("dados do curso");
@@ -309,6 +313,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
     if (dadosFrequencia.status === "fulfilled") setFrequencia(dadosFrequencia.value); else falhas.push("frequência");
     if (dadosBoletim.status === "fulfilled") setBoletim(dadosBoletim.value); else falhas.push("notas");
     if (dadosCompetencias.status === "fulfilled") setDesempenhoCompetencias(dadosCompetencias.value); else falhas.push("competências");
+    if (dadosHistorico.status === "fulfilled") setHistoricoCompetencias(dadosHistorico.value); else falhas.push("histórico de competências");
 
     setErros(falhas);
     setCarregando(false);
@@ -316,7 +321,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   }, []);
 
   useEffect(() => {
-    // O carregamento sincroniza a tela com cinco fontes externas; as respostas
+    // O carregamento sincroniza a tela com sete fontes externas; as respostas
     // atualizam os estados somente depois que as requisições são concluídas.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void carregar();
@@ -603,6 +608,8 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
             <Alert severity="info">As competências aparecerão quando forem vinculadas às suas disciplinas. Avaliações sem mapeamento não são atribuídas artificialmente a nenhuma competência.</Alert>
           )}
         </Paper>
+
+        <CompetenciaHistoricoPanel dados={historicoCompetencias} />
 
         <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 3, bgcolor: "#fff" }}>
           <SecaoTitulo titulo="Minhas disciplinas" subtitulo="Prioridade baseada na frequência e na média parcial disponíveis." acao={<Button size="small" variant="outlined" onClick={() => navigate("/minhas-notas")} sx={{ width: "auto" }}>Abrir boletim</Button>} />

@@ -5,8 +5,26 @@ type Executor = Knex | Knex.Transaction;
 
 const STATUS_ATIVO = ["ativa", "ATIVA", "ATIVO", "MATRICULADO", "REGULAR"];
 const STATUS_MATRICULA_EM_CURSO = [...STATUS_ATIVO, "pendente", "PENDENTE"];
+const STATUS_MATRICULA_HISTORICO = [...STATUS_MATRICULA_EM_CURSO, "concluida", "CONCLUIDA", "concluido", "CONCLUIDO"];
+const STATUS_VINCULO_HISTORICO = [...STATUS_ATIVO, "concluida", "CONCLUIDA", "concluido", "CONCLUIDO", "aprovado", "APROVADO", "reprovado", "REPROVADO"];
+const STATUS_OFERTA_HISTORICO = [...STATUS_ATIVO, "concluida", "CONCLUIDA", "concluido", "CONCLUIDO", "finalizada", "FINALIZADA"];
 
 export class HomeAlunoRepository {
+  private escopoCompetencias(query: Knex.QueryBuilder, alunoId: string, historico: boolean) {
+    query.where("m.aluno_id", alunoId);
+    if (historico) {
+      return query
+        .whereIn("mtd.status", STATUS_VINCULO_HISTORICO)
+        .whereIn("m.status", STATUS_MATRICULA_HISTORICO)
+        .whereIn("td.status", STATUS_OFERTA_HISTORICO);
+    }
+    return query
+      .where("pl.ativo", true)
+      .whereIn("mtd.status", STATUS_ATIVO)
+      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
+      .whereIn("td.status", STATUS_ATIVO);
+  }
+
   buscarAlunoPorUsuarioId(usuarioId: string, executor: Executor = db) {
     return executor("aluno").where({ usuario_id: usuarioId }).first();
   }
@@ -70,20 +88,17 @@ export class HomeAlunoRepository {
       .orderBy("a.data_devolucao", "asc");
   }
 
-  listarVinculosAtivosParaCompetencias(alunoId: string, executor: Executor = db) {
-    return executor("matricula_turma_disciplina as mtd")
+  listarVinculosAtivosParaCompetencias(alunoId: string, historico = false, executor: Executor = db) {
+    const query = executor("matricula_turma_disciplina as mtd")
       .join("matricula as m", "mtd.matricula_id", "m.id")
       .join("aluno as al", "m.aluno_id", "al.id")
       .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
       .join("turma as t", "td.turma_id", "t.id")
       .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
       .join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
-      .join("disciplinas as d", "cd.disciplina_id", "d.id")
-      .where("m.aluno_id", alunoId)
-      .where("pl.ativo", true)
-      .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
-      .whereIn("td.status", STATUS_ATIVO)
+      .join("disciplinas as d", "cd.disciplina_id", "d.id");
+    this.escopoCompetencias(query, alunoId, historico);
+    return query
       .distinct(
         "td.id as turma_disciplina_id",
         "mtd.id as matricula_turma_disciplina_id",
@@ -92,24 +107,29 @@ export class HomeAlunoRepository {
         "d.codigo as disciplina_codigo",
         "d.nome as disciplina_nome",
         "t.sigla as turma_sigla",
+        "pl.id as periodo_id",
+        "pl.codigo as periodo_codigo",
+        "pl.ano as periodo_ano",
+        "pl.semestre as periodo_semestre",
+        "pl.status as periodo_status",
+        "pl.ativo as periodo_ativo",
       )
+      .orderBy("pl.ano")
+      .orderBy("pl.semestre")
       .orderBy("d.nome");
   }
 
-  listarCompetenciasPlanejadasDoAluno(alunoId: string, executor: Executor = db) {
-    return executor("matricula_turma_disciplina as mtd")
+  listarCompetenciasPlanejadasDoAluno(alunoId: string, historico = false, executor: Executor = db) {
+    const query = executor("matricula_turma_disciplina as mtd")
       .join("matricula as m", "mtd.matricula_id", "m.id")
       .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
       .join("turma as t", "td.turma_id", "t.id")
       .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
       .join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
       .join("disciplina_competencia as dc", "cd.disciplina_id", "dc.disciplina_id")
-      .join("competencia as c", "dc.competencia_id", "c.id")
-      .where("m.aluno_id", alunoId)
-      .where("pl.ativo", true)
-      .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
-      .whereIn("td.status", STATUS_ATIVO)
+      .join("competencia as c", "dc.competencia_id", "c.id");
+    this.escopoCompetencias(query, alunoId, historico);
+    return query
       .select(
         "td.id as turma_disciplina_id",
         "c.id as competencia_id",
@@ -124,19 +144,16 @@ export class HomeAlunoRepository {
       .orderBy("c.nome");
   }
 
-  listarAvaliacoesCompetenciasDoAluno(alunoId: string, executor: Executor = db) {
-    return executor("matricula_turma_disciplina as mtd")
+  listarAvaliacoesCompetenciasDoAluno(alunoId: string, historico = false, executor: Executor = db) {
+    const query = executor("matricula_turma_disciplina as mtd")
       .join("matricula as m", "mtd.matricula_id", "m.id")
       .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
       .join("turma as t", "td.turma_id", "t.id")
       .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
       .join("avaliacao as av", "av.turma_disciplina_id", "td.id")
-      .join("avaliacao_competencia as ac", "ac.avaliacao_id", "av.id")
-      .where("m.aluno_id", alunoId)
-      .where("pl.ativo", true)
-      .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
-      .whereIn("td.status", STATUS_ATIVO)
+      .join("avaliacao_competencia as ac", "ac.avaliacao_id", "av.id");
+    this.escopoCompetencias(query, alunoId, historico);
+    return query
       .select(
         "td.id as turma_disciplina_id",
         "av.id as avaliacao_id",
@@ -150,8 +167,8 @@ export class HomeAlunoRepository {
       .orderByRaw("COALESCE(av.data_devolucao, av.data_lancamento::date) ASC");
   }
 
-  listarNotasCompetenciasDoAluno(alunoId: string, executor: Executor = db) {
-    return executor("nota as n")
+  listarNotasCompetenciasDoAluno(alunoId: string, historico = false, executor: Executor = db) {
+    const query = executor("nota as n")
       .join("matricula_turma_disciplina as mtd", "n.matricula_turma_disciplina_id", "mtd.id")
       .join("matricula as m", "mtd.matricula_id", "m.id")
       .join("turma_disciplina as td", "mtd.turma_disciplina_id", "td.id")
@@ -159,12 +176,9 @@ export class HomeAlunoRepository {
       .join("periodo_letivo as pl", "t.periodo_letivo_id", "pl.id")
       .join("avaliacao as av", function () {
         this.on("av.id", "=", "n.avaliacao_id").andOn("av.turma_disciplina_id", "=", "td.id");
-      })
-      .where("m.aluno_id", alunoId)
-      .where("pl.ativo", true)
-      .whereIn("mtd.status", STATUS_ATIVO)
-      .whereIn("m.status", STATUS_MATRICULA_EM_CURSO)
-      .whereIn("td.status", STATUS_ATIVO)
+      });
+    this.escopoCompetencias(query, alunoId, historico);
+    return query
       .select(
         "td.id as turma_disciplina_id",
         "mtd.id as matricula_turma_disciplina_id",

@@ -68,6 +68,35 @@ export interface DesempenhoCompetenciasAluno {
   }>;
 }
 
+export interface HistoricoCompetenciasAluno {
+  criterios: DesempenhoCompetenciasAluno["criterios"];
+  resumo: { totalPeriodos: number; totalCompetencias: number; competenciasComEvolucao: number };
+  periodos: Array<{
+    id: string;
+    codigo: string;
+    ano: number;
+    semestre: number;
+    status: string;
+    ativo: boolean;
+  }>;
+  series: Array<{
+    id: string;
+    codigo: string;
+    nome: string;
+    tipo: string;
+    pontos: Array<{
+      periodoId: string;
+      periodoCodigo: string;
+      media: number | null;
+      cobertura: number;
+      classificacao: ClassificacaoCompetenciaAluno;
+      pontosPlanejados: number;
+      pontosComNota: number;
+      disciplinas: Array<{ id: string; codigo: string; nome: string }>;
+    }>;
+  }>;
+}
+
 // Rótulo exibido quando a avaliação não possui descrição própria.
 export const ROTULO_POR_TIPO: Record<string, string> = {
   PROVA: "Prova",

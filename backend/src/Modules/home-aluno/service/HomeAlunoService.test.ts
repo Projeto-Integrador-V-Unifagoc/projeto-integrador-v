@@ -148,7 +148,73 @@ describe("HomeAlunoService autorização e isolamento por aluno", () => {
 
   it("tambem protege o desempenho por competencia", async () => {
     await expect(criar().meuDesempenhoCompetencias(reqProfessor)).rejects.toMatchObject({ status: 403 });
+    await expect(criar().meuHistoricoCompetencias(reqProfessor)).rejects.toMatchObject({ status: 403 });
     await expect(criar({ buscarAlunoPorUsuarioId: async () => null }).meuDesempenhoCompetencias(reqAluno)).rejects.toMatchObject({ status: 403 });
+  });
+});
+
+describe("HomeAlunoService.meuHistoricoCompetencias", () => {
+  it("consolida a mesma competencia por periodo e calcula a evolucao sem misturar alunos", async () => {
+    const vinculo = (periodo: number, turmaDisciplina: string, matriculaDisciplina: string, disciplina: string) => ({
+      turma_disciplina_id: turmaDisciplina,
+      matricula_turma_disciplina_id: matriculaDisciplina,
+      aluno_id: alunoId,
+      disciplina_id: disciplina,
+      disciplina_codigo: disciplina.toUpperCase(),
+      disciplina_nome: `Disciplina ${disciplina}`,
+      turma_sigla: `T${periodo}`,
+      periodo_id: `p${periodo}`,
+      periodo_codigo: `2026/${periodo}`,
+      periodo_ano: 2026,
+      periodo_semestre: periodo,
+      periodo_status: periodo === 1 ? "encerrado" : "ativo",
+      periodo_ativo: periodo === 2,
+    });
+    const competencia = (turmaDisciplina: string) => ({
+      turma_disciplina_id: turmaDisciplina,
+      competencia_id: "comp1",
+      codigo: "COMP-01",
+      nome: "Raciocínio lógico",
+      tipo: "TECNICA",
+      nivel_esperado: "DESENVOLVER",
+      obrigatoria: true,
+    });
+    const mapeamento = (turmaDisciplina: string, avaliacao: string) => ({
+      turma_disciplina_id: turmaDisciplina,
+      avaliacao_id: avaliacao,
+      competencia_id: "comp1",
+      peso_percentual: 100,
+      tipo_avaliacao: "PROVA",
+      descricao_avaliacao: `Prova ${avaliacao}`,
+      valor: 10,
+      data_devolucao: "2026-06-10",
+    });
+    const resultado = await criar({
+      listarVinculosAtivosParaCompetencias: async (_id: string, historico: boolean) => historico
+        ? [vinculo(1, "td1", "mtd1", "alg"), vinculo(2, "td2", "mtd2", "web")]
+        : [],
+      listarCompetenciasPlanejadasDoAluno: async () => [competencia("td1"), competencia("td2")],
+      listarAvaliacoesCompetenciasDoAluno: async () => [mapeamento("td1", "av1"), mapeamento("td2", "av2")],
+      listarNotasCompetenciasDoAluno: async () => [
+        { turma_disciplina_id: "td1", matricula_turma_disciplina_id: "mtd1", avaliacao_id: "av1", nota_valor: 5 },
+        { turma_disciplina_id: "td2", matricula_turma_disciplina_id: "mtd2", avaliacao_id: "av2", nota_valor: 8 },
+      ],
+    }).meuHistoricoCompetencias(reqAluno);
+
+    expect(resultado.resumo).toEqual({ totalPeriodos: 2, totalCompetencias: 1, competenciasComEvolucao: 1 });
+    expect(resultado.periodos.map((periodo) => periodo.codigo)).toEqual(["2026/1", "2026/2"]);
+    expect(resultado.series[0].pontos.map((ponto) => ({ media: ponto.media, cobertura: ponto.cobertura, classificacao: ponto.classificacao }))).toEqual([
+      { media: 50, cobertura: 100, classificacao: "DIFICULDADE" },
+      { media: 80, cobertura: 100, classificacao: "ADEQUADO" },
+    ]);
+    expect(resultado.series[0].pontos[0].disciplinas[0].codigo).toBe("ALG");
+    expect(resultado.series[0].pontos[1].disciplinas[0].codigo).toBe("WEB");
+  });
+
+  it("retorna historico vazio quando ainda nao existem vinculos", async () => {
+    const resultado = await criar().meuHistoricoCompetencias(reqAluno);
+    expect(resultado.resumo).toEqual({ totalPeriodos: 0, totalCompetencias: 0, competenciasComEvolucao: 0 });
+    expect(resultado.series).toEqual([]);
   });
 });
 
