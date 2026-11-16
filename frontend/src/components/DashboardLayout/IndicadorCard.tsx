@@ -2,7 +2,7 @@ import { Box, Paper, Stack, Typography } from "@mui/material";
 import type { LucideIcon } from "lucide-react";
 import { CORES_DASHBOARD, ESTADOS, PESO, TIPO_DASHBOARD, sxCartaoDashboard } from "./dashboard-estilos";
 
-/** Só KPIs que pedem ação ganham cor; o resto fica neutro (PADRAO.md, regra 1). */
+/** Só KPIs que pedem ação ganham cor; o resto fica neutro, para o alerta se destacar. */
 export type AlertaIndicador = "critico" | "atencao";
 
 export interface IndicadorDashboard {

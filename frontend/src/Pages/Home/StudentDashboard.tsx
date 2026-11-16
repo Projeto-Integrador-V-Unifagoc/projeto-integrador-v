@@ -119,7 +119,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   const piorDisciplina = atencao.emAtencao[0];
   const sugestoes = ["Como está minha frequência?", ...(piorDisciplina ? [`Por que ${piorDisciplina.nome} está em atenção?`] : [])];
 
-  // Cor só quando o KPI pede ação (PADRAO.md, regra 1). Mesmos limites da regra de risco.
+  // Cor só quando o KPI pede ação; o resto fica neutro. Mesmos limites da regra de risco.
   const alertaMedia: AlertaIndicador | undefined = media.media === null ? undefined : media.media < MEDIA_CRITICA ? "critico" : media.media < MEDIA_REFERENCIA ? "atencao" : undefined;
   const alertaFrequencia: AlertaIndicador | undefined = freq.situacao === "abaixo" ? "critico" : freq.situacao === "atencao" ? "atencao" : undefined;
 

@@ -110,7 +110,7 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
   const periodo = dados?.periodoSelecionado ?? null;
   const filtroAtivo = selecao.turmaId !== TODAS || selecao.disciplinaId !== TODAS;
 
-  // Cor só quando o KPI pede ação (PADRAO.md, regra 1).
+  // Cor só quando o KPI pede ação; o resto fica neutro.
   const indicadores: IndicadorDashboard[] = [
     {
       id: "turmas",

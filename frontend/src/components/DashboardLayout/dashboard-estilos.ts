@@ -1,7 +1,7 @@
 import type { SxProps, Theme } from "@mui/material/styles";
 
-// Tokens visuais do padrão dos dashboards (aluno e professor). A definição completa, as regras de uso
-// e o embasamento estão em ./PADRAO.md. Ficam isolados aqui para não alterar o tema global das demais telas.
+// Tokens visuais do padrão dos dashboards (aluno e professor): cor só para estado (risco, atraso),
+// uma cor de ação, dois pesos de fonte e nada abaixo de 12 px. Ficam isolados aqui para não alterar o tema global.
 // Todo par texto/fundo daqui é verificado (≥ 4,5:1, WCAG 1.4.3) em dashboard-estilos.test.ts.
 
 export const CORES_DASHBOARD = {
