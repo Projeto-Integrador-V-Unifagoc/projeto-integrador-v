@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Alert, Grid, IconButton, MenuItem, Stack, Typography } from "@mui/material";
-import { Pencil, Trash2, UserPlus } from "lucide-react";
+import { FileText, Pencil, Trash2, UserPlus } from "lucide-react";
 import { AtrelarProfessorDialog } from "./AtrelarProfessorDialog";
 import { ValidationError } from "yup";
 import DataTable from "../DataTable/DataTable";
@@ -18,6 +18,7 @@ import type { ProfessorOpcao } from "../../models/professor-model";
 import type { TurmaDisciplinaResponse } from "../../models/turma-model";
 import type { GridColDef } from "@mui/x-data-grid";
 import { HorariosTurma } from "../HorariosTurma/HorariosTurma";
+import { PlanoEnsinoDialog } from "../PlanoEnsinoDialog/PlanoEnsinoDialog";
 
 type Props = {
   turmaId: string
@@ -47,6 +48,7 @@ export function TurmaDisciplinasSection({ turmaId, cursoId, matrizCurricularId, 
   const [dialogoAberto, setDialogoAberto] = useState(false);
   const [registroEdicao, setRegistroEdicao] = useState<TurmaDisciplinaResponse | null>(null);
   const [registroExclusao, setRegistroExclusao] = useState<TurmaDisciplinaResponse | null>(null);
+  const [ofertaPlano, setOfertaPlano] = useState<TurmaDisciplinaResponse | null>(null);
   const [form, setForm] = useState<FormType>(initialForm);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [atrelarAberto, setAtrelarAberto] = useState(false);
@@ -222,10 +224,13 @@ export function TurmaDisciplinasSection({ turmaId, cursoId, matrizCurricularId, 
     {
       field: "acoes",
       headerName: "Acoes",
-      width: 120,
+      width: 165,
       sortable: false,
       renderCell: (params) => (
         <>
+          <IconButton aria-label={`Abrir plano de ensino de ${params.row.curso_disciplina.disciplina.nome}`} onClick={() => setOfertaPlano(params.row)} color="primary">
+            <FileText size={18} />
+          </IconButton>
           <IconButton onClick={() => abrirDialogoEdicao(params.row)} color="primary">
             <Pencil size={18} />
           </IconButton>
@@ -287,6 +292,8 @@ export function TurmaDisciplinasSection({ turmaId, cursoId, matrizCurricularId, 
       </Card.Root>
 
       <HorariosTurma turmaId={turmaId} ofertas={disciplinasTurma} periodoInicio={periodoInicio} periodoFim={periodoFim} />
+
+      <PlanoEnsinoDialog open={!!ofertaPlano} oferta={ofertaPlano} onClose={() => setOfertaPlano(null)} />
 
       <Dialog.Root open={dialogoAberto} onClose={() => setDialogoAberto(false)} maxWidth="sm">
         <Dialog.Header>
