@@ -47,6 +47,12 @@ function aulasComFalta(faltas: number): Set<number> {
 }
 
 export async function seed(knex: Knex): Promise<void> {
+  // Só demonstração: apaga e recria avaliações/aulas das turmas da aluna demo. Nunca roda em produção.
+  if (process.env.NODE_ENV === "production" || process.env.DEMO_SEEDS === "false") {
+    console.log("Seed do dashboard do aluno ignorado: dados de demonstração desativados neste ambiente.");
+    return;
+  }
+
   const aluna = await knex("piv.usuario as u")
     .join("piv.aluno as a", "a.usuario_id", "u.id")
     .where("u.email", EMAIL_ALUNA)

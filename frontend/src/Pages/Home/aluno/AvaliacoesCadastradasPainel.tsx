@@ -12,7 +12,7 @@ const MAX_ITENS = 4;
 
 interface AvaliacoesCadastradasPainelProps {
   avaliacoes: AvaliacaoPainel[];
-  resumo: { total: number; lancadas: number; pendentes: number };
+  resumo: { total: number; lancadas: number; aguardando: number; vencidas: unknown[] };
   onConsultar: () => void;
 }
 
@@ -58,7 +58,7 @@ export default function AvaliacoesCadastradasPainel({ avaliacoes, resumo, onCons
                 aria-label={`${avaliacao.titulo} — ${avaliacao.disciplinaNome}`}
                 sx={{ p: 1.5, borderRadius: 2, border: `1px solid ${avaliacao.devolucaoVencida ? "#F2D48A" : CORES_DASHBOARD.borda}`, display: "flex", gap: 1.25, alignItems: "flex-start" }}
               >
-                <Box aria-hidden="true" sx={{ width: 34, height: 34, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento }}>
+                <Box aria-hidden="true" sx={{ width: 34, height: 34, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento }}>
                   <Icone size={17} />
                 </Box>
                 <Box flex={1} minWidth={0}>
@@ -85,7 +85,9 @@ export default function AvaliacoesCadastradasPainel({ avaliacoes, resumo, onCons
           {visiveis.length < resumo.total ? `${visiveis.length} mais próximas` : "Todas do período"}
         </Typography>
         <Typography variant="caption" fontWeight={600} sx={{ color: CORES_DASHBOARD.textoSuave }}>
-          {resumo.lancadas} lançadas · {resumo.pendentes} pendentes
+          {resumo.lancadas} lançadas
+          {resumo.vencidas.length > 0 && ` · ${resumo.vencidas.length} ${resumo.vencidas.length === 1 ? "atrasada" : "atrasadas"}`}
+          {` · ${resumo.aguardando} a lançar`}
         </Typography>
       </Stack>
     </DashboardPainel>

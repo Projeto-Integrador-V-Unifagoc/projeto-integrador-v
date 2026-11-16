@@ -42,7 +42,7 @@ export default function PendenciasLancamentoPainel({ pendencias, onLancarNotas, 
                 sx={{ p: 1.75, borderRadius: 2, border: `1px solid ${item.vencida ? "#F2D48A" : CORES_DASHBOARD.borda}`, display: "flex", gap: 1.5, alignItems: { xs: "flex-start", sm: "center" }, flexDirection: { xs: "column", sm: "row" } }}
               >
                 <Stack direction="row" gap={1.5} flex={1} minWidth={0} width="100%">
-                  <Box aria-hidden="true" sx={{ width: 36, height: 36, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: ehChamada ? "#FFF4DE" : "#E6F6FB", color: ehChamada ? theme.palette.warning.dark : CORES_DASHBOARD.acento }}>
+                  <Box aria-hidden="true" sx={{ width: 36, height: 36, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: ehChamada ? "#FFF4DE" : CORES_DASHBOARD.acentoSuave, color: ehChamada ? theme.palette.warning.dark : CORES_DASHBOARD.acento }}>
                     <Icone size={18} />
                   </Box>
                   <Box flex={1} minWidth={0}>

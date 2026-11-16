@@ -7,12 +7,9 @@ import type { DisciplinaAluno } from "../../../models/home-aluno-model";
 import type { BoletimAluno, TipoAvaliacaoNota } from "../../../models/nota-model";
 import { diasAte } from "../../Agenda/agenda-utils";
 import { formatarDataPtBr } from "../../../utils/avaliacao";
+import { FREQUENCIA_LIMITROFE, FREQUENCIA_MINIMA, MEDIA_CRITICA, MEDIA_REFERENCIA } from "../../../utils/criterios-academicos";
 
-export const FREQUENCIA_MINIMA = 75;
-export const FREQUENCIA_LIMITROFE = 80;
-export const MEDIA_REFERENCIA = 60;
-/** Abaixo deste valor o ponto "média abaixo da referência" é grave (mesmo limite do professor). */
-export const MEDIA_CRITICA = 40;
+export { FREQUENCIA_LIMITROFE, FREQUENCIA_MINIMA, MEDIA_CRITICA, MEDIA_REFERENCIA };
 export const JANELA_DEVOLUCAO_DIAS = 15;
 export const JANELA_PRAZO_DIAS = 7;
 export const MAX_PONTOS_ATENCAO = 5;
@@ -193,7 +190,9 @@ export function resumoDevolucoes(avaliacoes: AvaliacaoPainel[]) {
   const proximas = avaliacoes.filter((item) => item.diasParaDevolucao !== null && item.diasParaDevolucao >= 0 && item.diasParaDevolucao <= JANELA_DEVOLUCAO_DIAS);
   const vencidas = avaliacoes.filter((item) => item.devolucaoVencida);
   const lancadas = avaliacoes.filter((item) => item.lancada).length;
-  return { proximas, vencidas, total: avaliacoes.length, lancadas, pendentes: avaliacoes.length - lancadas };
+  // Sem nota e ainda no prazo (ou sem data de devolução): não confundir com as vencidas.
+  const aguardando = avaliacoes.length - lancadas - vencidas.length;
+  return { proximas, vencidas, total: avaliacoes.length, lancadas, aguardando };
 }
 
 /** Faltas que ainda cabem sem cair abaixo de 75%, considerando as aulas já registradas. */

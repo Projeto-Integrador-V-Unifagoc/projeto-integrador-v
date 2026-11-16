@@ -30,30 +30,51 @@ export function escutarPerguntas(aoPerguntar: (pedido: PedidoAssistente) => void
     return () => window.removeEventListener(EVENTO_PERGUNTA_ASSISTENTE, ouvir);
 }
 
-// Uma consulta de status por carregamento de página, compartilhada entre widget e telas.
+// Status compartilhado entre widget e telas, guardado por pouco tempo: se a IA for ligada ou
+// desligada no servidor, a tela acompanha ao voltar o foco ou remontar, sem recarregar a página.
+const VALIDADE_STATUS_MS = 30_000;
 let statusEmAndamento: Promise<boolean> | null = null;
+let consultadoEm = 0;
 
 export function consultarDisponibilidade(): Promise<boolean> {
-    statusEmAndamento ??= assistenteApi.status().then((r) => r.ativo).catch(() => {
-        statusEmAndamento = null; // falha não fica guardada: a próxima tela tenta de novo
-        return false;
-    });
+    if (Date.now() - consultadoEm > VALIDADE_STATUS_MS) statusEmAndamento = null;
+    if (!statusEmAndamento) {
+        consultadoEm = Date.now();
+        statusEmAndamento = assistenteApi.status().then((r) => r.ativo).catch(() => {
+            statusEmAndamento = null; // falha não fica guardada: a próxima consulta tenta de novo
+            return false;
+        });
+    }
     return statusEmAndamento;
 }
 
 /** Só para testes. */
 export function limparDisponibilidade() {
     statusEmAndamento = null;
+    consultadoEm = 0;
 }
 
-/** Se o assistente está configurado e ativo. Enquanto consulta, considera indisponível. */
+/**
+ * Se o assistente está configurado e ativo. Enquanto consulta, considera indisponível.
+ * Reconsulta (respeitando a validade do status) ao montar e quando a aba volta a ficar visível.
+ */
 export function useAssistenteDisponivel() {
     const [disponivel, setDisponivel] = useState(false);
     useEffect(() => {
         let montado = true;
-        void consultarDisponibilidade().then((ativo) => montado && setDisponivel(ativo));
+        const atualizar = () => {
+            void consultarDisponibilidade().then((ativo) => montado && setDisponivel(ativo));
+        };
+        const aoVoltar = () => {
+            if (document.visibilityState === "visible") atualizar();
+        };
+        atualizar();
+        window.addEventListener("focus", atualizar);
+        document.addEventListener("visibilitychange", aoVoltar);
         return () => {
             montado = false;
+            window.removeEventListener("focus", atualizar);
+            document.removeEventListener("visibilitychange", aoVoltar);
         };
     }, []);
     return disponivel;

@@ -39,7 +39,7 @@ export default function PainelDetalhe({ aberto, onFechar, icone: Icone, titulo, 
       >
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1.5}>
           <Stack direction="row" gap={1.5} minWidth={0}>
-            <Box aria-hidden="true" sx={{ width: 42, height: 42, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento }}>
+            <Box aria-hidden="true" sx={{ width: 42, height: 42, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento }}>
               <Icone size={21} />
             </Box>
             <Box minWidth={0}>

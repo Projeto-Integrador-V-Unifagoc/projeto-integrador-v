@@ -68,7 +68,7 @@ export function fontesPadrao(): FontesDeDados {
         minhaFrequencia: (req) => frequencia().minhaFrequencia(req),
         minhasDisciplinas: (req) => homeAluno().minhasDisciplinas(req),
         minhasAvaliacoesFuturas: (req) => homeAluno().minhasTarefas(req),
-        painelDoProfessor: (req) => homeProfessor().dashboard(req),
+        painelDoProfessor: (req) => homeProfessor().painelResumido(req),
         alunoNaTurma: (req, td, alunoId) => homeProfessor().detalheAluno(req, td, alunoId),
         rendimentoDaTurma: (req, td) => notas().obterRendimento(td, req),
         frequenciaDaTurma: (req, td) => frequencia().consultarTurma(td, req),

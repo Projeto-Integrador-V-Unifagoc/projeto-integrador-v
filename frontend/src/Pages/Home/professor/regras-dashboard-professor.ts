@@ -10,11 +10,9 @@ import type {
   NivelAtencaoProfessor,
 } from "../../../models/home-professor-model";
 import { diasAte } from "../../Agenda/agenda-utils";
+import { FREQUENCIA_LIMITROFE, FREQUENCIA_MINIMA, MEDIA_CRITICA, MEDIA_REFERENCIA } from "../../../utils/criterios-academicos";
 
-export const MEDIA_REFERENCIA = 60;
-export const FREQUENCIA_MINIMA = 75;
-export const FREQUENCIA_LIMITROFE = 80;
-export const MEDIA_CRITICA = 40;
+export { FREQUENCIA_LIMITROFE, FREQUENCIA_MINIMA, MEDIA_CRITICA, MEDIA_REFERENCIA };
 export const JANELA_NOTAS_DIAS = 7;
 export const TODAS = "todas";
 

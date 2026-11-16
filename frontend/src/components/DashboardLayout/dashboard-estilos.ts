@@ -6,10 +6,12 @@ export const CORES_DASHBOARD = {
   superficie: "#FFFFFF",
   superficieSutil: "#F6F8FA",
   borda: "#E3E8EF",
-  bordaTracejada: "#C9D3DE",
   // Tom escuro do ciano da marca: contraste AA para texto pequeno e links sobre branco.
   acento: "#06789A",
   acentoHover: "#055F7A",
+  // Fundo claro do acento (selos, ícones e botões de IA) e seu hover.
+  acentoSuave: "#E6F6FB",
+  acentoSuaveHover: "#D3EEF7",
   marca: "#05B5E6",
   textoSuave: "#5F6B7A",
   textoApagado: "#7A8594",

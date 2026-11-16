@@ -134,7 +134,7 @@ export default function MinhaAgenda() {
         {/* Cabeçalho no padrão dos dashboards: sem tarja, título escuro e ícone em destaque suave. */}
         <Stack component="header" direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={1.5}>
           <Stack direction="row" alignItems="center" gap={1.75}>
-            <Box aria-hidden="true" sx={{ width: 44, height: 44, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento }}>
+            <Box aria-hidden="true" sx={{ width: 44, height: 44, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento }}>
               <CalendarDays size={22} />
             </Box>
             <Box>

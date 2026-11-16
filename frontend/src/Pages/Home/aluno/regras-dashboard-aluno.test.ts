@@ -136,7 +136,7 @@ describe("avaliações e devoluções", () => {
     const resumo = resumoDevolucoes(lista);
     expect(resumo.proximas.map((item) => item.id)).toEqual(["hoje", "em-3-dias", "em-15-dias"]);
     expect(resumo.vencidas.map((item) => item.id)).toEqual(["vencida"]);
-    expect(resumo).toMatchObject({ total: 7, lancadas: 2, pendentes: 5 });
+    expect(resumo).toMatchObject({ total: 7, lancadas: 2, aguardando: 4 });
   });
 
   it("avaliação lançada nunca é considerada vencida", () => {

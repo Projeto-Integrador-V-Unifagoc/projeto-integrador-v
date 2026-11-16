@@ -50,7 +50,7 @@ function CartaoAtalho({ atalho }: { atalho: Atalho }) {
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box
             aria-hidden="true"
-            sx={{ width: 32, height: 32, borderRadius: 1.5, display: "grid", placeItems: "center", bgcolor: atalho.destaque ? CORES_DASHBOARD.acento : "#E6F6FB", color: atalho.destaque ? "#fff" : CORES_DASHBOARD.acento }}
+            sx={{ width: 32, height: 32, borderRadius: 1.5, display: "grid", placeItems: "center", bgcolor: atalho.destaque ? CORES_DASHBOARD.acento : CORES_DASHBOARD.acentoSuave, color: atalho.destaque ? "#fff" : CORES_DASHBOARD.acento }}
           >
             <Icone size={17} />
           </Box>

@@ -32,7 +32,7 @@ export default function DashboardCabecalho({ nome, contexto, assistente, extras,
             {dataPorExtenso(data)}
           </Typography>
           {seloData && (
-            <Box component="span" sx={{ ml: 0.5, fontSize: 12, fontWeight: 700, px: 1, py: 0.25, borderRadius: 1.5, bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento, whiteSpace: "nowrap" }}>
+            <Box component="span" sx={{ ml: 0.5, fontSize: 12, fontWeight: 700, px: 1, py: 0.25, borderRadius: 1.5, bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento, whiteSpace: "nowrap" }}>
               {seloData}
             </Box>
           )}
@@ -42,7 +42,7 @@ export default function DashboardCabecalho({ nome, contexto, assistente, extras,
             Olá, {nome}!
           </Typography>
           {seloNome && (
-            <Box component="span" sx={{ fontSize: 12, fontWeight: 700, px: 1.25, py: 0.4, borderRadius: 5, bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento, border: `1px solid ${CORES_DASHBOARD.borda}`, whiteSpace: "nowrap" }}>
+            <Box component="span" sx={{ fontSize: 12, fontWeight: 700, px: 1.25, py: 0.4, borderRadius: 5, bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento, border: `1px solid ${CORES_DASHBOARD.borda}`, whiteSpace: "nowrap" }}>
               {seloNome}
             </Box>
           )}

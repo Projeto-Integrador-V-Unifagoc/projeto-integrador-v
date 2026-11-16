@@ -206,7 +206,7 @@ export default function DisciplinaDetalhesDrawer({
             <Stack divider={<Box sx={{ borderTop: `1px solid ${CORES_DASHBOARD.borda}` }} />}>
               {proximas.map((tarefa) => (
                 <Stack key={tarefa.avaliacaoId} direction="row" gap={1.25} alignItems="center" px={1.75} py={1.25}>
-                  <Box aria-hidden="true" sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento }}>
+                  <Box aria-hidden="true" sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento }}>
                     <CalendarDays size={16} />
                   </Box>
                   <Box flex={1} minWidth={0}>

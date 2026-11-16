@@ -38,7 +38,7 @@ export default function DashboardPainel({ titulo, subtitulo, contador, acao, ext
               {titulo}
             </Typography>
             {contador !== undefined && (
-              <Box component="span" sx={{ fontSize: 12, fontWeight: 700, px: 1, py: 0.25, borderRadius: 5, bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento, flexShrink: 0 }}>
+              <Box component="span" sx={{ fontSize: 12, fontWeight: 700, px: 1, py: 0.25, borderRadius: 5, bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento, flexShrink: 0 }}>
                 {contador}
               </Box>
             )}
@@ -63,27 +63,5 @@ export default function DashboardPainel({ titulo, subtitulo, contador, acao, ext
       </Stack>
       <Box sx={{ p: { xs: 2, md: 2.5 }, flex: 1, display: "flex", flexDirection: "column" }}>{children}</Box>
     </Paper>
-  );
-}
-
-export function PainelPlaceholder({ icone: Icone, rotulo, altura = 200 }: { icone: LucideIcon; rotulo: string; altura?: number }) {
-  return (
-    <Box
-      sx={{
-        flex: 1,
-        minHeight: altura,
-        borderRadius: 2,
-        border: `1px dashed ${CORES_DASHBOARD.bordaTracejada}`,
-        bgcolor: CORES_DASHBOARD.superficieSutil,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 1,
-        color: CORES_DASHBOARD.textoApagado,
-      }}
-    >
-      <Icone size={20} aria-hidden="true" />
-      <Typography variant="body2">{rotulo}</Typography>
-    </Box>
   );
 }

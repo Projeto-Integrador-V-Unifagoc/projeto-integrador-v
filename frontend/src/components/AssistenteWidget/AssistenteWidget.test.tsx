@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { assistenteApi } from "../../services/assistente-api";
 import AssistenteWidget from "./AssistenteWidget";
-import { escutarPerguntas, limparDisponibilidade, perguntarAoAssistente } from "./ponte";
+import { consultarDisponibilidade, escutarPerguntas, limparDisponibilidade, perguntarAoAssistente } from "./ponte";
 
 vi.mock("../../services/assistente-api", () => ({
     assistenteApi: { status: vi.fn(), enviar: vi.fn() },
@@ -41,6 +41,24 @@ describe("ponte dashboard → assistente", () => {
         perguntarAoAssistente("depois de parar");
         expect(recebido).toHaveBeenCalledTimes(1);
         expect(recebido).toHaveBeenCalledWith({ pergunta: "Entender meu desempenho em Cálculo", acao: { tipo: "entender_desempenho", turmaDisciplinaId: TD } });
+    });
+});
+
+describe("status do assistente", () => {
+    it("reaproveita a consulta recente e reconsulta depois da validade", async () => {
+        vi.useFakeTimers();
+        try {
+            vi.mocked(assistenteApi.status).mockResolvedValueOnce({ ativo: false }).mockResolvedValueOnce({ ativo: true });
+            expect(await consultarDisponibilidade()).toBe(false);
+            expect(await consultarDisponibilidade()).toBe(false);
+            expect(assistenteApi.status).toHaveBeenCalledTimes(1);
+
+            vi.advanceTimersByTime(31_000);
+            expect(await consultarDisponibilidade()).toBe(true);
+            expect(assistenteApi.status).toHaveBeenCalledTimes(2);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });
 

@@ -57,7 +57,7 @@ export default function TabelaDisciplinasAluno({ disciplinas, onDetalhes, onBole
                 }}
               >
                 <Stack direction="row" gap={1.5} alignItems="center" minWidth={0}>
-                  <Box aria-hidden="true" sx={{ width: 38, height: 38, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento }}>
+                  <Box aria-hidden="true" sx={{ width: 38, height: 38, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento }}>
                     <Icone size={18} />
                   </Box>
                   <Box minWidth={0}>

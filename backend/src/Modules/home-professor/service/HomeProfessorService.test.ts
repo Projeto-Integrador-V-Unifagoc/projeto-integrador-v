@@ -69,6 +69,14 @@ describe("HomeProfessorService", () => {
     ]);
   });
 
+  it("o painel resumido da IA tira as listas da tela e mantem os alunos em atencao", async () => {
+    const resultado: any = await service().painelResumido(reqProfessor);
+    assert.equal(resultado.atribuicoes[0].alunos, undefined);
+    assert.equal(resultado.avaliacoes, undefined);
+    assert.equal(resultado.alunosEmAtencao.length, 1);
+    assert.equal(resultado.atribuicoes[0].mediaTurma, 60);
+  });
+
   it("bloqueia perfil que nao seja professor", async () => {
     await assert.rejects(() => service().dashboard({ user: { id: "u1", tipo_usuario: "aluno" } } as any), /apenas para professores/i);
   });

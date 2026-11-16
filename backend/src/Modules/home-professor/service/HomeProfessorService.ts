@@ -51,6 +51,16 @@ export class HomeProfessorService {
     };
   }
 
+  /**
+   * Painel para a ferramenta de IA (consultarMeuPainel): sem as listas de alunos por oferta e de avaliações,
+   * que só servem aos filtros da tela e fariam o resultado passar do limite da ferramenta (corte em 24 mil
+   * caracteres, que cairia justamente em alunosEmAtencao). Os detalhes ficam nas consultas por turma/aluno.
+   */
+  async painelResumido(req: Request, periodoSolicitado?: string) {
+    const { atribuicoes, avaliacoes: _avaliacoes, ...resto } = await this.dashboard(req, periodoSolicitado);
+    return { ...resto, atribuicoes: atribuicoes.map(({ alunos: _alunos, ...item }: any) => item) };
+  }
+
   // Todas as avaliações do período com a cobertura de notas. "vencida" usa a mesma regra
   // de lancamentosPendentes: notas incompletas e devolução já passou (ou sem data).
   private avaliacoesDoPeriodo(avaliacoes: any[], atribuicoes: any[]) {

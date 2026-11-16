@@ -74,7 +74,7 @@ export default function TurmaDetalhesDrawer({ detalhe, onFechar, onAbrirAluno, o
                 key={item.id}
                 size="small"
                 label={`${item.codigo} · ${item.nome} (${item.nivel_esperado.toLowerCase()})`}
-                sx={{ bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento, fontWeight: 600 }}
+                sx={{ bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento, fontWeight: 600 }}
               />
             ))}
           </Stack>

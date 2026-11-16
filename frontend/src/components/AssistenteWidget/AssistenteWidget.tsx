@@ -16,7 +16,7 @@ import { Bot, Eraser, Send, X } from "lucide-react";
 
 import { assistenteApi, type AcaoAssistente, type MensagemAssistente } from "../../services/assistente-api";
 import TextoAssistente from "./TextoAssistente";
-import { consultarDisponibilidade, escutarPerguntas, type PedidoAssistente } from "./ponte";
+import { escutarPerguntas, useAssistenteDisponivel, type PedidoAssistente } from "./ponte";
 
 const LIMITE_CARACTERES = 1000;
 const HISTORICO_ENVIADO = 10;
@@ -63,7 +63,7 @@ export default function AssistenteWidget() {
     const theme = useTheme();
     const telaPequena = useMediaQuery(theme.breakpoints.down("sm"));
 
-    const [disponivel, setDisponivel] = useState(false);
+    const disponivel = useAssistenteDisponivel();
     const [aberto, setAberto] = useState(false);
     const [mensagens, setMensagens] = useState<MensagemAssistente[]>(lerConversa);
     const [texto, setTexto] = useState("");
@@ -71,14 +71,6 @@ export default function AssistenteWidget() {
     const [erro, setErro] = useState("");
     const fimRef = useRef<HTMLDivElement>(null);
     const campoRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        let ativo = true;
-        void consultarDisponibilidade().then((disponivelAgora) => ativo && setDisponivel(disponivelAgora));
-        return () => {
-            ativo = false;
-        };
-    }, []);
 
     // Perguntas vindas das telas (ex.: "Entender meu desempenho" no dashboard): abre o chat e envia.
     // A referência guarda o envio mais recente para a escuta não usar um estado antigo da conversa.

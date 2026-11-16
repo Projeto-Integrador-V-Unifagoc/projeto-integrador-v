@@ -13,11 +13,11 @@ export interface BotaoIaProps {
 export default function BotaoIa({ rotulo, onClick, compacto = false }: BotaoIaProps) {
   const disponivel = Boolean(onClick);
   const estilo = {
-    bgcolor: "#E6F6FB",
+    bgcolor: CORES_DASHBOARD.acentoSuave,
     color: CORES_DASHBOARD.acento,
     opacity: disponivel ? 1 : 0.7,
     cursor: disponivel ? "pointer" : "default",
-    "&:hover": { bgcolor: disponivel ? "#D3EEF7" : "#E6F6FB" },
+    "&:hover": { bgcolor: disponivel ? CORES_DASHBOARD.acentoSuaveHover : CORES_DASHBOARD.acentoSuave },
   };
   return (
     <Tooltip title={disponivel ? rotulo : `${rotulo} · assistente indisponível no momento`}>

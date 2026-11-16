@@ -53,6 +53,12 @@ function indicesDeFalta(faltas: number, aulasDisponiveis: number): Set<number> {
 }
 
 export async function seed(knex: Knex): Promise<void> {
+  // Só demonstração: apaga e recria avaliações/aulas das ofertas demo. Nunca roda em produção.
+  if (process.env.NODE_ENV === "production" || process.env.DEMO_SEEDS === "false") {
+    console.log("Seed do dashboard do professor ignorado: dados de demonstração desativados neste ambiente.");
+    return;
+  }
+
   const professora = await knex("piv.usuario as u")
     .join("piv.professor as p", "p.usuario_id", "u.id")
     .where("u.email", EMAIL_PROFESSORA)
@@ -115,9 +121,12 @@ export async function seed(knex: Knex): Promise<void> {
           .merge(["status"])
           .returning("id");
 
+        // data_vinculo no passado: o aluno demo conta como esperado em todas as aulas do cenário.
         for (const oferta of ofertasTurma) {
-          const existe = await trx("piv.matricula_turma_disciplina").where({ matricula_id: matricula.id, turma_disciplina_id: oferta.id }).first("id");
-          if (!existe) await trx("piv.matricula_turma_disciplina").insert({ matricula_id: matricula.id, turma_disciplina_id: oferta.id, status: "ativa" });
+          const vinculo = { matricula_id: matricula.id, turma_disciplina_id: oferta.id };
+          const existe = await trx("piv.matricula_turma_disciplina").where(vinculo).first("id");
+          if (existe) await trx("piv.matricula_turma_disciplina").where("id", existe.id).update({ status: "ativa", data_vinculo: dia(-90) });
+          else await trx("piv.matricula_turma_disciplina").insert({ ...vinculo, status: "ativa", data_vinculo: dia(-90) });
         }
         alunosTurma.push({ posicao, matriculaId: matricula.id });
       }
