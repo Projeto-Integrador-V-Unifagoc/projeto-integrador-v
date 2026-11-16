@@ -4,6 +4,7 @@ import { Box, CssBaseline, Drawer, useMediaQuery, useTheme } from "@mui/material
 
 import Sidebar from "../Sidebar/Sidebar";
 import Header from "../Header/Header";
+import AssistenteWidget from "../../components/AssistenteWidget/AssistenteWidget";
 import { useEffect, useState } from "react";
 
 const CHAVE_MENU_EXPANDIDO = "@UniEduca:menuExpandido";
@@ -100,6 +101,8 @@ export default function MainLayout() {
       >
         <Outlet />
       </Box>
+
+      <AssistenteWidget />
     </Box>
   );
 }
