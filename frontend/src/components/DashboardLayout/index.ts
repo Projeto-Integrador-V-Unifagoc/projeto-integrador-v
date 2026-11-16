@@ -30,5 +30,9 @@ export {
   sxNumeroColuna,
   sxSelo,
   sxTabelaLeve,
+  alturaReservada,
+  sxSomenteLeitor,
+  sxRotuloColuna,
+  ALTURA_LINHA,
 } from "./dashboard-estilos";
 export type { TomEstado } from "./dashboard-estilos";

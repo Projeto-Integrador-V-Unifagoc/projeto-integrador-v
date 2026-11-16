@@ -36,8 +36,15 @@ export interface DashboardLayoutProps {
 const LARGURA_DUAS_COLUNAS = 880;
 const DUAS_COLUNAS = `@container dashboard (min-width: ${LARGURA_DUAS_COLUNAS}px)`;
 
-// KPIs: 4, 2 ou 1 coluna conforme a área útil, sem depender da largura da sidebar.
-const sxGradeIndicadores = { display: "grid", gap: 2, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" } as const;
+// KPIs: 4, 2 ou 1 coluna conforme a área útil, sem depender da largura da sidebar. Passos fixos em vez
+// de auto-fit: com 4 KPIs, o auto-fit gerava 3 colunas em larguras intermediárias e deixava um sozinho.
+const sxGradeIndicadores = {
+  display: "grid",
+  gap: 2,
+  gridTemplateColumns: "minmax(0, 1fr)",
+  "@container dashboard (min-width: 440px)": { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" },
+  [DUAS_COLUNAS]: { gridTemplateColumns: "repeat(4, minmax(0, 1fr))" },
+} as const;
 // Painéis lado a lado com área útil ≥ 880 px; abaixo disso, empilhados.
 // 1ª linha 2fr/1fr: o painel principal é uma tabela (nome, média, frequência, ações) e precisa de largura
 // para o nome não ser cortado. 2ª linha 7fr/5fr: listas sem colunas, mais equilibradas.

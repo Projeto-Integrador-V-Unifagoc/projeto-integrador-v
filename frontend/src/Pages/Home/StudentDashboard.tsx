@@ -184,7 +184,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
           />
         )}
         painelComplementar={(
-          <AvaliacoesCadastradasPainel avaliacoes={avaliacoes} resumo={devolucoes} onConsultar={() => navigate("/minha-agenda")} />
+          <AvaliacoesCadastradasPainel avaliacoes={avaliacoes} resumo={devolucoes} onConsultar={() => navigate("/minha-agenda")} onAbrirDisciplina={setDisciplinaSelecionadaId} />
         )}
         painelEvolucao={<PontosAtencaoPainel pontos={pontos} onVerDetalhes={setDisciplinaSelecionadaId} />}
         painelAcoes={<AcessosRapidosAluno navegar={navigate} onOrientacoesIa={iaDisponivel ? () => perguntarAoAssistente("Quais devem ser minhas prioridades acadêmicas agora?", { tipo: "orientacoes" }) : undefined} />}

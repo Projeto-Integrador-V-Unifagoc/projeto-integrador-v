@@ -186,7 +186,6 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
         painelComplementar={(
           <AproveitamentoPainel
             aproveitamento={aproveitamento}
-            geradoEm={dados?.geradoEm ?? new Date().toISOString()}
             podeExportar={filtrado.atribuicoes.some((item) => item.alunos?.length)}
             onExportar={() => baixarCsv(gerarCsvAlunos(filtrado.atribuicoes), `alunos-${periodo?.codigo ?? "periodo"}.csv`)}
             onRelatorios={() => navigate("/relatorios/lista")}

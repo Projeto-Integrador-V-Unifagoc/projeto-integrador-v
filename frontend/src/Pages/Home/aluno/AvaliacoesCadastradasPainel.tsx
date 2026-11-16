@@ -22,7 +22,10 @@ const MAX_ITENS = 4;
 interface AvaliacoesCadastradasPainelProps {
   avaliacoes: AvaliacaoPainel[];
   resumo: { total: number; lancadas: number; aguardando: number; vencidas: unknown[] };
+  /** "Ver agenda" no cabeçalho do painel. */
   onConsultar: () => void;
+  /** Clique na linha: abre o detalhe da disciplina da avaliação, com as avaliações dela. */
+  onAbrirDisciplina: (turmaDisciplinaId: string) => void;
 }
 
 /** "Nota lançada · 13/11", "Devolução vencida · 08/11", "Nota não lançada · devolução em 2 dias". */
@@ -37,7 +40,7 @@ function situacao(avaliacao: AvaliacaoPainel) {
   return data ? `Nota não lançada · devolução ${data}` : "Nota não lançada";
 }
 
-export default function AvaliacoesCadastradasPainel({ avaliacoes, resumo, onConsultar }: AvaliacoesCadastradasPainelProps) {
+export default function AvaliacoesCadastradasPainel({ avaliacoes, resumo, onConsultar, onAbrirDisciplina }: AvaliacoesCadastradasPainelProps) {
   const visiveis = avaliacoes.slice(0, MAX_ITENS);
   return (
     <DashboardPainel titulo="Avaliações" contador={resumo.total || undefined} acao={{ rotulo: "Ver agenda", onClick: onConsultar }} semPadding>
@@ -47,7 +50,7 @@ export default function AvaliacoesCadastradasPainel({ avaliacoes, resumo, onCons
             const Icone = ICONE_TIPO[avaliacao.tipo] ?? ClipboardList;
             const titulo = `${avaliacao.titulo} · ${avaliacao.disciplinaNome}`;
             return (
-              <LinhaPainel key={avaliacao.id} rotulo={titulo} onClick={onConsultar}>
+              <LinhaPainel key={avaliacao.id} rotulo={`Abrir ${titulo}`} onClick={() => onAbrirDisciplina(avaliacao.turmaDisciplinaId)}>
                 <Box aria-hidden="true" sx={sxIconeQuadrado(CORES_TIPO_AVALIACAO[avaliacao.tipo] ?? CORES_TIPO_AVALIACAO.PROVA)}>
                   <Icone size={15} />
                 </Box>

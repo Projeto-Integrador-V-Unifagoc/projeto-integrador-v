@@ -9,8 +9,6 @@ type Aproveitamento = ReturnType<typeof calcularAproveitamento>;
 
 interface AproveitamentoPainelProps {
   aproveitamento: Aproveitamento;
-  /** Mantido por compatibilidade: o horário aparece no rodapé do dashboard. */
-  geradoEm?: string;
   podeExportar: boolean;
   onExportar: () => void;
   onRelatorios: () => void;
@@ -45,7 +43,7 @@ export default function AproveitamentoPainel({ aproveitamento, podeExportar, onE
   return (
     <DashboardPainel titulo="Aproveitamento" acao={{ rotulo: "Ver relatórios", onClick: onRelatorios }}>
       <Stack direction="row" alignItems="baseline" gap={1}>
-        <Typography sx={{ fontSize: TIPO_DASHBOARD.valorKpi, fontWeight: PESO.forte, lineHeight: 1.2, color: aproveitamento.mediaGeral !== null && aproveitamento.mediaGeral < MEDIA_REFERENCIA ? ESTADOS.atencao.texto : CORES_DASHBOARD.texto }}>
+        <Typography sx={{ fontSize: TIPO_DASHBOARD.valorKpi, fontWeight: PESO.forte, lineHeight: "28px", color: aproveitamento.mediaGeral !== null && aproveitamento.mediaGeral < MEDIA_REFERENCIA ? ESTADOS.atencao.texto : CORES_DASHBOARD.texto }}>
           {fmtPct(aproveitamento.mediaGeral, 0)}
         </Typography>
         <Typography sx={{ fontSize: TIPO_DASHBOARD.secundario, color: CORES_DASHBOARD.textoApagado }}>

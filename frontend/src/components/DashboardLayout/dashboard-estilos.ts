@@ -39,7 +39,7 @@ export const ESTADOS: Record<TomEstado, { texto: string; fundo: string; ponto: s
   acento: { texto: CORES_DASHBOARD.acento, fundo: CORES_DASHBOARD.acentoSuave, ponto: CORES_DASHBOARD.acento },
 };
 
-/** Cor por tipo de avaliação: só no ícone pequeno da linha (como os tipos de arquivo da referência). */
+/** Cor por tipo de avaliação: só no ícone pequeno da linha, para diferenciar prova, trabalho e TPI de relance. */
 export const CORES_TIPO_AVALIACAO: Record<"PROVA" | "TRABALHO" | "TPI" | "RECUPERACAO", { texto: string; fundo: string }> = {
   PROVA: { texto: CORES_DASHBOARD.acento, fundo: CORES_DASHBOARD.acentoSuave },
   TRABALHO: { texto: "#1E7A3C", fundo: "#ECF7EF" },
@@ -156,14 +156,58 @@ export function sxTabelaLeve(colunas: string) {
   const subgrade = { gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "subgrid", alignItems: "center" } as const;
   return {
     tabela: { display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: colunas }, columnGap: 1.5 },
-    cabecalho: { ...subgrade, display: { xs: "none", sm: "grid" }, px: 2, pt: 1.25, pb: 0.5, fontSize: TIPO_DASHBOARD.legenda, color: CORES_DASHBOARD.textoApagado },
+    cabecalho: { ...subgrade, display: { xs: "none", sm: "grid" }, alignItems: "end", height: ALTURA_CABECALHO_COLUNAS, px: 2, pb: 0.5, fontSize: TIPO_DASHBOARD.legenda, color: CORES_DASHBOARD.textoApagado },
     lista: { ...subgrade, listStyle: "none", m: 0, p: 0 },
-    linha: { ...subgrade, rowGap: 1, minHeight: 56, px: 2, py: 0.75, borderBottom: `1px solid ${CORES_DASHBOARD.divisoria}`, "&:last-of-type": { borderBottom: 0 } },
+    linha: { ...subgrade, rowGap: 1, minHeight: ALTURA_LINHA, px: 2, py: 0.75, borderBottom: `1px solid ${CORES_DASHBOARD.divisoria}`, "&:last-of-type": { borderBottom: 0 } },
   } as const;
 }
 
-/** Número em coluna: algarismos tabulares, alinhado à direita. */
+/** Altura mínima de uma linha de lista ou tabela (px, com a divisória). */
+export const ALTURA_LINHA = 56;
+/** Altura da linha de rótulos das colunas da tabela leve (px). */
+export const ALTURA_CABECALHO_COLUNAS = 32;
+/** Altura do botão de rodapé de lista, como "Mostrar todas" (px, com margens). */
+export const ALTURA_ACAO_LISTA = 40;
+
+/**
+ * Altura a reservar no conteúdo de um painel cuja lista muda com filtros, calculada das mesmas
+ * constantes que definem as linhas: o painel não muda de tamanho quando o filtro traz menos itens.
+ */
+export function alturaReservada(linhas: number, { cabecalhoColunas = false, acao = false }: { cabecalhoColunas?: boolean; acao?: boolean } = {}) {
+  return linhas * ALTURA_LINHA + (cabecalhoColunas ? ALTURA_CABECALHO_COLUNAS : 0) + (acao ? ALTURA_ACAO_LISTA : 0);
+}
+
+/** Texto só para leitor de tela (fica fora da tela, mas é lido). */
+export const sxSomenteLeitor = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  p: 0,
+  m: "-1px",
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+} as const;
+
+/**
+ * Rótulo de coluna junto do número ("Média", "Frequência"): visível no celular, onde o cabeçalho das
+ * colunas some, e só para leitor de tela a partir de 600 px, onde o cabeçalho já mostra o rótulo.
+ */
+export const sxRotuloColuna = {
+  mr: 0.75,
+  fontSize: TIPO_DASHBOARD.legenda,
+  color: CORES_DASHBOARD.textoApagado,
+  "@media (min-width: 600px)": sxSomenteLeitor,
+} as const;
+
+/**
+ * Número em coluna: algarismos tabulares, alinhado à direita. `position: relative` prende o rótulo só
+ * para leitor de tela (absoluto) dentro da célula; sem isso ele sairia da área de rolagem do <main>
+ * e esticaria a página, criando uma segunda barra de rolagem.
+ */
 export const sxNumeroColuna = {
+  position: "relative",
   fontSize: TIPO_DASHBOARD.corpo,
   fontWeight: PESO.regular,
   textAlign: "right",

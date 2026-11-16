@@ -31,6 +31,8 @@ export default function AssistenteIaCaixa({ placeholder = "Pergunte sobre seus d
   }
 
   function aoTeclar(evento: KeyboardEvent) {
+    // Durante a composição (IME, ditado, teclados virtuais) o Enter confirma a palavra, não envia.
+    if (evento.nativeEvent.isComposing) return;
     if (evento.key === "Enter" && !evento.shiftKey) {
       evento.preventDefault();
       enviar(pergunta);

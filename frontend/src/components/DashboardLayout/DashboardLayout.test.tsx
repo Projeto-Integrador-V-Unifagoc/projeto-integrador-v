@@ -102,6 +102,17 @@ describe("DashboardLayout — slots opcionais", () => {
 });
 
 describe("AssistenteIaCaixa", () => {
+  it("Enter envia, mas não enquanto uma palavra está em composição (IME)", () => {
+    const onEnviar = vi.fn();
+    render(<AssistenteIaCaixa onEnviar={onEnviar} />);
+    const campo = screen.getByLabelText("Pergunta para o assistente de IA");
+    fireEvent.change(campo, { target: { value: "Minhas notas" } });
+    fireEvent.keyDown(campo, { key: "Enter", isComposing: true });
+    expect(onEnviar).not.toHaveBeenCalled();
+    fireEvent.keyDown(campo, { key: "Enter" });
+    expect(onEnviar).toHaveBeenCalledWith("Minhas notas");
+  });
+
   it("não envia nada quando não há callback", () => {
     render(<AssistenteIaCaixa sugestoes={["Sugestão 1"]} />);
     fireEvent.change(screen.getByLabelText("Pergunta para o assistente de IA"), { target: { value: "Oi" } });

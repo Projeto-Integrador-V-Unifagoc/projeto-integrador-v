@@ -8,6 +8,7 @@ import {
   ListaPainel,
   PESO,
   TIPO_DASHBOARD,
+  alturaReservada,
   sxBotaoPrimario,
   sxBotaoSecundario,
   sxIconeQuadrado,
@@ -15,7 +16,7 @@ import {
 import { formatarDataPtBr } from "../../../utils/avaliacao";
 import type { PendenciaLancamento } from "./regras-dashboard-professor";
 
-// Quatro linhas, como as listas da referência: o resto fica em "Ir para lançamentos" e o painel não estica a segunda linha.
+// Quatro linhas: o resto fica em "Ir para lançamentos" e o painel não estica a segunda linha.
 const VISIVEIS = 4;
 
 interface PendenciasLancamentoPainelProps {
@@ -24,7 +25,7 @@ interface PendenciasLancamentoPainelProps {
   onRegistrarPresenca: () => void;
 }
 
-/** Padrão "Needs your approval" da referência: tipo, contexto curto e uma ação à direita. */
+/** Lista de pendências: ícone do tipo, contexto curto e uma ação à direita (primária só para lançar notas). */
 export default function PendenciasLancamentoPainel({ pendencias, onLancarNotas, onRegistrarPresenca }: PendenciasLancamentoPainelProps) {
   const visiveis = pendencias.slice(0, VISIVEIS);
 
@@ -34,7 +35,7 @@ export default function PendenciasLancamentoPainel({ pendencias, onLancarNotas, 
       contador={pendencias.length || undefined}
       subtitulo={pendencias.length > VISIVEIS ? `${VISIVEIS} mais urgentes` : undefined}
       acao={{ rotulo: "Ir para lançamentos", onClick: onLancarNotas }}
-      alturaMinima={VISIVEIS * 54}
+      alturaMinima={alturaReservada(VISIVEIS)}
       semPadding
     >
       {visiveis.length ? (

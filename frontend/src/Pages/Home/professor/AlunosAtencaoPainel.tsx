@@ -13,13 +13,15 @@ import {
   sxIconeQuadrado,
   sxNumeroColuna,
   sxTabelaLeve,
+  alturaReservada,
+  sxRotuloColuna,
 } from "../../../components/DashboardLayout";
 import { corFrequencia, corMedia, corTexto } from "../aluno/estilos-risco";
 import { fmtPct } from "../aluno/regras-dashboard-aluno";
 import { nivelVisual } from "./regras-dashboard-professor";
 import type { AlunoEmAtencao } from "./regras-dashboard-professor";
 
-// Quatro linhas, como as listas da referência: o resto fica em "Ver todos" e a primeira linha de painéis cabe na primeira tela.
+// Quatro linhas: o resto fica em "Ver todos" e a primeira linha de painéis cabe na primeira tela a 1280×720.
 const VISIVEIS = 4;
 
 const iniciais = (nome: string) => nome.split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]?.toUpperCase()).join("");
@@ -43,8 +45,8 @@ export default function AlunosAtencaoPainel({ alunos, onConsultar, onAnalisar }:
       titulo="Alunos em atenção"
       contador={alunos.length || undefined}
       acao={alunos.length > VISIVEIS ? { rotulo: expandido ? "Mostrar menos" : "Ver todos", onClick: () => setExpandido((valor) => !valor) } : undefined}
-      // Cabeçalho das colunas + 4 linhas: o painel mantém o tamanho quando o filtro traz menos alunos.
-      alturaMinima={32 + VISIVEIS * 57}
+      // Cabeçalho das colunas + linhas visíveis: o painel mantém o tamanho quando o filtro traz menos alunos.
+      alturaMinima={alturaReservada(VISIVEIS, { cabecalhoColunas: true })}
       semPadding
     >
       {lista.length ? (
@@ -79,10 +81,12 @@ export default function AlunosAtencaoPainel({ alunos, onConsultar, onAnalisar }:
                       </Stack>
                     </Box>
                   </Stack>
-                  <Typography aria-label={`Média ${fmtPct(aluno.media, 1)}`} sx={{ ...sxNumeroColuna, color: corTexto(corMedia(aluno.media)), textAlign: { xs: "left", sm: "right" } }}>
+                  <Typography sx={{ ...sxNumeroColuna, color: corTexto(corMedia(aluno.media)), textAlign: { xs: "left", sm: "right" } }}>
+                    <Box component="span" sx={sxRotuloColuna}>Média</Box>
                     {fmtPct(aluno.media, 1)}
                   </Typography>
-                  <Typography aria-label={`Frequência ${fmtPct(aluno.frequencia, 1)}`} sx={{ ...sxNumeroColuna, color: corTexto(corFrequencia(aluno.frequencia)), textAlign: { xs: "left", sm: "right" } }}>
+                  <Typography sx={{ ...sxNumeroColuna, color: corTexto(corFrequencia(aluno.frequencia)), textAlign: { xs: "left", sm: "right" } }}>
+                    <Box component="span" sx={sxRotuloColuna}>Frequência</Box>
                     {fmtPct(aluno.frequencia, 1)}
                   </Typography>
                   <Stack direction="row" gap={0.75} justifyContent={{ xs: "flex-start", sm: "flex-end" }}>

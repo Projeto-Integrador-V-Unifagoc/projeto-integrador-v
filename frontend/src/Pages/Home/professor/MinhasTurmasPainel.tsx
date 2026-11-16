@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { ChevronRight } from "lucide-react";
-import { CORES_DASHBOARD, DashboardPainel, LinhaPainel, ListaPainel, PESO, TIPO_DASHBOARD, sxBotaoTexto, sxSelo } from "../../../components/DashboardLayout";
+import { CORES_DASHBOARD, DashboardPainel, LinhaPainel, ListaPainel, PESO, TIPO_DASHBOARD, alturaReservada, sxBotaoTexto, sxSelo } from "../../../components/DashboardLayout";
 import type { AtribuicaoProfessor } from "../../../models/home-professor-model";
 import { fmtPct } from "../aluno/regras-dashboard-aluno";
 
@@ -21,12 +21,13 @@ export default function MinhasTurmasPainel({ atribuicoes, ofertasComPendencia, c
   const [expandido, setExpandido] = useState(false);
   const lista = expandido ? atribuicoes : atribuicoes.slice(0, VISIVEIS);
   return (
-    <DashboardPainel titulo="Minhas turmas" contador={atribuicoes.length || undefined} acao={{ rotulo: "Avaliações", onClick: onAvaliacoes }} semPadding alturaMinima={VISIVEIS * 56 + 40}>
-      {atribuicoes.length > VISIVEIS && (
-        <Button size="small" onClick={() => setExpandido((valor) => !valor)} sx={{ ...sxBotaoTexto, order: 1, alignSelf: "flex-start", mx: 1, my: 0.5, color: CORES_DASHBOARD.textoSuave }}>
-          {expandido ? "Mostrar menos" : `Mostrar todas as ${atribuicoes.length}`}
-        </Button>
-      )}
+    <DashboardPainel
+      titulo="Minhas turmas"
+      contador={atribuicoes.length || undefined}
+      acao={{ rotulo: "Avaliações", onClick: onAvaliacoes }}
+      semPadding
+      alturaMinima={alturaReservada(VISIVEIS, { acao: true })}
+    >
       {atribuicoes.length ? (
         <ListaPainel rotulo="Minhas turmas">
           {lista.map((item) => {
@@ -58,6 +59,17 @@ export default function MinhasTurmasPainel({ atribuicoes, ofertasComPendencia, c
         </ListaPainel>
       ) : (
         <Typography sx={{ px: 2, py: 1.5, fontSize: TIPO_DASHBOARD.corpo, color: CORES_DASHBOARD.textoApagado }}>Nenhuma oferta para o filtro selecionado.</Typography>
+      )}
+      {/* Depois da lista também no DOM: a ordem de foco segue a ordem visual. */}
+      {atribuicoes.length > VISIVEIS && (
+        <Button
+          size="small"
+          aria-expanded={expandido}
+          onClick={() => setExpandido((valor) => !valor)}
+          sx={{ ...sxBotaoTexto, alignSelf: "flex-start", mx: 1, my: "5px", color: CORES_DASHBOARD.textoSuave }}
+        >
+          {expandido ? "Mostrar menos" : `Mostrar todas as ${atribuicoes.length}`}
+        </Button>
       )}
     </DashboardPainel>
   );

@@ -12,6 +12,7 @@ import {
   sxIconeQuadrado,
   sxNumeroColuna,
   sxTabelaLeve,
+  sxRotuloColuna,
 } from "../../../components/DashboardLayout";
 import { fmtPct } from "./regras-dashboard-aluno";
 import type { DisciplinaPainel } from "./regras-dashboard-aluno";
@@ -68,10 +69,12 @@ export default function TabelaDisciplinasAluno({ disciplinas, onDetalhes, onBole
                       </Stack>
                     </Box>
                   </Stack>
-                  <Typography aria-label={`Média ${fmtPct(disciplina.media, 1)}`} sx={{ ...sxNumeroColuna, color: corTexto(corMedia(disciplina.media)), textAlign: { xs: "left", sm: "right" } }}>
+                  <Typography sx={{ ...sxNumeroColuna, color: corTexto(corMedia(disciplina.media)), textAlign: { xs: "left", sm: "right" } }}>
+                    <Box component="span" sx={sxRotuloColuna}>Média</Box>
                     {fmtPct(disciplina.media, 1)}
                   </Typography>
-                  <Typography aria-label={`Frequência ${fmtPct(disciplina.frequencia, 1)}`} sx={{ ...sxNumeroColuna, color: corTexto(corFrequencia(disciplina.frequencia)), textAlign: { xs: "left", sm: "right" } }}>
+                  <Typography sx={{ ...sxNumeroColuna, color: corTexto(corFrequencia(disciplina.frequencia)), textAlign: { xs: "left", sm: "right" } }}>
+                    <Box component="span" sx={sxRotuloColuna}>Frequência</Box>
                     {fmtPct(disciplina.frequencia, 1)}
                   </Typography>
                   <Stack direction="row" gap={0.75} justifyContent={{ xs: "flex-start", sm: "flex-end" }}>

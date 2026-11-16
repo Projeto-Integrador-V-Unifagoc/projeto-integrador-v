@@ -46,7 +46,7 @@ export default function IndicadorCard({ titulo, icone: Icone, valor = "—", com
         </Typography>
       </Stack>
       <Stack direction="row" alignItems="baseline" gap={0.75} mt={1}>
-        <Typography sx={{ fontSize: TIPO_DASHBOARD.valorKpi, fontWeight: PESO.forte, lineHeight: 1.2, letterSpacing: -0.3, color: estado?.texto ?? CORES_DASHBOARD.texto }}>
+        <Typography sx={{ fontSize: TIPO_DASHBOARD.valorKpi, fontWeight: PESO.forte, lineHeight: "28px", letterSpacing: -0.3, color: estado?.texto ?? CORES_DASHBOARD.texto }}>
           {valor}
         </Typography>
         {complemento && (

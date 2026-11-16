@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Box, Button, ButtonBase, Paper, Stack, Typography } from "@mui/material";
 import type { LucideIcon } from "lucide-react";
-import { CORES_DASHBOARD, PESO, TIPO_DASHBOARD, sxBotaoTexto, sxCartaoDashboard, sxSelo } from "./dashboard-estilos";
+import { ALTURA_LINHA, CORES_DASHBOARD, PESO, TIPO_DASHBOARD, sxBotaoTexto, sxCartaoDashboard, sxSelo } from "./dashboard-estilos";
 
 export interface AcaoPainel {
   rotulo: string;
@@ -63,15 +63,20 @@ export default function DashboardPainel({ titulo, subtitulo, contador, acao, ext
   );
 }
 
-const sxConteudoLinha = { display: "flex", alignItems: "center", gap: 1.5, width: "100%", minHeight: 52, px: 2, py: 1, textAlign: "left" } as const;
+const sxConteudoLinha = { flex: 1, display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1, textAlign: "left" } as const;
 
 /**
- * Linha de lista do padrão: ≥ 52 px, divisória fina, conteúdo de borda a borda do painel.
+ * Linha de lista do padrão: altura mínima ALTURA_LINHA (a mesma da tabela leve), divisória fina,
+ * conteúdo de borda a borda do painel.
  * Com `onClick`, a linha inteira vira um botão (mouse e teclado); não coloque outros botões dentro dela.
  */
 export function LinhaPainel({ children, onClick, rotulo }: { children: ReactNode; onClick?: () => void; rotulo?: string }) {
   return (
-    <Box component="li" aria-label={onClick ? undefined : rotulo} sx={{ borderBottom: `1px solid ${CORES_DASHBOARD.divisoria}`, "&:last-of-type": { borderBottom: 0 } }}>
+    <Box
+      component="li"
+      aria-label={onClick ? undefined : rotulo}
+      sx={{ display: "flex", minHeight: ALTURA_LINHA, borderBottom: `1px solid ${CORES_DASHBOARD.divisoria}`, "&:last-of-type": { borderBottom: 0 } }}
+    >
       {onClick ? (
         <ButtonBase
           component="div"
