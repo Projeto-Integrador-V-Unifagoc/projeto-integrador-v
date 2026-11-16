@@ -319,8 +319,13 @@ export class NotaService {
     ]);
     const avaliacoesPorTurma = new Map<string, Map<string, any>>();
     const notasPorTurma = new Map<string, Map<string, number>>();
+    const datasPorAvaliacao = new Map<string, { dataLancamento: string | null; dataDevolucao: string | null }>();
     for (const r of rows as any[]) {
       const td = String(r.turma_disciplina_id);
+      datasPorAvaliacao.set(String(r.avaliacao_id), {
+        dataLancamento: this.dataIso(r.data_lancamento),
+        dataDevolucao: this.dataIso(r.data_devolucao),
+      });
       if (!avaliacoesPorTurma.has(td)) avaliacoesPorTurma.set(td, new Map());
       avaliacoesPorTurma.get(td)!.set(String(r.avaliacao_id), {
         id: r.avaliacao_id,
@@ -353,6 +358,8 @@ export class NotaService {
           valorMaximo: a.valor,
           valorObtido: mapaNotas.has(a.id) ? Number(mapaNotas.get(a.id)) : null,
           lancada: mapaNotas.has(a.id),
+          dataLancamento: datasPorAvaliacao.get(String(a.id))?.dataLancamento ?? null,
+          dataDevolucao: datasPorAvaliacao.get(String(a.id))?.dataDevolucao ?? null,
         })),
         ...boletim,
       };
@@ -369,6 +376,18 @@ export class NotaService {
       mapa.get(mtd)!.set(String(n.avaliacao_id), Number(n.valor));
     }
     return mapa;
+  }
+
+  // Data no formato AAAA-MM-DD; Date vindo do driver usa o fuso local (o mesmo do banco).
+  private dataIso(valor: unknown): string | null {
+    if (valor === null || valor === undefined || valor === "") return null;
+    if (valor instanceof Date) {
+      if (Number.isNaN(valor.getTime())) return null;
+      const mes = String(valor.getMonth() + 1).padStart(2, "0");
+      const dia = String(valor.getDate()).padStart(2, "0");
+      return `${valor.getFullYear()}-${mes}-${dia}`;
+    }
+    return String(valor).slice(0, 10);
   }
 
   private avaliacaoResumo(a: any): AvaliacaoResumo {

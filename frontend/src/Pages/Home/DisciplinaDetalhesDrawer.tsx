@@ -1,42 +1,25 @@
+import { Box, Button, Grid, LinearProgress, Stack, Typography } from "@mui/material";
+import { ArrowRight, BookOpen, CalendarDays } from "lucide-react";
 import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Divider,
-  Drawer,
-  Grid,
-  IconButton,
-  LinearProgress,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
-import {
-  ArrowRight,
-  BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  Target,
-  UserRoundCheck,
-  X,
-} from "lucide-react";
+  AvisoDetalhe,
+  CORES_DASHBOARD,
+  MetricaDetalhe,
+  PainelDetalhe,
+  SecaoDetalhe,
+  SeloRisco,
+  ESTADOS,
+  sxBotaoPrimario,
+  sxBotaoSecundario,
+  sxCartaoDashboard,
+} from "../../components/DashboardLayout";
+import type { GravidadeAviso } from "../../components/DashboardLayout";
 import type { ConsolidadoFrequencia } from "../../models/frequencia-model";
 import type { DisciplinaAluno, TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
-import {
-  SITUACAO_LABEL,
-  situacaoCor,
-  type DisciplinaBoletim,
-} from "../../models/nota-model";
-import {
-  COR_TIPO_AVALIACAO,
-  formatarDataPtBr,
-  formatarPontos,
-  ROTULO_TIPO_AVALIACAO,
-} from "../../utils/avaliacao";
+import { SITUACAO_LABEL, type DisciplinaBoletim } from "../../models/nota-model";
+import { formatarDataPtBr, formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
 import { prazoHumano } from "../Agenda/agenda-utils";
+import { corFrequencia, corMedia, corTexto } from "./aluno/estilos-risco";
+import { classificarRiscoDisciplina, fmtPct } from "./aluno/regras-dashboard-aluno";
 import {
   calcularProjecaoFrequencia,
   calcularProjecaoNota,
@@ -55,100 +38,37 @@ interface DisciplinaDetalhesDrawerProps {
   onAbrirFrequencia: () => void;
 }
 
-const percentual = (valor: number | null | undefined) =>
-  valor === null || valor === undefined
-    ? "—"
-    : `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(valor)}%`;
+const numero = (valor: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(valor);
 
-const numero = (valor: number) =>
-  new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(valor);
-
-function Metrica({
-  titulo,
-  valor,
-  apoio,
-}: {
-  titulo: string;
-  valor: string;
-  apoio: string;
-}) {
-  return (
-    <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 2.5, height: "100%" }}>
-      <Typography variant="caption" color="text.secondary" fontWeight={700}>
-        {titulo}
-      </Typography>
-      <Typography fontSize={23} fontWeight={850} lineHeight={1.25} mt={0.4}>
-        {valor}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {apoio}
-      </Typography>
-    </Paper>
-  );
-}
-
-function ProjecaoNotaCard({ boletim }: { boletim: DisciplinaBoletim | null }) {
+function ProjecaoNota({ boletim }: { boletim: DisciplinaBoletim | null }) {
   const projecao = calcularProjecaoNota(boletim);
-
-  if (!boletim || !projecao) {
-    return <Alert severity="info">A projeção será exibida após a publicação das avaliações.</Alert>;
-  }
-
+  if (!boletim || !projecao) return <AvisoDetalhe gravidade="info">A projeção aparece depois da publicação das avaliações.</AvisoDetalhe>;
   if (projecao.situacao === "plano-incompleto") {
-    return (
-      <Alert severity="info">
-        O plano possui {formatarPontos(projecao.totalPlanejado)} de 100 pontos configurados. A projeção até a média mínima será liberada quando o plano estiver completo.
-      </Alert>
-    );
+    return <AvisoDetalhe gravidade="info">O plano tem {formatarPontos(projecao.totalPlanejado)} de 100 pontos configurados. A projeção aparece quando o plano estiver completo.</AvisoDetalhe>;
   }
-
   if (projecao.situacao === "meta-atingida") {
-    return (
-      <Alert severity="success" icon={<CheckCircle2 size={20} />}>
-        Você já soma {formatarPontos(boletim.pontosObtidos)} e alcançou a meta regular de {META_PONTOS} pontos.
-      </Alert>
-    );
+    return <AvisoDetalhe gravidade="ok">Você já soma {formatarPontos(boletim.pontosObtidos)} e alcançou a meta regular de {META_PONTOS} pontos.</AvisoDetalhe>;
   }
-
   if (projecao.situacao === "recuperacao") {
-    return (
-      <Alert severity="warning">
-        Faltam {formatarPontos(projecao.pontosParaMeta)}, mas não há pontos regulares suficientes pendentes. Consulte o boletim para acompanhar a recuperação.
-      </Alert>
-    );
+    return <AvisoDetalhe gravidade="media">Faltam {formatarPontos(projecao.pontosParaMeta)}, mas não há pontos regulares suficientes pendentes. Acompanhe a recuperação no boletim.</AvisoDetalhe>;
   }
-
   return (
-    <Alert severity="info" icon={<Target size={20} />}>
-      Para chegar a {META_PONTOS} pontos, você precisa obter {formatarPontos(projecao.pontosParaMeta)} dos {formatarPontos(projecao.pontosDisponiveis)} ainda pendentes — aproveitamento de {percentual(projecao.percentualNecessario)}.
-    </Alert>
+    <AvisoDetalhe gravidade="info">
+      Para chegar a {META_PONTOS} pontos, faltam {formatarPontos(projecao.pontosParaMeta)} dos {formatarPontos(projecao.pontosDisponiveis)} ainda pendentes (aproveitamento de {fmtPct(projecao.percentualNecessario, 1)}).
+    </AvisoDetalhe>
   );
 }
 
-function ProjecaoFrequenciaCard({ frequencia }: { frequencia: ConsolidadoFrequencia | null }) {
-  const projecao = frequencia
-    ? calcularProjecaoFrequencia(frequencia.presencas, frequencia.faltas)
-    : null;
-
-  if (!frequencia || !projecao) {
-    return <Alert severity="info">A projeção será exibida após as primeiras chamadas.</Alert>;
-  }
-
+function ProjecaoFrequencia({ frequencia }: { frequencia: ConsolidadoFrequencia | null }) {
+  const projecao = frequencia ? calcularProjecaoFrequencia(frequencia.presencas, frequencia.faltas) : null;
+  if (!frequencia || !projecao) return <AvisoDetalhe gravidade="info">A projeção aparece depois das primeiras chamadas.</AvisoDetalhe>;
   if (projecao.presencasParaRecuperar > 0) {
-    return (
-      <Alert severity="error" icon={<UserRoundCheck size={20} />}>
-        Considerando os registros atuais, são necessárias {projecao.presencasParaRecuperar} presenças consecutivas para voltar a {FREQUENCIA_MINIMA}%.
-      </Alert>
-    );
+    return <AvisoDetalhe gravidade="alta">São necessárias {projecao.presencasParaRecuperar} presenças seguidas para voltar a {FREQUENCIA_MINIMA}%, considerando os registros atuais.</AvisoDetalhe>;
   }
-
-  return (
-    <Alert severity={projecao.margemFaltas === 0 ? "warning" : "success"} icon={<UserRoundCheck size={20} />}>
-      {projecao.margemFaltas === 0
-        ? "Uma nova falta reduziria sua frequência para menos de 75%, considerando os registros atuais."
-        : `A margem atual é de ${projecao.margemFaltas} ${projecao.margemFaltas === 1 ? "falta" : "faltas"} sem ficar abaixo de 75%.`}
-    </Alert>
-  );
+  if (projecao.margemFaltas === 0) {
+    return <AvisoDetalhe gravidade="media">Uma nova falta deixa a frequência abaixo de 75%, considerando os registros atuais.</AvisoDetalhe>;
+  }
+  return <AvisoDetalhe gravidade="ok">Margem atual: {projecao.margemFaltas} {projecao.margemFaltas === 1 ? "falta" : "faltas"} sem ficar abaixo de 75%.</AvisoDetalhe>;
 }
 
 export default function DisciplinaDetalhesDrawer({
@@ -161,217 +81,150 @@ export default function DisciplinaDetalhesDrawer({
   onAbrirBoletim,
   onAbrirFrequencia,
 }: DisciplinaDetalhesDrawerProps) {
-  const theme = useTheme();
   if (!disciplina) return null;
 
   const media = boletim?.mediaFinal ?? boletim?.mediaParcial ?? null;
+  // Mesmo cálculo do dashboard: presenças ÷ (presenças + faltas).
+  const registradas = (frequencia?.presencas ?? 0) + (frequencia?.faltas ?? 0);
+  const percentualFrequencia = registradas > 0 ? Math.round(((frequencia?.presencas ?? 0) / registradas) * 1000) / 10 : null;
+  const risco = classificarRiscoDisciplina(media, percentualFrequencia);
   const avaliacoesPublicadas = boletim?.avaliacoes.filter((item) => item.lancada).length ?? 0;
   const totalAvaliacoes = boletim?.avaliacoes.length ?? 0;
-  const tarefasDaDisciplina = tarefas
+  const proximas = tarefas
     .filter((item) => item.turmaDisciplinaId === disciplina.turmaDisciplinaId)
-    .sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
-  const possuiRiscoFrequencia = frequencia?.percentual !== null
-    && frequencia?.percentual !== undefined
-    && frequencia.percentual < FREQUENCIA_MINIMA;
-  const possuiAlertaFrequencia = frequencia?.percentual !== null
-    && frequencia?.percentual !== undefined
-    && frequencia.percentual <= 80;
-  const possuiAlertaNota = media !== null && media < META_PONTOS;
-  const severidade = possuiRiscoFrequencia
-    ? "error"
-    : possuiAlertaNota || possuiAlertaFrequencia
-      ? "warning"
-      : media === null && frequencia?.percentual == null
-        ? "info"
-        : "success";
-  const mensagemSituacao = possuiRiscoFrequencia
-    ? "A frequência está abaixo do mínimo institucional. Priorize as próximas aulas e acompanhe os registros."
-    : possuiAlertaNota
-      ? "A média parcial está abaixo da meta. Confira os pontos restantes e as próximas avaliações."
-      : possuiAlertaFrequencia
-        ? "A frequência está próxima do limite mínimo de 75%. Evite novas faltas e acompanhe as próximas chamadas."
-        : media === null && frequencia?.percentual == null
-          ? "Ainda não há lançamentos suficientes para classificar esta disciplina."
-          : "Os indicadores disponíveis estão dentro das metas atuais.";
+    .sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento))
+    .slice(0, 3);
+
+  const gravidadeSituacao: GravidadeAviso = risco.nivel === "alto" ? "alta" : risco.nivel === "medio" ? "media" : risco.nivel === "sem-dados" ? "info" : "ok";
+  const mensagemSituacao =
+    risco.nivel === "alto" ? "Frequência abaixo do mínimo de 75%. Priorize as próximas aulas e acompanhe os registros."
+      : media !== null && media < META_PONTOS ? "Média parcial abaixo da referência de 60%. Confira os pontos restantes e as próximas avaliações."
+        : risco.nivel === "medio" ? "Frequência próxima do mínimo de 75%. Evite novas faltas."
+          : risco.nivel === "sem-dados" ? "Ainda não há lançamentos suficientes para avaliar esta disciplina."
+            : "Os indicadores estão dentro das metas.";
 
   return (
-    <Drawer
-      anchor="right"
-      open={aberto}
-      onClose={onFechar}
-      aria-labelledby="titulo-detalhes-disciplina"
-      slotProps={{
-        paper: {
-          sx: {
-            width: { xs: "100%", sm: 600 },
-            maxWidth: "100vw",
-            bgcolor: "background.default",
-          },
-        },
-      }}
+    <PainelDetalhe
+      aberto={aberto}
+      onFechar={onFechar}
+      icone={BookOpen}
+      titulo={disciplina.nome}
+      subtitulo={`${disciplina.codigo} · ${disciplina.turmaSigla}`}
+      contexto={`Professor(a): ${disciplina.professorNome} · Carga horária: ${disciplina.cargaHoraria}h`}
+      selo={<SeloRisco nivel={risco.nivel} titulo={risco.motivos.join(" · ")} />}
+      rotuloFechar="Fechar detalhes da disciplina"
+      acoes={(
+        <>
+          <Button endIcon={<ArrowRight size={15} />} onClick={onAbrirBoletim} sx={{ ...sxBotaoPrimario, height: 36, px: 2 }}>
+            Abrir boletim completo
+          </Button>
+          <Button endIcon={<ArrowRight size={15} />} onClick={onAbrirFrequencia} sx={{ ...sxBotaoSecundario, height: 36, px: 2 }}>
+            Ver frequência
+          </Button>
+        </>
+      )}
     >
-      <Box
-        sx={{
-          position: "sticky",
-          top: 0,
-          zIndex: 2,
-          color: "#fff",
-          background: "linear-gradient(125deg, #078CAF 0%, #05B5E6 100%)",
-          px: { xs: 2, sm: 3 },
-          py: 2.5,
-        }}
-      >
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={2}>
-          <Stack direction="row" gap={1.5} minWidth={0}>
-            <Box sx={{ width: 44, height: 44, borderRadius: 2.25, bgcolor: "rgba(255,255,255,.18)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-              <BookOpen size={23} />
-            </Box>
-            <Box minWidth={0}>
-              <Typography id="titulo-detalhes-disciplina" component="h2" variant="h6" fontWeight={850}>
-                {disciplina.nome}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {disciplina.codigo} · {disciplina.turmaSigla}
-              </Typography>
-            </Box>
-          </Stack>
-          <IconButton aria-label="Fechar detalhes da disciplina" onClick={onFechar} sx={{ color: "#fff", mt: -0.75, mr: -0.75 }}>
-            <X size={22} />
-          </IconButton>
-        </Stack>
-        <Typography variant="body2" mt={1.5} sx={{ opacity: 0.9 }}>
-          Professor(a): {disciplina.professorNome} · Carga horária: {disciplina.cargaHoraria}h
-        </Typography>
-      </Box>
+      <AvisoDetalhe gravidade={gravidadeSituacao}>{mensagemSituacao}</AvisoDetalhe>
 
-      <Stack gap={2.5} p={{ xs: 2, sm: 3 }}>
-        <Alert severity={severidade}>{mensagemSituacao}</Alert>
-
-        <Grid container spacing={1.25}>
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <Metrica titulo="Média atual" valor={percentual(media)} apoio="meta de 60%" />
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <Metrica titulo="Frequência" valor={percentual(frequencia?.percentual)} apoio="mínimo de 75%" />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Metrica titulo="Notas publicadas" valor={totalAvaliacoes ? `${avaliacoesPublicadas}/${totalAvaliacoes}` : "—"} apoio="avaliações cadastradas" />
-          </Grid>
+      <Grid container spacing={1.25}>
+        <Grid size={{ xs: 6, sm: 4 }}>
+          <MetricaDetalhe titulo="Média atual" valor={fmtPct(media, 1)} apoio="referência de 60%" cor={corTexto(corMedia(media))} />
         </Grid>
+        <Grid size={{ xs: 6, sm: 4 }}>
+          <MetricaDetalhe titulo="Frequência" valor={fmtPct(percentualFrequencia, 1)} apoio="mínimo de 75%" cor={corTexto(corFrequencia(percentualFrequencia))} />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <MetricaDetalhe titulo="Notas lançadas" valor={totalAvaliacoes ? `${avaliacoesPublicadas}/${totalAvaliacoes}` : "—"} apoio="avaliações com nota" />
+        </Grid>
+      </Grid>
 
-        <Box component="section" aria-labelledby="titulo-projecao-nota">
-          <Typography id="titulo-projecao-nota" fontWeight={850} mb={1}>Caminho até a média</Typography>
-          <ProjecaoNotaCard boletim={boletim} />
-        </Box>
+      <SecaoDetalhe titulo="Caminho até a média">
+        <ProjecaoNota boletim={boletim} />
+      </SecaoDetalhe>
 
-        <Box component="section" aria-labelledby="titulo-avaliacoes">
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography id="titulo-avaliacoes" fontWeight={850}>Notas por avaliação</Typography>
-            {boletim && <Chip size="small" color={situacaoCor(boletim.situacao)} label={SITUACAO_LABEL[boletim.situacao]} />}
-          </Stack>
-          <Paper variant="outlined" sx={{ borderRadius: 2.5, overflow: "hidden" }}>
-            {boletim?.avaliacoes.length ? (
-              <Stack divider={<Divider flexItem />}>
-                {boletim.avaliacoes.map((avaliacao) => {
-                  const desempenho = avaliacao.valorObtido === null
-                    ? null
-                    : (avaliacao.valorObtido / avaliacao.valorMaximo) * 100;
-                  return (
-                    <Box key={avaliacao.id} p={1.75}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1.5}>
-                        <Box minWidth={0}>
-                          <Typography variant="body2" fontWeight={800}>
-                            {avaliacao.descricao || ROTULO_TIPO_AVALIACAO[avaliacao.tipo]}
-                          </Typography>
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            color={COR_TIPO_AVALIACAO[avaliacao.tipo]}
-                            label={ROTULO_TIPO_AVALIACAO[avaliacao.tipo]}
-                            sx={{ mt: 0.75 }}
-                          />
-                        </Box>
-                        <Box textAlign="right" flexShrink={0}>
-                          <Typography fontWeight={850}>
-                            {avaliacao.lancada ? `${numero(avaliacao.valorObtido ?? 0)} / ${numero(avaliacao.valorMaximo)}` : "Aguardando"}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {avaliacao.lancada ? `${percentual(desempenho)} de aproveitamento` : `${formatarPontos(avaliacao.valorMaximo)} possíveis`}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      {desempenho !== null && (
-                        <LinearProgress
-                          variant="determinate"
-                          value={Math.min(desempenho, 100)}
-                          color={desempenho < 60 ? "warning" : "primary"}
-                          sx={{ mt: 1.25, height: 5, borderRadius: 5 }}
-                        />
-                      )}
-                    </Box>
-                  );
-                })}
-              </Stack>
-            ) : (
-              <Typography variant="body2" color="text.secondary" p={2}>Nenhuma avaliação cadastrada.</Typography>
-            )}
-          </Paper>
-        </Box>
-
-        <Box component="section" aria-labelledby="titulo-frequencia">
-          <Typography id="titulo-frequencia" fontWeight={850} mb={1}>Frequência e margem atual</Typography>
-          {frequencia && (
-            <Stack direction="row" gap={1} mb={1} flexWrap="wrap">
-              <Chip size="small" color="success" variant="outlined" label={`${frequencia.presencas} presenças`} />
-              <Chip size="small" color={frequencia.faltas ? "warning" : "default"} variant="outlined" label={`${frequencia.faltas} faltas`} />
-              <Chip size="small" variant="outlined" label={`${frequencia.totalAulas} aulas registradas`} />
+      <SecaoDetalhe
+        titulo="Notas por avaliação"
+        extra={boletim ? <Typography variant="caption" fontWeight={700} sx={{ color: CORES_DASHBOARD.textoSuave }}>{SITUACAO_LABEL[boletim.situacao]}</Typography> : undefined}
+      >
+        <Box sx={{ ...sxCartaoDashboard, overflow: "hidden" }}>
+          {boletim?.avaliacoes.length ? (
+            <Stack divider={<Box sx={{ borderTop: `1px solid ${CORES_DASHBOARD.borda}` }} />}>
+              {boletim.avaliacoes.map((avaliacao) => {
+                const desempenho = avaliacao.valorObtido === null ? null : (avaliacao.valorObtido / avaliacao.valorMaximo) * 100;
+                return (
+                  <Box key={avaliacao.id} px={1.75} py={1.5}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1.5}>
+                      <Box minWidth={0}>
+                        <Typography variant="body2" fontWeight={700}>{avaliacao.descricao || ROTULO_TIPO_AVALIACAO[avaliacao.tipo]}</Typography>
+                        <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>
+                          {ROTULO_TIPO_AVALIACAO[avaliacao.tipo]}{avaliacao.dataDevolucao ? ` · devolução ${formatarDataPtBr(avaliacao.dataDevolucao).slice(0, 5)}` : ""}
+                        </Typography>
+                      </Box>
+                      <Box textAlign="right" flexShrink={0}>
+                        <Typography variant="body2" fontWeight={700}>
+                          {avaliacao.lancada ? `${numero(avaliacao.valorObtido ?? 0)} / ${numero(avaliacao.valorMaximo)}` : "Nota não lançada"}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>
+                          {avaliacao.lancada ? `${fmtPct(desempenho, 1)} de aproveitamento` : `${formatarPontos(avaliacao.valorMaximo)} possíveis`}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    {desempenho !== null && (
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(desempenho, 100)}
+                        aria-label={`Aproveitamento de ${avaliacao.descricao ?? avaliacao.tipo}`}
+                        sx={{ mt: 1, height: 4, borderRadius: 4, bgcolor: ESTADOS.neutro.fundo, "& .MuiLinearProgress-bar": { borderRadius: 4, bgcolor: desempenho < META_PONTOS ? ESTADOS.atencao.ponto : CORES_DASHBOARD.acento } }}
+                      />
+                    )}
+                  </Box>
+                );
+              })}
             </Stack>
+          ) : (
+            <Typography variant="body2" p={2} sx={{ color: CORES_DASHBOARD.textoApagado }}>Nenhuma avaliação cadastrada.</Typography>
           )}
-          <ProjecaoFrequenciaCard frequencia={frequencia} />
-          <Typography variant="caption" color="text.secondary" display="block" mt={0.75}>
-            Estimativa baseada apenas nas aulas já registradas; o calendário restante pode alterar essa margem.
+        </Box>
+      </SecaoDetalhe>
+
+      <SecaoDetalhe
+        titulo="Frequência e margem atual"
+        extra={frequencia ? (
+          <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoSuave }}>
+            {frequencia.presencas} presenças · {frequencia.faltas} faltas · {frequencia.totalAulas} aulas
           </Typography>
-        </Box>
+        ) : undefined}
+      >
+        <ProjecaoFrequencia frequencia={frequencia} />
+        <Typography variant="caption" display="block" mt={0.75} sx={{ color: CORES_DASHBOARD.textoApagado }}>
+          Estimativa com base nas aulas já registradas.
+        </Typography>
+      </SecaoDetalhe>
 
-        <Box component="section" aria-labelledby="titulo-proximas-disciplina">
-          <Typography id="titulo-proximas-disciplina" fontWeight={850} mb={1}>Próximas avaliações</Typography>
-          <Paper variant="outlined" sx={{ borderRadius: 2.5, overflow: "hidden" }}>
-            {tarefasDaDisciplina.length ? (
-              <Stack divider={<Divider flexItem />}>
-                {tarefasDaDisciplina.slice(0, 3).map((tarefa) => (
-                  <Stack key={tarefa.avaliacaoId} direction="row" gap={1.5} alignItems="flex-start" p={1.75}>
-                    <Box sx={{ width: 38, height: 38, borderRadius: 2, bgcolor: alpha(theme.palette.primary.main, 0.1), color: "primary.main", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                      <CalendarDays size={18} />
-                    </Box>
-                    <Box minWidth={0} flex={1}>
-                      <Typography variant="body2" fontWeight={800}>{tarefa.titulo}</Typography>
-                      <Stack direction="row" gap={0.75} alignItems="center" flexWrap="wrap" mt={0.6}>
-                        <Chip size="small" variant="outlined" color={COR_TIPO_AVALIACAO[tarefa.tipo as TipoTarefa]} label={ROTULO_TIPO_AVALIACAO[tarefa.tipo as TipoTarefa]} />
-                        <Chip size="small" icon={<Clock3 size={13} />} label={prazoHumano(tarefa.dataVencimento)} />
-                      </Stack>
-                    </Box>
-                    <Box textAlign="right" flexShrink={0}>
-                      <Typography variant="caption" fontWeight={800}>{formatarPontos(tarefa.valor)}</Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">{formatarDataPtBr(tarefa.dataVencimento)}</Typography>
-                    </Box>
-                  </Stack>
-                ))}
-              </Stack>
-            ) : (
-              <Stack alignItems="center" textAlign="center" gap={0.75} py={3} px={2}>
-                <CheckCircle2 size={26} color={theme.palette.success.main} />
-                <Typography variant="body2" fontWeight={750}>Nenhuma avaliação futura publicada</Typography>
-              </Stack>
-            )}
-          </Paper>
-        </Box>
-
-        <Divider />
-        <Stack direction={{ xs: "column", sm: "row" }} gap={1.25} pb={1} sx={{ "& > button": { width: { xs: "100%", sm: "auto" }, minWidth: 150, height: 36, whiteSpace: "nowrap" } }}>
-          <Button variant="contained" endIcon={<ArrowRight size={16} />} onClick={onAbrirBoletim} sx={{ minWidth: 210 }}>Abrir boletim completo</Button>
-          <Button variant="outlined" endIcon={<ArrowRight size={16} />} onClick={onAbrirFrequencia}>Ver frequência</Button>
-        </Stack>
-      </Stack>
-    </Drawer>
+      <SecaoDetalhe titulo="Próximas avaliações">
+        {proximas.length ? (
+          <Box sx={{ ...sxCartaoDashboard, overflow: "hidden" }}>
+            <Stack divider={<Box sx={{ borderTop: `1px solid ${CORES_DASHBOARD.borda}` }} />}>
+              {proximas.map((tarefa) => (
+                <Stack key={tarefa.avaliacaoId} direction="row" gap={1.25} alignItems="center" px={1.75} py={1.25}>
+                  <Box aria-hidden="true" sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento }}>
+                    <CalendarDays size={16} />
+                  </Box>
+                  <Box flex={1} minWidth={0}>
+                    <Typography variant="body2" fontWeight={700} noWrap>{tarefa.titulo}</Typography>
+                    <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>
+                      {ROTULO_TIPO_AVALIACAO[tarefa.tipo as TipoTarefa]} · {prazoHumano(tarefa.dataVencimento)}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" fontWeight={700} flexShrink={0}>{formatarPontos(tarefa.valor)}</Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
+        ) : (
+          <AvisoDetalhe gravidade="ok">Nenhuma avaliação futura publicada.</AvisoDetalhe>
+        )}
+      </SecaoDetalhe>
+    </PainelDetalhe>
   );
 }

@@ -1,7 +1,9 @@
 import type { DisciplinaBoletim } from "../../models/nota-model";
+import { FREQUENCIA_MINIMA, MEDIA_REFERENCIA } from "../../utils/criterios-academicos";
 
-export const META_PONTOS = 60;
-export const FREQUENCIA_MINIMA = 75;
+export { FREQUENCIA_MINIMA };
+/** Pontos (de 100) para aprovação: a mesma média de referência dos dashboards. */
+export const META_PONTOS = MEDIA_REFERENCIA;
 
 export type SituacaoProjecaoNota =
   | "plano-incompleto"
