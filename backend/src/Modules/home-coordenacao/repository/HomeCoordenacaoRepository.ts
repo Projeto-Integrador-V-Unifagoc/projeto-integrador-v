@@ -152,12 +152,13 @@ export class HomeCoordenacaoRepository {
   }
 
   async diagnosticoQualidade(periodoId: string) {
-    const [disciplinas, semEmenta, semCompetencias, cargaIncompleta, cursos, cursosSemMatriz, turmas, turmasSemHorario, avaliacoes, avaliacoesSemCompetencia] = await Promise.all([
+    const [disciplinas, semEmenta, semCompetencias, cargaIncompleta, cursos, cursosIncompletos, cursosSemMatriz, turmas, turmasSemHorario, avaliacoes, avaliacoesSemCompetencia] = await Promise.all([
       db("disciplinas").where("ativo", true).count({ total: "id" }).first(),
       db("disciplinas").where("ativo", true).where((q) => q.whereNull("ementa").orWhereRaw("btrim(ementa) = ''")).count({ total: "id" }).first(),
       db("disciplinas as d").where("d.ativo", true).whereNotExists(db("disciplina_competencia as dc").select(db.raw("1")).whereRaw("dc.disciplina_id = d.id")).count({ total: "d.id" }).first(),
       db("disciplinas").where("ativo", true).where((q) => q.whereNull("area_conhecimento").orWhereNull("carga_horaria_teorica").orWhereNull("carga_horaria_pratica").orWhereNull("carga_horaria_laboratorio").orWhereNull("carga_horaria_extensao")).count({ total: "id" }).first(),
       db("curso").count({ total: "id" }).first(),
+      db("curso").where((q) => q.whereNull("descricao").orWhereNull("grau_academico").orWhereNull("modalidade").orWhereNull("duracao_periodos").orWhereNull("carga_horaria_minima")).count({ total: "id" }).first(),
       db("curso as c").whereNotExists(db("matriz_curricular as mc").select(db.raw("1")).whereRaw("mc.curso_id = c.id").where("mc.status", "VIGENTE")).count({ total: "c.id" }).first(),
       db("turma").where("periodo_letivo_id", periodoId).whereRaw(`lower(status) in (${marcadores})`, STATUS_ATIVO).count({ total: "id" }).first(),
       db("turma as t").where("t.periodo_letivo_id", periodoId).whereRaw(`lower(t.status) in (${marcadores})`, STATUS_ATIVO).whereNotExists(db("turma_disciplina as td").join("horario_turma_disciplina as h", "h.turma_disciplina_id", "td.id").select(db.raw("1")).whereRaw("td.turma_id = t.id").where("h.ativo", true)).count({ total: "t.id" }).first(),
@@ -166,7 +167,7 @@ export class HomeCoordenacaoRepository {
     ]);
     return {
       disciplinas: total(disciplinas), disciplinas_sem_ementa: total(semEmenta), disciplinas_sem_competencias: total(semCompetencias), disciplinas_carga_incompleta: total(cargaIncompleta),
-      cursos: total(cursos), cursos_sem_matriz: total(cursosSemMatriz), turmas: total(turmas), turmas_sem_horario: total(turmasSemHorario),
+      cursos: total(cursos), cursos_incompletos: total(cursosIncompletos), cursos_sem_matriz: total(cursosSemMatriz), turmas: total(turmas), turmas_sem_horario: total(turmasSemHorario),
       avaliacoes: total(avaliacoes), avaliacoes_sem_competencia: total(avaliacoesSemCompetencia),
     };
   }

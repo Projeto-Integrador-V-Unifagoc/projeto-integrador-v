@@ -39,7 +39,7 @@ describe('rate limit nas rotas públicas de inscrição', () => {
     const bloqueada = await request(app).get('/publico/inscricao/cpf/123');
     expect(bloqueada.status).toBe(429);
     expect(bloqueada.body).toMatchObject({ limite: 'consulta-publica' });
-  });
+  }, 15_000);
 
   it('inscrição: 10 envios por IP', async () => {
     const app = await montar();

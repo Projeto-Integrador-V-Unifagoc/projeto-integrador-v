@@ -151,6 +151,7 @@ export class HomeCoordenacaoService {
       { id: "disciplinas-sem-competencias", titulo: "Disciplinas sem competências", descricao: `${item.disciplinas_sem_competencias} de ${item.disciplinas} disciplinas ativas`, quantidade: item.disciplinas_sem_competencias, severidade: "ATENCAO", rota: "/disciplinas/lista" },
       { id: "carga-incompleta", titulo: "Composição de carga incompleta", descricao: `${item.disciplinas_carga_incompleta} disciplinas precisam de revisão`, quantidade: item.disciplinas_carga_incompleta, severidade: "ATENCAO", rota: "/disciplinas/lista" },
       { id: "curso-sem-matriz", titulo: "Cursos sem matriz vigente", descricao: `${item.cursos_sem_matriz} de ${item.cursos} cursos`, quantidade: item.cursos_sem_matriz, severidade: "CRITICO", rota: "/cursos/lista" },
+      { id: "curso-incompleto", titulo: "Cursos com cadastro incompleto", descricao: `${item.cursos_incompletos ?? 0} de ${item.cursos} cursos`, quantidade: item.cursos_incompletos ?? 0, severidade: "ATENCAO", rota: "/cursos/lista" },
       { id: "turmas-sem-horario", titulo: "Turmas sem horários", descricao: `${item.turmas_sem_horario} de ${item.turmas} turmas do período`, quantidade: item.turmas_sem_horario, severidade: "ATENCAO", rota: "/turmas/lista" },
       { id: "avaliacoes-sem-competencia", titulo: "Avaliações sem competências", descricao: `${item.avaliacoes_sem_competencia} de ${item.avaliacoes} avaliações do período`, quantidade: item.avaliacoes_sem_competencia, severidade: "INFORMATIVO", rota: "/avaliacoes/lista" },
     ];

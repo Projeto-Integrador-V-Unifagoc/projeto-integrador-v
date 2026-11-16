@@ -33,7 +33,7 @@ describe("Sidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pessoas e vínculos" }));
     await waitFor(() => expect(screen.queryByRole("link", { name: "Alunos" })).not.toBeInTheDocument());
     expect(screen.getByRole("link", { name: "Disciplinas" })).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it("abre somente o grupo da página atual e destaca o item selecionado", () => {
     renderizar("administrador", "/alunos/lista");

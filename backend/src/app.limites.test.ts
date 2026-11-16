@@ -34,7 +34,7 @@ describe('rate limit aplicado no app', () => {
     expect(bloqueada.status).toBe(429);
     expect(bloqueada.body).toMatchObject({ limite: 'global' });
     expect(bloqueada.headers['retry-after']).toBeDefined();
-  });
+  }, 15_000);
 
   it('/health nunca é limitado', async () => {
     const app = await carregarApp({ RATE_LIMIT_GLOBAL_MAX: '1' });

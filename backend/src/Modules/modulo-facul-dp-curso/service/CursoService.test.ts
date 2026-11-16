@@ -24,6 +24,18 @@ describe("CursoService.criarCurso", () => {
     assert.ok(salvo.id);
     assert.equal(salvo.departamento_id, "dep1");
   });
+
+  it("normaliza os dados academicos do curso", async () => {
+    let salvo: any;
+    const { service } = criar({ criarCurso: async (d: any) => ((salvo = d), d) });
+    await service.criarCurso({ codigo: "ADS", nome: "ADS", departamentoId: "dep1", descricao: " Curso ", grauAcademico: "tecnologo", modalidade: "hibrido", duracaoPeriodos: "5", cargaHorariaMinima: "2000", situacaoAcademica: "ativo" });
+    assert.equal(salvo.descricao, "Curso"); assert.equal(salvo.grau_academico, "TECNOLOGO"); assert.equal(salvo.modalidade, "HIBRIDO"); assert.equal(salvo.duracao_periodos, 5); assert.equal(salvo.carga_horaria_minima, 2000);
+  });
+
+  it("rejeita duracao e carga invalidas", async () => {
+    await assert.rejects(() => criar().service.criarCurso({ codigo: "X", nome: "X", departamentoId: "d", duracaoPeriodos: 0 }), /duracao/i);
+    await assert.rejects(() => criar().service.criarCurso({ codigo: "X", nome: "X", departamentoId: "d", cargaHorariaMinima: -1 }), /carga horaria/i);
+  });
 });
 
 describe("CursoService.removerCurso", () => {
@@ -91,5 +103,14 @@ describe("CursoService leitura e atualizacao", () => {
     const { service } = criar({ atualizarCurso: async (_id: string, d: any) => ((salvo = d), d) });
     await service.atualizarCurso("c1", { codigo: "SI", nome: "Sistemas", departamentoId: "dep2" });
     assert.equal(salvo.departamento_id, "dep2");
+  });
+
+  it("nao apaga dados academicos ausentes em uma atualizacao de cliente antigo", async () => {
+    let salvo: any;
+    const { service } = criar({ atualizarCurso: async (_id: string, d: any) => ((salvo = d), d) });
+    await service.atualizarCurso("c1", { codigo: "SI", nome: "Sistemas", departamentoId: "dep2" });
+    assert.equal("descricao" in salvo, false);
+    assert.equal("grau_academico" in salvo, false);
+    assert.equal("situacao_academica" in salvo, false);
   });
 });
