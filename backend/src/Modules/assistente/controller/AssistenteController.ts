@@ -47,9 +47,10 @@ export class AssistenteController {
                 throw new AssistenteErro(403, "Seu perfil não tem acesso ao assistente.");
             }
 
-            const { mensagem, historico } = req.body ?? {};
+            // `acao`: botões de IA das telas (opcional); a instrução interna é montada no serviço.
+            const { mensagem, historico, acao } = req.body ?? {};
             res.status(200).json(
-                await (await this.obterAssistente()).responder({ id: String(usuario.id), tipo_usuario: String(usuario.tipo_usuario) }, mensagem, historico),
+                await (await this.obterAssistente()).responder({ id: String(usuario.id), tipo_usuario: String(usuario.tipo_usuario) }, mensagem, historico, acao),
             );
         } catch (err) {
             responderErro(res, err);

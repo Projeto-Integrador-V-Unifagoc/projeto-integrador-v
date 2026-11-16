@@ -114,10 +114,40 @@ export class HomeProfessorRepository {
         "av.data_lancamento", "av.data_devolucao", "av.valor",
       )
       .count({ notas_lancadas: "n.id" })
+      .avg({ media_notas: "n.valor" })
       .groupBy("av.id")
       .orderByRaw("COALESCE(av.data_devolucao, av.data_lancamento::date) ASC");
     if (turmaDisciplinaId) query.where("td.id", turmaDisciplinaId);
     return query;
+  }
+
+  // Aulas já cadastradas (data <= agora) com o número de registros de frequência de alunos
+  // ativos e quantos eram esperados. Mesmo conceito do "naoLancadas" do FrequenciaService.
+  listarChamadas(professorId: string, periodoId: string) {
+    const ativos = STATUS_ATIVO.map(() => "?").join(",");
+    const matriculas = STATUS_MATRICULA.map(() => "?").join(",");
+    return db("aula as au")
+      .join("turma_disciplina as td", "au.turma_disciplina_id", "td.id")
+      .join("turma as t", "td.turma_id", "t.id")
+      .where("td.professor_id", professorId)
+      .where("t.periodo_letivo_id", periodoId)
+      .whereRaw(`lower(td.status) in (${ativos})`, STATUS_ATIVO)
+      .whereRaw("au.data <= now()")
+      .select("au.id as aula_id", "au.turma_disciplina_id", "au.data")
+      .select(db.raw(
+        `(select count(*) from frequencia f
+            join matricula_turma_disciplina mtd on mtd.id = f.matricula_turma_disciplina_id
+            join matricula m on m.id = mtd.matricula_id
+           where f.aula_id = au.id and lower(mtd.status) in (${ativos}) and lower(m.status) in (${matriculas})) as registrados`,
+        [...STATUS_ATIVO, ...STATUS_MATRICULA],
+      ))
+      .select(db.raw(
+        `(select count(*) from matricula_turma_disciplina mtd
+            join matricula m on m.id = mtd.matricula_id
+           where mtd.turma_disciplina_id = au.turma_disciplina_id and lower(mtd.status) in (${ativos}) and lower(m.status) in (${matriculas})) as esperados`,
+        [...STATUS_ATIVO, ...STATUS_MATRICULA],
+      ))
+      .orderBy("au.data", "asc");
   }
 
   listarCompetencias(disciplinaId: string) {

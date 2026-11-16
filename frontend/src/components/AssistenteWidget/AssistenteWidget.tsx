@@ -14,8 +14,9 @@ import {
 } from "@mui/material";
 import { Bot, Eraser, Send, X } from "lucide-react";
 
-import { assistenteApi, type MensagemAssistente } from "../../services/assistente-api";
+import { assistenteApi, type AcaoAssistente, type MensagemAssistente } from "../../services/assistente-api";
 import TextoAssistente from "./TextoAssistente";
+import { consultarDisponibilidade, escutarPerguntas, type PedidoAssistente } from "./ponte";
 
 const LIMITE_CARACTERES = 1000;
 const HISTORICO_ENVIADO = 10;
@@ -73,14 +74,31 @@ export default function AssistenteWidget() {
 
     useEffect(() => {
         let ativo = true;
-        assistenteApi
-            .status()
-            .then((r) => ativo && setDisponivel(r.ativo))
-            .catch(() => ativo && setDisponivel(false));
+        void consultarDisponibilidade().then((disponivelAgora) => ativo && setDisponivel(disponivelAgora));
         return () => {
             ativo = false;
         };
     }, []);
+
+    // Perguntas vindas das telas (ex.: "Entender meu desempenho" no dashboard): abre o chat e envia.
+    // A referência guarda o envio mais recente para a escuta não usar um estado antigo da conversa.
+    // Ação de um botão de IA que ainda não teve resposta (falhou ou chegou durante outra resposta): se a pessoa
+    // reenviar o mesmo texto do campo, a ação vai junto para o backend montar a instrução interna de novo.
+    const [acaoPendente, setAcaoPendente] = useState<PedidoAssistente | null>(null);
+    const enviarPerguntaRef = useRef<(pedido: PedidoAssistente) => void>(() => undefined);
+    useEffect(() => escutarPerguntas((pedido) => enviarPerguntaRef.current(pedido)), []);
+    useEffect(() => {
+        enviarPerguntaRef.current = (pedido: PedidoAssistente) => {
+            // Com a IA desativada o widget nem aparece: o pedido é ignorado e nada vai para o backend.
+            if (!disponivel) return;
+            setAberto(true);
+            // Com uma resposta em andamento, a pergunta espera no campo para a pessoa enviar.
+            if (enviando) {
+                setTexto(pedido.pergunta.slice(0, LIMITE_CARACTERES));
+                setAcaoPendente(pedido.acao ? pedido : null);
+            } else void enviarPergunta(pedido.pergunta, pedido.acao);
+        };
+    });
 
     useEffect(() => salvarConversa(mensagens), [mensagens]);
 
@@ -95,8 +113,14 @@ export default function AssistenteWidget() {
 
     async function enviar(evento?: FormEvent) {
         evento?.preventDefault();
-        const pergunta = texto.trim();
+        const acao = acaoPendente && acaoPendente.pergunta === texto.trim() ? acaoPendente.acao : undefined;
+        await enviarPergunta(texto, acao);
+    }
+
+    async function enviarPergunta(textoPergunta: string, acao?: AcaoAssistente) {
+        const pergunta = textoPergunta.trim().slice(0, LIMITE_CARACTERES);
         if (!pergunta || enviando) return;
+        setAcaoPendente(null);
 
         const historico = mensagens.filter((m) => m !== BOAS_VINDAS && m.texto !== BOAS_VINDAS.texto).slice(-HISTORICO_ENVIADO);
         const enviada: MensagemAssistente = { papel: "usuario", texto: pergunta };
@@ -106,13 +130,14 @@ export default function AssistenteWidget() {
         setEnviando(true);
 
         try {
-            const { resposta } = await assistenteApi.enviar(pergunta, historico);
+            const { resposta } = await assistenteApi.enviar(pergunta, historico, acao);
             setMensagens((lista) => [...lista, { papel: "assistente", texto: resposta }]);
         } catch (err) {
             // A pergunta que falhou sai da conversa e volta para o campo: assim ela não fica no histórico sem
             // resposta (o que deixaria duas perguntas seguidas na próxima tentativa) e a pessoa só reenvia.
             setMensagens((lista) => lista.filter((m) => m !== enviada));
             setTexto((atual) => atual || pergunta);
+            if (acao) setAcaoPendente({ pergunta, acao });
             setErro(mensagemErro(err));
         } finally {
             setEnviando(false);

@@ -16,6 +16,7 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 import Container from "../../components/Container";
+import { CORES_DASHBOARD } from "../../components/DashboardLayout";
 import type { TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
 import { homeAlunoApi } from "../../services/home-aluno-api";
 import {
@@ -130,28 +131,19 @@ export default function MinhaAgenda() {
   return (
     <Container sx={{ p: 0, border: 0, overflowY: "auto" }}>
       <Stack gap={2.5}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 2.5, md: 3 },
-            borderRadius: 3,
-            color: "#fff",
-            background: "linear-gradient(125deg, #078CAF 0%, #05B5E6 70%, #47CCE9 100%)",
-          }}
-        >
-          <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={2}>
-            <Stack direction="row" alignItems="center" gap={2}>
-              <Box sx={{ width: 48, height: 48, borderRadius: 2.5, bgcolor: "rgba(255,255,255,.18)", display: "grid", placeItems: "center" }}>
-                <CalendarDays size={25} aria-hidden="true" />
-              </Box>
-              <Box>
-                <Typography component="h1" variant="h5" fontWeight={800}>Minha agenda</Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>Avaliações futuras organizadas por prazo.</Typography>
-              </Box>
-            </Stack>
-            <Button color="inherit" startIcon={<ArrowLeft size={17} />} onClick={() => navigate("/home")} sx={{ width: "auto" }}>Voltar ao dashboard</Button>
+        {/* Cabeçalho no padrão dos dashboards: sem tarja, título escuro e ícone em destaque suave. */}
+        <Stack component="header" direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={1.5}>
+          <Stack direction="row" alignItems="center" gap={1.75}>
+            <Box aria-hidden="true" sx={{ width: 44, height: 44, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: "#E6F6FB", color: CORES_DASHBOARD.acento }}>
+              <CalendarDays size={22} />
+            </Box>
+            <Box>
+              <Typography component="h1" fontWeight={700} letterSpacing={-0.6} lineHeight={1.2} sx={{ fontSize: { xs: 26, md: 32 } }}>Minha agenda</Typography>
+              <Typography variant="body1" sx={{ color: CORES_DASHBOARD.textoSuave }}>Avaliações futuras organizadas por prazo.</Typography>
+            </Box>
           </Stack>
-        </Paper>
+          <Button startIcon={<ArrowLeft size={17} />} onClick={() => navigate("/home")} sx={{ width: "auto", height: 32, whiteSpace: "nowrap", color: CORES_DASHBOARD.acento }}>Voltar ao dashboard</Button>
+        </Stack>
 
         {erro && (
           <Alert severity="error" action={<Button color="inherit" onClick={() => void carregar()} startIcon={<RefreshCw size={15} />} sx={{ width: "auto" }}>Tentar novamente</Button>}>
