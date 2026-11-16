@@ -19,7 +19,7 @@ function criar(overrides: Record<string, any> = {}) {
     listarTurmas: async () => [], listarLocais: async () => [],
     buscarTurma: async () => ({ id: turmaId, data_inicio: "2026-01-01", data_fim: "2026-12-20", periodo_ativo: true, periodo_status: "ativo", periodo_codigo: "2026/1" }),
     listarAlunosAtivosDaTurma: async () => [{ aluno_id: alunoId, matricula_turma_disciplina_id: matriculaId, nome: "Aluno Teste", matricula: 1, status: "ativa" }],
-    listarRegistrosDaChamada: async () => [], contarMatriculasIrregulares: async () => 0,
+    listarAulasDaData: async () => [], listarRegistrosDaChamada: async () => [], contarMatriculasIrregulares: async () => 0,
     calcularPercentualMatriculaTurmaDisciplina: async () => 100,
     salvarChamadaAtomica: async (dados: any) => ({ aulaId: "55555555-5555-4555-8555-555555555555", registros: dados.registros }),
     buscarRegistroPorId: async () => null, salvarJustificativa: async () => ({}), listarHistoricoAluno: async () => [],
@@ -34,6 +34,21 @@ describe("FrequenciaService", () => {
   it("monta a chamada sem assumir presença para registro ainda não lançado", async () => {
     const result = await criar().obterChamada(turmaId, "2026-05-01", reqProfessor);
     expect(result.alunos[0].status).toBeNull(); expect(result.chamadaCompleta).toBe(false);
+  });
+  it("exige a seleção da ocorrência quando há mais de uma aula no mesmo dia", async () => {
+    const primeira = "55555555-5555-4555-8555-555555555555";
+    const segunda = "66666666-6666-4666-8666-666666666666";
+    const aulas = [
+      { id: primeira, hora_inicio: "08:00:00", hora_fim: "09:40:00", local_planejado: "Sala 1", status: "PLANEJADA", origem: "HORARIO" },
+      { id: segunda, hora_inicio: "10:00:00", hora_fim: "11:40:00", local_planejado: "Sala 2", status: "PLANEJADA", origem: "HORARIO" },
+    ];
+    const service = criar({ listarAulasDaData: async () => aulas });
+    const semSelecao = await service.obterChamada(turmaId, "2026-05-01", reqProfessor);
+    expect(semSelecao.requerSelecaoOcorrencia).toBe(true);
+    expect(semSelecao.alunos[0].status).toBeNull();
+    const selecionada = await service.obterChamada(turmaId, "2026-05-01", reqProfessor, segunda);
+    expect(selecionada.aulaSelecionadaId).toBe(segunda);
+    expect(selecionada.requerSelecaoOcorrencia).toBe(false);
   });
   it("salva a chamada completa em uma operação atômica", async () => {
     let recebido: any; const service = criar({ salvarChamadaAtomica: async (d: any) => { recebido = d; return { aulaId: "aula", registros: d.registros }; } });

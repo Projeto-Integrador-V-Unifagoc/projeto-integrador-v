@@ -38,6 +38,7 @@ import { horarioOfertaRouter } from "./Modules/routes/horarioOfertaRoutes";
 import { homeCoordenacaoRouter } from "./Modules/routes/homeCoordenacaoRoutes";
 import { requisitoCurricularRouter } from "./Modules/routes/requisitoCurricularRoutes";
 import { planoEnsinoRouter } from "./Modules/routes/planoEnsinoRoutes";
+import { calendarioAcademicoRouter } from "./Modules/routes/calendarioAcademicoRoutes";
 
 const PORT = process.env.PORT || 3000;
 obterJwtSecret();
@@ -74,6 +75,7 @@ app.use(horarioOfertaRouter);
 app.use(homeCoordenacaoRouter);
 app.use(requisitoCurricularRouter);
 app.use(planoEnsinoRouter);
+app.use(calendarioAcademicoRouter);
 
 const alunoController = new AlunoController();
 const cidadeController = new CidadeController();

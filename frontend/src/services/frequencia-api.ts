@@ -1,8 +1,8 @@
 import { api } from "../lib/axios";
-import type { MinhaFrequenciaAluno, RegistrarFrequenciaPayload } from "../models/frequencia-model";
+import type { ChamadaFrequencia, MinhaFrequenciaAluno, RegistrarFrequenciaPayload } from "../models/frequencia-model";
 export const frequenciaApi = {
   listarOpcoes: async () => (await api.get("/frequencias/opcoes")).data,
-  obterChamada: async (params: { turmaDisciplinaId: string; data: string }) => (await api.get("/frequencias/chamada", { params })).data,
+  obterChamada: async (params: { turmaDisciplinaId: string; data: string; aulaId?: string }): Promise<ChamadaFrequencia> => (await api.get("/frequencias/chamada", { params })).data,
   salvarChamada: async (data: RegistrarFrequenciaPayload) => (await api.put("/frequencias/chamada", data)).data,
   consultarAluno: async (id: string) => (await api.get(`/frequencias/aluno/${id}`)).data,
   minhaFrequencia: async (): Promise<MinhaFrequenciaAluno> => (await api.get("/frequencias/minha")).data,
