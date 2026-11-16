@@ -16,7 +16,7 @@ export interface ProfessorCriado {
 export async function criarProfessor(
   api: Api,
   runId: string,
-  dados: { disciplinaIds: string[]; cidadeIbge: string; uf: string; cpf?: string; faculdadeId?: string },
+  dados: { cursoDisciplinaIds: string[]; cidadeIbge: string; uf: string; cpf?: string; faculdadeId?: string },
 ): Promise<ProfessorCriado> {
   const cpf = dados.cpf ?? ids.cpf();
   const resposta = await api.post("/professores", {
@@ -30,7 +30,7 @@ export async function criarProfessor(
       cidade_id: dados.cidadeIbge,
       estado: dados.uf,
       cep: "35300000",
-      disciplinaIds: dados.disciplinaIds,
+      cursoDisciplinaIds: dados.cursoDisciplinaIds,
       ...(dados.faculdadeId ? { faculdade_id: dados.faculdadeId } : {}),
     },
   });
@@ -45,7 +45,7 @@ export async function criarProfessor(
 export async function criarProfessorComLogin(
   api: Api,
   runId: string,
-  dados: { disciplinaIds: string[]; cidadeIbge: string; uf: string; faculdadeId?: string },
+  dados: { cursoDisciplinaIds: string[]; cidadeIbge: string; uf: string; faculdadeId?: string },
 ): Promise<{ professor: ProfessorCriado; email: string; senha: string; token: string }> {
   const professor = await criarProfessor(api, runId, dados);
   const email = ids.email("prof", runId);

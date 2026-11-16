@@ -10,7 +10,7 @@ export const professorSchema = yup.object({
     const data = new Date(`${valor}T00:00:00`);
     return !Number.isNaN(data.getTime()) && data <= new Date();
   }),
-  disciplinaIds: yup.array().of(yup.string().required()).min(1, "Selecione ao menos uma disciplina").required("Campo obrigatório"),
+  cursoDisciplinaIds: yup.array().of(yup.string().required()).min(1, "Selecione ao menos uma disciplina").required("Campo obrigatório"),
   faculdade_id: yup.string().required("Selecione uma faculdade"),
   cidade_id: yup.string().required("Campo obrigatório"),
   uf: yup.string().matches(/^[A-Z]{2}$/, "Informe uma UF válida").required("Campo obrigatório"),

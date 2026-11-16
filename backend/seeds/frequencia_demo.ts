@@ -133,8 +133,8 @@ export async function seed(knex: Knex): Promise<void> {
     .ignore();
   
   await knex(`${SCHEMA}.professor_disciplina`)
-  .insert({ professor_id: ids.professor, disciplina_id: ids.disciplina })
-  .onConflict(["professor_id", "disciplina_id"])
+  .insert({ professor_id: ids.professor, curso_disciplina_id: ids.cursoDisciplina })
+  .onConflict(["professor_id", "curso_disciplina_id"])
   .ignore();
 
   await knex(`${SCHEMA}.periodo_letivo`)

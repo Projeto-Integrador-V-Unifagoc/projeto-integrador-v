@@ -116,10 +116,32 @@ const DISCIPLINAS = [
   },
 ];
 
+// O vinculo do professor e com a disciplina dentro do curso (linha da matriz).
+const CURSO_DISCIPLINAS = [
+  {
+    id: "dddddddd-dddd-dddd-dddd-ddddddddddd1",
+    curso_id: CURSOS[0].id,
+    disciplina_id: DISCIPLINAS[0].id,
+    periodo_ideal: 1,
+    obrigatoria: true,
+    carga_horaria: DISCIPLINAS[0].carga_horaria,
+    ativo: true,
+  },
+  {
+    id: "dddddddd-dddd-dddd-dddd-ddddddddddd2",
+    curso_id: CURSOS[1].id,
+    disciplina_id: DISCIPLINAS[1].id,
+    periodo_ideal: 1,
+    obrigatoria: true,
+    carga_horaria: DISCIPLINAS[1].carga_horaria,
+    ativo: true,
+  },
+];
+
 const PROFESSOR_DISCIPLINAS = [
-  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1", disciplina_id: DISCIPLINAS[0].id },
-  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2", disciplina_id: DISCIPLINAS[0].id },
-  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3", disciplina_id: DISCIPLINAS[1].id },
+  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1", curso_disciplina_id: CURSO_DISCIPLINAS[0].id },
+  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2", curso_disciplina_id: CURSO_DISCIPLINAS[0].id },
+  { professor_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3", curso_disciplina_id: CURSO_DISCIPLINAS[1].id },
 ];
 
 export async function seed(knex: Knex): Promise<void> {
@@ -155,8 +177,13 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict("codigo")
     .ignore();
 
+  await knex(`${SCHEMA}.curso_disciplina`)
+    .insert(CURSO_DISCIPLINAS)
+    .onConflict(["curso_id", "disciplina_id"])
+    .ignore();
+
   await knex(`${SCHEMA}.professor_disciplina`)
     .insert(PROFESSOR_DISCIPLINAS)
-    .onConflict(["professor_id", "disciplina_id"])
+    .onConflict(["professor_id", "curso_disciplina_id"])
     .ignore();
 }

@@ -2,15 +2,15 @@ import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-mode
 import type { CursoResponse } from "../../models/curso-model";
 
 export function sugerirFaculdade(
-    disciplinaIds: string[],
+    cursoDisciplinaIds: string[],
     cursoDisciplinas: CursoDisciplinaResponse[],
     cursos: CursoResponse[],
 ): { id: string; nome: string } | null {
-    if (!disciplinaIds.length) return null;
+    if (!cursoDisciplinaIds.length) return null;
 
     const cursoIds = new Set(
         cursoDisciplinas
-            .filter((cursoDisciplina) => disciplinaIds.includes(cursoDisciplina.disciplina.id))
+            .filter((cursoDisciplina) => cursoDisciplinaIds.includes(cursoDisciplina.id))
             .map((cursoDisciplina) => cursoDisciplina.curso.id),
     );
 

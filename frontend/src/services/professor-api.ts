@@ -32,8 +32,8 @@ export const professorApi = {
         return response.data;
     },
 
-    async vincularDisciplina(id: string, disciplinaId: string): Promise<Professor> {
-        const response = await api.post<Professor>(`/professores/${id}/disciplinas`, { disciplinaId });
+    async vincularDisciplina(id: string, cursoDisciplinaId: string): Promise<Professor> {
+        const response = await api.post<Professor>(`/professores/${id}/disciplinas`, { cursoDisciplinaId });
         return response.data;
     },
 

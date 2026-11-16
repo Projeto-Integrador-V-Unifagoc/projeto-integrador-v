@@ -97,10 +97,19 @@ describe("DisciplinaService leitura e remocao", () => {
   it("traduz o bloqueio por professores vinculados", async () => {
     const { service } = criar({
       removerDisciplina: async () => {
-        throw { code: "23503", constraint: "professor_disciplina_disciplina_id_foreign" };
+        throw { code: "23503", constraint: "professor_disciplina_curso_disciplina_id_foreign" };
       },
     });
     await assert.rejects(() => service.removerDisciplina("d1"), /vinculada a professores/);
+  });
+
+  it("traduz o bloqueio por conteudo academico cadastrado", async () => {
+    const { service } = criar({
+      removerDisciplina: async () => {
+        throw { code: "23503", constraint: "conteudo_topico_curso_disciplina_id_foreign" };
+      },
+    });
+    await assert.rejects(() => service.removerDisciplina("d1"), /conteudo academico/);
   });
 
   it("traduz o bloqueio por turmas que usam a disciplina", async () => {

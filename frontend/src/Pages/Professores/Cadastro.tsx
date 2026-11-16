@@ -7,14 +7,12 @@ import { Card } from "../../components/Card";
 import Button from "../../components/Button";
 import type { SelectOption } from "../../components/SearchableSelect/SearchableSelect";
 import { professorApi } from "../../services/professor-api";
-import { disciplinaApi } from "../../services/disciplina-api";
 import { cursoDisciplinaApi } from "../../services/curso-disciplina-api";
 import { cursoApi } from "../../services/curso-api";
 import { faculdadeApi } from "../../services/faculdade-api";
 import { cidadeApi } from "../../services/cidade-api";
 import { useViaCep } from "../../hooks/use-cep";
 import type { CidadeModel } from "../../models/cidade-model";
-import type { DisciplinaResponse } from "../../models/disciplina-model";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
 import type { CursoResponse } from "../../models/curso-model";
 import type { FaculdadeResponse } from "../../models/faculdade-model";
@@ -24,6 +22,7 @@ import { professorSchema } from "../../validators/professor-schema";
 import { sugerirFaculdade } from "./sugerir-faculdade";
 import {
     initialProfessorFormData,
+    opcoesDeDisciplinaPorCurso,
     type DisciplinaSelecionada,
     type ProfessorFormData,
 } from "./professor-form-model";
@@ -44,13 +43,12 @@ type CadastroProps = {
 export default function Cadastro({ disciplinaInicial, onConcluido, onCancelar }: CadastroProps = {}) {
     const navigate = useNavigate();
     const [formData, setFormData] = useState<ProfessorFormData>(() => disciplinaInicial
-        ? { ...initialProfessorFormData, disciplinaIds: [disciplinaInicial.id], disciplinasSelecionadas: [disciplinaInicial] }
+        ? { ...initialProfessorFormData, cursoDisciplinaIds: [disciplinaInicial.id], disciplinasSelecionadas: [disciplinaInicial] }
         : initialProfessorFormData);
     const [errors, setErrors] = useState<Partial<Record<keyof ProfessorFormData, string>>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [disciplinas, setDisciplinas] = useState<DisciplinaResponse[]>([]);
     const [cursoDisciplinas, setCursoDisciplinas] = useState<CursoDisciplinaResponse[]>([]);
     const [cursos, setCursos] = useState<CursoResponse[]>([]);
     const [faculdades, setFaculdades] = useState<FaculdadeResponse[]>([]);
@@ -70,14 +68,12 @@ export default function Cadastro({ disciplinaInicial, onConcluido, onCancelar }:
     async function carregarOpcoesIniciais() {
         setLoadingCidades(true);
         try {
-            const [disciplinasResponse, cursoDisciplinasResponse, cursosResponse, faculdadesResponse, cidadesResponse] = await Promise.all([
-                disciplinaApi.listarDisciplinas(),
+            const [cursoDisciplinasResponse, cursosResponse, faculdadesResponse, cidadesResponse] = await Promise.all([
                 cursoDisciplinaApi.listarCursoDisciplinas(),
                 cursoApi.listarCursos(),
                 faculdadeApi.listarFaculdades(),
                 cidadeApi.buscarCidades(),
             ]);
-            setDisciplinas(disciplinasResponse);
             setCursoDisciplinas(cursoDisciplinasResponse);
             setCursos(cursosResponse);
             setFaculdades(faculdadesResponse);
@@ -117,15 +113,15 @@ export default function Cadastro({ disciplinaInicial, onConcluido, onCancelar }:
             const proximo: ProfessorFormData = {
                 ...previous,
                 disciplinasSelecionadas: selecionadas,
-                disciplinaIds: selecionadas.map((disciplina) => disciplina.id),
+                cursoDisciplinaIds: selecionadas.map((disciplina) => disciplina.id),
             };
             if (previous.faculdadeSugerida) {
-                const sugestao = sugerirFaculdade(proximo.disciplinaIds, cursoDisciplinas, cursos);
+                const sugestao = sugerirFaculdade(proximo.cursoDisciplinaIds, cursoDisciplinas, cursos);
                 proximo.faculdade_id = sugestao?.id || "";
             }
             return proximo;
         });
-        clearError("disciplinaIds");
+        clearError("cursoDisciplinaIds");
     }
 
     function handleChangeFaculdade(faculdadeId: string) {
@@ -198,7 +194,7 @@ export default function Cadastro({ disciplinaInicial, onConcluido, onCancelar }:
                 nome: formData.nome.trim(), cpf: formData.cpf.replace(/\D/g, ""), data_nascimento: formData.dataNascimento,
                 logradouro: formData.logradouro.trim(), numero: formData.numero.trim(), bairro: formData.bairro.trim(),
                 cidade_id: formData.cidade_id, estado: formData.uf, cep: formData.cep.trim(),
-                disciplinaIds: formData.disciplinaIds, faculdade_id: formData.faculdade_id || undefined,
+                cursoDisciplinaIds: formData.cursoDisciplinaIds, faculdade_id: formData.faculdade_id || undefined,
             };
             const professor = await professorApi.criar(payload);
             if (onConcluido) {
@@ -222,7 +218,7 @@ export default function Cadastro({ disciplinaInicial, onConcluido, onCancelar }:
             <Card.Content>
                 {(successMessage || errorMessage) && <Alert severity={errorMessage ? "error" : "success"} sx={{ mb: 2 }}>{errorMessage || successMessage}</Alert>}
                 <Stack gap={2}>
-                    <ProfessorFormFields data={formData} errors={errors} disciplinaOptions={disciplinas} faculdadeOptions={faculdades} cidadeOptions={cidadeOptions}
+                    <ProfessorFormFields data={formData} errors={errors} disciplinaOptions={opcoesDeDisciplinaPorCurso(cursoDisciplinas)} faculdadeOptions={faculdades} cidadeOptions={cidadeOptions}
                         onChange={handleInputChange} onChangeDisciplinas={handleChangeDisciplinas} onChangeFaculdade={handleChangeFaculdade}
                         onSearchCidade={(query) => void handleSearchCidade(query)}
                         onSelectCidade={handleSelectCidade} onBuscarCep={() => void handleBuscarCep()}

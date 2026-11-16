@@ -243,11 +243,6 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict("codigo")
     .merge();
 
-  await knex(`${SCHEMA}.professor_disciplina`)
-    .insert(disciplinas.map((d) => ({ professor_id: ids.professor, disciplina_id: d.id })))
-    .onConflict(["professor_id", "disciplina_id"])
-    .ignore();
-
   // So pode existir um periodo por ano/semestre. O popular_banco.ts (que roda depois) recria o
   // 2026/1 com outro codigo, entao numa segunda execucao dos seeds reaproveita o periodo existente.
   const periodoExistente = await knex(`${SCHEMA}.periodo_letivo`)
@@ -282,6 +277,17 @@ export async function seed(knex: Knex): Promise<void> {
     )
     .onConflict(["curso_id", "disciplina_id"])
     .merge();
+
+  // O vinculo do professor e com a disciplina dentro do curso; usa o id real da
+  // matriz (o merge acima pode ter mantido um id anterior).
+  const matriz = await knex(`${SCHEMA}.curso_disciplina`)
+    .where({ curso_id: ids.curso })
+    .whereIn("disciplina_id", disciplinas.map((d) => d.id))
+    .select("id");
+  await knex(`${SCHEMA}.professor_disciplina`)
+    .insert(matriz.map((cd: { id: string }) => ({ professor_id: ids.professor, curso_disciplina_id: cd.id })))
+    .onConflict(["professor_id", "curso_disciplina_id"])
+    .ignore();
 
   await knex(`${SCHEMA}.turma`)
     .insert({

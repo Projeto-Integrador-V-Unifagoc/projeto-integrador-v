@@ -78,12 +78,14 @@ export function TurmaDisciplinasSection({ turmaId, cursoId }: Props) {
     return disciplinasMatriz.filter((item) => !idsEmUso.has(item.id) || item.id === form.cursoDisciplinaId);
   }, [disciplinasMatriz, disciplinasTurma, form.cursoDisciplinaId]);
 
-  const disciplinaSelecionada = useMemo(
-    () => disciplinasMatriz.find((item) => item.id === form.cursoDisciplinaId)?.disciplina
-      ?? registroEdicao?.curso_disciplina.disciplina
-      ?? null,
-    [disciplinasMatriz, form.cursoDisciplinaId, registroEdicao],
-  );
+  // O professor e habilitado por disciplina dentro do curso: o id usado e o da curso_disciplina.
+  const disciplinaSelecionada = useMemo(() => {
+    const cursoDisciplina = disciplinasMatriz.find((item) => item.id === form.cursoDisciplinaId)
+      ?? registroEdicao?.curso_disciplina;
+    return cursoDisciplina
+      ? { id: cursoDisciplina.id, codigo: cursoDisciplina.disciplina.codigo, nome: cursoDisciplina.disciplina.nome }
+      : null;
+  }, [disciplinasMatriz, form.cursoDisciplinaId, registroEdicao]);
   const disciplinaSelecionadaId = disciplinaSelecionada?.id;
 
   // So aparecem os professores que lecionam a disciplina escolhida. Na edicao o professor atual

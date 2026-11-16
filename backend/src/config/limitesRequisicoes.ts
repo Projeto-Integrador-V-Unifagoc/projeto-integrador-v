@@ -1,4 +1,4 @@
-import { chavePorCampoDoCorpo, criarLimitador } from '../middlewares/limiteRequisicoes';
+import { chavePorCampoDoCorpo, chavePorIp, criarLimitador } from '../middlewares/limiteRequisicoes';
 
 const MINUTO = 60 * 1000;
 const QUINZE_MINUTOS = 15 * MINUTO;
@@ -71,4 +71,14 @@ export const limiteDocumentosPublicos = criarLimitador({
   maximo: 40,
   janelaMs: QUINZE_MINUTOS,
   mensagem: 'Muitos envios de documentos em pouco tempo. Aguarde alguns minutos e tente novamente.',
+});
+
+// Upload de imagens e anexos do conteúdo acadêmico: por usuário autenticado
+// (a rota roda depois do `autenticar`), para não punir a rede do campus inteira.
+export const limiteUploadConteudo = criarLimitador({
+  nome: 'upload-conteudo',
+  maximo: 60,
+  janelaMs: QUINZE_MINUTOS,
+  chave: (req) => (req as any).user?.id ?? chavePorIp(req),
+  mensagem: 'Muitos arquivos enviados em pouco tempo. Aguarde alguns minutos e tente novamente.',
 });

@@ -9,8 +9,13 @@ export class DisciplinaService {
         const codigo = error?.code;
         const textoErro = [error?.constraint, error?.message, error?.detail].map((valor) => String(valor ?? "")).join(" ");
 
-        if (textoErro.includes("professor_disciplina_disciplina_id_foreign")) {
+        // curso_disciplina e removida em cascata, mas o vinculo do professor bloqueia (RESTRICT).
+        if (textoErro.includes("professor_disciplina_curso_disciplina_id_foreign")) {
             return "Nao e possivel remover a disciplina porque ela esta vinculada a professores.";
+        }
+
+        if (/conteudo_(disciplina|topico|arquivo)_curso_disciplina_id_foreign/.test(textoErro)) {
+            return "Nao e possivel remover a disciplina porque ela possui conteudo academico cadastrado.";
         }
 
         // curso_disciplina e removida em cascata, mas turma_disciplina bloqueia (RESTRICT).

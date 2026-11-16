@@ -33,7 +33,7 @@ function criar(overrides: {
   };
   const professorRepository = {
     buscarProfessorAtivoPorId: async () => ({ id: "prof1", ativo: true }),
-    professorLecionaDisciplina: async (_professorId: string, _disciplinaId: string) => true,
+    professorLecionaDisciplina: async (_professorId: string, _cursoDisciplinaId: string) => true,
     ...overrides.professor,
   };
   const service = new TurmaDisciplinaService();
@@ -79,10 +79,10 @@ describe("TurmaDisciplinaService.criarTurmaDisciplina", () => {
   it("rejeita professor que nao leciona a disciplina", async () => {
     let consultado: string[] = [];
     const { service } = criar({
-      professor: { professorLecionaDisciplina: async (professorId: string, disciplinaId: string) => ((consultado = [professorId, disciplinaId]), false) },
+      professor: { professorLecionaDisciplina: async (professorId: string, cursoDisciplinaId: string) => ((consultado = [professorId, cursoDisciplinaId]), false) },
     });
     await assert.rejects(() => service.criarTurmaDisciplina("t1", { ...input }), /nao leciona esta disciplina/);
-    assert.deepEqual(consultado, ["prof1", "d1"]);
+    assert.deepEqual(consultado, ["prof1", "cd1"]);
   });
 
   it("rejeita disciplina ja adicionada a turma", async () => {
@@ -122,10 +122,10 @@ describe("TurmaDisciplinaService.atualizarTurmaDisciplina", () => {
   it("rejeita troca para professor que nao leciona a disciplina", async () => {
     let consultado: string[] = [];
     const { service } = criar({
-      professor: { professorLecionaDisciplina: async (professorId: string, disciplinaId: string) => ((consultado = [professorId, disciplinaId]), false) },
+      professor: { professorLecionaDisciplina: async (professorId: string, cursoDisciplinaId: string) => ((consultado = [professorId, cursoDisciplinaId]), false) },
     });
     await assert.rejects(() => service.atualizarTurmaDisciplina("t1", "td1", { professorId: "prof2" }), /nao leciona esta disciplina/);
-    assert.deepEqual(consultado, ["prof2", "d1"]);
+    assert.deepEqual(consultado, ["prof2", "cd1"]);
   });
 
   it("mantem o professor atual sem exigir o vinculo de disciplina", async () => {

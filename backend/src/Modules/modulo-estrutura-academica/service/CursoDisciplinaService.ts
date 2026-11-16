@@ -88,6 +88,24 @@ export class CursoDisciplinaService {
     }
 
     async removerCursoDisciplina(id: string) {
-        return await this.cursoDisciplinaRepository.removerCursoDisciplina(id);
+        try {
+            return await this.cursoDisciplinaRepository.removerCursoDisciplina(id);
+        } catch (error: any) {
+            const textoErro = [error?.constraint, error?.message, error?.detail].map((valor) => String(valor ?? "")).join(" ");
+
+            if (textoErro.includes("professor_disciplina_curso_disciplina_id_foreign")) {
+                throw new Error("Nao e possivel remover a disciplina da matriz porque ha professores vinculados a ela neste curso.");
+            }
+
+            if (/conteudo_(disciplina|topico|arquivo)_curso_disciplina_id_foreign/.test(textoErro)) {
+                throw new Error("Nao e possivel remover a disciplina da matriz porque ela possui conteudo academico cadastrado.");
+            }
+
+            if (textoErro.includes("turma_disciplina_curso_disciplina_id_foreign")) {
+                throw new Error("Nao e possivel remover a disciplina da matriz porque ela esta sendo usada em turmas.");
+            }
+
+            throw error;
+        }
     }
 }

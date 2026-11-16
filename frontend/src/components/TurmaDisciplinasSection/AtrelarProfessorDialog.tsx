@@ -10,6 +10,7 @@ import type { ProfessorOpcao } from "../../models/professor-model";
 
 type Props = {
   open: boolean
+  // `id` e o da curso_disciplina: o vinculo do professor e com a disciplina dentro do curso.
   disciplina: { id: string; codigo: string; nome: string } | null
   professores: ProfessorOpcao[]
   onClose: () => void
@@ -105,7 +106,7 @@ export function AtrelarProfessorDialog({ open, disciplina, professores, onClose,
                     <ListItemText
                       primary={professor.nome}
                       secondary={professor.disciplinas.length
-                        ? `Leciona: ${professor.disciplinas.map((item) => item.nome).join(", ")}`
+                        ? `Leciona: ${professor.disciplinas.map((item) => `${item.nome} (${item.cursoNome})`).join(", ")}`
                         : "Nenhuma disciplina cadastrada"}
                     />
                   </ListItemButton>

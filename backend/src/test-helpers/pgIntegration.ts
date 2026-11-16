@@ -41,7 +41,8 @@ function knexCli(args: string[], databaseUrl: string, label: string): void {
     ],
     {
       cwd: backendDir,
-      env: { ...process.env, DATABASE_URL: databaseUrl, TZ: "America/Sao_Paulo" },
+      // O Vitest define NODE_ENV=test, ambiente que o knexfile não declara.
+      env: { ...process.env, NODE_ENV: "development", DATABASE_URL: databaseUrl, TZ: "America/Sao_Paulo" },
       stdio: "inherit",
       shell: true,
     },

@@ -6,6 +6,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import {
+  BookOpen,
   CalendarCheck,
   CalendarDays,
   ClipboardCheck,
@@ -145,6 +146,12 @@ export default function Sidebar({ expandido }: SidebarProps) {
       href: "/minha-frequencia",
       icon: CalendarCheck,
       podeVer: ehAluno,
+    },
+    {
+      label: ehAdmin ? "Conteúdos Acadêmicos" : "Meus Conteúdos",
+      href: "/conteudos",
+      icon: BookOpen,
+      podeVer: ehAdmin || ehProfessor,
     },
     {
       label: "Lançamento de Notas",

@@ -37,7 +37,7 @@ async function atualizar(req: Request, res: Response) {
 }
 
 async function vincularDisciplina(req: Request, res: Response) {
-  try { return res.json(await professorService.vincularDisciplina(String(req.params.id), req.body?.disciplinaId)); }
+  try { return res.json(await professorService.vincularDisciplina(String(req.params.id), req.body?.cursoDisciplinaId)); }
   catch (erro) { return responderErro(res, erro, 'Erro ao vincular disciplina ao professor'); }
 }
 

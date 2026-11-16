@@ -33,13 +33,14 @@ function normalizar(dados: CriarProfessorDTO | AtualizarProfessor) {
 function validarCampos(dados: CriarProfessorDTO | AtualizarProfessor, criacao: boolean) {
   const obrigatorios = ['nome','cpf','data_nascimento','logradouro','numero','bairro','cidade_id','estado','cep'] as const;
   if (criacao) for (const campo of obrigatorios) if (!dados[campo]) throw new ValidationError(`O campo ${campo} é obrigatório.`);
-  if (criacao && (!dados.disciplinaIds || !dados.disciplinaIds.length)) throw new ValidationError('Selecione ao menos uma disciplina.');
+  if (criacao && (!dados.cursoDisciplinaIds || !dados.cursoDisciplinaIds.length)) throw new ValidationError('Selecione ao menos uma disciplina.');
   if (dados.nome !== undefined && dados.nome.length < 3) throw new ValidationError('Nome inválido.');
   if (dados.cpf !== undefined && !cpfValido(dados.cpf)) throw new ValidationError('CPF inválido.');
   if (dados.cep !== undefined && !/^\d{8}$/.test(dados.cep)) throw new ValidationError('CEP inválido.');
   if (dados.estado !== undefined && !UFS.has(dados.estado)) throw new ValidationError('UF inválida.');
-  if (dados.disciplinaIds !== undefined) {
-    for (const disciplinaId of dados.disciplinaIds) if (!UUID.test(disciplinaId)) throw new ValidationError('Disciplina inválida.');
+  if (dados.cursoDisciplinaIds !== undefined) {
+    if (!Array.isArray(dados.cursoDisciplinaIds)) throw new ValidationError('Disciplinas inválidas.');
+    for (const id of dados.cursoDisciplinaIds) if (typeof id !== 'string' || !UUID.test(id)) throw new ValidationError('Disciplina inválida.');
   }
   if (dados.faculdade_id !== undefined && !UUID.test(dados.faculdade_id)) throw new ValidationError('Faculdade inválida.');
   if (dados.cidade_id !== undefined && !/^\d{7}$/.test(dados.cidade_id)) throw new ValidationError('Código IBGE da cidade inválido.');
@@ -56,9 +57,9 @@ async function validarRelacionamentos(dados: CriarProfessorDTO | AtualizarProfes
   if (!cidade) throw new ValidationError('Cidade inexistente.');
   if (dados.estado && cidade.uf !== dados.estado) throw new ValidationError('A UF não corresponde à cidade informada.');
 
-  if (dados.disciplinaIds !== undefined) {
-    const disciplinas = await professorRepository.buscarDisciplinasAtivasPorIds(dados.disciplinaIds);
-    if (disciplinas.length !== new Set(dados.disciplinaIds).size) {
+  if (dados.cursoDisciplinaIds !== undefined) {
+    const disciplinas = await professorRepository.buscarCursoDisciplinasAtivasPorIds(dados.cursoDisciplinaIds);
+    if (disciplinas.length !== new Set(dados.cursoDisciplinaIds).size) {
       throw new ValidationError('Uma ou mais disciplinas informadas são inválidas ou inativas.');
     }
   }
@@ -68,15 +69,24 @@ async function validarRelacionamentos(dados: CriarProfessorDTO | AtualizarProfes
   }
 }
 
-// Impede tirar do cadastro uma disciplina que o professor ainda ministra em turma ativa ou planejada.
+// Impede tirar do cadastro uma disciplina que o professor ainda ministra em turma ativa ou planejada,
+// ou pela qual responde como responsável do conteúdo acadêmico.
 // Ofertas encerradas ficam como historico e nao bloqueiam.
 async function validarRemocaoDeDisciplinas(id: string, dados: AtualizarProfessor, atual: any) {
-  if (dados.disciplinaIds === undefined) return;
-  const novas = new Set(dados.disciplinaIds);
+  if (dados.cursoDisciplinaIds === undefined) return;
+  const novas = new Set(dados.cursoDisciplinaIds);
   const removidas = ((atual?.disciplinas ?? []) as { id: string }[])
     .map((disciplina) => disciplina.id)
     .filter((disciplinaId) => !novas.has(disciplinaId));
   if (!removidas.length) return;
+
+  const responsabilidades = await professorRepository.listarResponsabilidadesDeConteudo(id, removidas);
+  if (responsabilidades.length) {
+    const detalhes = responsabilidades.map((r: any) => `${r.disciplina} (${r.curso})`).join('; ');
+    throw new ConflictError(
+      `Não é possível remover disciplinas cujo conteúdo acadêmico está sob responsabilidade deste professor: ${detalhes}. Transfira o responsável pelo conteúdo antes de remover a disciplina.`,
+    );
+  }
 
   const ofertas = await professorRepository.listarOfertasEmAndamentoPorDisciplinas(id, removidas);
   if (!ofertas.length) return;
@@ -129,14 +139,14 @@ async function atualizar(id: string, payload: AtualizarProfessor) {
   catch (erro) { traduzirErroBanco(erro); }
 }
 
-// Habilita o professor em mais uma disciplina, usado ao montar a oferta de uma turma.
-async function vincularDisciplina(id: string, disciplinaId: unknown) {
-  if (typeof disciplinaId !== 'string' || !UUID.test(disciplinaId)) throw new ValidationError('Disciplina inválida.');
+// Habilita o professor em mais uma disciplina de um curso, usado ao montar a oferta de uma turma.
+async function vincularDisciplina(id: string, cursoDisciplinaId: unknown) {
+  if (typeof cursoDisciplinaId !== 'string' || !UUID.test(cursoDisciplinaId)) throw new ValidationError('Disciplina inválida.');
   const professor = await buscarPorId(id);
   if (!professor.ativo) throw new ValidationError('Professor inativo não pode receber disciplinas.');
-  const [disciplina] = await professorRepository.buscarDisciplinasAtivasPorIds([disciplinaId]);
+  const [disciplina] = await professorRepository.buscarCursoDisciplinasAtivasPorIds([cursoDisciplinaId]);
   if (!disciplina) throw new ValidationError('Disciplina inexistente ou inativa.');
-  await professorRepository.vincularDisciplina(id, disciplinaId);
+  await professorRepository.vincularDisciplina(id, cursoDisciplinaId);
   return professorRepository.buscarPorId(id);
 }
 

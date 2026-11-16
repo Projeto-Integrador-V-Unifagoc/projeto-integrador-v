@@ -5,7 +5,7 @@ import SearchableSelect, {
 } from "../../components/SearchableSelect/SearchableSelect";
 import TextField from "../../components/TextField";
 import Button from "../../components/Button";
-import type { DisciplinaSelecionada, ProfessorFormData } from "./professor-form-model";
+import { rotuloDisciplina, type DisciplinaSelecionada, type ProfessorFormData } from "./professor-form-model";
 
 type ProfessorFormErrors = Partial<Record<keyof ProfessorFormData, string>>;
 
@@ -78,23 +78,30 @@ export default function ProfessorFormFields({
                 <Autocomplete
                     multiple
                     options={disciplinaOptions}
-                    getOptionLabel={(option) => option.nome}
+                    getOptionLabel={(option) => rotuloDisciplina(option)}
+                    groupBy={(option) => option.cursoNome ?? ""}
                     isOptionEqualToValue={(option, value) => option.id === value.id}
                     value={data.disciplinasSelecionadas}
                     onChange={(_event, value) => onChangeDisciplinas(value)}
+                    // Na lista o curso já aparece no cabeçalho do grupo; o chip mostra os dois.
+                    renderOption={(props, option) => {
+                        const { key, ...rest } = props;
+                        return <li key={key} {...rest}>{option.nome}</li>;
+                    }}
                     renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                            <Chip label={option.nome} size="small" {...getTagProps({ index })} />
-                        ))
+                        value.map((option, index) => {
+                            const { key, ...tagProps } = getTagProps({ index });
+                            return <Chip key={key} label={rotuloDisciplina(option)} size="small" {...tagProps} />;
+                        })
                     }
                     renderInput={(params) => (
                         <TextField
                             {...params}
-                            label="Disciplinas"
+                            label="Disciplinas por curso"
                             placeholder="Buscar disciplinas"
                             required={required}
-                            error={Boolean(errors.disciplinaIds)}
-                            helperText={helper(errors.disciplinaIds)}
+                            error={Boolean(errors.cursoDisciplinaIds)}
+                            helperText={helper(errors.cursoDisciplinaIds)}
                             sx={{
                                 "& .MuiOutlinedInput-root": {
                                     height: "auto",

@@ -67,6 +67,10 @@ import PainelCursos from "../Pages/Painel/PainelCursos";
 import PainelMenu from "../Pages/Painel/PainelMenu";
 import PainelUsuarios from "../Pages/Painel/PainelUsuarios";
 import ManualDoSistema from "../Pages/ManualDoSistema/ManualDoSistema";
+import ConteudosCursos from "../Pages/Conteudos/ConteudosCursos";
+import ConteudosDisciplinas from "../Pages/Conteudos/ConteudosDisciplinas";
+import EditorConteudo from "../Pages/Conteudos/EditorConteudo";
+import { ConteudoDisciplinaAluno, PreviaConteudo } from "../Pages/Conteudos/LeitorConteudo";
 import ManualUsuarioAutenticacao from "../Pages/ManualDoSistema/components/ManualUsuarioAutenticacao/ManualUsuarioAutenticacao";
 import ManualAlunos from "../Pages/ManualDoSistema/components/ManualAlunos/ManualAlunos";
 import ManualStatus from "../Pages/ManualDoSistema/components/ManualStatus/ManualStatus";
@@ -468,6 +472,46 @@ export default function AppRoutes() {
           }
         />
 
+        <Route
+          path="/conteudos"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
+              <ConteudosCursos />
+            </RouteByRole>
+          }
+        />
+        <Route
+          path="/conteudos/cursos/:cursoId"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
+              <ConteudosDisciplinas />
+            </RouteByRole>
+          }
+        />
+        <Route
+          path="/conteudos/disciplinas/:cursoDisciplinaId"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
+              <EditorConteudo />
+            </RouteByRole>
+          }
+        />
+        <Route
+          path="/conteudos/disciplinas/:cursoDisciplinaId/visualizar"
+          element={
+            <RouteByRole perfisPermitidos={ACESSO_PROFESSOR}>
+              <PreviaConteudo />
+            </RouteByRole>
+          }
+        />
+        <Route
+          path="/minhas-disciplinas/:turmaDisciplinaId/conteudo"
+          element={
+            <RouteByRole perfisPermitidos={["aluno"]}>
+              <ConteudoDisciplinaAluno />
+            </RouteByRole>
+          }
+        />
         <Route
           path="/relatorios/lista"
           element={

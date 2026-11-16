@@ -1,5 +1,5 @@
 import { db } from '../../../database/connection.js';
-import type { AtualizarProfessor, CriarProfessorDTO, FiltroProfessor } from '../models/professorModels.js';
+import type { AtualizarProfessor, CriarProfessorDTO, DisciplinaDoProfessor, FiltroProfessor } from '../models/professorModels.js';
 
 const baseQuery = () => db('piv.professor')
   .join('piv.pessoa', 'piv.professor.pessoa_id', 'piv.pessoa.id')
@@ -14,19 +14,36 @@ const camposCompletos = [
   'piv.professor.faculdade_id', 'piv.faculdade.nome as faculdade',
 ];
 
+// Cada vínculo é uma disciplina dentro de um curso (linha da matriz curricular).
+// O `id` devolvido é o da `curso_disciplina`, que é o que o cadastro envia.
 async function anexarDisciplinas<T extends { id: string }>(professores: T[]) {
   const ids = professores.map((professor) => professor.id);
   const vinculos = ids.length
     ? await db('piv.professor_disciplina')
-        .join('piv.disciplinas', 'piv.professor_disciplina.disciplina_id', 'piv.disciplinas.id')
+        .join('piv.curso_disciplina', 'piv.professor_disciplina.curso_disciplina_id', 'piv.curso_disciplina.id')
+        .join('piv.disciplinas', 'piv.curso_disciplina.disciplina_id', 'piv.disciplinas.id')
+        .join('piv.curso', 'piv.curso_disciplina.curso_id', 'piv.curso.id')
         .whereIn('piv.professor_disciplina.professor_id', ids)
-        .select('piv.professor_disciplina.professor_id', 'piv.disciplinas.id', 'piv.disciplinas.nome')
-        .orderBy('piv.disciplinas.nome')
+        .select(
+          'piv.professor_disciplina.professor_id',
+          'piv.curso_disciplina.id',
+          'piv.disciplinas.id as disciplina_id',
+          'piv.disciplinas.nome',
+          'piv.curso.id as curso_id',
+          'piv.curso.nome as curso_nome',
+        )
+        .orderBy(['piv.curso.nome', 'piv.disciplinas.nome'])
     : [];
-  const porProfessor = new Map<string, { id: string; nome: string }[]>();
+  const porProfessor = new Map<string, DisciplinaDoProfessor[]>();
   for (const vinculo of vinculos) {
     const lista = porProfessor.get(vinculo.professor_id) ?? [];
-    lista.push({ id: vinculo.id, nome: vinculo.nome });
+    lista.push({
+      id: vinculo.id,
+      disciplinaId: vinculo.disciplina_id,
+      nome: vinculo.nome,
+      cursoId: vinculo.curso_id,
+      cursoNome: vinculo.curso_nome,
+    });
     porProfessor.set(vinculo.professor_id, lista);
   }
   return professores.map((professor) => ({ ...professor, disciplinas: porProfessor.get(professor.id) ?? [] }));
@@ -59,9 +76,15 @@ export const professorRepository = {
       .select('piv.professor.id').where('piv.pessoa.cpf', cpf).first();
   },
 
-  async buscarDisciplinasAtivasPorIds(ids: string[]) {
+  // Linhas da matriz ativas (associação e disciplina) entre os ids informados.
+  async buscarCursoDisciplinasAtivasPorIds(ids: string[]) {
     if (!ids.length) return [];
-    return db('piv.disciplinas').whereIn('id', ids).andWhere('ativo', true).select('id', 'nome');
+    return db('piv.curso_disciplina')
+      .join('piv.disciplinas', 'piv.curso_disciplina.disciplina_id', 'piv.disciplinas.id')
+      .whereIn('piv.curso_disciplina.id', ids)
+      .andWhere('piv.curso_disciplina.ativo', true)
+      .andWhere('piv.disciplinas.ativo', true)
+      .select('piv.curso_disciplina.id', 'piv.disciplinas.nome');
   },
 
   async buscarFaculdadePorId(id: string) {
@@ -84,7 +107,7 @@ export const professorRepository = {
         faculdade_id: dados.faculdade_id ?? null, ativo: true,
       }).returning('*');
       await trx('piv.professor_disciplina').insert(
-        dados.disciplinaIds.map((disciplina_id) => ({ professor_id: professor.id, disciplina_id })),
+        dados.cursoDisciplinaIds.map((curso_disciplina_id) => ({ professor_id: professor.id, curso_disciplina_id })),
       );
       return { ...professor, nome: pessoa.nome, cpf: pessoa.cpf };
     });
@@ -102,11 +125,11 @@ export const professorRepository = {
       if (dados.faculdade_id !== undefined) {
         await trx('piv.professor').where({ id }).update({ faculdade_id: dados.faculdade_id, updated_at: trx.fn.now() });
       }
-      if (dados.disciplinaIds !== undefined) {
+      if (dados.cursoDisciplinaIds !== undefined) {
         await trx('piv.professor_disciplina').where({ professor_id: id }).del();
-        if (dados.disciplinaIds.length) {
+        if (dados.cursoDisciplinaIds.length) {
           await trx('piv.professor_disciplina').insert(
-            dados.disciplinaIds.map((disciplina_id) => ({ professor_id: id, disciplina_id })),
+            dados.cursoDisciplinaIds.map((curso_disciplina_id) => ({ professor_id: id, curso_disciplina_id })),
           );
         }
       }
@@ -134,31 +157,43 @@ export const professorRepository = {
   },
 
   // Acrescenta uma disciplina sem mexer nas demais; repetir o vinculo nao gera erro.
-  async vincularDisciplina(professorId: string, disciplinaId: string) {
+  async vincularDisciplina(professorId: string, cursoDisciplinaId: string) {
     await db('piv.professor_disciplina')
-      .insert({ professor_id: professorId, disciplina_id: disciplinaId })
-      .onConflict(['professor_id', 'disciplina_id'])
+      .insert({ professor_id: professorId, curso_disciplina_id: cursoDisciplinaId })
+      .onConflict(['professor_id', 'curso_disciplina_id'])
       .ignore();
   },
 
-  // Ofertas ativas ou planejadas em que o professor responde por alguma das disciplinas informadas.
-  async listarOfertasEmAndamentoPorDisciplinas(professorId: string, disciplinaIds: string[]) {
-    if (!disciplinaIds.length) return [];
+  // Ofertas ativas ou planejadas em que o professor responde por alguma das linhas da matriz informadas.
+  async listarOfertasEmAndamentoPorDisciplinas(professorId: string, cursoDisciplinaIds: string[]) {
+    if (!cursoDisciplinaIds.length) return [];
     return db('piv.turma_disciplina')
       .join('piv.curso_disciplina', 'piv.turma_disciplina.curso_disciplina_id', 'piv.curso_disciplina.id')
       .join('piv.disciplinas', 'piv.curso_disciplina.disciplina_id', 'piv.disciplinas.id')
       .join('piv.turma', 'piv.turma_disciplina.turma_id', 'piv.turma.id')
       .where('piv.turma_disciplina.professor_id', professorId)
-      .whereIn('piv.curso_disciplina.disciplina_id', disciplinaIds)
+      .whereIn('piv.turma_disciplina.curso_disciplina_id', cursoDisciplinaIds)
       .whereIn('piv.turma_disciplina.status', ['ativa', 'planejada'])
       .select('piv.disciplinas.nome as disciplina', 'piv.turma.sigla as turma')
       .orderBy(['piv.disciplinas.nome', 'piv.turma.sigla']);
   },
 
-  async professorLecionaDisciplina(professorId: string, disciplinaId: string) {
+  async professorLecionaDisciplina(professorId: string, cursoDisciplinaId: string) {
     const vinculo = await db('piv.professor_disciplina')
-      .where({ professor_id: professorId, disciplina_id: disciplinaId })
+      .where({ professor_id: professorId, curso_disciplina_id: cursoDisciplinaId })
       .first('id');
     return !!vinculo;
+  },
+
+  // Linhas da matriz do vínculo do professor pelas quais ele é responsável pelo conteúdo acadêmico.
+  async listarResponsabilidadesDeConteudo(professorId: string, cursoDisciplinaIds: string[]) {
+    if (!cursoDisciplinaIds.length) return [];
+    return db('piv.conteudo_disciplina')
+      .join('piv.curso_disciplina', 'piv.conteudo_disciplina.curso_disciplina_id', 'piv.curso_disciplina.id')
+      .join('piv.disciplinas', 'piv.curso_disciplina.disciplina_id', 'piv.disciplinas.id')
+      .join('piv.curso', 'piv.curso_disciplina.curso_id', 'piv.curso.id')
+      .where('piv.conteudo_disciplina.responsavel_professor_id', professorId)
+      .whereIn('piv.conteudo_disciplina.curso_disciplina_id', cursoDisciplinaIds)
+      .select('piv.disciplinas.nome as disciplina', 'piv.curso.nome as curso');
   },
 };

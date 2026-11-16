@@ -11,11 +11,12 @@ export class TurmaDisciplinaService {
     cursoDisciplinaRepository = new CursoDisciplinaRepository();
     professorRepository = professorRepository;
 
-    private async validarProfessorLecionaDisciplina(professorId: string, disciplinaId: string) {
-        const leciona = await this.professorRepository.professorLecionaDisciplina(professorId, disciplinaId);
+    // O vínculo do professor é com a disciplina dentro do curso (curso_disciplina).
+    private async validarProfessorLecionaDisciplina(professorId: string, cursoDisciplinaId: string) {
+        const leciona = await this.professorRepository.professorLecionaDisciplina(professorId, cursoDisciplinaId);
 
         if (!leciona) {
-            throw new Error("O professor selecionado nao leciona esta disciplina");
+            throw new Error("O professor selecionado nao leciona esta disciplina neste curso");
         }
     }
 
@@ -42,7 +43,7 @@ export class TurmaDisciplinaService {
             throw new Error("Professor nao encontrado");
         }
 
-        await this.validarProfessorLecionaDisciplina(data.professorId, cursoDisciplina.disciplina.id);
+        await this.validarProfessorLecionaDisciplina(data.professorId, cursoDisciplina.id);
 
         const turmaDisciplinaExistente = await this.turmaDisciplinaRepository.buscarTurmaDisciplinaPorTurmaECursoDisciplina(
             turmaId,
@@ -98,7 +99,7 @@ export class TurmaDisciplinaService {
             if (data.professorId !== turmaDisciplinaAtual.professor?.id) {
                 await this.validarProfessorLecionaDisciplina(
                     data.professorId,
-                    turmaDisciplinaAtual.curso_disciplina.disciplina.id
+                    turmaDisciplinaAtual.curso_disciplina.id
                 );
             }
         }

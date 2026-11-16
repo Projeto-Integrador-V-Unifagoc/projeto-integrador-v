@@ -114,7 +114,14 @@ export function tratarErroDeUpload(erro: unknown): { status: number; mensagem: s
     return { status: 400, mensagem: texto || "Não foi possível receber o arquivo." };
 }
 
-export function conferirConteudoDoArquivo(caminho: string, nomeOriginal: string): void {
+// `formatos` permite que outro módulo (ex.: conteúdo acadêmico) valide com a sua
+// própria lista; o padrão continua sendo a lista dos documentos da matrícula.
+export function conferirConteudoDoArquivo(
+    caminho: string,
+    nomeOriginal: string,
+    formatos: Record<string, FormatoPermitido> = FORMATOS_ACEITOS,
+    mensagemFormatos: string = MENSAGEM_FORMATOS,
+): void {
     const remover = () => {
         try {
             fs.unlinkSync(caminho);
@@ -124,11 +131,11 @@ export function conferirConteudoDoArquivo(caminho: string, nomeOriginal: string)
     };
 
     const extensao = path.extname(nomeOriginal).toLowerCase();
-    const formato = Object.values(FORMATOS_ACEITOS).find((f) => f.extensoes.includes(extensao));
+    const formato = Object.values(formatos).find((f) => f.extensoes.includes(extensao));
 
     if (!formato) {
         remover();
-        throw new Error(MENSAGEM_FORMATOS);
+        throw new Error(mensagemFormatos);
     }
 
     let estatisticas: fs.Stats;

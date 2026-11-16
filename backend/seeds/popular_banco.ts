@@ -202,6 +202,10 @@ export async function seed(db: Knex): Promise<void> {
     await piv("turma_disciplina").delete();
     await piv("turma").delete();
     await piv("aluno").delete();
+    // Conteúdo acadêmico referencia curso_disciplina e professor com RESTRICT.
+    await piv("conteudo_arquivo").delete();
+    await piv("conteudo_topico").delete();
+    await piv("conteudo_disciplina").delete();
     await piv("professor_disciplina").delete();
     await piv("professor").delete();
     await piv("curso_disciplina").delete();
@@ -345,7 +349,7 @@ export async function seed(db: Knex): Promise<void> {
         await piv("professor_disciplina").insert(
             matrizPorCurso[cursoCodigo].map((matriz: any) => ({
                 professor_id: professor.id,
-                disciplina_id: matriz.disciplina_id,
+                curso_disciplina_id: matriz.id,
             })),
         );
 

@@ -11,16 +11,17 @@ const ids = {
 const payload = {
   nome: '  Maria   Silva ', cpf: '529.982.247-25', data_nascimento: '1990-01-01',
   logradouro: ' Rua A ', numero: '10', bairro: 'Centro', cidade_id: '3652500',
-  estado: 'mg', cep: '36500-000', disciplinaIds: [ids.disciplina],
+  estado: 'mg', cep: '36500-000', cursoDisciplinaIds: [ids.disciplina],
 };
 
 describe('professorService', () => {
   beforeEach(() => {
     Object.assign(professorRepository, original);
     professorRepository.buscarPorCpf = async () => undefined;
-    professorRepository.buscarDisciplinasAtivasPorIds = async () => [{ id: ids.disciplina, nome: 'Cálculo I' }];
+    professorRepository.buscarCursoDisciplinasAtivasPorIds = async () => [{ id: ids.disciplina, nome: 'Cálculo I' }];
     professorRepository.buscarFaculdadePorId = async () => ({ id: ids.faculdade });
     professorRepository.buscarCidadePorIbge = async () => ({ ibge: '3652500', uf: 'MG' });
+    professorRepository.listarResponsabilidadesDeConteudo = async () => [];
   });
   afterEach(() => Object.assign(professorRepository, original));
 
@@ -32,7 +33,7 @@ describe('professorService', () => {
     expect(recebido.nome).toBe('Maria Silva');
     expect(recebido.cpf).toBe('52998224725');
     expect(recebido.cep).toBe('36500000');
-    expect(recebido.disciplinaIds).toEqual([ids.disciplina]);
+    expect(recebido.cursoDisciplinaIds).toEqual([ids.disciplina]);
     expect('senha' in recebido).toBe(false);
     expect('email' in recebido).toBe(false);
   });
@@ -42,12 +43,12 @@ describe('professorService', () => {
   });
 
   it('rejeita quando nenhuma disciplina é informada na criação', async () => {
-    const { disciplinaIds, ...semDisciplinas } = payload;
+    const { cursoDisciplinaIds, ...semDisciplinas } = payload;
     await expect(professorService.criar(semDisciplinas as any)).rejects.toThrow(/Selecione ao menos uma disciplina/);
   });
 
   it('rejeita disciplina inexistente ou inativa', async () => {
-    professorRepository.buscarDisciplinasAtivasPorIds = async () => [];
+    professorRepository.buscarCursoDisciplinasAtivasPorIds = async () => [];
     await expect(professorService.criar(payload)).rejects.toThrow(/disciplinas informadas são inválidas ou inativas/);
   });
 
@@ -116,7 +117,7 @@ describe('professorService', () => {
     await expect(professorService.criar({ ...payload, nome: 'Jo' })).rejects.toThrow(/Nome inválido/);
     await expect(professorService.criar({ ...payload, cep: '123' })).rejects.toThrow(/CEP inválido/);
     await expect(professorService.criar({ ...payload, estado: 'ZZ' })).rejects.toThrow(/UF inválida/);
-    await expect(professorService.criar({ ...payload, disciplinaIds: ['nao-uuid'] })).rejects.toThrow(/Disciplina inválida/);
+    await expect(professorService.criar({ ...payload, cursoDisciplinaIds: ['nao-uuid'] })).rejects.toThrow(/Disciplina inválida/);
     await expect(professorService.criar({ ...payload, faculdade_id: 'nao-uuid' })).rejects.toThrow(/Faculdade inválida/);
     await expect(professorService.criar({ ...payload, cidade_id: '123' })).rejects.toThrow(/Código IBGE/);
     await expect(professorService.criar({ ...payload, data_nascimento: '2999-01-01' })).rejects.toThrow(/Data de nascimento inválida/);
@@ -152,7 +153,7 @@ describe('professorService', () => {
     });
 
     it('rejeita disciplina inexistente ou inativa', async () => {
-      professorRepository.buscarDisciplinasAtivasPorIds = async () => [];
+      professorRepository.buscarCursoDisciplinasAtivasPorIds = async () => [];
       await expect(professorService.vincularDisciplina(ids.professor, ids.disciplina)).rejects.toThrow(/inexistente ou inativa/);
     });
   });
@@ -180,11 +181,11 @@ describe('professorService', () => {
       expect(atualizado.cpf).toBe('52998224725');
     });
 
-    it('substitui as disciplinas vinculadas quando disciplinaIds é enviado', async () => {
+    it('substitui as disciplinas vinculadas quando cursoDisciplinaIds é enviado', async () => {
       let recebido: any;
       professorRepository.atualizar = async (_id: string, dados: any) => (recebido = dados, dados as any);
-      await professorService.atualizar(ids.professor, { disciplinaIds: [ids.disciplina] });
-      expect(recebido.disciplinaIds).toEqual([ids.disciplina]);
+      await professorService.atualizar(ids.professor, { cursoDisciplinaIds: [ids.disciplina] });
+      expect(recebido.cursoDisciplinaIds).toEqual([ids.disciplina]);
     });
 
     it('bloqueia remover disciplina que o professor ministra em turma ativa ou planejada', async () => {
@@ -192,15 +193,28 @@ describe('professorService', () => {
       let consultado: any;
       let salvou = false;
       professorRepository.buscarPorId = async () => ({ id: ids.professor, cidade_id: '3652500', disciplinas: [{ id: ids.disciplina }, { id: outra }] } as any);
-      professorRepository.listarOfertasEmAndamentoPorDisciplinas = async (id: string, disciplinaIds: string[]) => (
-        consultado = { id, disciplinaIds },
+      professorRepository.listarOfertasEmAndamentoPorDisciplinas = async (id: string, cursoDisciplinaIds: string[]) => (
+        consultado = { id, cursoDisciplinaIds },
         [{ disciplina: 'Algoritmos', turma: 'ADS5A' }, { disciplina: 'Algoritmos', turma: 'ADS5B' }]
       ) as any;
       professorRepository.atualizar = async () => (salvou = true, {} as any);
 
-      await expect(professorService.atualizar(ids.professor, { disciplinaIds: [ids.disciplina] }))
+      await expect(professorService.atualizar(ids.professor, { cursoDisciplinaIds: [ids.disciplina] }))
         .rejects.toMatchObject({ status: 409, message: expect.stringMatching(/Algoritmos \(turmas ADS5A, ADS5B\)/) });
-      expect(consultado).toEqual({ id: ids.professor, disciplinaIds: [outra] });
+      expect(consultado).toEqual({ id: ids.professor, cursoDisciplinaIds: [outra] });
+      expect(salvou).toBe(false);
+    });
+
+    it('bloqueia remover disciplina cujo conteudo academico esta sob responsabilidade do professor', async () => {
+      const outra = '44444444-4444-4444-8444-444444444444';
+      let salvou = false;
+      professorRepository.buscarPorId = async () => ({ id: ids.professor, cidade_id: '3652500', disciplinas: [{ id: ids.disciplina }, { id: outra }] } as any);
+      professorRepository.listarResponsabilidadesDeConteudo = async () => [{ disciplina: 'Algoritmos', curso: 'ADS' }] as any;
+      professorRepository.listarOfertasEmAndamentoPorDisciplinas = async () => [];
+      professorRepository.atualizar = async () => (salvou = true, {} as any);
+
+      await expect(professorService.atualizar(ids.professor, { cursoDisciplinaIds: [ids.disciplina] }))
+        .rejects.toMatchObject({ status: 409, message: expect.stringMatching(/Algoritmos \(ADS\).*Transfira/) });
       expect(salvou).toBe(false);
     });
 
@@ -211,8 +225,8 @@ describe('professorService', () => {
       professorRepository.listarOfertasEmAndamentoPorDisciplinas = async () => [];
       professorRepository.atualizar = async (_id: string, dados: any) => (recebido = dados, dados as any);
 
-      await professorService.atualizar(ids.professor, { disciplinaIds: [ids.disciplina] });
-      expect(recebido.disciplinaIds).toEqual([ids.disciplina]);
+      await professorService.atualizar(ids.professor, { cursoDisciplinaIds: [ids.disciplina] });
+      expect(recebido.cursoDisciplinaIds).toEqual([ids.disciplina]);
     });
 
     it('nao consulta turmas quando nenhuma disciplina e removida', async () => {
@@ -221,7 +235,7 @@ describe('professorService', () => {
       professorRepository.listarOfertasEmAndamentoPorDisciplinas = async () => (consultou = true, []);
       professorRepository.atualizar = async (_id: string, dados: any) => dados as any;
 
-      await professorService.atualizar(ids.professor, { disciplinaIds: [ids.disciplina] });
+      await professorService.atualizar(ids.professor, { cursoDisciplinaIds: [ids.disciplina] });
       await professorService.atualizar(ids.professor, { logradouro: 'Rua Nova' });
       expect(consultou).toBe(false);
     });

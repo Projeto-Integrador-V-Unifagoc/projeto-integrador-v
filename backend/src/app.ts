@@ -14,6 +14,7 @@ import { notasRouter } from "./Modules/routes/notasRoutes";
 import { matriculaRouter } from "./Modules/routes/matriculaRoutes";
 import { documentoRouter } from "./Modules/routes/documentoRoutes";
 import { configuracaoEmailRouter } from "./Modules/routes/configuracaoEmailRoutes";
+import { conteudoRouter } from "./Modules/routes/conteudoRoutes";
 import { inscricaoPublicaRouter } from "./Modules/routes/inscricaoPublicaRoutes";
 import { siteRouter } from "./Modules/site/routes/siteRoutes";
 import { FichaController } from "./Modules/modulo-ficha/controller/FichaController";
@@ -50,6 +51,9 @@ app.use(
     exposedHeaders: ["Retry-After", "RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "RateLimit-Policy"],
   }),
 );
+// O documento de uma página de conteúdo acadêmico passa do limite padrão (100 kB).
+// O parser com limite maior vem antes; o padrão abaixo ignora o corpo já lido.
+app.use("/conteudos", express.json({ limit: "2mb" }));
 app.use(express.json());
 
 app.get("/health", (req, res) => {
@@ -262,6 +266,7 @@ app.use(homeAlunoRouter);
 app.use(matriculaRouter);
 app.use(documentoRouter);
 app.use(configuracaoEmailRouter);
+app.use("/conteudos", conteudoRouter);
 
 // Sob Vitest (testes de integração com supertest) o app é apenas importado,
 // nunca escuta numa porta. Em execução normal (`tsx src/app.ts`, `npm start`,

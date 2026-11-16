@@ -53,6 +53,7 @@ services:
       - "3000"
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./backend/uploads-conteudo:/app/uploads-conteudo
     networks:
       - app-network
     depends_on:

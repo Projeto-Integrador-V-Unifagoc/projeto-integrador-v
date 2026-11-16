@@ -95,12 +95,15 @@ export class UsuarioRepository {
       )
       .first();
     if (!professor) return professor;
+    // O vínculo é por disciplina dentro do curso; o perfil mostra "Disciplina (Curso)".
     const disciplinas = await db('piv.professor_disciplina')
-      .join('piv.disciplinas', 'piv.professor_disciplina.disciplina_id', 'piv.disciplinas.id')
+      .join('piv.curso_disciplina', 'piv.professor_disciplina.curso_disciplina_id', 'piv.curso_disciplina.id')
+      .join('piv.disciplinas', 'piv.curso_disciplina.disciplina_id', 'piv.disciplinas.id')
+      .join('piv.curso', 'piv.curso_disciplina.curso_id', 'piv.curso.id')
       .where('piv.professor_disciplina.professor_id', professor.vinculo_id)
-      .select('piv.disciplinas.nome')
-      .orderBy('piv.disciplinas.nome');
-    return { ...professor, disciplinas: disciplinas.map((disciplina) => disciplina.nome) };
+      .select('piv.disciplinas.nome', 'piv.curso.nome as curso_nome')
+      .orderBy(['piv.disciplinas.nome', 'piv.curso.nome']);
+    return { ...professor, disciplinas: disciplinas.map((disciplina) => `${disciplina.nome} (${disciplina.curso_nome})`) };
   }
 
   // Lista alunos que ainda não possuem login vinculado (usuario_id nulo).

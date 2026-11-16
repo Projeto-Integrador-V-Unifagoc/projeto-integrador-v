@@ -15,19 +15,19 @@ import type { SelectOption } from "../../components/SearchableSelect/SearchableS
 import ProfessorFormFields from "./ProfessorFormFields";
 import {
     initialProfessorFormData,
+    opcoesDeDisciplinaPorCurso,
+    rotuloDisciplina,
     type DisciplinaSelecionada,
     type ProfessorFormData,
 } from "./professor-form-model";
 import { sugerirFaculdade } from "./sugerir-faculdade";
 import { professorApi } from "../../services/professor-api";
-import { disciplinaApi } from "../../services/disciplina-api";
 import { cursoDisciplinaApi } from "../../services/curso-disciplina-api";
 import { cursoApi } from "../../services/curso-api";
 import { faculdadeApi } from "../../services/faculdade-api";
 import { cidadeApi } from "../../services/cidade-api";
 import { useViaCep } from "../../hooks/use-cep";
 import type { Professor, AtualizarProfessorDTO } from "../../models/professor-model";
-import type { DisciplinaResponse } from "../../models/disciplina-model";
 import type { CursoDisciplinaResponse } from "../../models/curso-disciplina-model";
 import type { CursoResponse } from "../../models/curso-model";
 import type { FaculdadeResponse } from "../../models/faculdade-model";
@@ -54,7 +54,6 @@ function getMensagemErro(error: unknown, fallback: string) {
 export default function Professores() {
     const navigate = useNavigate();
     const [professores, setProfessores] = useState<Professor[]>([]);
-    const [disciplinas, setDisciplinas] = useState<DisciplinaResponse[]>([]);
     const [cursoDisciplinas, setCursoDisciplinas] = useState<CursoDisciplinaResponse[]>([]);
     const [cursos, setCursos] = useState<CursoResponse[]>([]);
     const [faculdades, setFaculdades] = useState<FaculdadeResponse[]>([]);
@@ -86,16 +85,14 @@ export default function Professores() {
     async function carregarDados() {
         setLoading(true);
         try {
-            const [professoresResponse, disciplinasResponse, cursoDisciplinasResponse, cursosResponse, faculdadesResponse, cidadesResponse] = await Promise.all([
+            const [professoresResponse, cursoDisciplinasResponse, cursosResponse, faculdadesResponse, cidadesResponse] = await Promise.all([
                 professorApi.listar(),
-                disciplinaApi.listarDisciplinas(),
                 cursoDisciplinaApi.listarCursoDisciplinas(),
                 cursoApi.listarCursos(),
                 faculdadeApi.listarFaculdades(),
                 cidadeApi.buscarCidades(),
             ]);
             setProfessores(professoresResponse);
-            setDisciplinas(disciplinasResponse);
             setCursoDisciplinas(cursoDisciplinasResponse);
             setCursos(cursosResponse);
             setFaculdades(faculdadesResponse);
@@ -121,7 +118,7 @@ export default function Professores() {
                 const campos = [
                     professor.nome,
                     professor.cpf,
-                    professor.disciplinas?.map((disciplina) => disciplina.nome).join(" ") || "",
+                    professor.disciplinas?.map((disciplina) => rotuloDisciplina(disciplina)).join(" ") || "",
                     professor.faculdade || "",
                 ];
                 if (!campos.some((campo) => normalizar(String(campo)).includes(search))) return false;
@@ -152,15 +149,15 @@ export default function Professores() {
             const proximo: ProfessorEditData = {
                 ...prev,
                 disciplinasSelecionadas: selecionadas,
-                disciplinaIds: selecionadas.map((disciplina) => disciplina.id),
+                cursoDisciplinaIds: selecionadas.map((disciplina) => disciplina.id),
             };
             if (prev.faculdadeSugerida) {
-                const sugestao = sugerirFaculdade(proximo.disciplinaIds, cursoDisciplinas, cursos);
+                const sugestao = sugerirFaculdade(proximo.cursoDisciplinaIds, cursoDisciplinas, cursos);
                 proximo.faculdade_id = sugestao?.id || "";
             }
             return proximo;
         });
-        clearError("disciplinaIds");
+        clearError("cursoDisciplinaIds");
     }
 
     function handleChangeFaculdade(faculdadeId: string) {
@@ -186,8 +183,12 @@ export default function Professores() {
             nome: professor.nome,
             cpf: professor.cpf,
             dataNascimento: professor.data_nascimento?.slice(0, 10) || "",
-            disciplinaIds: professor.disciplinas?.map((disciplina) => disciplina.id) || [],
-            disciplinasSelecionadas: professor.disciplinas || [],
+            cursoDisciplinaIds: professor.disciplinas?.map((disciplina) => disciplina.id) || [],
+            disciplinasSelecionadas: (professor.disciplinas || []).map((disciplina) => ({
+                id: disciplina.id,
+                nome: disciplina.nome,
+                cursoNome: disciplina.cursoNome,
+            })),
             faculdade_id: professor.faculdade_id || "",
             faculdadeSugerida: false,
             cidade_id: professor.cidade_id || "",
@@ -276,7 +277,7 @@ export default function Professores() {
                 cidade_id: editData.cidade_id || undefined,
                 estado: editData.uf || undefined,
                 cep: editData.cep || undefined,
-                disciplinaIds: editData.disciplinaIds,
+                cursoDisciplinaIds: editData.cursoDisciplinaIds,
                 faculdade_id: editData.faculdade_id || undefined,
             };
 
@@ -329,7 +330,7 @@ export default function Professores() {
             headerName: "Disciplinas",
             flex: 1,
             minWidth: 220,
-            valueGetter: (_value, row) => (row as Professor).disciplinas?.map((disciplina) => disciplina.nome).join(", ") || "—",
+            valueGetter: (_value, row) => (row as Professor).disciplinas?.map((disciplina) => rotuloDisciplina(disciplina)).join(", ") || "—",
         },
         { field: "cpf", headerName: "CPF", width: 150 },
         { field: "faculdade", headerName: "Faculdade", flex: 1, minWidth: 180 },
@@ -430,7 +431,7 @@ export default function Professores() {
                     <ProfessorFormFields
                         data={editData}
                         errors={errors}
-                        disciplinaOptions={disciplinas}
+                        disciplinaOptions={opcoesDeDisciplinaPorCurso(cursoDisciplinas)}
                         faculdadeOptions={faculdades}
                         cidadeOptions={cidadeOptions}
                         onChange={handleEditChange}

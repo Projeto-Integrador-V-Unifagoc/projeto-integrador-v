@@ -37,6 +37,7 @@ import {
   ROTULO_TIPO_AVALIACAO,
 } from "../../utils/avaliacao";
 import { prazoHumano } from "../Agenda/agenda-utils";
+import ConteudoNaDisciplina from "../Conteudos/ConteudoNaDisciplina";
 import {
   calcularProjecaoFrequencia,
   calcularProjecaoNota,
@@ -246,6 +247,8 @@ export default function DisciplinaDetalhesDrawer({
 
       <Stack gap={2.5} p={{ xs: 2, sm: 3 }}>
         <Alert severity={severidade}>{mensagemSituacao}</Alert>
+
+        <ConteudoNaDisciplina key={disciplina.turmaDisciplinaId} turmaDisciplinaId={disciplina.turmaDisciplinaId} />
 
         <Grid container spacing={1.25}>
           <Grid size={{ xs: 6, sm: 4 }}>
