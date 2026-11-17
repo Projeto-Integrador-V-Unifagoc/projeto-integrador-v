@@ -23,6 +23,29 @@ export interface AtribuicaoProfessor {
   mediaTurma: number | null; frequenciaMedia: number | null; alunosEmAtencao: number;
   totalAvaliacoes: number; lancamentosPendentes: number;
   notasFaltantes: number;
+  /** Alunos da oferta (enviado no dashboard para filtrar por turma/disciplina). */
+  alunos?: AlunoProfessor[];
+}
+export interface AvaliacaoPeriodoProfessor {
+  id: string;
+  turmaDisciplinaId: string;
+  titulo: string;
+  tipo: string;
+  valor: number;
+  dataDevolucao: string | null;
+  notasLancadas: number;
+  notasEsperadas: number;
+  /** Média das notas lançadas ÷ valor da avaliação × 100. */
+  mediaPercentual: number | null;
+  /** Notas incompletas e devolução já passou (ou sem data). */
+  vencida: boolean;
+}
+export interface ChamadaPendenteProfessor {
+  aulaId: string;
+  turmaDisciplinaId: string;
+  data: string;
+  registrados: number;
+  esperados: number;
 }
 export interface DashboardProfessor {
   professor: { id: string; nome: string };
@@ -38,6 +61,8 @@ export interface DashboardProfessor {
   alunosEmAtencao: Array<AlunoProfessor & { turmaDisciplinaId: string; disciplinaNome: string; turmaSigla: string }>;
   competenciasEmDificuldade: Array<DesempenhoCompetenciaProfessor & { turmaDisciplinaId: string; disciplinaNome: string; turmaSigla: string }>;
   proximasAulas: Array<{ id: string; turmaDisciplinaId: string; data: string; horaInicio: string; horaFim: string; local: string | null; turmaSigla: string; disciplinaCodigo: string; disciplinaNome: string }>;
+  avaliacoes?: AvaliacaoPeriodoProfessor[];
+  chamadasPendentes?: ChamadaPendenteProfessor[];
   geradoEm: string;
 }
 export interface DetalheAtribuicaoProfessor extends AtribuicaoProfessor {

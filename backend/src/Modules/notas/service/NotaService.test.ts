@@ -262,6 +262,20 @@ describe("NotaService autorizacao e acesso", () => {
     expect(r.alunoId).toBe(alunoId);
     expect(r.disciplinas).toHaveLength(1);
     expect(r.disciplinas[0].avaliacoes[0].valorObtido).toBe(15);
+    expect(r.disciplinas[0].avaliacoes[0].dataDevolucao).toBeNull();
+  });
+
+  it("meuBoletim informa as datas de lançamento e devolução de cada avaliação", async () => {
+    const service = criar({
+      listarTurmasDoAluno: async () => [{ turma_disciplina_id: turmaDisciplinaId, disciplina_id: "d", disciplina_codigo: "D1", disciplina_nome: "Disciplina", turma_sigla: "A", periodo_id: "pl", periodo_codigo: "2026/1", professor_nome: "Prof" }],
+      listarBoletimDoAluno: async () => [
+        { turma_disciplina_id: turmaDisciplinaId, matricula_turma_disciplina_id: matriculaId, avaliacao_id: "p1", tipo_avaliacao: "PROVA", descricao_avaliacao: "P1", valor: 20, nota_valor: 15, data_lancamento: new Date(2026, 9, 2, 14, 30), data_devolucao: new Date(2026, 9, 9) },
+        { turma_disciplina_id: turmaDisciplinaId, matricula_turma_disciplina_id: matriculaId, avaliacao_id: "p2", tipo_avaliacao: "PROVA", descricao_avaliacao: "P2", valor: 20, nota_valor: null, data_lancamento: "2026-11-20T15:00:00.000Z", data_devolucao: "2026-11-27" },
+      ],
+    });
+    const [p1, p2] = (await service.meuBoletim(reqAluno)).disciplinas[0].avaliacoes;
+    expect(p1).toMatchObject({ dataLancamento: "2026-10-02", dataDevolucao: "2026-10-09", lancada: true });
+    expect(p2).toMatchObject({ dataLancamento: "2026-11-20", dataDevolucao: "2026-11-27", lancada: false });
   });
 
   it("consultarAluno permite professor com vinculo e bloqueia sem vinculo", async () => {

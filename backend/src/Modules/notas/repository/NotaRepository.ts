@@ -257,6 +257,7 @@ export class NotaRepository {
         "a.descricao_avaliacao",
         "a.valor",
         "a.data_lancamento",
+        "a.data_devolucao",
         "n.valor as nota_valor",
         "n.publicada_em",
       );

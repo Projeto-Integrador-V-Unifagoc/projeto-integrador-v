@@ -32,13 +32,22 @@ export interface MensagemAssistente {
   texto: string;
 }
 
+/**
+ * Ação de um botão de IA das telas. O frontend manda só o tipo e os identificadores;
+ * a instrução para o modelo é montada no backend (AcoesAssistente.ts).
+ */
+export type AcaoAssistente =
+  | { tipo: "entender_desempenho"; turmaDisciplinaId: string }
+  | { tipo: "orientacoes" }
+  | { tipo: "analisar_aluno"; turmaDisciplinaId: string; alunoId: string };
+
 export const assistenteApi = {
   async status(): Promise<{ ativo: boolean }> {
     return (await api.get("/assistente/status")).data;
   },
 
-  async enviar(mensagem: string, historico: MensagemAssistente[]): Promise<{ resposta: string }> {
-    return (await api.post("/assistente/mensagens", { mensagem, historico })).data;
+  async enviar(mensagem: string, historico: MensagemAssistente[], acao?: AcaoAssistente): Promise<{ resposta: string }> {
+    return (await api.post("/assistente/mensagens", { mensagem, historico, ...(acao ? { acao } : {}) })).data;
   },
 
   async buscarConfiguracao(): Promise<ConfiguracaoIa> {

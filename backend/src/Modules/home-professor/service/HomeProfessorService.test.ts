@@ -21,6 +21,7 @@ function service(overrides: Record<string, any> = {}) {
     listarCompetenciasPlanejadas: async () => [],
     listarAvaliacoesCompetencias: async () => [],
     listarHorarios: async () => [],
+    listarChamadas: async () => [],
     ...overrides,
   };
   const instance = new HomeProfessorService();
@@ -37,6 +38,47 @@ describe("HomeProfessorService", () => {
     assert.equal(resultado.atribuicoes[0].frequenciaMedia, 70);
     assert.equal(resultado.atribuicoes[0].alunosEmAtencao, 1);
     assert.equal(resultado.resumo.notasFaltantes, 0);
+  });
+
+  it("envia os alunos de cada oferta para filtrar o dashboard por turma e disciplina", async () => {
+    const resultado: any = await service().dashboard(reqProfessor);
+    assert.deepEqual(resultado.atribuicoes[0].alunos, [
+      { id: "a1", matricula: 1, nome: "Aluno", media: 60, frequencia: 70, nivel: "CRITICO", motivo: "Frequencia de 70%, abaixo do minimo" },
+    ]);
+  });
+
+  it("lista as avaliacoes do periodo com cobertura de notas e media percentual", async () => {
+    const ontem = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    const resultado: any = await service({
+      listarAvaliacoes: async () => [
+        { id: "av1", turma_disciplina_id: "td1", tipo_avaliacao: "PROVA", descricao_avaliacao: "P1", valor: 20, notas_lancadas: 1, media_notas: "15.0", data_devolucao: ontem },
+        { id: "av2", turma_disciplina_id: "td1", tipo_avaliacao: "PROVA", descricao_avaliacao: "P2", valor: 20, notas_lancadas: 0, media_notas: null, data_devolucao: ontem },
+      ],
+    }).dashboard(reqProfessor);
+    assert.deepEqual(resultado.avaliacoes.map((item: any) => [item.id, item.notasLancadas, item.notasEsperadas, item.mediaPercentual, item.vencida]), [
+      ["av1", 1, 1, 75, false],
+      ["av2", 0, 1, null, true],
+    ]);
+  });
+
+  it("aponta como pendente so a chamada com registros faltando em aula ja cadastrada", async () => {
+    const resultado: any = await service({
+      listarChamadas: async () => [
+        { aula_id: "au1", turma_disciplina_id: "td1", data: new Date(2026, 10, 11, 19), registrados: "30", esperados: "42" },
+        { aula_id: "au2", turma_disciplina_id: "td1", data: new Date(2026, 10, 12, 19), registrados: "42", esperados: "42" },
+      ],
+    }).dashboard(reqProfessor);
+    assert.deepEqual(resultado.chamadasPendentes, [
+      { aulaId: "au1", turmaDisciplinaId: "td1", data: "2026-11-11", registrados: 30, esperados: 42 },
+    ]);
+  });
+
+  it("o painel resumido da IA tira as listas da tela e mantem os alunos em atencao", async () => {
+    const resultado: any = await service().painelResumido(reqProfessor);
+    assert.equal(resultado.atribuicoes[0].alunos, undefined);
+    assert.equal(resultado.avaliacoes, undefined);
+    assert.equal(resultado.alunosEmAtencao.length, 1);
+    assert.equal(resultado.atribuicoes[0].mediaTurma, 60);
   });
 
   it("bloqueia perfil que nao seja professor", async () => {

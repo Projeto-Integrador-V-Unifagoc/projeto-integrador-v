@@ -9,7 +9,8 @@ import {
     type BaseDeConhecimento,
     type PerfilAssistente,
 } from "../conhecimento/carregador";
-import { AssistenteErro, comTempoLimite, erroDoProvedor } from "./AssistenteErro";
+import { instrucaoDaAcao, validarAcao } from "./AcoesAssistente";
+import { AssistenteErro, causasDoErro, comTempoLimite, erroDoProvedor } from "./AssistenteErro";
 import { ConfiguracaoIaService } from "./ConfiguracaoIaService";
 import { criarModelo, type FabricaDeModelo } from "./ModeloIa";
 import { criarFerramentasDeDados, fontesPadrao, type FontesDeDados, type UsuarioAutenticado } from "./FerramentasDados";
@@ -156,9 +157,11 @@ export class AssistenteService {
     ) {}
 
     /** `usuario` vem sempre do token já validado pelo middleware: é ele que define perfil e vínculos. */
-    async responder(usuario: UsuarioAutenticado, mensagem: unknown, historico: unknown): Promise<{ resposta: string }> {
+    async responder(usuario: UsuarioAutenticado, mensagem: unknown, historico: unknown, acao?: unknown): Promise<{ resposta: string }> {
         const perfil = perfilDoUsuario(usuario?.tipo_usuario);
         if (!perfil || !usuario?.id) throw new AssistenteErro(403, "Seu perfil não tem acesso ao assistente.");
+        // Botões de IA das telas: a instrução interna é montada aqui e vale só para esta mensagem.
+        const acaoValidada = validarAcao(perfil, acao);
 
         const texto = typeof mensagem === "string" ? mensagem.trim() : "";
         if (!texto) throw new AssistenteErro(400, "Escreva sua dúvida.");
@@ -180,7 +183,11 @@ export class AssistenteService {
 
         const hoje = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
         const mensagens: BaseMessage[] = [
-            new SystemMessage(`${promptDoSistema(conhecimento, perfil)}\n\nData de hoje: ${hoje}.`),
+            // Uma única mensagem de sistema: alguns provedores não aceitam mais de uma.
+            new SystemMessage(
+                `${promptDoSistema(conhecimento, perfil)}\n\nData de hoje: ${hoje}.` +
+                    (acaoValidada ? `\n\n${instrucaoDaAcao(acaoValidada)}` : ""),
+            ),
             ...historicoValido(historico),
             new HumanMessage(texto),
         ];
@@ -210,7 +217,7 @@ export class AssistenteService {
             }
         } catch (err) {
             if (err instanceof AssistenteErro) throw err;
-            console.error("[assistente] falha no provedor de IA:", (err as Error)?.message);
+            console.error("[assistente] falha no provedor de IA:", (err as Error)?.message, causasDoErro(err));
             throw erroDoProvedor(err);
         }
 

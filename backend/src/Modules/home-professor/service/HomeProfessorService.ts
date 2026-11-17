@@ -19,7 +19,10 @@ export class HomeProfessorService {
     }
     if (!periodo) return this.vazio(professor, periodos);
 
-    const dados = await this.carregar(professor.id, String(periodo.id));
+    const [dados, chamadas] = await Promise.all([
+      this.carregar(professor.id, String(periodo.id)),
+      this.repository.listarChamadas(professor.id, String(periodo.id)),
+    ]);
     const atribuicoes = this.montarAtribuicoes(dados);
     const alunosUnicos = new Set(dados.alunos.map((item: any) => String(item.aluno_id))).size;
     const lancamentosPendentes = atribuicoes.reduce((total: number, item: any) => total + item.lancamentosPendentes, 0);
@@ -49,13 +52,72 @@ export class HomeProfessorService {
         avaliacoesIncompletas: lancamentosPendentes,
         notasFaltantes,
       },
-      atribuicoes: atribuicoes.map(({ alunos: _alunos, ...item }: any) => item),
+      // `alunos` por oferta permite filtrar o dashboard por turma/disciplina no navegador.
+      atribuicoes,
       avaliacoesProximas: this.avaliacoesProximas(dados.avaliacoes, atribuicoes),
       alunosEmAtencao: alertas.slice(0, 12),
       competenciasEmDificuldade: competenciasEmDificuldade.slice(0, 12),
       proximasAulas: this.proximasAulas(dados.horarios),
+      avaliacoes: this.avaliacoesDoPeriodo(dados.avaliacoes, atribuicoes),
+      chamadasPendentes: this.chamadasPendentes(chamadas),
       geradoEm: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Painel para a ferramenta de IA (consultarMeuPainel): sem as listas de alunos por oferta e de avaliações,
+   * que só servem aos filtros da tela e fariam o resultado passar do limite da ferramenta (corte em 24 mil
+   * caracteres, que cairia justamente em alunosEmAtencao). Os detalhes ficam nas consultas por turma/aluno.
+   */
+  async painelResumido(req: Request, periodoSolicitado?: string) {
+    const { atribuicoes, avaliacoes: _avaliacoes, ...resto } = await this.dashboard(req, periodoSolicitado);
+    return { ...resto, atribuicoes: atribuicoes.map(({ alunos: _alunos, ...item }: any) => item) };
+  }
+
+  // Todas as avaliações do período com a cobertura de notas. "vencida" usa a mesma regra
+  // de lancamentosPendentes: notas incompletas e devolução já passou (ou sem data).
+  private avaliacoesDoPeriodo(avaliacoes: any[], atribuicoes: any[]) {
+    const porOferta = new Map(atribuicoes.map((item: any) => [item.id, item]));
+    return avaliacoes.map((item: any) => {
+      const atribuicao: any = porOferta.get(String(item.turma_disciplina_id));
+      const esperadas = atribuicao?.totalAlunos ?? 0;
+      const lancadas = Number(item.notas_lancadas);
+      const dataDevolucao = this.dataIso(item.data_devolucao);
+      const devolucaoPassou = !dataDevolucao || new Date(`${dataDevolucao}T23:59:59`).getTime() <= Date.now();
+      const media = item.media_notas === null || item.media_notas === undefined ? null : Number(item.media_notas);
+      return {
+        id: String(item.id),
+        turmaDisciplinaId: String(item.turma_disciplina_id),
+        titulo: item.descricao_avaliacao || item.tipo_avaliacao,
+        tipo: item.tipo_avaliacao,
+        valor: Number(item.valor),
+        dataDevolucao,
+        notasLancadas: lancadas,
+        notasEsperadas: esperadas,
+        mediaPercentual: media === null || Number(item.valor) <= 0 ? null : this.numero(100 * media / Number(item.valor)),
+        vencida: lancadas < esperadas && devolucaoPassou,
+      };
+    });
+  }
+
+  // Aulas já cadastradas em que falta registro de algum aluno ativo (sem etapa de confirmação).
+  private chamadasPendentes(chamadas: any[]) {
+    return chamadas
+      .map((item: any) => ({
+        aulaId: String(item.aula_id),
+        turmaDisciplinaId: String(item.turma_disciplina_id),
+        data: this.dataLocal(item.data),
+        registrados: Number(item.registrados),
+        esperados: Number(item.esperados),
+      }))
+      .filter((item) => item.data !== null && item.registrados < item.esperados);
+  }
+
+  private dataLocal(valor: unknown) {
+    if (!valor) return null;
+    const data = valor instanceof Date ? valor : new Date(String(valor));
+    if (Number.isNaN(data.getTime())) return null;
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
   }
 
   async detalhe(req: Request, turmaDisciplinaId: string) {
@@ -334,7 +396,9 @@ export class HomeProfessorService {
         turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0,
         lancamentosPendentes: 0, avaliacoesIncompletas: 0, notasFaltantes: 0,
       },
-      atribuicoes: [], avaliacoesProximas: [], alunosEmAtencao: [], competenciasEmDificuldade: [], proximasAulas: [], geradoEm: new Date().toISOString(),
+      atribuicoes: [], avaliacoesProximas: [], alunosEmAtencao: [], competenciasEmDificuldade: [],
+      proximasAulas: [], avaliacoes: [], chamadasPendentes: [],
+      geradoEm: new Date().toISOString(),
     };
   }
 

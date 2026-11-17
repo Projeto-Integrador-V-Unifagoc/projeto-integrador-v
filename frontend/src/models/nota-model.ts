@@ -113,6 +113,10 @@ export interface DisciplinaBoletim extends Boletim {
     valorMaximo: number;
     valorObtido: number | null;
     lancada: boolean;
+    /** AAAA-MM-DD da aplicação/lançamento da avaliação. */
+    dataLancamento?: string | null;
+    /** AAAA-MM-DD prevista para devolução (publicação da nota). */
+    dataDevolucao?: string | null;
   }[];
 }
 

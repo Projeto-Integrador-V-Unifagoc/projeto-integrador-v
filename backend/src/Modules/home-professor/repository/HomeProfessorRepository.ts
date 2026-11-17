@@ -114,10 +114,37 @@ export class HomeProfessorRepository {
         "av.data_lancamento", "av.data_devolucao", "av.valor",
       )
       .count({ notas_lancadas: "n.id" })
+      .avg({ media_notas: "n.valor" })
       .groupBy("av.id")
       .orderByRaw("COALESCE(av.data_devolucao, av.data_lancamento::date) ASC");
     if (turmaDisciplinaId) query.where("td.id", turmaDisciplinaId);
     return query;
+  }
+
+  // Aulas já cadastradas (data <= agora) em que falta registro de frequência de algum aluno ativo.
+  // Mesmo conceito do "naoLancadas" do FrequenciaService. O aluno só conta como esperado se já estava
+  // vinculado à disciplina na data da aula (data_vinculo) ou se já tem registro nela: quem entrou depois
+  // não gera pendência retroativa. Uma passada só (GROUP BY + HAVING) devolve apenas as aulas pendentes.
+  listarChamadas(professorId: string, periodoId: string) {
+    return db("aula as au")
+      .join("turma_disciplina as td", "au.turma_disciplina_id", "td.id")
+      .join("turma as t", "td.turma_id", "t.id")
+      .join("matricula_turma_disciplina as mtd", "mtd.turma_disciplina_id", "au.turma_disciplina_id")
+      .join("matricula as m", "mtd.matricula_id", "m.id")
+      .leftJoin("frequencia as f", (join) => join.on("f.aula_id", "au.id").andOn("f.matricula_turma_disciplina_id", "mtd.id"))
+      .where("td.professor_id", professorId)
+      .where("t.periodo_letivo_id", periodoId)
+      .whereRaw(`lower(td.status) in (${STATUS_ATIVO.map(() => "?").join(",")})`, STATUS_ATIVO)
+      .whereRaw(`lower(mtd.status) in (${STATUS_ATIVO.map(() => "?").join(",")})`, STATUS_ATIVO)
+      .whereRaw(`lower(m.status) in (${STATUS_MATRICULA.map(() => "?").join(",")})`, STATUS_MATRICULA)
+      .whereRaw("au.data <= now()")
+      .whereRaw("(f.id is not null or mtd.data_vinculo <= (au.data at time zone 'America/Sao_Paulo')::date)")
+      .select("au.id as aula_id", "au.turma_disciplina_id", "au.data")
+      .count({ registrados: "f.id" })
+      .count({ esperados: "mtd.id" })
+      .groupBy("au.id")
+      .havingRaw("count(f.id) < count(mtd.id)")
+      .orderBy("au.data", "asc");
   }
 
   listarCompetencias(disciplinaId: string) {
