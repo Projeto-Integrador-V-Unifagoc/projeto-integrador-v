@@ -2,6 +2,7 @@ import type { Request } from "express";
 import { tool } from "@langchain/core/tools";
 
 import { perfilDoUsuario, type PerfilAssistente } from "../conhecimento/carregador";
+import { validarMatricula } from "../../modulo-gestao-alunos/service/matricula";
 
 /**
  * Ferramentas de consulta a dados acadêmicos reais.
@@ -48,6 +49,20 @@ function preguicoso<T>(criar: () => T): () => T {
 }
 
 const acessoNegado = () => Object.assign(new Error("Acesso negado."), { status: 403 });
+
+/** O serviço de alunos não verifica perfil: a trava fica aqui, além das ferramentas só existirem para a secretaria. */
+function exigirSecretaria(req: Request) {
+    if (perfilDoUsuario((req as any)?.user?.tipo_usuario) !== "secretaria") throw acessoNegado();
+}
+
+/** Só o necessário para identificar o aluno: nada de CPF, endereço ou e-mail. */
+const identificacaoDoAluno = (a: any) => ({
+    alunoId: a.id,
+    nome: a.pessoa?.nome,
+    matricula: a.matricula,
+    curso: a.curso?.nome ?? null,
+    periodo: a.periodo,
+});
 
 /**
  * Os serviços só são carregados quando usados (evita ciclos de import e mantém o módulo leve nos testes)
@@ -98,31 +113,16 @@ export function fontesPadrao(): FontesDeDados {
             }));
         },
         buscarAlunos: async (req, nome) => {
-            // O serviço de alunos não verifica perfil: a trava fica aqui, além da ferramenta só existir para a secretaria.
-            if (perfilDoUsuario((req as any)?.user?.tipo_usuario) !== "secretaria") throw acessoNegado();
+            exigirSecretaria(req);
             const lista: any[] = await alunos().listarAlunos({ nome });
-            // Só o necessário para identificar o aluno: nada de CPF, endereço ou e-mail.
-            return lista.slice(0, 15).map((a) => ({
-                alunoId: a.id,
-                nome: a.pessoa?.nome,
-                matricula: a.matricula,
-                curso: a.curso?.nome ?? null,
-                periodo: a.periodo,
-            }));
+            return lista.slice(0, 15).map(identificacaoDoAluno);
         },
         buscarAlunoPorMatricula: async (req, matricula) => {
-            // Mesma trava de buscarAlunos: o serviço de alunos não verifica perfil.
-            if (perfilDoUsuario((req as any)?.user?.tipo_usuario) !== "secretaria") throw acessoNegado();
-            const aluno: any = await alunos().buscarAlunoPorMatricula(matricula);
-            if (!aluno) return null;
-            // O serviço devolve CPF, endereço e e-mail: ao modelo vão só os dados de identificação.
-            return {
-                alunoId: aluno.id,
-                nome: aluno.pessoa?.nome,
-                matricula: aluno.matricula,
-                curso: aluno.curso?.nome ?? null,
-                periodo: aluno.periodo,
-            };
+            exigirSecretaria(req);
+            const aluno = await alunos().buscarIdentificacaoPorMatricula(matricula);
+            // 404 vira NAO_ENCONTRADO: "sem registros" faria o modelo dizer que ainda não há dados lançados.
+            if (!aluno) throw Object.assign(new Error("Aluno não encontrado."), { status: 404 });
+            return identificacaoDoAluno(aluno);
         },
     };
 }
@@ -152,18 +152,6 @@ async function executar(consulta: () => Promise<unknown>): Promise<string> {
         console.error("[assistente] falha em ferramenta de dados:", err?.message);
         return "FALHA_CONSULTA: o sistema não conseguiu consultar agora. Diga que houve uma falha e sugira tentar mais tarde.";
     }
-}
-
-/** Matrícula é o serial de `aluno.matricula`: só dígitos e dentro do limite de um integer do Postgres. */
-const MATRICULA = /^\d{1,10}$/;
-const MAIOR_MATRICULA = 2_147_483_647;
-
-export function validarMatricula(valor: unknown): string {
-    const texto = String(valor ?? "").trim();
-    if (!MATRICULA.test(texto) || Number(texto) < 1 || Number(texto) > MAIOR_MATRICULA) {
-        throw Object.assign(new Error("Matrícula inválida. Informe só os números da matrícula."), { status: 400 });
-    }
-    return String(Number(texto));
 }
 
 function validarId(valor: unknown, nome: string): string {

@@ -270,6 +270,10 @@ describe("consulta de dados acadêmicos", () => {
         for (const tipo of ["aluno", "professor"]) {
             await expect(fontes.buscarAlunos({ user: { id: "x", tipo_usuario: tipo } } as any, "Maria")).rejects.toMatchObject({ status: 403 });
         }
+    });
+
+    it("a busca por matrícula é travada para quem não é secretaria", async () => {
+        const fontes = fontesPadrao();
         for (const tipo of ["aluno", "professor"]) {
             await expect(fontes.buscarAlunoPorMatricula({ user: { id: "x", tipo_usuario: tipo } } as any, "123")).rejects.toMatchObject({ status: 403 });
         }
@@ -277,7 +281,7 @@ describe("consulta de dados acadêmicos", () => {
 
     it("busca o aluno pela matrícula com a identidade do token", async () => {
         respostaDasFontes = () => ({ alunoId: ID_A, nome: "Maria Souza", matricula: 1234, curso: "Sistemas", periodo: 3 });
-        const { fabrica, chamadas } = modeloFalso([chamar("buscarAlunoPorMatricula", { matricula: " 001234 " }), new AIMessage("Maria Souza")]);
+        const { fabrica, chamadas } = modeloFalso([chamar("buscarAlunoPorMatricula", { matricula: " 00000001234 " }), new AIMessage("Maria Souza")]);
 
         await servico(fabrica).responder(usuario("secretaria", "sec-1"), "quem é a matrícula 1234?", []);
 
@@ -286,7 +290,7 @@ describe("consulta de dados acadêmicos", () => {
     });
 
     it("matrícula inválida não chega ao backend", async () => {
-        for (const matricula of ["12a", "1 OR 1=1", "0", "99999999999", ""]) {
+        for (const matricula of ["12a", "1 OR 1=1", "0", "000", "2147483648", "99999999999", "-5", "1.5", ""]) {
             consultas = [];
             const { fabrica, chamadas } = modeloFalso([chamar("buscarAlunoPorMatricula", { matricula }), new AIMessage("ok")]);
             await servico(fabrica).responder(usuario("secretaria"), "matrícula", []);
@@ -295,11 +299,19 @@ describe("consulta de dados acadêmicos", () => {
         }
     });
 
-    it("matrícula inexistente vira SEM_REGISTROS", async () => {
-        respostaDasFontes = () => null;
+    it("matrícula enviada como número pelo modelo é aceita", async () => {
+        respostaDasFontes = () => ({ alunoId: ID_A, nome: "Maria Souza" });
+        const { fabrica, chamadas } = modeloFalso([chamar("buscarAlunoPorMatricula", { matricula: 1234 }), new AIMessage("ok")]);
+        await servico(fabrica).responder(usuario("secretaria"), "matrícula 1234", []);
+        expect(consultas).toEqual([expect.objectContaining({ fonte: "buscarAlunoPorMatricula", args: ["1234"] })]);
+        expect(String(chamadas[1].at(-1)!.content)).toContain("Maria Souza");
+    });
+
+    it("matrícula inexistente vira NAO_ENCONTRADO", async () => {
+        respostaDasFontes = () => Object.assign(new Error("Aluno não encontrado."), { status: 404 });
         const { fabrica, chamadas } = modeloFalso([chamar("buscarAlunoPorMatricula", { matricula: "999" }), new AIMessage("ok")]);
         await servico(fabrica).responder(usuario("secretaria"), "matrícula 999", []);
-        expect(String(chamadas[1].at(-1)!.content)).toContain("SEM_REGISTROS");
+        expect(String(chamadas[1].at(-1)!.content)).toContain("NAO_ENCONTRADO");
     });
 });
 

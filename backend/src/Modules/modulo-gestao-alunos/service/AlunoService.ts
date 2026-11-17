@@ -5,6 +5,7 @@ import { PessoaCommand } from "../../modulo-pessoa-usuario/models/Pessoa";
 import { PessoaRepository } from "../../modulo-pessoa-usuario/repository/PessoaRepository";
 import { AlunoCommand } from "../models/Aluno";
 import { AlunoRepository } from "../repository/AlunoRespository";
+import { validarMatricula } from "./matricula";
 import { validarSenha } from "../../usuario-perfil-autenticacao/services/senha-policy";
 import { notificacaoService } from "../../configuracao-email/service/NotificacaoService";
 
@@ -135,11 +136,17 @@ export class AlunoService {
     }
 
     async buscarAlunoPorMatricula(matricula: string) {
-        const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula);
+        const aluno = await this.alunoRepository.buscarAlunoPorMatricula(validarMatricula(matricula));
         return aluno;
     }
 
+    /** Só o que identifica o aluno (id, matrícula, período, nome e curso): sem CPF, endereço ou e-mail. */
+    async buscarIdentificacaoPorMatricula(matricula: string) {
+        return this.alunoRepository.buscarIdentificacaoPorMatricula(validarMatricula(matricula));
+    }
+
     async atualizarAluno(matricula: string, data: any) {
+        matricula = validarMatricula(matricula);
         const aluno = await this.alunoRepository.buscarAlunoPorMatricula(matricula);
 
         if (!aluno) {
