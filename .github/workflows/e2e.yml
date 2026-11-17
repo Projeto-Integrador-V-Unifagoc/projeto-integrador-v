@@ -81,6 +81,15 @@ jobs:
         working-directory: e2e
         run: npm run test:e2e
 
+      - name: Validar seeds completas e idempotência
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
+          DEMO_SEEDS: "true"
+        run: |
+          npm run seed
+          npm run seed
+
       - name: Publicar relatório e traces
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

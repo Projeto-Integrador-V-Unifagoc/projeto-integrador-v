@@ -1,3 +1,6 @@
+-- ARQUIVO LEGADO: não executar no schema acadêmico atual.
+-- Use `npm run migrate` e `npm run seed`, conforme backend/seeds/README.md.
+-- Mantido apenas como referência histórica da modelagem anterior.
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

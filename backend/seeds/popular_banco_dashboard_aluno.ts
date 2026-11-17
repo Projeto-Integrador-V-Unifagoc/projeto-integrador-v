@@ -1,7 +1,7 @@
 import type { Knex } from "knex";
 
 // Dados de demonstração do dashboard do aluno (fase 2).
-// Roda logo depois de popular_banco.ts (ordem alfabética), que apaga e recria a base.
+// Roda depois de 20260512000000_popular_banco.ts, que apaga e recria a base.
 // Idempotente: apaga e recria as avaliações e aulas das turmas da aluna demo, com datas
 // relativas a hoje, para o cenário funcionar em qualquer dia.
 //   npm run seed --prefix backend -- --specific=popular_banco_dashboard_aluno.ts

@@ -248,8 +248,8 @@ export async function seed(knex: Knex): Promise<void> {
     .onConflict(["professor_id", "disciplina_id"])
     .ignore();
 
-  // So pode existir um periodo por ano/semestre. O popular_banco.ts (que roda depois) recria o
-  // 2026/1 com outro codigo, entao numa segunda execucao dos seeds reaproveita o periodo existente.
+  // Só pode existir um período por ano/semestre. A base principal roda antes deste cenário e
+  // já cria 2026/1, portanto o relatório reaproveita o período acadêmico existente.
   const periodoExistente = await knex(`${SCHEMA}.periodo_letivo`)
     .where({ ano: 2026, semestre: 1 })
     .first("id");
@@ -268,11 +268,19 @@ export async function seed(knex: Knex): Promise<void> {
     });
   }
 
+  const matrizVigente = await knex(`${SCHEMA}.matriz_curricular`)
+    .where({ curso_id: ids.curso, status: "VIGENTE" })
+    .first("id");
+  if (!matrizVigente) {
+    throw new Error("Matriz curricular vigente do curso ADS-REL não encontrada.");
+  }
+
   await knex(`${SCHEMA}.curso_disciplina`)
     .insert(
       disciplinas.map((disciplina, index) => ({
         id: disciplina.cursoDisciplinaId,
         curso_id: ids.curso,
+        matriz_curricular_id: matrizVigente.id,
         disciplina_id: disciplina.id,
         periodo_ideal: 5 + index,
         obrigatoria: true,
@@ -280,14 +288,15 @@ export async function seed(knex: Knex): Promise<void> {
         ativo: true,
       }))
     )
-    .onConflict(["curso_id", "disciplina_id"])
-    .merge();
+    .onConflict(["matriz_curricular_id", "disciplina_id"])
+    .merge(["periodo_ideal", "obrigatoria", "carga_horaria", "ativo", "updated_at"]);
 
   await knex(`${SCHEMA}.turma`)
     .insert({
       id: ids.turma,
       periodo_letivo_id: periodoLetivoId,
       curso_id: ids.curso,
+      matriz_curricular_id: matrizVigente.id,
       periodo_curricular: 5,
       descricao: "ADS 5 Periodo 2026/1",
       sigla: "ADS5A",

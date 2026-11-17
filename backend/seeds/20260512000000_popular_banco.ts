@@ -187,13 +187,16 @@ function emailDe(nome: string, indice: number): string {
 }
 
 export async function seed(db: Knex): Promise<void> {
-    const piv = (tabela: string) => db(`piv.${tabela}`);
+    await db.transaction(async (trx) => {
+    const piv = (tabela: string) => trx(`piv.${tabela}`);
     const senha = await bcrypt.hash(SENHA_PADRAO, 10);
 
-    const cidade = await piv("cidade").where({ ibge: CIDADE_IBGE }).first();
-    if (!cidade) {
-        throw new Error(`Cidade ${CIDADE_IBGE} não encontrada. Rode o seed de cidades antes deste.`);
-    }
+    // Garante a dependência mínima sem exigir que a carga completa de municípios
+    // (cidades.ts) tenha sido executada antes da base acadêmica.
+    await piv("cidade")
+        .insert({ nome: "Turmalina", uf: "MG", ibge: CIDADE_IBGE })
+        .onConflict("ibge")
+        .merge(["nome", "uf"]);
 
     // ---------- limpeza do que este seed cria ----------
     await piv("matricula_turma_disciplina").delete();
@@ -474,7 +477,7 @@ export async function seed(db: Knex): Promise<void> {
         }
     }
 
-    await db.raw(`SELECT setval('piv.aluno_matricula_seq', ?, true)`, [matriculaAtual]);
+    await trx.raw(`SELECT setval('piv.aluno_matricula_seq', ?, true)`, [matriculaAtual]);
 
     // ---------- conteudo do site ----------
     const categorias = await piv("site_categoria").select("id", "slug");
@@ -514,4 +517,5 @@ export async function seed(db: Knex): Promise<void> {
             `(${ativos} matriculados, 3 aguardando validação de documentos). ` +
             `Senha de todos: ${SENHA_PADRAO}`,
     );
+    });
 }
