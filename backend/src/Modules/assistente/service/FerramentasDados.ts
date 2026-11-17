@@ -31,6 +31,7 @@ export interface FontesDeDados {
     frequenciaDoAluno(req: Request, alunoId: string): Promise<unknown>;
     turmasEDisciplinas(req: Request): Promise<unknown>;
     buscarAlunos(req: Request, nome: string): Promise<unknown>;
+    buscarAlunoPorMatricula(req: Request, matricula: string): Promise<unknown>;
 }
 
 /** Deixa no boletim só as disciplinas (turma/disciplina) que o professor leciona e recalcula o alerta. */
@@ -109,6 +110,20 @@ export function fontesPadrao(): FontesDeDados {
                 periodo: a.periodo,
             }));
         },
+        buscarAlunoPorMatricula: async (req, matricula) => {
+            // Mesma trava de buscarAlunos: o serviço de alunos não verifica perfil.
+            if (perfilDoUsuario((req as any)?.user?.tipo_usuario) !== "secretaria") throw acessoNegado();
+            const aluno: any = await alunos().buscarAlunoPorMatricula(matricula);
+            if (!aluno) return null;
+            // O serviço devolve CPF, endereço e e-mail: ao modelo vão só os dados de identificação.
+            return {
+                alunoId: aluno.id,
+                nome: aluno.pessoa?.nome,
+                matricula: aluno.matricula,
+                curso: aluno.curso?.nome ?? null,
+                periodo: aluno.periodo,
+            };
+        },
     };
 }
 
@@ -137,6 +152,18 @@ async function executar(consulta: () => Promise<unknown>): Promise<string> {
         console.error("[assistente] falha em ferramenta de dados:", err?.message);
         return "FALHA_CONSULTA: o sistema não conseguiu consultar agora. Diga que houve uma falha e sugira tentar mais tarde.";
     }
+}
+
+/** Matrícula é o serial de `aluno.matricula`: só dígitos e dentro do limite de um integer do Postgres. */
+const MATRICULA = /^\d{1,10}$/;
+const MAIOR_MATRICULA = 2_147_483_647;
+
+export function validarMatricula(valor: unknown): string {
+    const texto = String(valor ?? "").trim();
+    if (!MATRICULA.test(texto) || Number(texto) < 1 || Number(texto) > MAIOR_MATRICULA) {
+        throw Object.assign(new Error("Matrícula inválida. Informe só os números da matrícula."), { status: 400 });
+    }
+    return String(Number(texto));
 }
 
 function validarId(valor: unknown, nome: string): string {
@@ -243,6 +270,16 @@ export function criarFerramentasDeDados(perfil: PerfilAssistente, usuario: Usuar
                 if (nome.length < 3) throw Object.assign(new Error("Informe ao menos 3 letras do nome."), { status: 400 });
                 return fontes.buscarAlunos(req, nome.slice(0, 80));
             },
+        ),
+        ferramenta(
+            "buscarAlunoPorMatricula",
+            "Encontra um aluno pelo número de matrícula: alunoId, nome, matrícula, curso e período. Use quando o usuário informar a matrícula.",
+            {
+                type: "object",
+                properties: { matricula: { type: "string", description: "Número da matrícula do aluno, só dígitos." } },
+                required: ["matricula"],
+            },
+            (a) => fontes.buscarAlunoPorMatricula(req, validarMatricula(a.matricula)),
         ),
         rendimentoDaTurma,
         frequenciaDaTurma,
