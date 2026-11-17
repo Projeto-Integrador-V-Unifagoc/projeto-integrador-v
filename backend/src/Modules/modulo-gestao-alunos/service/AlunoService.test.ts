@@ -218,3 +218,26 @@ describe("AlunoService.criarAluno", () => {
     );
   });
 });
+
+describe("AlunoService: validação da matrícula", () => {
+  it("rejeita matrícula inválida antes de consultar o repositório", async () => {
+    let consultou = false;
+    const { service } = criar({
+      buscarAlunoPorMatricula: async () => ((consultou = true), null),
+      buscarIdentificacaoPorMatricula: async () => ((consultou = true), null),
+    });
+    for (const matricula of ["abc", "12a", "0", "2147483648", "-1", ""]) {
+      await assert.rejects(() => service.buscarAlunoPorMatricula(matricula), /Matrícula inválida/);
+      await assert.rejects(() => service.buscarIdentificacaoPorMatricula(matricula), /Matrícula inválida/);
+      await assert.rejects(() => service.atualizarAluno(matricula, {}), /Matrícula inválida/);
+    }
+    assert.equal(consultou, false);
+  });
+
+  it("remove espaços e zeros à esquerda", async () => {
+    let recebido: any;
+    const { service } = criar({ buscarIdentificacaoPorMatricula: async (m: string) => ((recebido = m), null) });
+    await service.buscarIdentificacaoPorMatricula("  00000001234 ");
+    assert.equal(recebido, "1234");
+  });
+});
