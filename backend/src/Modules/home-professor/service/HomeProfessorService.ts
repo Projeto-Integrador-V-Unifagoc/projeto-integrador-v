@@ -1,4 +1,5 @@
 import type { Request } from "express";
+import { calcularDesempenhoCompetencias, CRITERIOS_COMPETENCIA } from "../../competencias/domain/desempenhoCompetencia";
 import { calcularBoletim, type AvaliacaoResumo } from "../../notas/models/Nota";
 import { CRITERIOS_PROFESSOR, type NivelAtencaoProfessor } from "../models/HomeProfessor";
 import { HomeProfessorRepository } from "../repository/HomeProfessorRepository";
@@ -25,10 +26,18 @@ export class HomeProfessorService {
     const atribuicoes = this.montarAtribuicoes(dados);
     const alunosUnicos = new Set(dados.alunos.map((item: any) => String(item.aluno_id))).size;
     const lancamentosPendentes = atribuicoes.reduce((total: number, item: any) => total + item.lancamentosPendentes, 0);
+    const notasFaltantes = atribuicoes.reduce((total: number, item: any) => total + item.notasFaltantes, 0);
     const alertas = atribuicoes.flatMap((item: any) => item.alunos
       .filter((aluno: any) => aluno.nivel === "CRITICO" || aluno.nivel === "ATENCAO")
       .map((aluno: any) => ({ ...aluno, turmaDisciplinaId: item.id, disciplinaNome: item.disciplina.nome, turmaSigla: item.turma.sigla })))
       .sort((a: any, b: any) => this.prioridade(a.nivel) - this.prioridade(b.nivel));
+    const competenciasEmDificuldade = atribuicoes.flatMap((item: any) =>
+      this.montarDesempenhoCompetencias(dados, item.id)
+        .filter((competencia: any) => competencia.classificacao === "DIFICULDADE" || competencia.classificacao === "ATENCAO")
+        .map((competencia: any) => ({
+          ...competencia, turmaDisciplinaId: item.id, disciplinaNome: item.disciplina.nome, turmaSigla: item.turma.sigla,
+        })),
+    ).sort((a: any, b: any) => (a.media ?? 101) - (b.media ?? 101));
 
     return {
       professor,
@@ -40,11 +49,15 @@ export class HomeProfessorService {
         disciplinasDistintas: new Set(atribuicoes.map((item: any) => item.disciplina.id)).size,
         alunosUnicos,
         lancamentosPendentes,
+        avaliacoesIncompletas: lancamentosPendentes,
+        notasFaltantes,
       },
       // `alunos` por oferta permite filtrar o dashboard por turma/disciplina no navegador.
       atribuicoes,
       avaliacoesProximas: this.avaliacoesProximas(dados.avaliacoes, atribuicoes),
       alunosEmAtencao: alertas.slice(0, 12),
+      competenciasEmDificuldade: competenciasEmDificuldade.slice(0, 12),
+      proximasAulas: this.proximasAulas(dados.horarios),
       avaliacoes: this.avaliacoesDoPeriodo(dados.avaliacoes, atribuicoes),
       chamadasPendentes: this.chamadasPendentes(chamadas),
       geradoEm: new Date().toISOString(),
@@ -114,10 +127,15 @@ export class HomeProfessorService {
       const dados = await this.carregar(professor.id, String((periodo as any).id), turmaDisciplinaId);
       const [atribuicao] = this.montarAtribuicoes(dados);
       if (atribuicao) {
+        const desempenhoCompetencias = this.montarDesempenhoCompetencias(dados, atribuicao.id);
         return {
           ...atribuicao,
           periodo: this.periodo(periodo),
-          competencias: await this.repository.listarCompetencias(atribuicao.disciplina.id),
+          competencias: dados.competenciasPlanejadas
+            .filter((item: any) => String(item.turma_disciplina_id) === atribuicao.id)
+            .map((item: any) => ({ id: String(item.competencia_id), codigo: item.codigo, nome: item.nome, tipo: item.tipo, nivel_esperado: item.nivel_esperado, obrigatoria: Boolean(item.obrigatoria) })),
+          criteriosCompetencia: CRITERIOS_COMPETENCIA,
+          desempenhoCompetencias,
         };
       }
     }
@@ -169,6 +187,15 @@ export class HomeProfessorService {
       const vencidas = pendentes.filter((item: any) =>
         item.dataDevolucao && new Date(`${item.dataDevolucao}T23:59:59`).getTime() <= Date.now(),
       );
+      const competencias = this.montarDesempenhoCompetencias(dados, turmaDisciplinaId, alunoId);
+      const pontosCompetencia = competencias
+        .filter((item: any) => item.classificacao === "DIFICULDADE" || item.classificacao === "ATENCAO")
+        .map((item: any) => ({
+          id: `competencia-${item.id}`,
+          severidade: item.classificacao === "DIFICULDADE" ? "ATENCAO" : "INFORMATIVO",
+          titulo: `${item.codigo} · ${item.nome}`,
+          descricao: `Aproveitamento de ${item.media}% com ${item.cobertura}% de cobertura nas avaliações mapeadas.`,
+        }));
 
       return {
         aluno: { id: aluno.id, matricula: aluno.matricula, nome: aluno.nome },
@@ -190,7 +217,9 @@ export class HomeProfessorService {
           totalAvaliacoes: avaliacoes.length,
         },
         criterios: CRITERIOS_PROFESSOR,
-        pontosAtencao: this.pontosAtencao(aluno, pendentes.length, vencidas.length),
+        criteriosCompetencia: CRITERIOS_COMPETENCIA,
+        pontosAtencao: [...this.pontosAtencao(aluno, pendentes.length, vencidas.length), ...pontosCompetencia],
+        competencias,
         avaliacoes,
       };
     }
@@ -204,7 +233,11 @@ export class HomeProfessorService {
       this.repository.listarNotas(professorId, periodoId, turmaDisciplinaId),
       this.repository.listarFrequencias(professorId, periodoId, turmaDisciplinaId),
       this.repository.listarAvaliacoes(professorId, periodoId, turmaDisciplinaId),
-    ]).then(([atribuicoes, alunos, notas, frequencias, avaliacoes]) => ({ atribuicoes, alunos, notas, frequencias, avaliacoes }));
+      this.repository.listarCompetenciasPlanejadas(professorId, periodoId, turmaDisciplinaId),
+      this.repository.listarAvaliacoesCompetencias(professorId, periodoId, turmaDisciplinaId),
+      this.repository.listarHorarios(professorId, periodoId, turmaDisciplinaId),
+    ]).then(([atribuicoes, alunos, notas, frequencias, avaliacoes, competenciasPlanejadas, avaliacoesCompetencias, horarios]) =>
+      ({ atribuicoes, alunos, notas, frequencias, avaliacoes, competenciasPlanejadas, avaliacoesCompetencias, horarios }));
   }
 
   private montarAtribuicoes(dados: any) {
@@ -244,6 +277,10 @@ export class HomeProfessorService {
         const data = dataNormalizada ? new Date(`${dataNormalizada}T23:59:59`) : null;
         return Number(item.notas_lancadas) < alunos.length && (!data || data.getTime() <= Date.now());
       });
+      const notasFaltantes = vencidas.reduce(
+        (total: number, item: any) => total + Math.max(0, alunos.length - Number(item.notas_lancadas ?? 0)),
+        0,
+      );
       const medias = alunos.map((item: any) => item.media).filter((valor: any) => valor !== null);
       const frequenciasValidas = alunos.map((item: any) => item.frequencia).filter((valor: any) => valor !== null);
       return {
@@ -263,9 +300,14 @@ export class HomeProfessorService {
         alunosEmAtencao: alunos.filter((item: any) => item.nivel === "CRITICO" || item.nivel === "ATENCAO").length,
         totalAvaliacoes: avaliacoes.length,
         lancamentosPendentes: vencidas.length,
+        notasFaltantes,
         alunos,
       };
     });
+  }
+
+  private montarDesempenhoCompetencias(dados: any, turmaDisciplinaId: string, alunoId?: string) {
+    return calcularDesempenhoCompetencias(dados, turmaDisciplinaId, alunoId);
   }
 
   private avaliacoesProximas(avaliacoes: any[], atribuicoes: any[]) {
@@ -286,6 +328,23 @@ export class HomeProfessorService {
           notasLancadas: Number(item.notas_lancadas), notasEsperadas: atribuicao?.totalAlunos ?? 0,
         };
       });
+  }
+
+  private proximasAulas(horarios: any[]) {
+    const agora = new Date();
+    const inicioHoje = new Date(agora); inicioHoje.setHours(0, 0, 0, 0);
+    return horarios.flatMap((item: any) => {
+      for (let deslocamento = 0; deslocamento <= 7; deslocamento += 1) {
+        const data = new Date(inicioHoje); data.setDate(inicioHoje.getDate() + deslocamento);
+        const diaSemana = data.getDay() === 0 ? 7 : data.getDay();
+        const iso = data.toISOString().slice(0, 10);
+        if (diaSemana !== Number(item.dia_semana) || iso < this.dataIso(item.vigencia_inicio)! || iso > this.dataIso(item.vigencia_fim)!) continue;
+        const inicio = new Date(`${iso}T${String(item.hora_inicio).slice(0, 5)}:00`);
+        if (inicio.getTime() <= agora.getTime()) continue;
+        return [{ id: String(item.id), turmaDisciplinaId: String(item.turma_disciplina_id), data: iso, horaInicio: String(item.hora_inicio).slice(0, 5), horaFim: String(item.hora_fim).slice(0, 5), local: item.local ?? null, turmaSigla: item.turma_sigla, disciplinaCodigo: item.disciplina_codigo, disciplinaNome: item.disciplina_nome, instante: inicio.getTime() }];
+      }
+      return [];
+    }).sort((a: any, b: any) => a.instante - b.instante).slice(0, 8).map(({ instante: _instante, ...item }: any) => item);
   }
 
   private dataIso(valor: unknown) {
@@ -333,8 +392,12 @@ export class HomeProfessorService {
     return {
       professor, periodoSelecionado: null, periodosDisponiveis: periodos.map((item) => this.periodo(item)),
       criterios: CRITERIOS_PROFESSOR,
-      resumo: { turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0, lancamentosPendentes: 0 },
-      atribuicoes: [], avaliacoesProximas: [], alunosEmAtencao: [], avaliacoes: [], chamadasPendentes: [],
+      resumo: {
+        turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0,
+        lancamentosPendentes: 0, avaliacoesIncompletas: 0, notasFaltantes: 0,
+      },
+      atribuicoes: [], avaliacoesProximas: [], alunosEmAtencao: [], competenciasEmDificuldade: [],
+      proximasAulas: [], avaliacoes: [], chamadasPendentes: [],
       geradoEm: new Date().toISOString(),
     };
   }

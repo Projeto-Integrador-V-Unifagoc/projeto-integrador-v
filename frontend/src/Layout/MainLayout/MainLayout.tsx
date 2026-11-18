@@ -64,8 +64,8 @@ export default function MainLayout() {
             },
           }}
         >
-          <Box onClick={fecharMenuMobile}>
-            <Sidebar expandido />
+          <Box>
+            <Sidebar expandido onNavigate={fecharMenuMobile} />
           </Box>
         </Drawer>
       ) : (
@@ -77,6 +77,7 @@ export default function MainLayout() {
             backgroundColor: "white",
             transition: "all 0.3s ease",
             overflowX: "hidden",
+            overflowY: "auto",
             position: "fixed",
             paddingTop: 7,
             paddingLeft: 1,

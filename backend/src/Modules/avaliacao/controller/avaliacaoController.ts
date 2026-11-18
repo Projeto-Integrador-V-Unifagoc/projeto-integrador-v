@@ -18,6 +18,10 @@ async function listarAtribuicoes(req: Request, res: Response) {
   try { return res.json(await avaliacaoService.listarAtribuicoes(contexto(req))); }
   catch (erro) { return responderErro(res, erro, "listar atribuicoes de"); }
 }
+async function listarCompetenciasDaAtribuicao(req: Request, res: Response) {
+  try { return res.json(await avaliacaoService.listarCompetenciasDaAtribuicao(String(req.params.id), contexto(req))); }
+  catch (erro) { return responderErro(res, erro, "listar competencias da atribuicao de"); }
+}
 async function buscarPorId(req: Request, res: Response) {
   try { return res.json(await avaliacaoService.buscarPorId(String(req.params.id), contexto(req))); }
   catch (erro) { return responderErro(res, erro, "buscar"); }
@@ -35,4 +39,4 @@ async function deletar(req: Request, res: Response) {
   catch (erro) { return responderErro(res, erro, "excluir"); }
 }
 
-export const avaliacaoController = { listarTodos, listarAtribuicoes, buscarPorId, criar, atualizar, deletar };
+export const avaliacaoController = { listarTodos, listarAtribuicoes, listarCompetenciasDaAtribuicao, buscarPorId, criar, atualizar, deletar };

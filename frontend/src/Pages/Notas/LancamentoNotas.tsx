@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Box, Chip, Grid, MenuItem, Stack, Tab, Tabs, Typography } from "@mui/material";
 import type { GridColDef, GridRowModel } from "@mui/x-data-grid";
 import { RefreshCw, Save, ShieldCheck } from "lucide-react";
@@ -8,6 +9,7 @@ import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import { useNota } from "../../hooks/use-nota";
 import {
   SITUACAO_LABEL,
@@ -52,6 +54,9 @@ const renderNota = (valor: number | null | undefined, alterada: boolean) =>
   );
 
 export default function LancamentoNotas() {
+  const { confirmar, dialogoConfirmacao } = useConfirmacao();
+  const [searchParams] = useSearchParams();
+  const turmaSolicitada = searchParams.get("turmaDisciplinaId") ?? "";
   const api = useNota();
   const { notificar } = useNotificacao();
   const perfil = perfilLocal();
@@ -85,9 +90,10 @@ export default function LancamentoNotas() {
         const r = await api.listarOpcoes();
         if (!ativo) return;
         setAtribuicoes(r.atribuicoes);
-        if (r.atribuicoes[0]) {
-          setTurmaId(r.atribuicoes[0].turmaDisciplinaId);
-          setAvaliacaoId(r.atribuicoes[0].avaliacoes[0]?.id || "");
+        const inicial = r.atribuicoes.find((item) => item.turmaDisciplinaId === turmaSolicitada) ?? r.atribuicoes[0];
+        if (inicial) {
+          setTurmaId(inicial.turmaDisciplinaId);
+          setAvaliacaoId(inicial.avaliacoes[0]?.id || "");
         }
       } catch (e) {
         if (ativo) notificar(mensagemErro(e), "error");
@@ -97,7 +103,7 @@ export default function LancamentoNotas() {
       ativo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notificar]);
+  }, [notificar, turmaSolicitada]);
 
   useEffect(() => {
     if (periodoFechado) {
@@ -105,17 +111,14 @@ export default function LancamentoNotas() {
     }
   }, [notificar, periodoFechado]);
 
-  useEffect(() => {
-    const sair = (e: BeforeUnloadEvent) => {
-      if (alterado || alteradoRec) e.preventDefault();
-    };
-    addEventListener("beforeunload", sair);
-    return () => removeEventListener("beforeunload", sair);
-  }, [alterado, alteradoRec]);
-
   async function carregarLancamento() {
     if (!avaliacaoId) return;
-    if (alterado && !confirm("Descartar alterações ainda não salvas?")) return;
+    if (alterado && !await confirmar({
+      titulo: "Descartar alterações?",
+      mensagem: "As notas ainda não salvas serão perdidas.",
+      textoConfirmar: "Descartar",
+      cor: "warning",
+    })) return;
     try {
       const r = await api.obterLancamento(avaliacaoId);
       setLancamento(r);
@@ -149,7 +152,12 @@ export default function LancamentoNotas() {
 
   async function carregarRecuperacao() {
     if (!turmaId) return;
-    if (alteradoRec && !confirm("Descartar alterações ainda não salvas?")) return;
+    if (alteradoRec && !await confirmar({
+      titulo: "Descartar alterações?",
+      mensagem: "As notas de recuperação ainda não salvas serão perdidas.",
+      textoConfirmar: "Descartar",
+      cor: "warning",
+    })) return;
     try {
       const r = await api.obterRecuperacao(turmaId);
       setRecuperacao(r);
@@ -509,6 +517,7 @@ export default function LancamentoNotas() {
         onClose={() => setAutorizar(false)}
         onSave={enviarAutorizacao}
       />
+      {dialogoConfirmacao}
     </Container>
   );
 }

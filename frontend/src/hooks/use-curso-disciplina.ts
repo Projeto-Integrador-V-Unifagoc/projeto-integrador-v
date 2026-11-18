@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cursoDisciplinaApi } from "../services/curso-disciplina-api";
-import type { AtualizarCursoDisciplinaRequest, CursoDisciplinaRequest } from "../models/curso-disciplina-model";
+import type { AtualizarCursoDisciplinaRequest, CriarMatrizCurricularRequest, CriarRequisitoCurricularRequest, CursoDisciplinaRequest, TipoRequisitoCurricular } from "../models/curso-disciplina-model";
 
 export function useCursoDisciplina() {
   const [carregando, setCarregando] = useState(false);
@@ -15,15 +15,23 @@ export function useCursoDisciplina() {
     }
   };
 
-  const listarMatrizCurricularPorCursoId = async (cursoId: string) => {
+  const listarMatrizCurricularPorCursoId = async (cursoId: string, matrizId?: string) => {
     setCarregando(true);
 
     try {
-      return await cursoDisciplinaApi.listarMatrizCurricularPorCursoId(cursoId);
+      return await cursoDisciplinaApi.listarMatrizCurricularPorCursoId(cursoId, matrizId);
     } finally {
       setCarregando(false);
     }
   };
+
+  const listarMatrizes = async (cursoId: string) => cursoDisciplinaApi.listarMatrizes(cursoId);
+  const criarMatriz = async (cursoId: string, data: CriarMatrizCurricularRequest) => cursoDisciplinaApi.criarMatriz(cursoId, data);
+  const publicarMatriz = async (id: string, encerrarVigente: boolean) => cursoDisciplinaApi.publicarMatriz(id, encerrarVigente);
+  const listarRequisitos = async (matrizId: string) => cursoDisciplinaApi.listarRequisitos(matrizId);
+  const criarRequisito = async (data: CriarRequisitoCurricularRequest) => cursoDisciplinaApi.criarRequisito(data);
+  const atualizarRequisito = async (id: string, tipo: TipoRequisitoCurricular) => cursoDisciplinaApi.atualizarRequisito(id, tipo);
+  const removerRequisito = async (id: string) => cursoDisciplinaApi.removerRequisito(id);
 
   const criarCursoDisciplina = async (data: CursoDisciplinaRequest) => {
     setCarregando(true);
@@ -62,5 +70,12 @@ export function useCursoDisciplina() {
     criarCursoDisciplina,
     atualizarCursoDisciplina,
     removerCursoDisciplina,
+    listarMatrizes,
+    criarMatriz,
+    publicarMatriz,
+    listarRequisitos,
+    criarRequisito,
+    atualizarRequisito,
+    removerRequisito,
   };
 }

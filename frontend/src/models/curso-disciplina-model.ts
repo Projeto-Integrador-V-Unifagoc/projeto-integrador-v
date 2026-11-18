@@ -4,6 +4,12 @@ export interface CursoDisciplinaResponse {
   obrigatoria: boolean
   carga_horaria: number
   ativo: boolean
+  matriz_curricular: {
+    id: string
+    codigo: string
+    versao: string
+    status: StatusMatrizCurricular
+  }
   curso: {
     id: string
     codigo: string
@@ -21,6 +27,7 @@ export interface CursoDisciplinaResponse {
 
 export interface CursoDisciplinaRequest {
   cursoId: string
+  matrizCurricularId: string
   disciplinaId: string
   periodoIdeal?: number
   obrigatoria: boolean
@@ -28,9 +35,48 @@ export interface CursoDisciplinaRequest {
   ativo?: boolean
 }
 
+export type StatusMatrizCurricular = "RASCUNHO" | "VIGENTE" | "ENCERRADA"
+
+export interface MatrizCurricularResponse {
+  id: string
+  curso_id: string
+  codigo: string
+  versao: string
+  status: StatusMatrizCurricular
+  vigencia_inicio: string
+  vigencia_fim: string | null
+  publicada_em: string | null
+  total_disciplinas: number
+  carga_horaria_total: number
+  total_turmas: number
+}
+
+export interface CriarMatrizCurricularRequest {
+  codigo: string
+  versao: string
+  vigenciaInicio: string
+  matrizOrigemId?: string
+}
+
 export interface AtualizarCursoDisciplinaRequest {
   periodoIdeal?: number
   obrigatoria?: boolean
   cargaHoraria?: number
   ativo?: boolean
+}
+
+export type TipoRequisitoCurricular = "OBRIGATORIO" | "RECOMENDADO"
+
+export interface RequisitoCurricularResponse {
+  id: string
+  tipo: TipoRequisitoCurricular
+  cursoDisciplinaId: string
+  disciplina: { id: string; codigo: string; nome: string }
+  requisito: { cursoDisciplinaId: string; id: string; codigo: string; nome: string; periodoIdeal: number | null }
+}
+
+export interface CriarRequisitoCurricularRequest {
+  cursoDisciplinaId: string
+  requisitoCursoDisciplinaId: string
+  tipo: TipoRequisitoCurricular
 }

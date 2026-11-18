@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import { siteAdminApi, urlImagem } from "../../services/site-api";
 import type { SiteBanner } from "../../services/site-api";
 import { limparCacheSite } from "../LandingPage/useSite";
@@ -36,6 +37,7 @@ const VAZIO: Partial<SiteBanner> = {
 
 export default function PainelBanners() {
     const { avisar, erroDe, componente } = useFeedback();
+    const { confirmar, dialogoConfirmacao } = useConfirmacao();
 
     const [banners, setBanners] = useState<SiteBanner[]>([]);
     const [carregando, setCarregando] = useState(true);
@@ -110,7 +112,11 @@ export default function PainelBanners() {
     }
 
     async function remover(banner: SiteBanner) {
-        if (!window.confirm(`Excluir o banner "${banner.titulo}"?`)) return;
+        if (!await confirmar({
+            titulo: "Excluir banner?",
+            mensagem: `O banner "${banner.titulo}" será excluído permanentemente.`,
+            textoConfirmar: "Excluir banner",
+        })) return;
 
         try {
             await siteAdminApi.removerBanner(banner.id);
@@ -303,6 +309,7 @@ export default function PainelBanners() {
                 </DialogActions>
             </Dialog>
 
+            {dialogoConfirmacao}
             {componente}
         </Box>
     );

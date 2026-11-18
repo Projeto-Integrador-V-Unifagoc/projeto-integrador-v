@@ -1,5 +1,5 @@
 import { Box, Button, Chip, Grid, Stack, Typography } from "@mui/material";
-import { ArrowRight, ChevronRight, Users } from "lucide-react";
+import { ArrowRight, ChevronRight, ClipboardList, Users } from "lucide-react";
 import {
   AvisoDetalhe,
   CORES_DASHBOARD,
@@ -24,12 +24,13 @@ interface TurmaDetalhesDrawerProps {
   onAbrirAluno: (turmaDisciplinaId: string, alunoId: string) => void;
   onLancarNotas: () => void;
   onRegistrarFrequencia: () => void;
+  onPlanoEnsino: (detalhe: DetalheAtribuicaoProfessor) => void;
 }
 
 const ORDEM = ["CRITICO", "ATENCAO", "SEM_DADOS", "REGULAR"];
 
 /** Detalhe da turma (card de "Minhas turmas"), no mesmo painel lateral dos outros detalhes do dashboard. */
-export default function TurmaDetalhesDrawer({ detalhe, onFechar, onAbrirAluno, onLancarNotas, onRegistrarFrequencia }: TurmaDetalhesDrawerProps) {
+export default function TurmaDetalhesDrawer({ detalhe, onFechar, onAbrirAluno, onLancarNotas, onRegistrarFrequencia, onPlanoEnsino }: TurmaDetalhesDrawerProps) {
   if (!detalhe) return null;
   // Alunos em atenção primeiro; dentro do mesmo nível, pelo nome.
   const alunos = [...detalhe.alunos].sort((a, b) => ORDEM.indexOf(a.nivel) - ORDEM.indexOf(b.nivel) || a.nome.localeCompare(b.nome, "pt-BR"));
@@ -50,6 +51,9 @@ export default function TurmaDetalhesDrawer({ detalhe, onFechar, onAbrirAluno, o
           </Button>
           <Button endIcon={<ArrowRight size={15} />} onClick={onRegistrarFrequencia} sx={{ ...sxBotaoSecundario, height: 36, px: 2 }}>
             Registrar frequência
+          </Button>
+          <Button startIcon={<ClipboardList size={15} />} onClick={() => onPlanoEnsino(detalhe)} sx={{ ...sxBotaoSecundario, height: 36, px: 2 }}>
+            Plano de ensino
           </Button>
         </>
       )}
@@ -84,6 +88,29 @@ export default function TurmaDetalhesDrawer({ detalhe, onFechar, onAbrirAluno, o
         ) : (
           <AvisoDetalhe gravidade="info">Nenhuma competência vinculada a esta disciplina.</AvisoDetalhe>
         )}
+      </SecaoDetalhe>
+
+      <SecaoDetalhe titulo="Desempenho por competência">
+        {detalhe.desempenhoCompetencias.length ? (
+          <Stack gap={1}>
+            {detalhe.desempenhoCompetencias.map((item) => (
+              <Box key={item.id} sx={{ ...sxCartaoDashboard, p: 1.5 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                  <Box minWidth={0}>
+                    <Typography variant="body2" fontWeight={700}>{item.codigo} · {item.nome}</Typography>
+                    <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>{item.alunosComDados}/{item.totalAlunos} alunos com dados · cobertura de {fmtPct(item.cobertura, 1)}</Typography>
+                  </Box>
+                  <Chip size="small" color={item.classificacao === "DIFICULDADE" ? "error" : item.classificacao === "ATENCAO" ? "warning" : item.classificacao === "ADEQUADO" ? "success" : "default"} label={item.classificacao === "DIFICULDADE" ? "Dificuldade" : item.classificacao === "ATENCAO" ? "Atenção" : item.classificacao === "ADEQUADO" ? "Adequado" : "Dados insuficientes"} />
+                </Stack>
+                <Stack direction="row" gap={2} mt={1} flexWrap="wrap">
+                  <Typography variant="body2"><strong>{fmtPct(item.media, 1)}</strong> aproveitamento</Typography>
+                  <Typography variant="body2">Distribuição: {item.distribuicao.dificuldade} dificuldade · {item.distribuicao.atencao} atenção · {item.distribuicao.adequado} adequado</Typography>
+                </Stack>
+                <Typography variant="caption" display="block" mt={.75} sx={{ color: CORES_DASHBOARD.textoApagado }}>{item.fontes.length ? item.fontes.map((fonte) => `${fonte.titulo} (${fonte.pesoPercentual}%)`).join(" · ") : "Nenhuma avaliação mapeada"}</Typography>
+              </Box>
+            ))}
+          </Stack>
+        ) : <AvisoDetalhe gravidade="info">Nenhum resultado por competência disponível para esta turma.</AvisoDetalhe>}
       </SecaoDetalhe>
 
       <SecaoDetalhe titulo="Alunos" extra={<Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>clique para ver o detalhe</Typography>}>

@@ -446,10 +446,20 @@ export async function seed(knex: Knex): Promise<void> {
       "codigo"
     );
 
+    const matrizesVigentes = await trx(`${SCHEMA}.matriz_curricular`)
+      .whereIn("curso_id", cursos.map((_, index) => auditId(200 + index)))
+      .where("status", "VIGENTE")
+      .select("id", "curso_id");
+    const matrizPorCurso = new Map(matrizesVigentes.map((matriz) => [String(matriz.curso_id), matriz.id]));
+    if (matrizPorCurso.size !== cursos.length) {
+      throw new Error("Nem todos os cursos de auditoria possuem uma matriz curricular vigente.");
+    }
+
     const cursoDisciplinas = cursos.flatMap((curso, cursoIndex) =>
       curso.disciplinas.map((disciplina, disciplinaIndex) => ({
         id: auditId(700 + cursoIndex * 10 + disciplinaIndex),
         curso_id: auditId(200 + cursoIndex),
+        matriz_curricular_id: matrizPorCurso.get(auditId(200 + cursoIndex)),
         disciplina_id: auditId(600 + cursoIndex * 10 + disciplinaIndex),
         periodo_ideal: curso.periodo,
         obrigatoria: true,
@@ -458,7 +468,13 @@ export async function seed(knex: Knex): Promise<void> {
       }))
     );
 
-    await inserir(trx, "curso_disciplina", cursoDisciplinas, ["curso_id", "disciplina_id"]);
+    await inserir(
+      trx,
+      "curso_disciplina",
+      cursoDisciplinas,
+      ["matriz_curricular_id", "disciplina_id"],
+      ["periodo_ideal", "obrigatoria", "carga_horaria", "ativo", "updated_at"]
+    );
 
     await inserir(
       trx,
@@ -467,6 +483,7 @@ export async function seed(knex: Knex): Promise<void> {
         id: auditId(800 + index),
         periodo_letivo_id: ids.periodoLetivo,
         curso_id: auditId(200 + index),
+        matriz_curricular_id: matrizPorCurso.get(auditId(200 + index)),
         periodo_curricular: curso.periodo,
         descricao: `${curso.nome} - 1 periodo`,
         sigla: curso.turma,

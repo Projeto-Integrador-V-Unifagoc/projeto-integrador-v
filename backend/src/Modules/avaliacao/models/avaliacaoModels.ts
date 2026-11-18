@@ -1,5 +1,26 @@
 export type TipoAvaliacao = "PROVA" | "TPI" | "TRABALHO";
 
+export interface AvaliacaoCompetencia {
+  competencia_id: string;
+  codigo?: string;
+  nome?: string;
+  descricao?: string;
+  tipo?: "GERAL" | "TECNICA" | "SOCIOEMOCIONAL";
+  nivel_esperado?: "INTRODUZIR" | "DESENVOLVER" | "CONSOLIDAR";
+  peso_percentual: number;
+}
+
+export interface CompetenciaDisponivelAvaliacao {
+  competencia_id: string;
+  codigo: string;
+  nome: string;
+  descricao: string;
+  tipo: "GERAL" | "TECNICA" | "SOCIOEMOCIONAL";
+  nivel_esperado: "INTRODUZIR" | "DESENVOLVER" | "CONSOLIDAR";
+  obrigatoria: boolean;
+  ordem: number;
+}
+
 export interface Avaliacao {
   id: string;
   tipo_avaliacao: TipoAvaliacao;
@@ -16,6 +37,8 @@ export interface Avaliacao {
   disciplina_nome?: string;
   professor_id?: string;
   professor_nome?: string;
+  competencias?: AvaliacaoCompetencia[];
+  possui_notas?: boolean;
 }
 
 export interface CriarAvaliacaoDTO {
@@ -25,6 +48,7 @@ export interface CriarAvaliacaoDTO {
   valor: number;
   data_devolucao?: string | Date | null;
   turma_disciplina_id: string;
+  competencias?: AvaliacaoCompetencia[];
 }
 
 export interface AtualizarAvaliacaoDTO {
@@ -34,6 +58,7 @@ export interface AtualizarAvaliacaoDTO {
   valor?: number;
   data_devolucao?: string | Date | null;
   turma_disciplina_id?: string;
+  competencias?: AvaliacaoCompetencia[];
 }
 
 export interface ContextoAvaliacao {

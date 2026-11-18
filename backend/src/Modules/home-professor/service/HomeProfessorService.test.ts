@@ -18,6 +18,9 @@ function service(overrides: Record<string, any> = {}) {
     listarFrequencias: async () => [{ turma_disciplina_id: "td1", matricula_turma_disciplina_id: "mtd1", presencas: 7, faltas: 3 }],
     listarAvaliacoes: async () => [{ id: "av1", turma_disciplina_id: "td1", tipo_avaliacao: "TRABALHO", descricao_avaliacao: "Trabalho", valor: 50, notas_lancadas: 1 }],
     listarCompetencias: async () => [],
+    listarCompetenciasPlanejadas: async () => [],
+    listarAvaliacoesCompetencias: async () => [],
+    listarHorarios: async () => [],
     listarChamadas: async () => [],
     ...overrides,
   };
@@ -34,6 +37,7 @@ describe("HomeProfessorService", () => {
     assert.equal(resultado.atribuicoes[0].mediaTurma, 60);
     assert.equal(resultado.atribuicoes[0].frequenciaMedia, 70);
     assert.equal(resultado.atribuicoes[0].alunosEmAtencao, 1);
+    assert.equal(resultado.resumo.notasFaltantes, 0);
   });
 
   it("envia os alunos de cada oferta para filtrar o dashboard por turma e disciplina", async () => {
@@ -87,7 +91,10 @@ describe("HomeProfessorService", () => {
 
   it("retorna vazio quando nao ha atribuicoes", async () => {
     const resultado = await service({ listarPeriodos: async () => [] }).dashboard(reqProfessor);
-    assert.deepEqual(resultado.resumo, { turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0, lancamentosPendentes: 0 });
+    assert.deepEqual(resultado.resumo, {
+      turmasAtivas: 0, disciplinasDistintas: 0, alunosUnicos: 0,
+      lancamentosPendentes: 0, avaliacoesIncompletas: 0, notasFaltantes: 0,
+    });
   });
 
   it("normaliza datas do PostgreSQL ao calcular pendencias e proximas avaliacoes", async () => {
@@ -102,6 +109,8 @@ describe("HomeProfessorService", () => {
     }).dashboard(reqProfessor);
 
     assert.equal(resultado.resumo.lancamentosPendentes, 1);
+    assert.equal(resultado.resumo.avaliacoesIncompletas, 1);
+    assert.equal(resultado.resumo.notasFaltantes, 1);
     assert.equal(resultado.avaliacoesProximas.length, 1);
     assert.equal(resultado.avaliacoesProximas[0].data, amanha.toISOString().slice(0, 10));
   });
@@ -124,5 +133,27 @@ describe("HomeProfessorService", () => {
       () => service().detalheAluno(reqProfessor, "td1", "outro-aluno"),
       /aluno nao encontrado/i,
     );
+  });
+
+  it("calcula desempenho por competencia e preserva baixa cobertura como dados insuficientes", async () => {
+    const base = {
+      listarCompetenciasPlanejadas: async () => [{
+        turma_disciplina_id: "td1", competencia_id: "comp1", codigo: "COMP-01", nome: "Raciocínio lógico",
+        tipo: "TECNICA", nivel_esperado: "INTERMEDIARIO", obrigatoria: true,
+      }],
+      listarAvaliacoesCompetencias: async () => [{
+        turma_disciplina_id: "td1", avaliacao_id: "av1", competencia_id: "comp1", peso_percentual: 100,
+        tipo_avaliacao: "TRABALHO", descricao_avaliacao: "Trabalho", valor: 50,
+      }],
+    };
+    const detalhe = await service(base).detalhe(reqProfessor, "td1");
+    assert.equal(detalhe.desempenhoCompetencias[0].media, 60);
+    assert.equal(detalhe.desempenhoCompetencias[0].cobertura, 100);
+    assert.equal(detalhe.desempenhoCompetencias[0].classificacao, "ATENCAO");
+    assert.equal(detalhe.desempenhoCompetencias[0].fontes[0].titulo, "Trabalho");
+
+    const semNotas = await service({ ...base, listarNotas: async () => [] }).detalhe(reqProfessor, "td1");
+    assert.equal(semNotas.desempenhoCompetencias[0].media, null);
+    assert.equal(semNotas.desempenhoCompetencias[0].classificacao, "DADOS_INSUFICIENTES");
   });
 });

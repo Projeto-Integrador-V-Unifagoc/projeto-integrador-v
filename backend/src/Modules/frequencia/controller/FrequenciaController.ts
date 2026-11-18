@@ -10,7 +10,7 @@ export class FrequenciaController {
     return res.status(500).json({ codigo: "ERRO_INTERNO", mensagem: "Erro interno do servidor." });
   }
   listarOpcoes = async (req: Request, res: Response) => { try { return res.json(await this.service.listarOpcoes(req)); } catch (e) { return this.erro(res, e); } };
-  obterChamada = async (req: Request, res: Response) => { try { return res.json(await this.service.obterChamada(String(req.query.turmaDisciplinaId || ""), String(req.query.data || ""), req)); } catch (e) { return this.erro(res, e); } };
+  obterChamada = async (req: Request, res: Response) => { try { return res.json(await this.service.obterChamada(String(req.query.turmaDisciplinaId || ""), String(req.query.data || ""), req, req.query.aulaId ? String(req.query.aulaId) : undefined)); } catch (e) { return this.erro(res, e); } };
   salvarChamada = async (req: Request, res: Response) => { try { return res.status(200).json(await this.service.salvarChamada(req.body, req)); } catch (e) { return this.erro(res, e); } };
   consultarAluno = async (req: Request, res: Response) => { try { return res.json(await this.service.consultarAluno(String(req.params.alunoId), req)); } catch (e) { return this.erro(res, e); } };
   minhaFrequencia = async (req: Request, res: Response) => { try { return res.json(await this.service.minhaFrequencia(req)); } catch (e) { return this.erro(res, e); } };

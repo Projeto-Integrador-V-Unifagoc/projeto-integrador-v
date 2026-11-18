@@ -11,11 +11,19 @@ export interface TurmaResponse {
     codigo: string
     ano: number
     semestre: number
+    data_inicio: string
+    data_fim: string
   }
   curso: {
     id: string
     codigo: string
     nome: string
+  }
+  matriz_curricular: {
+    id: string
+    codigo: string
+    versao: string
+    status: string
   }
 }
 
@@ -61,4 +69,32 @@ export interface TurmaDisciplinaRequest {
   cursoDisciplinaId: string
   professorId: string
   status?: string
+}
+
+export interface HorarioOfertaResponse {
+  id: string
+  turma_disciplina_id: string
+  dia_semana: number
+  hora_inicio: string
+  hora_fim: string
+  local: string | null
+  vigencia_inicio: string
+  vigencia_fim: string
+  ativo: boolean
+  turma_sigla: string
+  disciplina_codigo: string
+  disciplina_nome: string
+  professor_nome: string
+  periodo_inicio: string
+  periodo_fim: string
+}
+
+export interface HorarioOfertaRequest {
+  diaSemana: number
+  horaInicio: string
+  horaFim: string
+  local?: string
+  vigenciaInicio: string
+  vigenciaFim: string
+  ativo?: boolean
 }

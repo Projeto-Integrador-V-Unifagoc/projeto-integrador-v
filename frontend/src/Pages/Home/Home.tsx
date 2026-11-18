@@ -16,6 +16,7 @@ import {
   Info,
   Layers,
   NotebookPen,
+  Target,
   UserCog,
   UserStar,
   Users,
@@ -25,6 +26,7 @@ import { Card } from "../../components/Card";
 import Container from "../../components/Container";
 import StudentDashboard from "./StudentDashboard";
 import ProfessorDashboard from "./ProfessorDashboard";
+import CoordinationDashboard from "./CoordinationDashboard";
 
 interface UsuarioLocal {
   nome?: string;
@@ -112,6 +114,7 @@ export default function Home() {
 
   if (isAluno) return <StudentDashboard userName={userName} />;
   if (ehProfessor) return <ProfessorDashboard userName={userName} />;
+  if (ehAdmin) return <CoordinationDashboard userName={userName} />;
 
   const atalhos: Atalho[] = [
     { label: "Tarefas", descricao: "Acompanhe atividades e pendências", href: "/tarefas/lista", icon: ClipboardList, podeVer: ehAdmin },
@@ -124,6 +127,7 @@ export default function Home() {
     { label: "Professores", descricao: "Gestão do corpo docente", href: "/professores/lista", icon: UserStar, podeVer: ehAdmin },
     { label: "Cursos", descricao: "Cursos e matrizes curriculares", href: "/cursos/lista", icon: GraduationCap, podeVer: ehAdmin },
     { label: "Disciplinas", descricao: "Catálogo de disciplinas", href: "/disciplinas/lista", icon: NotebookPen, podeVer: ehAdmin },
+    { label: "Competências", descricao: "Catálogo de competências acadêmicas", href: "/competencias/lista", icon: Target, podeVer: ehAdmin },
     { label: "Turmas", descricao: "Turmas e suas disciplinas", href: "/turmas/lista", icon: Layers, podeVer: ehAdmin },
     { label: "Avaliações", descricao: "Planeje provas e trabalhos", href: "/avaliacoes/lista", icon: ClipboardCheck, podeVer: ehAdmin || ehProfessor },
     { label: "Frequência", descricao: "Registre a chamada das turmas", href: "/frequencias/lista", icon: CalendarCheck, podeVer: ehAdmin || ehProfessor },

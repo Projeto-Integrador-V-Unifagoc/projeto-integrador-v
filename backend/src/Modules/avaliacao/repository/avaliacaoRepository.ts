@@ -4,6 +4,8 @@ import type {
   AtribuicaoAvaliacao,
   AtualizarAvaliacaoDTO,
   Avaliacao,
+  AvaliacaoCompetencia,
+  CompetenciaDisponivelAvaliacao,
   CriarAvaliacaoDTO,
 } from "../models/avaliacaoModels.js";
 
@@ -43,6 +45,26 @@ function baseQuery(executor: Executor = db) {
       "piv.disciplinas.nome as disciplina_nome",
       "piv.professor.id as professor_id",
       "piv.pessoa.nome as professor_nome",
+      executor.raw(`
+        COALESCE((
+          SELECT json_agg(json_build_object(
+            'competencia_id', ac.competencia_id,
+            'codigo', c.codigo,
+            'nome', c.nome,
+            'descricao', c.descricao,
+            'tipo', c.tipo,
+            'nivel_esperado', dc.nivel_esperado,
+            'peso_percentual', ac.peso_percentual::float
+          ) ORDER BY COALESCE(dc.ordem, 0), c.nome)
+          FROM piv.avaliacao_competencia ac
+          JOIN piv.competencia c ON c.id = ac.competencia_id
+          LEFT JOIN piv.disciplina_competencia dc
+            ON dc.competencia_id = ac.competencia_id
+           AND dc.disciplina_id = piv.disciplinas.id
+          WHERE ac.avaliacao_id = piv.avaliacao.id
+        ), '[]'::json) AS competencias
+      `),
+      executor.raw("EXISTS (SELECT 1 FROM piv.nota n WHERE n.avaliacao_id = piv.avaliacao.id) AS possui_notas"),
     );
 }
 
@@ -136,12 +158,63 @@ export const avaliacaoRepository = {
   buscarAtribuicaoPorId: (id: string, executor: Executor = db) =>
     executor("piv.turma_disciplina").where({ id }).first(),
 
+  buscarCompetenciasDisponiveis: async (
+    turmaDisciplinaId: string,
+    executor: Executor = db,
+  ): Promise<CompetenciaDisponivelAvaliacao[]> =>
+    executor("piv.turma_disciplina as td")
+      .join("piv.curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
+      .join("piv.disciplina_competencia as dc", "cd.disciplina_id", "dc.disciplina_id")
+      .join("piv.competencia as c", "dc.competencia_id", "c.id")
+      .where("td.id", turmaDisciplinaId)
+      .andWhere("c.ativo", true)
+      .select(
+        "c.id as competencia_id",
+        "c.codigo",
+        "c.nome",
+        "c.descricao",
+        "c.tipo",
+        "dc.nivel_esperado",
+        "dc.obrigatoria",
+        "dc.ordem",
+      )
+      .orderBy([{ column: "dc.ordem", order: "asc" }, { column: "c.nome", order: "asc" }]),
+
+  listarCompetenciasDaAvaliacao: async (
+    avaliacaoId: string,
+    executor: Executor = db,
+  ): Promise<AvaliacaoCompetencia[]> =>
+    executor("piv.avaliacao_competencia")
+      .where({ avaliacao_id: avaliacaoId })
+      .select("competencia_id", "peso_percentual")
+      .orderBy("competencia_id"),
+
+  substituirCompetencias: async (
+    avaliacaoId: string,
+    competencias: AvaliacaoCompetencia[],
+    executor: Executor = db,
+  ) => {
+    await executor("piv.avaliacao_competencia").where({ avaliacao_id: avaliacaoId }).del();
+    if (!competencias.length) return;
+    await executor("piv.avaliacao_competencia").insert(competencias.map((item) => ({
+      avaliacao_id: avaliacaoId,
+      competencia_id: item.competencia_id,
+      peso_percentual: item.peso_percentual,
+    })));
+  },
+
+  possuiNotas: async (avaliacaoId: string, executor: Executor = db) => {
+    const row = await executor("piv.nota").where({ avaliacao_id: avaliacaoId }).first("id");
+    return Boolean(row);
+  },
+
   bloquearAvaliacao: (id: string, executor: Executor = db) =>
     executor("piv.avaliacao").where({ id }).forUpdate().first(),
 
   criar: async (dados: CriarAvaliacaoDTO, executor: Executor = db) => {
+    const { competencias: _competencias, ...dadosAvaliacao } = dados;
     const [row] = await executor<Avaliacao>("piv.avaliacao")
-      .insert(dados)
+      .insert(dadosAvaliacao)
       .returning("*");
     return (await avaliacaoRepository.buscarPorId(row.id, executor)) ?? row;
   },
@@ -151,9 +224,10 @@ export const avaliacaoRepository = {
     dados: AtualizarAvaliacaoDTO,
     executor: Executor = db,
   ) => {
+    const { competencias: _competencias, ...dadosAvaliacao } = dados;
     const [row] = await executor<Avaliacao>("piv.avaliacao")
       .where({ id })
-      .update(dados)
+      .update(dadosAvaliacao)
       .returning("*");
     return row ? avaliacaoRepository.buscarPorId(id, executor) : undefined;
   },

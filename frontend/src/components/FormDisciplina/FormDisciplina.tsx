@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert, Box, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider,
   FormControl, FormControlLabel, Grid, IconButton, InputLabel, MenuItem, Paper, Select,
@@ -41,6 +41,8 @@ const NIVEIS: Array<{ value: NivelCompetencia; label: string }> = [
   { value: "CONSOLIDAR", label: "Consolidar" },
 ];
 
+const serializarEstado = (form: FormType, competencias: DisciplinaCompetenciaRequest[]) => JSON.stringify({ form, competencias });
+
 export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
   const navigate = useNavigate();
   const { carregando, buscarDisciplinaPorId, criarDisciplina, atualizarDisciplina } = useDisciplina();
@@ -55,6 +57,9 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
   const [nova, setNova] = useState<{ codigo: string; nome: string; descricao: string; tipo: TipoCompetencia }>({
     codigo: "", nome: "", descricao: "", tipo: "TECNICA",
   });
+  const [estadoSalvo, setEstadoSalvo] = useState(() => serializarEstado(inicial, []));
+  const [destinoSaida, setDestinoSaida] = useState<string | null>(null);
+  const ignorarAviso = useRef(false);
 
   useEffect(() => {
     void (async () => {
@@ -65,20 +70,23 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
         ]);
         setCatalogo(lista);
         if (!disciplina) return;
-        setForm({
+        const formCarregado: FormType = {
           codigo: disciplina.codigo, nome: disciplina.nome,
           areaConhecimento: disciplina.area_conhecimento ?? "", ementa: disciplina.ementa ?? "",
           cargaHoraria: String(disciplina.carga_horaria),
-          cargaHorariaTeorica: disciplina.carga_horaria_teorica === undefined ? "" : String(disciplina.carga_horaria_teorica),
-          cargaHorariaPratica: disciplina.carga_horaria_pratica === undefined ? "" : String(disciplina.carga_horaria_pratica),
-          cargaHorariaLaboratorio: disciplina.carga_horaria_laboratorio === undefined ? "" : String(disciplina.carga_horaria_laboratorio),
-          cargaHorariaExtensao: disciplina.carga_horaria_extensao === undefined ? "" : String(disciplina.carga_horaria_extensao),
+          cargaHorariaTeorica: disciplina.carga_horaria_teorica == null ? "" : String(disciplina.carga_horaria_teorica),
+          cargaHorariaPratica: disciplina.carga_horaria_pratica == null ? "" : String(disciplina.carga_horaria_pratica),
+          cargaHorariaLaboratorio: disciplina.carga_horaria_laboratorio == null ? "" : String(disciplina.carga_horaria_laboratorio),
+          cargaHorariaExtensao: disciplina.carga_horaria_extensao == null ? "" : String(disciplina.carga_horaria_extensao),
           preRequisito: disciplina.pre_requisito ?? "", observacoes: disciplina.observacoes ?? "", ativo: disciplina.ativo,
-        });
-        setCompetencias((disciplina.competencias ?? []).map((item, ordem) => ({
+        };
+        const competenciasCarregadas = (disciplina.competencias ?? []).map((item, ordem) => ({
           competenciaId: item.competencia_id, nivelEsperado: item.nivel_esperado,
           obrigatoria: item.obrigatoria, ordem,
-        })));
+        }));
+        setForm(formCarregado);
+        setCompetencias(competenciasCarregadas);
+        setEstadoSalvo(serializarEstado(formCarregado, competenciasCarregadas));
         if (!disciplina.cadastro_completo) {
           setAlerta({ tipo: "warning", mensagem: "Cadastro legado: complete os dados acadêmicos antes de salvar." });
         }
@@ -94,6 +102,54 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
   const catalogoDisponivel = catalogo.filter((item) => !competencias.some((vinculo) => vinculo.competenciaId === item.id));
   const somaCarga = useMemo(() => [form.cargaHorariaTeorica, form.cargaHorariaPratica, form.cargaHorariaLaboratorio, form.cargaHorariaExtensao]
     .reduce((soma, valor) => soma + (Number(valor) || 0), 0), [form]);
+  const possuiAlteracoes = useMemo(
+    () => serializarEstado(form, competencias) !== estadoSalvo,
+    [competencias, estadoSalvo, form],
+  );
+
+  useEffect(() => {
+    const confirmarLink = (evento: MouseEvent) => {
+      if (
+        !possuiAlteracoes
+        || ignorarAviso.current
+        || evento.defaultPrevented
+        || evento.button !== 0
+        || evento.ctrlKey
+        || evento.metaKey
+        || evento.shiftKey
+        || evento.altKey
+      ) return;
+      const origem = evento.target as Element | null;
+      const link = origem?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!link || link.target === "_blank" || link.href === window.location.href) return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      evento.preventDefault();
+      evento.stopPropagation();
+      setDestinoSaida(`${url.pathname}${url.search}${url.hash}`);
+    };
+    document.addEventListener("click", confirmarLink, true);
+    return () => {
+      document.removeEventListener("click", confirmarLink, true);
+    };
+  }, [possuiAlteracoes]);
+
+  function sairDoFormulario() {
+    if (possuiAlteracoes) {
+      setDestinoSaida("/disciplinas/lista");
+      return;
+    }
+    ignorarAviso.current = true;
+    navigate("/disciplinas/lista");
+  }
+
+  function descartarAlteracoesESair() {
+    if (!destinoSaida) return;
+    const destino = destinoSaida;
+    ignorarAviso.current = true;
+    setDestinoSaida(null);
+    navigate(destino);
+  }
 
   function alterar<K extends keyof FormType>(campo: K, valor: FormType[K]) {
     setForm((atual) => ({ ...atual, [campo]: valor }));
@@ -160,8 +216,12 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
       return;
     }
     try {
-      if (disciplinaId) await atualizarDisciplina(disciplinaId, payload); else await criarDisciplina(payload);
-      navigate("/disciplinas/lista", { replace: true });
+      const disciplinaSalva = disciplinaId
+        ? await atualizarDisciplina(disciplinaId, payload)
+        : await criarDisciplina(payload);
+      const idDestino = disciplinaId ?? disciplinaSalva?.id;
+      ignorarAviso.current = true;
+      navigate(idDestino ? `/disciplinas/${idDestino}/detalhes` : "/disciplinas/lista", { replace: true });
     } catch {
       setAlerta({ tipo: "error", mensagem: disciplinaId ? "Não foi possível atualizar a disciplina." : "Não foi possível cadastrar a disciplina." });
     }
@@ -217,12 +277,26 @@ export default function FormDisciplina({ disciplinaId }: FormDisciplinaProps) {
             {aba === 3 && <Stack gap={2}><Alert severity="info">Nesta leva, o pré-requisito continua textual. A relação estruturada será implementada junto das matrizes versionadas.</Alert><TextField fullWidth multiline minRows={3} label="Pré-requisito" value={form.preRequisito} onChange={(e) => alterar("preRequisito", e.target.value)} /></Stack>}
           </Box>
           <Divider />
-          <Stack direction="row" justifyContent="flex-end" flexWrap="wrap" gap={1.5} p={2} sx={{ "& > button": { width: "auto", minWidth: 100, height: 36, whiteSpace: "nowrap" } }}><Button variant="outlined" onClick={() => navigate("/disciplinas/lista")}>Cancelar</Button><Button variant="contained" isLoading={carregando} onClick={() => void salvar()} sx={{ minWidth: 158 }}>{disciplinaId ? "Salvar alterações" : "Cadastrar disciplina"}</Button></Stack>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5} p={2}><Typography variant="caption" color={possuiAlteracoes ? "warning.main" : "text.secondary"}>{possuiAlteracoes ? "Existem alterações não salvas." : "Todas as alterações estão salvas."}</Typography><Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ "& > button": { width: "auto", minWidth: 100, height: 36, whiteSpace: "nowrap" } }}><Button variant="outlined" onClick={sairDoFormulario}>Cancelar</Button><Button variant="contained" isLoading={carregando} onClick={() => void salvar()} sx={{ minWidth: 158 }}>{disciplinaId ? "Salvar alterações" : "Cadastrar disciplina"}</Button></Stack></Stack>
         </Paper>
       </Stack>
       <Dialog open={dialogNova} onClose={() => setDialogNova(false)} fullWidth maxWidth="sm">
         <DialogTitle>Nova competência</DialogTitle><DialogContent><Stack gap={2} mt={1}><TextField label="Código" value={nova.codigo} onChange={(e) => setNova((v) => ({ ...v, codigo: e.target.value }))} /><TextField label="Nome" value={nova.nome} onChange={(e) => setNova((v) => ({ ...v, nome: e.target.value }))} /><TextField multiline minRows={3} label="Descrição" value={nova.descricao} onChange={(e) => setNova((v) => ({ ...v, descricao: e.target.value }))} /><FormControl><InputLabel>Tipo</InputLabel><Select label="Tipo" value={nova.tipo} onChange={(e) => setNova((v) => ({ ...v, tipo: e.target.value as TipoCompetencia }))}><MenuItem value="GERAL">Geral</MenuItem><MenuItem value="TECNICA">Técnica</MenuItem><MenuItem value="SOCIOEMOCIONAL">Socioemocional</MenuItem></Select></FormControl></Stack></DialogContent>
         <DialogActions sx={{ "& > button": { width: "auto", minWidth: 100, height: 36, whiteSpace: "nowrap" } }}><Button onClick={() => setDialogNova(false)}>Cancelar</Button><Button variant="contained" onClick={() => void cadastrarCompetencia()} sx={{ minWidth: 140 }}>Criar e vincular</Button></DialogActions>
+      </Dialog>
+      <Dialog open={destinoSaida !== null} onClose={() => setDestinoSaida(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Descartar alterações?</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            Existem alterações não salvas nesta disciplina. Ao sair, elas serão perdidas.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1, gap: 1, "& > button": { width: "auto", minWidth: 100, height: 36, whiteSpace: "nowrap", m: 0 } }}>
+          <Button variant="outlined" onClick={() => setDestinoSaida(null)}>Continuar editando</Button>
+          <Button variant="contained" color="error" onClick={descartarAlteracoesESair} sx={{ minWidth: 146 }}>
+            Descartar e sair
+          </Button>
+        </DialogActions>
       </Dialog>
     </Container>
   );

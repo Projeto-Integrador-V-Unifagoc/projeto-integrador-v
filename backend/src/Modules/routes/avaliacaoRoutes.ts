@@ -9,6 +9,7 @@ avaliacaoRouter.use(autenticar, secretariaOuProfessor);
 
 avaliacaoRouter.get('/', avaliacaoController.listarTodos);
 avaliacaoRouter.get('/atribuicoes', avaliacaoController.listarAtribuicoes);
+avaliacaoRouter.get('/atribuicoes/:id/competencias', avaliacaoController.listarCompetenciasDaAtribuicao);
 avaliacaoRouter.get('/:id', avaliacaoController.buscarPorId);
 avaliacaoRouter.post('/', avaliacaoController.criar);
 avaliacaoRouter.put('/:id', avaliacaoController.atualizar);

@@ -12,6 +12,7 @@ function criar(overrides: {
     buscarTurmaPorId: async () => ({
       id: "t1", sigla: "A",
       periodo_letivo: { id: "pl1" }, curso: { id: "c1" },
+      matriz_curricular: { id: "mc1", status: "VIGENTE" },
       periodo_curricular: 1, descricao: "Turma A", capacidade_alunos: 40, turno: "NOITE", status: "ativa",
     }),
     criarTurma: async (data: any) => data,
@@ -32,6 +33,10 @@ function criar(overrides: {
   service.turmaRepository = turmaRepository as any;
   service.cursoRepository = cursoRepository as any;
   service.periodoLetivoRepository = periodoLetivoRepository as any;
+  service.matrizCurricularRepository = {
+    buscarPorId: async () => ({ id: "mc1", curso_id: "c1", status: "VIGENTE" }),
+    buscarVigentePorCurso: async () => ({ id: "mc1", curso_id: "c1", status: "VIGENTE" }),
+  } as any;
   return { service, turmaRepository };
 }
 

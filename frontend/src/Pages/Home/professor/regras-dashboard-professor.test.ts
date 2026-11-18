@@ -24,7 +24,7 @@ function oferta(id: string, turma: [string, string], disciplina: [string, string
     turma: { id: turma[0], sigla: turma[1], descricao: turma[1], turno: "NOITE" },
     curso: { id: "c", nome: "ADS" },
     disciplina: { id: disciplina[0], codigo: disciplina[0].toUpperCase(), nome: disciplina[1], areaConhecimento: null, ementa: null, cargaHoraria: 60 },
-    totalAlunos: alunos.length, alunosComNota: 0, alunosComFrequencia: 0, mediaTurma: null, frequenciaMedia: null, alunosEmAtencao: 0, totalAvaliacoes: 0, lancamentosPendentes: 0,
+    totalAlunos: alunos.length, alunosComNota: 0, alunosComFrequencia: 0, mediaTurma: null, frequenciaMedia: null, alunosEmAtencao: 0, totalAvaliacoes: 0, lancamentosPendentes: 0, notasFaltantes: 0,
     alunos,
   };
 }

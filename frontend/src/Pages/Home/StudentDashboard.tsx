@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert } from "@mui/material";
+import { Alert, Stack } from "@mui/material";
 import { AlertTriangle, CalendarClock, TrendingUp, UserRoundCheck } from "lucide-react";
 import { perguntarAoAssistente, useAssistenteDisponivel } from "../../components/AssistenteWidget/ponte";
 import { AssistenteIaCaixa, DashboardLayout, DashboardRodape } from "../../components/DashboardLayout";
 import type { AlertaIndicador, IndicadorDashboard } from "../../components/DashboardLayout";
 import type { MinhaFrequenciaAluno } from "../../models/frequencia-model";
-import type { DisciplinaAluno, TarefaAluno } from "../../models/home-aluno-model";
+import type { DesempenhoCompetenciasAluno, DisciplinaAluno, HistoricoCompetenciasAluno, TarefaAluno } from "../../models/home-aluno-model";
 import type { BoletimAluno } from "../../models/nota-model";
 import { authService } from "../../services/auth-services";
 import { frequenciaApi } from "../../services/frequencia-api";
 import { homeAlunoApi } from "../../services/home-aluno-api";
 import { notaApi } from "../../services/nota-api";
+import CompetenciaHistoricoPanel from "./CompetenciaHistoricoPanel";
 import DisciplinaDetalhesDrawer from "./DisciplinaDetalhesDrawer";
 import AcessosRapidosAluno from "./aluno/AcessosRapidosAluno";
 import AvaliacoesCadastradasPainel from "./aluno/AvaliacoesCadastradasPainel";
@@ -56,6 +57,8 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   const [tarefas, setTarefas] = useState<TarefaAluno[]>([]);
   const [frequencia, setFrequencia] = useState<MinhaFrequenciaAluno | null>(null);
   const [boletim, setBoletim] = useState<BoletimAluno | null>(null);
+  const [desempenhoCompetencias, setDesempenhoCompetencias] = useState<DesempenhoCompetenciasAluno | null>(null);
+  const [historicoCompetencias, setHistoricoCompetencias] = useState<HistoricoCompetenciasAluno | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [recarregando, setRecarregando] = useState(false);
   const [erros, setErros] = useState<string[]>([]);
@@ -71,8 +74,10 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
       homeAlunoApi.minhasTarefas(),
       frequenciaApi.minhaFrequencia(),
       notaApi.meuBoletim(),
+      homeAlunoApi.meuDesempenhoCompetencias(),
+      homeAlunoApi.meuHistoricoCompetencias(),
     ]);
-    const [me, listaDisciplinas, listaTarefas, dadosFrequencia, dadosBoletim] = resultados;
+    const [me, listaDisciplinas, listaTarefas, dadosFrequencia, dadosBoletim, dadosCompetencias, dadosHistorico] = resultados;
     const falhas: string[] = [];
 
     if (me.status === "fulfilled") setStudentInfo(me.value.data?.academico ?? null); else falhas.push("dados do curso");
@@ -80,6 +85,8 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
     if (listaTarefas.status === "fulfilled") setTarefas(listaTarefas.value); else falhas.push("agenda");
     if (dadosFrequencia.status === "fulfilled") setFrequencia(dadosFrequencia.value); else falhas.push("frequência");
     if (dadosBoletim.status === "fulfilled") setBoletim(dadosBoletim.value); else falhas.push("notas");
+    if (dadosCompetencias.status === "fulfilled") setDesempenhoCompetencias(dadosCompetencias.value); else falhas.push("competências");
+    if (dadosHistorico.status === "fulfilled") setHistoricoCompetencias(dadosHistorico.value); else falhas.push("histórico de competências");
 
     setErros(falhas);
     setHorarioAtualizacao(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
@@ -106,6 +113,9 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
   const disciplinaSelecionada = disciplinas.find((item) => item.turmaDisciplinaId === disciplinaSelecionadaId) ?? null;
   const boletimSelecionado = boletim?.disciplinas.find((item) => item.turmaDisciplinaId === disciplinaSelecionadaId) ?? null;
   const frequenciaSelecionada = frequencia?.consolidado.find((item) => item.turmaDisciplinaId === disciplinaSelecionadaId) ?? null;
+  const competenciasSelecionadas = desempenhoCompetencias?.disciplinas.find(
+    (item) => item.turmaDisciplinaId === disciplinaSelecionadaId,
+  )?.competencias ?? [];
 
   // Resumo acionável (o que pede atenção agora), no lugar de dados cadastrais que já estão no perfil.
   const pendencias = [
@@ -186,7 +196,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
         painelComplementar={(
           <AvaliacoesCadastradasPainel avaliacoes={avaliacoes} resumo={devolucoes} onConsultar={() => navigate("/minha-agenda")} onAbrirDisciplina={setDisciplinaSelecionadaId} />
         )}
-        painelEvolucao={<PontosAtencaoPainel pontos={pontos} onVerDetalhes={setDisciplinaSelecionadaId} />}
+        painelEvolucao={<Stack gap={2}><PontosAtencaoPainel pontos={pontos} onVerDetalhes={setDisciplinaSelecionadaId} /><CompetenciaHistoricoPanel dados={historicoCompetencias} /></Stack>}
         painelAcoes={<AcessosRapidosAluno navegar={navigate} onOrientacoesIa={iaDisponivel ? () => perguntarAoAssistente("Quais devem ser minhas prioridades acadêmicas agora?", { tipo: "orientacoes" }) : undefined} />}
         rodape={(
           <DashboardRodape
@@ -202,6 +212,7 @@ export default function StudentDashboard({ userName }: StudentDashboardProps) {
         boletim={boletimSelecionado}
         frequencia={frequenciaSelecionada}
         tarefas={tarefas}
+        competencias={competenciasSelecionadas}
         onFechar={() => setDisciplinaSelecionadaId(null)}
         onAbrirBoletim={() => navigate("/minhas-notas")}
         onAbrirFrequencia={() => navigate("/minha-frequencia")}

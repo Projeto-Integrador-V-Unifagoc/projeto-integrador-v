@@ -8,6 +8,7 @@ import TextField from "../TextField";
 import Button from "../Button";
 import { usePeriodoLetivo } from "../../hooks/use-periodo-letivo";
 import { periodoLetivoSchema } from "../../validators/periodo-letivo-schema";
+import { CalendarioAcademico } from "../CalendarioAcademico/CalendarioAcademico";
 
 type FormPeriodoLetivoProps = {
   periodoLetivoId?: string
@@ -211,6 +212,14 @@ export default function FormPeriodoLetivo({ periodoLetivoId }: FormPeriodoLetivo
             </Grid>
           </Card.Content>
         </Card.Root>
+
+        {periodoLetivoId && (
+          <CalendarioAcademico
+            periodoId={periodoLetivoId}
+            inicio={form.dataInicio}
+            fim={form.dataFim}
+          />
+        )}
 
         <Stack direction="row" justifyContent="space-between" gap={2}>
           {alerta && (

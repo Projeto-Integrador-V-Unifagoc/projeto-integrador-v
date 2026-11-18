@@ -44,6 +44,8 @@ export interface DisciplinaResponse {
   competencias?: DisciplinaCompetenciaResponse[];
   quantidade_competencias?: number;
   cadastro_completo?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CriarDisciplinaRequest {

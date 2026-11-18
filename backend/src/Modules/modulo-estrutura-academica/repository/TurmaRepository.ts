@@ -6,15 +6,22 @@ export class TurmaRepository {
         return db("turma")
             .join("periodo_letivo", "turma.periodo_letivo_id", "=", "periodo_letivo.id")
             .join("curso", "turma.curso_id", "=", "curso.id")
+            .join("matriz_curricular", "turma.matriz_curricular_id", "=", "matriz_curricular.id")
             .select(
                 "turma.*",
                 "periodo_letivo.id as periodo_letivo_id",
                 "periodo_letivo.codigo as periodo_letivo_codigo",
                 "periodo_letivo.ano as periodo_letivo_ano",
                 "periodo_letivo.semestre as periodo_letivo_semestre",
+                "periodo_letivo.data_inicio as periodo_letivo_data_inicio",
+                "periodo_letivo.data_fim as periodo_letivo_data_fim",
                 "curso.id as curso_id",
                 "curso.codigo as curso_codigo",
-                "curso.nome as curso_nome"
+                "curso.nome as curso_nome",
+                "matriz_curricular.id as matriz_curricular_id",
+                "matriz_curricular.codigo as matriz_codigo",
+                "matriz_curricular.versao as matriz_versao",
+                "matriz_curricular.status as matriz_status"
             );
     }
 

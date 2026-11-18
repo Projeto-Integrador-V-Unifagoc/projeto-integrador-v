@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Button } from "@mui/material";
+import { Alert, Button, Stack } from "@mui/material";
 import { AlertTriangle, ClipboardX, TrendingUp, Users } from "lucide-react";
 import Container from "../../components/Container";
+import { PlanoEnsinoDialog, type OfertaPlanoEnsino } from "../../components/PlanoEnsinoDialog/PlanoEnsinoDialog";
 import { perguntarAoAssistente, useAssistenteDisponivel } from "../../components/AssistenteWidget/ponte";
 import { AssistenteIaCaixa, DashboardLayout, DashboardRodape } from "../../components/DashboardLayout";
 import type { IndicadorDashboard } from "../../components/DashboardLayout";
@@ -12,7 +13,9 @@ import AlunoDetalhesDrawer from "./AlunoDetalhesDrawer";
 import TurmaDetalhesDrawer from "./TurmaDetalhesDrawer";
 import { fmtPct, resumirNomes } from "./aluno/regras-dashboard-aluno";
 import AlunosAtencaoPainel from "./professor/AlunosAtencaoPainel";
+import AgendaProfessorPainel from "./professor/AgendaProfessorPainel";
 import AproveitamentoPainel from "./professor/AproveitamentoPainel";
+import CompetenciasAtencaoPainel from "./professor/CompetenciasAtencaoPainel";
 import FiltrosProfessor from "./professor/FiltrosProfessor";
 import MinhasTurmasPainel from "./professor/MinhasTurmasPainel";
 import PendenciasLancamentoPainel from "./professor/PendenciasLancamentoPainel";
@@ -55,6 +58,7 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
   const [erro, setErro] = useState("");
   const [selecao, setSelecao] = useState<SelecaoProfessor>(SELECAO_INICIAL);
   const [detalhe, setDetalhe] = useState<DetalheAtribuicaoProfessor | null>(null);
+  const [ofertaPlano, setOfertaPlano] = useState<OfertaPlanoEnsino | null>(null);
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
   const [alunoAberto, setAlunoAberto] = useState(false);
   const [detalheAluno, setDetalheAluno] = useState<DetalheAlunoAtencaoProfessor | null>(null);
@@ -102,6 +106,10 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
   const aproveitamento = useMemo(() => calcularAproveitamento(filtrado.atribuicoes, filtrado.avaliacoes), [filtrado]);
   const pendencias = useMemo(() => listarPendencias(filtrado.avaliacoes, filtrado.chamadas, filtrado.atribuicoes), [filtrado]);
   const ofertasComPendencia = useMemo(() => new Set(pendencias.map((item) => item.turmaDisciplinaId)), [pendencias]);
+  const competenciasFiltradas = useMemo(() => {
+    const ofertas = new Set(filtrado.atribuicoes.map((item) => item.id));
+    return (dados?.competenciasEmDificuldade ?? []).filter((item) => ofertas.has(item.turmaDisciplinaId));
+  }, [dados, filtrado.atribuicoes]);
 
   if (!carregando && !dados) {
     return <Container sx={{ p: 0, border: 0 }}><Alert severity="error" action={<Button color="inherit" onClick={() => void carregar()} sx={{ width: "auto", minWidth: 124, whiteSpace: "nowrap" }}>Tentar novamente</Button>}>{erro}</Alert></Container>;
@@ -184,19 +192,25 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
         indicadores={indicadores}
         painelPrincipal={<AlunosAtencaoPainel key={`${periodo?.id}-${selecao.turmaId}-${selecao.disciplinaId}`} alunos={alunosAtencao} onConsultar={(turmaDisciplinaId, alunoId) => void abrirAluno(turmaDisciplinaId, alunoId)} onAnalisar={iaDisponivel ? (aluno) => perguntarAoAssistente(`Analisar ${aluno.nome} em ${aluno.disciplinaNome} (${aluno.turmaSigla})`, { tipo: "analisar_aluno", turmaDisciplinaId: aluno.turmaDisciplinaId, alunoId: aluno.id }) : undefined} />}
         painelComplementar={(
-          <AproveitamentoPainel
-            aproveitamento={aproveitamento}
-            podeExportar={filtrado.atribuicoes.some((item) => item.alunos?.length)}
-            onExportar={() => baixarCsv(gerarCsvAlunos(filtrado.atribuicoes), `alunos-${periodo?.codigo ?? "periodo"}.csv`)}
-            onRelatorios={() => navigate("/relatorios/lista")}
-          />
+          <Stack gap={2}>
+            <AproveitamentoPainel
+              aproveitamento={aproveitamento}
+              podeExportar={filtrado.atribuicoes.some((item) => item.alunos?.length)}
+              onExportar={() => baixarCsv(gerarCsvAlunos(filtrado.atribuicoes), `alunos-${periodo?.codigo ?? "periodo"}.csv`)}
+              onRelatorios={() => navigate("/relatorios/lista")}
+            />
+            <CompetenciasAtencaoPainel competencias={competenciasFiltradas} onAbrir={(id) => { const item = dados?.atribuicoes.find((atribuicao) => atribuicao.id === id); if (item) void abrirDetalhe(item); }} />
+          </Stack>
         )}
         painelEvolucao={(
-          <PendenciasLancamentoPainel
-            pendencias={pendencias}
-            onLancarNotas={() => navigate("/notas/lancamento")}
-            onRegistrarPresenca={() => navigate("/frequencias/lista")}
-          />
+          <Stack gap={2}>
+            <PendenciasLancamentoPainel
+              pendencias={pendencias}
+              onLancarNotas={() => navigate("/notas/lancamento")}
+              onRegistrarPresenca={() => navigate("/frequencias/lista")}
+            />
+            <AgendaProfessorPainel aulas={dados?.proximasAulas ?? []} />
+          </Stack>
         )}
         painelAcoes={(
           <MinhasTurmasPainel
@@ -221,8 +235,10 @@ export default function ProfessorDashboard({ userName }: { userName: string }) {
         onAbrirAluno={(turmaDisciplinaId, alunoId) => { setDetalhe(null); void abrirAluno(turmaDisciplinaId, alunoId); }}
         onLancarNotas={() => navigate("/notas/lancamento")}
         onRegistrarFrequencia={() => navigate("/frequencias/lista")}
+        onPlanoEnsino={(item) => setOfertaPlano({ id: item.id, curso_disciplina: { disciplina: { codigo: item.disciplina.codigo, nome: item.disciplina.nome } } })}
       />
       <AlunoDetalhesDrawer open={alunoAberto} carregando={carregandoAluno} erro={erroAluno} detalhe={detalheAluno} onClose={() => setAlunoAberto(false)} onLancarNotas={() => navigate("/notas/lancamento")} onRegistrarFrequencia={() => navigate("/frequencias/lista")} />
+      <PlanoEnsinoDialog open={!!ofertaPlano} oferta={ofertaPlano} onClose={() => setOfertaPlano(null)} />
     </>
   );
 }

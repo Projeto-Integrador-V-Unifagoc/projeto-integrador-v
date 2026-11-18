@@ -3,11 +3,13 @@ import { CursoRepository } from "../../modulo-facul-dp-curso/repository/CursoRep
 import { TurmaCommand } from "../models/Turma";
 import { PeriodoLetivoRepository } from "../repository/PeriodoLetivoRepository";
 import { TurmaRepository } from "../repository/TurmaRepository";
+import { MatrizCurricularRepository } from "../../matriz-curricular/repository/MatrizCurricularRepository";
 
 export class TurmaService {
     turmaRepository = new TurmaRepository();
     cursoRepository = new CursoRepository();
     periodoLetivoRepository = new PeriodoLetivoRepository();
+    matrizCurricularRepository = new MatrizCurricularRepository();
 
     private async validarRelacionamentos(data: any) {
         const curso = await this.cursoRepository.buscarCursoRegistroPorId(data.cursoId);
@@ -35,6 +37,12 @@ export class TurmaService {
 
     async criarTurma(data: any) {
         await this.validarRelacionamentos(data);
+        const matriz = data.matrizCurricularId
+            ? await this.matrizCurricularRepository.buscarPorId(data.matrizCurricularId)
+            : await this.matrizCurricularRepository.buscarVigentePorCurso(data.cursoId);
+        if (!matriz || String(matriz.curso_id) !== String(data.cursoId) || matriz.status !== "VIGENTE") {
+            throw new Error("Selecione uma matriz vigente do curso");
+        }
 
         const turmaExistente = await this.turmaRepository.buscarTurmaPorChave(
             data.periodoLetivoId,
@@ -50,6 +58,7 @@ export class TurmaService {
             id: uuidv4(),
             periodo_letivo_id: data.periodoLetivoId,
             curso_id: data.cursoId,
+            matriz_curricular_id: matriz.id,
             periodo_curricular: Number(data.periodoCurricular),
             descricao: data.descricao,
             sigla: data.sigla,
@@ -79,6 +88,7 @@ export class TurmaService {
         const payload = {
             periodoLetivoId: data.periodoLetivoId ?? turmaAtual.periodo_letivo.id,
             cursoId: data.cursoId ?? turmaAtual.curso.id,
+            matrizCurricularId: data.matrizCurricularId ?? turmaAtual.matriz_curricular.id,
             periodoCurricular: data.periodoCurricular ?? turmaAtual.periodo_curricular,
             descricao: data.descricao ?? turmaAtual.descricao,
             sigla: data.sigla ?? turmaAtual.sigla,
@@ -88,6 +98,12 @@ export class TurmaService {
         };
 
         await this.validarRelacionamentos(payload);
+        if (payload.matrizCurricularId !== turmaAtual.matriz_curricular.id || payload.cursoId !== turmaAtual.curso.id) {
+            const matriz = await this.matrizCurricularRepository.buscarPorId(payload.matrizCurricularId);
+            if (!matriz || String(matriz.curso_id) !== String(payload.cursoId) || matriz.status !== "VIGENTE") {
+                throw new Error("Selecione uma matriz vigente do curso");
+            }
+        }
 
         if (
             payload.periodoLetivoId !== turmaAtual.periodo_letivo.id ||
@@ -108,6 +124,7 @@ export class TurmaService {
         return await this.turmaRepository.atualizarTurma(id, {
             periodo_letivo_id: payload.periodoLetivoId,
             curso_id: payload.cursoId,
+            matriz_curricular_id: payload.matrizCurricularId,
             periodo_curricular: Number(payload.periodoCurricular),
             descricao: payload.descricao,
             sigla: payload.sigla,

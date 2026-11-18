@@ -47,6 +47,58 @@ test.describe("Estrutura acadêmica @api", () => {
     });
   });
 
+  test.describe("Competências — catálogo e vínculos", () => {
+    test("gerencia o catálogo e protege competência vinculada", async ({ apiSecretaria, runId }) => {
+      const criada = await apiSecretaria.post("/competencias", {
+        body: {
+          codigo: ids.codigo("COMP", runId),
+          nome: `Competência ${runId}`,
+          descricao: "Competência utilizada pela regressão sistêmica.",
+          tipo: "TECNICA",
+        },
+      });
+      expect(criada.status).toBe(201);
+
+      const atualizada = await apiSecretaria.put(`/competencias/${criada.body.id}`, {
+        body: { nome: `Competência atualizada ${runId}`, tipo: "GERAL" },
+      });
+      expect(atualizada.status).toBe(200);
+      expect(atualizada.body.tipo).toBe("GERAL");
+
+      const inativada = await apiSecretaria.patch(`/competencias/${criada.body.id}/status`, {
+        body: { ativo: false },
+      });
+      expect(inativada.status).toBe(200);
+      const inativas = await apiSecretaria.get("/competencias", { query: { ativo: false } });
+      expect(inativas.status).toBe(200);
+      expect(inativas.body.some((item: any) => item.id === criada.body.id)).toBe(true);
+
+      await apiSecretaria.patch(`/competencias/${criada.body.id}/status`, { body: { ativo: true } });
+      const disciplina = await apiSecretaria.post("/disciplinas", {
+        body: {
+          codigo: ids.codigo("DISC", runId),
+          nome: `Disciplina com competência ${runId}`,
+          areaConhecimento: "FORMACAO_GERAL",
+          ementa: "Ementa de validação do vínculo de competência.",
+          cargaHoraria: 40,
+          cargaHorariaTeorica: 40,
+          cargaHorariaPratica: 0,
+          cargaHorariaLaboratorio: 0,
+          cargaHorariaExtensao: 0,
+          competencias: [{ competenciaId: criada.body.id, nivelEsperado: "DESENVOLVER", obrigatoria: true, ordem: 0 }],
+        },
+      });
+      expect(disciplina.status).toBe(201);
+
+      const bloqueada = await apiSecretaria.del(`/competencias/${criada.body.id}`);
+      expect(bloqueada.status).toBe(409);
+      expect(JSON.stringify(bloqueada.body)).toMatch(/vinculada|desative/i);
+
+      expect((await apiSecretaria.del(`/disciplinas/${disciplina.body.id}`)).status).toBe(204);
+      expect((await apiSecretaria.del(`/competencias/${criada.body.id}`)).status).toBe(204);
+    });
+  });
+
   test.describe("Período letivo — unicidade e datas", () => {
     test("data fim anterior à inicial é rejeitada", async ({ apiSecretaria, runId }) => {
       const resp = await apiSecretaria.post("/periodos-letivos", {

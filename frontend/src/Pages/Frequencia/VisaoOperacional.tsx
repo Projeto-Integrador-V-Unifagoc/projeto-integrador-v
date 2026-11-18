@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Chip, FormControlLabel, Grid, MenuItem, Stack, Switch, Tab, Tabs, Typography } from "@mui/material";
+import { useSearchParams } from "react-router-dom";
+import { Alert, Box, Chip, FormControlLabel, Grid, MenuItem, Stack, Switch, Tab, Tabs, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
 import { CheckCheck, RefreshCw, Save, Search } from "lucide-react";
 import Button from "../../components/Button";
@@ -8,11 +9,13 @@ import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
+import { useConfirmacao } from "../../hooks/use-confirmacao";
 import { useFrequencia } from "../../hooks/use-frequencia";
 import type {
   AlunoChamada,
   ConsolidadoFrequencia,
   LocalAula,
+  OcorrenciaAula,
   StatusFrequencia,
   TurmaFrequencia,
 } from "../../models/frequencia-model";
@@ -27,14 +30,20 @@ import {
 } from "./frequencia-utils";
 
 export default function VisaoOperacional() {
+  const [searchParams] = useSearchParams();
+  const turmaSolicitada = searchParams.get("turmaDisciplinaId") ?? "";
   const api = useFrequencia();
   const { notificar } = useNotificacao();
+  const { confirmar, dialogoConfirmacao } = useConfirmacao();
   const podeEditar = perfilLocal() === "professor";
 
   const [turmas, setTurmas] = useState<TurmaFrequencia[]>([]);
   const [locais, setLocais] = useState<LocalAula[]>([]);
   const [turmaId, setTurmaId] = useState("");
   const [localId, setLocalId] = useState("");
+  const [aulaId, setAulaId] = useState("");
+  const [ocorrencias, setOcorrencias] = useState<OcorrenciaAula[]>([]);
+  const [requerOcorrencia, setRequerOcorrencia] = useState(false);
   const [data, setData] = useState(hojeSP());
   const [chamada, setChamada] = useState<AlunoChamada[]>([]);
   const [alterado, setAlterado] = useState(false);
@@ -49,7 +58,7 @@ export default function VisaoOperacional() {
         if (!ativo) return;
         setTurmas(r.turmas);
         setLocais(r.locais);
-        setTurmaId(r.turmas[0]?.id || "");
+        setTurmaId(r.turmas.find((item: TurmaFrequencia) => item.id === turmaSolicitada)?.id ?? r.turmas[0]?.id ?? "");
         setLocalId(r.locais[0]?.id || "");
       } catch (e) {
         if (ativo) notificar(mensagemErro(e), "error");
@@ -59,22 +68,27 @@ export default function VisaoOperacional() {
       ativo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notificar]);
+  }, [notificar, turmaSolicitada]);
 
-  useEffect(() => {
-    const sair = (e: BeforeUnloadEvent) => {
-      if (alterado) e.preventDefault();
-    };
-    addEventListener("beforeunload", sair);
-    return () => removeEventListener("beforeunload", sair);
-  }, [alterado]);
-
-  async function carregar() {
+  async function carregar(ocorrenciaId = aulaId) {
     if (!turmaId) return;
-    if (alterado && !confirm("Descartar alterações ainda não salvas?")) return;
+    if (alterado && !await confirmar({
+      titulo: "Descartar alterações?",
+      mensagem: "As alterações ainda não salvas desta chamada serão perdidas.",
+      textoConfirmar: "Descartar",
+      cor: "warning",
+    })) return;
     try {
-      const r = await api.obterChamada({ turmaDisciplinaId: turmaId, data });
+      const r = await api.obterChamada({ turmaDisciplinaId: turmaId, data, aulaId: ocorrenciaId || undefined });
       setChamada(r.alunos);
+      setOcorrencias(r.ocorrencias);
+      setAulaId(r.aulaSelecionadaId ?? "");
+      setRequerOcorrencia(r.requerSelecaoOcorrencia);
+      const ocorrenciaSelecionada = r.ocorrencias.find((item) => item.id === r.aulaSelecionadaId);
+      if (ocorrenciaSelecionada?.localId) setLocalId(ocorrenciaSelecionada.localId);
+      if (r.requerSelecaoOcorrencia) {
+        notificar("Há mais de uma aula nesta data. Selecione o horário antes de lançar a frequência.", "info");
+      }
       if (r.matriculasIrregulares > 0) {
         notificar(`${r.matriculasIrregulares} matrícula(s) irregular(es) foram omitidas.`, "info");
       }
@@ -87,14 +101,24 @@ export default function VisaoOperacional() {
     }
   }
 
+  async function selecionarOcorrencia(id: string) {
+    if (!id) return;
+    await carregar(id);
+  }
+
   const mudarStatus = useCallback((id: string, status: StatusFrequencia) => {
     setChamada((xs) => xs.map((x) => (x.id === id ? { ...x, status } : x)));
     if (!alterado) notificar("Existem alterações não salvas na chamada.", "warning");
     setAlterado(true);
   }, [alterado, notificar]);
 
-  function todosPresentes() {
-    if (!confirm("Marcar todos os alunos elegíveis como presentes?")) return;
+  async function todosPresentes() {
+    if (!await confirmar({
+      titulo: "Marcar todos como presentes?",
+      mensagem: "Todos os alunos elegíveis serão marcados como presentes. A chamada ainda precisará ser salva.",
+      textoConfirmar: "Marcar presentes",
+      cor: "primary",
+    })) return;
     setChamada((xs) => xs.map((x) => ({ ...x, status: "PRESENTE" })));
     notificar("Todos os alunos elegíveis foram marcados como presentes. Salve a chamada para confirmar.", "info");
     setAlterado(true);
@@ -105,6 +129,10 @@ export default function VisaoOperacional() {
       notificar("Marque presente ou ausente para todos os alunos.", "error");
       return;
     }
+    if (requerOcorrencia || (ocorrencias.length > 1 && !aulaId)) {
+      notificar("Selecione o horário da aula antes de salvar a chamada.", "error");
+      return;
+    }
     if (!localId && chamada.some((a) => !a.frequenciaId)) {
       notificar("Selecione o local da aula.", "error");
       return;
@@ -112,6 +140,7 @@ export default function VisaoOperacional() {
     try {
       await api.salvarChamada({
         turmaDisciplinaId: turmaId,
+        aulaId: aulaId || undefined,
         localId,
         data,
         registros: chamada.map((a) => ({ alunoId: a.id, status: a.status! })),
@@ -158,6 +187,7 @@ export default function VisaoOperacional() {
                     color="success"
                     checked={row.status === "PRESENTE"}
                     onChange={(e) => mudarStatus(row.id, e.target.checked ? "PRESENTE" : "AUSENTE")}
+                    disabled={requerOcorrencia}
                     inputProps={{ "aria-label": `Frequência de ${row.nome}` }}
                   />
                 }
@@ -188,7 +218,7 @@ export default function VisaoOperacional() {
       },
       { field: "percentualAtual", headerName: "% atual", width: 110, valueFormatter: (v) => formatarPercentual(v as number) },
     ],
-    [mudarStatus, podeEditar],
+    [mudarStatus, podeEditar, requerOcorrencia],
   );
 
   const colunasRelatorio = useMemo(() => colunasConsolidado(true), []);
@@ -243,7 +273,7 @@ export default function VisaoOperacional() {
               <Grid size={{ xs: 12, md: 2 }}>
                 <Button
                   variant="contained"
-                  onClick={carregar}
+                  onClick={() => void carregar()}
                   disabled={!turmaId}
                   isLoading={api.operacoes.chamada}
                   startIcon={<Search size={16} aria-hidden="true" />}
@@ -272,11 +302,40 @@ export default function VisaoOperacional() {
         {aba === 0 && (
           <Box role="tabpanel" id="frequencia-painel-chamada" aria-labelledby="frequencia-tab-chamada">
             <Stack gap={2}>
+              {ocorrencias.length > 0 && (
+                <Card.Root elevation={0} variant="outlined">
+                  <Card.Content>
+                    <Grid container spacing={1.5} alignItems="center">
+                      <Grid size={{ xs: 12, md: 5 }}>
+                        <TextField
+                          select
+                          label="Horário da aula"
+                          value={aulaId}
+                          onChange={(e) => void selecionarOcorrencia(e.target.value)}
+                          helperText={ocorrencias.length > 1 ? "Selecione qual ocorrência receberá a chamada." : "Ocorrência planejada pela grade semanal."}
+                        >
+                          {ocorrencias.map((item) => (
+                            <MenuItem key={item.id} value={item.id}>
+                              {item.horaInicio && item.horaFim ? `${item.horaInicio}–${item.horaFim}` : "Horário não informado"}
+                              {item.local ? ` · ${item.local}` : ""}
+                              {item.status === "REALIZADA" ? " · Realizada" : ""}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                      </Grid>
+                      <Grid size={{ xs: 12, md: 7 }}>
+                        {requerOcorrencia && <Alert severity="info">Esta disciplina possui mais de uma aula na data escolhida. Selecione o horário para visualizar e lançar a chamada correta.</Alert>}
+                      </Grid>
+                    </Grid>
+                  </Card.Content>
+                </Card.Root>
+              )}
               {acoesProfessor && (
                 <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" gap={1}>
                   <Button
                     variant="outlined"
                     onClick={todosPresentes}
+                    disabled={requerOcorrencia}
                     startIcon={<CheckCheck size={16} aria-hidden="true" />}
                     sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
                   >
@@ -285,7 +344,7 @@ export default function VisaoOperacional() {
                   <Button
                     variant="contained"
                     onClick={salvar}
-                    disabled={!alterado || api.operacoes.salvamento}
+                    disabled={!alterado || api.operacoes.salvamento || requerOcorrencia}
                     isLoading={api.operacoes.salvamento}
                     startIcon={<Save size={16} aria-hidden="true" />}
                     sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
@@ -339,6 +398,7 @@ export default function VisaoOperacional() {
           </Box>
         )}
       </Stack>
+      {dialogoConfirmacao}
     </Container>
   );
 }

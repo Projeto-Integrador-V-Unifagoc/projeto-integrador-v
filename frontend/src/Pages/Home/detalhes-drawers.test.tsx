@@ -17,7 +17,9 @@ const detalheAluno: DetalheAlunoAtencaoProfessor = {
   },
   resumo: { media: 66.4, frequencia: 65, nivel: "CRITICO", motivo: "Frequencia de 65%, abaixo do minimo", presencas: 13, faltas: 7, totalAulas: 20, avaliacoesLancadas: 1, totalAvaliacoes: 2 },
   criterios: { mediaMinima: 60, frequenciaMinima: 75, frequenciaAtencao: 80 },
+  criteriosCompetencia: { coberturaMinima: 50, dificuldadeAbaixoDe: 60, atencaoAbaixoDe: 75 },
   pontosAtencao: [{ id: "frequencia-critica", severidade: "CRITICO", titulo: "Frequência abaixo do mínimo", descricao: "O aluno possui 65% de frequência." }],
+  competencias: [],
   avaliacoes: [
     { id: "p1", titulo: "Prova 1", tipo: "PROVA", valor: 20, dataDevolucao: "2026-10-06", nota: 13.5, percentual: 67.5, status: "LANCADA" },
     { id: "p2", titulo: "Prova 3", tipo: "PROVA", valor: 20, dataDevolucao: "2026-12-06", nota: null, percentual: null, status: "PENDENTE" },
@@ -65,6 +67,7 @@ describe("DisciplinaDetalhesDrawer (aluno)", () => {
         boletim={boletim}
         frequencia={{ alunoId: "a", alunoNome: "Ana", turmaDisciplinaId: "td1", disciplinaId: "d1", disciplinaNome: "Matemática Discreta", totalAulas: 25, presencas: 17, faltas: 8, naoLancadas: 0, percentual: 68, situacao: "RISCO_REPROVACAO" }}
         tarefas={[]}
+        competencias={[]}
         onFechar={vi.fn()}
         onAbrirBoletim={vi.fn()}
         onAbrirFrequencia={vi.fn()}
@@ -90,9 +93,11 @@ describe("TurmaDetalhesDrawer (professor)", () => {
           turma: { id: "t1", sigla: "ADS1A", descricao: "Turma A", turno: "NOITE" },
           curso: { id: "c1", nome: "Análise e Desenvolvimento de Sistemas" },
           disciplina: { id: "d1", codigo: "ADS104", nome: "Arquitetura de Computadores", areaConhecimento: null, ementa: null, cargaHoraria: 60 },
-          totalAlunos: 2, alunosComNota: 2, alunosComFrequencia: 2, mediaTurma: 80, frequenciaMedia: 90, alunosEmAtencao: 1, totalAvaliacoes: 6, lancamentosPendentes: 0,
+          totalAlunos: 2, alunosComNota: 2, alunosComFrequencia: 2, mediaTurma: 80, frequenciaMedia: 90, alunosEmAtencao: 1, totalAvaliacoes: 6, lancamentosPendentes: 0, notasFaltantes: 0,
           periodo: { id: "p1", codigo: "2026.1", ano: 2026, semestre: 1, ativo: true, status: "aberto" },
           competencias: [],
+          criteriosCompetencia: { coberturaMinima: 50, dificuldadeAbaixoDe: 60, atencaoAbaixoDe: 75 },
+          desempenhoCompetencias: [],
           alunos: [
             { id: "a1", matricula: 1, nome: "Ana Beatriz Ramos", media: 90.9, frequencia: 92, nivel: "REGULAR", motivo: "ok" },
             { id: "a2", matricula: 2, nome: "Bruno Lima", media: 55, frequencia: 70, nivel: "CRITICO", motivo: "freq" },
@@ -102,6 +107,7 @@ describe("TurmaDetalhesDrawer (professor)", () => {
         onAbrirAluno={abrirAluno}
         onLancarNotas={vi.fn()}
         onRegistrarFrequencia={vi.fn()}
+        onPlanoEnsino={vi.fn()}
       />,
     );
 

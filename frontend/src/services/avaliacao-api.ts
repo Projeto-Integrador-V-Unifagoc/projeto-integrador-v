@@ -3,6 +3,7 @@ import type {
   AtualizarAvaliacaoDTO,
   AtribuicaoAvaliacao,
   Avaliacao,
+  CompetenciaDisponivelAvaliacao,
   CriarAvaliacaoDTO,
 } from "../models/avaliacao-model";
 
@@ -14,6 +15,11 @@ export const avaliacaoApi = {
 
   async listarAtribuicoes(): Promise<AtribuicaoAvaliacao[]> {
     const response = await api.get<AtribuicaoAvaliacao[]>("/avaliacoes/atribuicoes");
+    return response.data;
+  },
+
+  async listarCompetenciasDaAtribuicao(id: string): Promise<CompetenciaDisponivelAvaliacao[]> {
+    const response = await api.get<CompetenciaDisponivelAvaliacao[]>(`/avaliacoes/atribuicoes/${id}/competencias`);
     return response.data;
   },
 

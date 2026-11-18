@@ -35,6 +35,9 @@ export class TurmaDisciplinaService {
         if (cursoDisciplina.curso.id !== turma.curso.id) {
             throw new Error("A disciplina informada nao pertence a matriz curricular do curso da turma");
         }
+        if (cursoDisciplina.matriz_curricular.id !== turma.matriz_curricular.id) {
+            throw new Error("A disciplina informada nao pertence a versao de matriz vinculada a turma");
+        }
 
         const professor = await this.professorRepository.buscarProfessorAtivoPorId(data.professorId);
 

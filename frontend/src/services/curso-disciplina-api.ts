@@ -1,5 +1,5 @@
 import { api } from "../lib/axios";
-import type { AtualizarCursoDisciplinaRequest, CursoDisciplinaRequest } from "../models/curso-disciplina-model";
+import type { AtualizarCursoDisciplinaRequest, CriarMatrizCurricularRequest, CriarRequisitoCurricularRequest, CursoDisciplinaRequest, TipoRequisitoCurricular } from "../models/curso-disciplina-model";
 
 export const cursoDisciplinaApi = {
   async listarCursoDisciplinas() {
@@ -7,8 +7,8 @@ export const cursoDisciplinaApi = {
     return response.data;
   },
 
-  async listarMatrizCurricularPorCursoId(cursoId: string) {
-    const response = await api.get(`/cursos/${cursoId}/matriz-curricular`);
+  async listarMatrizCurricularPorCursoId(cursoId: string, matrizId?: string) {
+    const response = await api.get(`/cursos/${cursoId}/matriz-curricular`, { params: matrizId ? { matrizId } : undefined });
     return response.data;
   },
 
@@ -25,5 +25,39 @@ export const cursoDisciplinaApi = {
   async removerCursoDisciplina(id: string) {
     const response = await api.delete(`/curso-disciplina/${id}`);
     return response.data;
+  },
+
+  async listarMatrizes(cursoId: string) {
+    const response = await api.get(`/cursos/${cursoId}/matrizes`);
+    return response.data;
+  },
+
+  async criarMatriz(cursoId: string, data: CriarMatrizCurricularRequest) {
+    const response = await api.post(`/cursos/${cursoId}/matrizes`, data);
+    return response.data;
+  },
+
+  async publicarMatriz(id: string, encerrarVigente: boolean) {
+    const response = await api.post(`/matrizes-curriculares/${id}/publicar`, { encerrarVigente });
+    return response.data;
+  },
+
+  async listarRequisitos(matrizId: string) {
+    const response = await api.get(`/matrizes-curriculares/${matrizId}/requisitos`);
+    return response.data;
+  },
+
+  async criarRequisito(data: CriarRequisitoCurricularRequest) {
+    const response = await api.post("/requisitos-curriculares", data);
+    return response.data;
+  },
+
+  async atualizarRequisito(id: string, tipo: TipoRequisitoCurricular) {
+    const response = await api.put(`/requisitos-curriculares/${id}`, { tipo });
+    return response.data;
+  },
+
+  async removerRequisito(id: string) {
+    await api.delete(`/requisitos-curriculares/${id}`);
   },
 };

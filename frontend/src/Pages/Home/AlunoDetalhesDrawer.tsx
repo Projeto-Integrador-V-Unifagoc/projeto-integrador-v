@@ -111,6 +111,27 @@ export default function AlunoDetalhesDrawer({ open, carregando, erro, detalhe, o
             </Stack>
           </SecaoDetalhe>
 
+          <SecaoDetalhe titulo="Desempenho por competência">
+            {detalhe.competencias.length ? (
+              <Stack gap={1}>
+                {detalhe.competencias.map((competencia) => (
+                  <Box key={competencia.id} sx={{ ...sxCartaoDashboard, p: 1.5 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                      <Box minWidth={0}>
+                        <Typography variant="body2" fontWeight={700}>{competencia.codigo} · {competencia.nome}</Typography>
+                        <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>Cobertura de {fmtPct(competencia.cobertura, 1)}</Typography>
+                      </Box>
+                      <Chip size="small" color={competencia.classificacao === "DIFICULDADE" ? "error" : competencia.classificacao === "ATENCAO" ? "warning" : competencia.classificacao === "ADEQUADO" ? "success" : "default"} label={competencia.classificacao === "DIFICULDADE" ? "Dificuldade" : competencia.classificacao === "ATENCAO" ? "Atenção" : competencia.classificacao === "ADEQUADO" ? "Adequado" : "Dados insuficientes"} />
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between" mt={1}><Typography variant="caption">Aproveitamento</Typography><Typography variant="caption" fontWeight={700}>{fmtPct(competencia.media, 1)}</Typography></Stack>
+                    <LinearProgress variant="determinate" value={competencia.media ?? 0} color={competencia.classificacao === "DIFICULDADE" ? "error" : competencia.classificacao === "ATENCAO" ? "warning" : "primary"} sx={{ mt: .5, height: 4, borderRadius: 4 }} />
+                    <Typography variant="caption" display="block" mt={.75} sx={{ color: CORES_DASHBOARD.textoApagado }}>{competencia.fontes.length ? competencia.fontes.map((fonte) => `${fonte.titulo} (${fonte.pesoPercentual}%)`).join(" · ") : "Nenhuma avaliação mapeada"}</Typography>
+                  </Box>
+                ))}
+              </Stack>
+            ) : <AvisoDetalhe gravidade="info">Nenhum resultado por competência disponível para este aluno.</AvisoDetalhe>}
+          </SecaoDetalhe>
+
           <SecaoDetalhe titulo="Notas por avaliação">
             <Box sx={{ ...sxCartaoDashboard, overflow: "hidden" }}>
               {detalhe.avaliacoes.length ? (

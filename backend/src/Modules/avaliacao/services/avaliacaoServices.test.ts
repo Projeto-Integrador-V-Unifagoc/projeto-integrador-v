@@ -6,6 +6,8 @@ import type { Avaliacao } from "../models/avaliacaoModels.js";
 const TD1 = "11111111-1111-4111-8111-111111111111";
 const TD2 = "22222222-2222-4222-8222-222222222222";
 const ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const C1 = "cccccccc-cccc-4ccc-8ccc-ccccccccccc1";
+const C2 = "cccccccc-cccc-4ccc-8ccc-ccccccccccc2";
 const ADMIN = { usuarioId: "admin", tipoUsuario: "administrador" };
 const original = { ...avaliacaoRepository };
 const repo: any = avaliacaoRepository;
@@ -20,6 +22,10 @@ describe("avaliacaoService", () => {
     repo.buscarAtribuicaoPorId = async (id: string) => ({ id, professor_id: "prof-1", status: "ativa" });
     repo.buscarPorTurmaDisciplina = async () => [];
     repo.criar = async (payload: any) => ({ ...base, ...payload });
+    repo.buscarCompetenciasDisponiveis = async (_id: string) => [];
+    repo.listarCompetenciasDaAvaliacao = async () => [];
+    repo.substituirCompetencias = async () => undefined;
+    repo.possuiNotas = async () => false;
   });
   afterEach(() => Object.assign(avaliacaoRepository, original));
 
@@ -27,6 +33,54 @@ describe("avaliacaoService", () => {
     const prova = await avaliacaoService.criar({ tipo_avaliacao: "PROVA", data_lancamento: "2026-05-01", valor: 1, turma_disciplina_id: TD1 }, ADMIN);
     const tpi = await avaliacaoService.criar({ tipo_avaliacao: "TPI", data_lancamento: "2026-05-01", valor: 99, turma_disciplina_id: TD1 }, ADMIN);
     expect(Number(prova.valor)).toBe(20); expect(Number(tpi.valor)).toBe(5);
+  });
+
+  it("salva competencias da disciplina quando os pesos totalizam 100", async () => {
+    const salvas: any[] = [];
+    repo.buscarCompetenciasDisponiveis = async () => [{ competencia_id: C1 }, { competencia_id: C2 }];
+    repo.substituirCompetencias = async (_id: string, itens: any[]) => { salvas.push(...itens); };
+    repo.buscarPorId = async () => ({ ...base, competencias: salvas });
+
+    const resultado = await avaliacaoService.criar({
+      tipo_avaliacao: "TRABALHO",
+      data_lancamento: "2026-05-01",
+      valor: 10,
+      turma_disciplina_id: TD1,
+      competencias: [
+        { competencia_id: C1, peso_percentual: 60 },
+        { competencia_id: C2, peso_percentual: 40 },
+      ],
+    }, ADMIN);
+
+    expect(salvas).toEqual([
+      { competencia_id: C1, peso_percentual: 60 },
+      { competencia_id: C2, peso_percentual: 40 },
+    ]);
+    expect(resultado.competencias).toHaveLength(2);
+  });
+
+  it("rejeita pesos que nao totalizam 100 e competencias de outra disciplina", async () => {
+    await expect(avaliacaoService.criar({
+      tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 10, turma_disciplina_id: TD1,
+      competencias: [{ competencia_id: C1, peso_percentual: 80 }],
+    }, ADMIN)).rejects.toThrow(/totalizar 100/);
+
+    repo.buscarCompetenciasDisponiveis = async () => [{ competencia_id: C1 }];
+    await expect(avaliacaoService.criar({
+      tipo_avaliacao: "TRABALHO", data_lancamento: "2026-05-01", valor: 10, turma_disciplina_id: TD1,
+      competencias: [{ competencia_id: C2, peso_percentual: 100 }],
+    }, ADMIN)).rejects.toThrow(/vinculadas a sua disciplina/);
+  });
+
+  it("bloqueia alteracao do mapeamento depois do lancamento de notas", async () => {
+    repo.buscarPorId = async () => ({ ...base, competencias: [{ competencia_id: C1, peso_percentual: 100 }] });
+    repo.listarCompetenciasDaAvaliacao = async () => [{ competencia_id: C1, peso_percentual: 100 }];
+    repo.buscarCompetenciasDisponiveis = async () => [{ competencia_id: C1 }, { competencia_id: C2 }];
+    repo.possuiNotas = async () => true;
+
+    await expect(avaliacaoService.atualizar(ID, {
+      competencias: [{ competencia_id: C2, peso_percentual: 100 }],
+    }, ADMIN)).rejects.toMatchObject({ status: 409 });
   });
 
   it("bloqueia quarta prova e segundo TPI", async () => {

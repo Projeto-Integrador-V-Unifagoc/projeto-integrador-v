@@ -13,7 +13,7 @@ export default async function globalSetup() {
 
   const ctx = await request.newContext();
   try {
-    const saude = await ctx.get(`${config.apiUrl}/cidades`);
+    const saude = await ctx.get(`${config.apiUrl}/health`);
     if (!saude.ok()) {
       throw new Error(
         `Backend E2E indisponível em ${config.apiUrl} (HTTP ${saude.status()}). ` +

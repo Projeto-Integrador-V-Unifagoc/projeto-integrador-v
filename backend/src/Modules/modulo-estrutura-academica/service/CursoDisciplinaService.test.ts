@@ -8,8 +8,8 @@ function criar(overrides: {
   disciplina?: Record<string, any>;
 } = {}) {
   const cursoDisciplinaRepository = {
-    buscarCursoDisciplinaPorCursoEDisciplina: async () => null,
-    buscarCursoDisciplinaPorId: async () => ({ id: "cd1", periodo_ideal: 1 }),
+    buscarCursoDisciplinaPorMatrizEDisciplina: async () => null,
+    buscarCursoDisciplinaPorId: async () => ({ id: "cd1", periodo_ideal: 1, matriz_curricular: { id: "mc1", status: "RASCUNHO" } }),
     criarCursoDisciplina: async (data: any) => data,
     listarCursoDisciplinas: async () => [],
     listarMatrizCurricularPorCursoId: async () => [],
@@ -29,6 +29,10 @@ function criar(overrides: {
   service.cursoDisciplinaRepository = cursoDisciplinaRepository as any;
   service.cursoRepository = cursoRepository as any;
   service.disciplinaRepository = disciplinaRepository as any;
+  service.matrizCurricularRepository = {
+    buscarPorId: async () => ({ id: "mc1", curso_id: "c1", status: "RASCUNHO" }),
+    buscarVigentePorCurso: async () => ({ id: "mc1", curso_id: "c1", status: "RASCUNHO" }),
+  } as any;
   return { service, cursoDisciplinaRepository };
 }
 
@@ -62,7 +66,7 @@ describe("CursoDisciplinaService.criarCursoDisciplina", () => {
   });
 
   it("rejeita associacao duplicada", async () => {
-    const { service } = criar({ cursoDisciplina: { buscarCursoDisciplinaPorCursoEDisciplina: async () => ({ id: "cd0" }) } });
+    const { service } = criar({ cursoDisciplina: { buscarCursoDisciplinaPorMatrizEDisciplina: async () => ({ id: "cd0" }) } });
     await assert.rejects(() => service.criarCursoDisciplina({ ...input }), /ja associada/);
   });
 

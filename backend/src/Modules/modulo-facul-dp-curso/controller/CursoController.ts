@@ -8,7 +8,8 @@ export default class CursoController {
             const curso = await this.cursoService.criarCurso(req.body);
             res.status(201).json(curso);
         } catch (error) {
-            res.status(500).json({ error: "Erro ao criar curso" });
+            const status = (error as any).status ?? 500;
+            res.status(status).json({ error: status < 500 ? (error as Error).message : "Erro ao criar curso" });
         }
     }
 
@@ -41,7 +42,8 @@ export default class CursoController {
             }
             res.status(200).json(curso);
         } catch (error) {
-            res.status(500).json({ error: "Erro ao atualizar curso" });
+            const status = (error as any).status ?? 500;
+            res.status(status).json({ error: status < 500 ? (error as Error).message : "Erro ao atualizar curso" });
         }
     }
 

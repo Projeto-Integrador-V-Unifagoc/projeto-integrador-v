@@ -24,12 +24,17 @@ export default function Cursos() {
 
   async function carregarCursos() {
     const data = await listarCursos()
+    const modalidades: Record<string, string> = { PRESENCIAL: "Presencial", HIBRIDO: "Híbrido", EAD: "A distância" }
+    const situacoes: Record<string, string> = { ATIVO: "Ativo", INATIVO: "Inativo", EM_EXTINCAO: "Em extinção" }
     const cursosMapeados = data.map((curso: CursoResponse) => ({
       id: curso.id,
       codigo: curso.codigo,
       nome: curso.nome,
       departamento: curso.departamento.nome,
       faculdade: curso.departamento.faculdade.nome,
+      modalidade: curso.modalidade ? modalidades[curso.modalidade] ?? curso.modalidade : "Não informada",
+      grauAcademico: curso.grau_academico ?? "Não informado",
+      situacaoAcademica: situacoes[curso.situacao_academica ?? "ATIVO"] ?? curso.situacao_academica ?? "Ativo",
     }))
     setCursos(cursosMapeados)
   }
@@ -65,7 +70,8 @@ export default function Cursos() {
     { field: "codigo", headerName: "Código", width: 140 },
     { field: "nome", headerName: "Nome", flex: 1 },
     { field: "departamento", headerName: "Departamento", flex: 1 },
-    { field: "faculdade", headerName: "Faculdade", flex: 1 },
+    { field: "modalidade", headerName: "Modalidade", width: 130 },
+    { field: "situacaoAcademica", headerName: "Situação", width: 130 },
     {
       field: "id",
       headerName: "Ações",
@@ -109,6 +115,8 @@ export default function Cursos() {
                     <Typography variant="body2"><strong>Código:</strong> {curso.codigo}</Typography>
                     <Typography variant="body2"><strong>Departamento:</strong> {curso.departamento}</Typography>
                     <Typography variant="body2"><strong>Faculdade:</strong> {curso.faculdade}</Typography>
+                    <Typography variant="body2"><strong>Modalidade:</strong> {curso.modalidade}</Typography>
+                    <Typography variant="body2"><strong>Situação:</strong> {curso.situacaoAcademica}</Typography>
                     <Stack direction="row" justifyContent="flex-end" gap={1}>
                       <Button variant="outlined" onClick={() => navigate(`/cursos/${curso.id}/matriz-curricular`)}>
                         Matriz

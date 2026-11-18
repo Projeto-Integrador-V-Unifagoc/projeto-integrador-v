@@ -22,16 +22,23 @@ export class FrequenciaService {
     };
   }
 
-  async obterChamada(turmaId: string, data: string, req: Request) {
+  async obterChamada(turmaId: string, data: string, req: Request, aulaId?: string) {
     this.uuid(turmaId, "Turma/disciplina inválida."); this.data(data);
+    if (aulaId) this.uuid(aulaId, "Aula inválida.");
     const ctx = await this.auth.obterContexto(req);
     if (ctx.perfil === "aluno") throw erroFrequencia.proibido();
     await this.autorizarTurma(ctx, turmaId, ctx.perfil === "secretaria");
     const turma = await this.validarPeriodo(turmaId, data, false);
     const alunos = await this.repository.listarAlunosAtivosDaTurma(turmaId);
-    const registros = await this.repository.listarRegistrosDaChamada(turmaId, data);
+    const aulas = await this.repository.listarAulasDaData(turmaId, data);
+    const aulaSelecionada: any = aulaId ? aulas.find((item: any) => String(item.id) === aulaId) : aulas.length === 1 ? aulas[0] : null;
+    if (aulaId && !aulaSelecionada) throw erroFrequencia.invalido("A ocorrência não pertence à oferta e data selecionadas.");
+    const registros = aulaSelecionada ? await this.repository.listarRegistrosDaChamada(turmaId, data, String(aulaSelecionada.id)) : aulas.length > 1 ? [] : await this.repository.listarRegistrosDaChamada(turmaId, data);
     const porMatricula = new Map(registros.map((r: any) => [String(r.matricula_turma_disciplina_id), r]));
-    return { turmaDisciplinaId: turmaId, data, periodoLetivo: turma.periodo_codigo, jaRegistrada: registros.length > 0,
+    return { turmaDisciplinaId: turmaId, data, periodoLetivo: turma.periodo_codigo, aulaSelecionadaId: aulaSelecionada?.id ?? null,
+      requerSelecaoOcorrencia: aulas.length > 1 && !aulaSelecionada,
+      ocorrencias: aulas.map((aula: any) => ({ id: String(aula.id), horaInicio: aula.hora_inicio ? String(aula.hora_inicio).slice(0, 5) : null, horaFim: aula.hora_fim ? String(aula.hora_fim).slice(0, 5) : null, local: aula.local_planejado ?? null, localId: aula.local_id ?? null, status: aula.status, origem: aula.origem })),
+      jaRegistrada: registros.length > 0,
       chamadaCompleta: registros.length === alunos.length, matriculasIrregulares: await this.repository.contarMatriculasIrregulares(turmaId),
       alunos: await Promise.all(alunos.map(async (a: any) => { const r: any = porMatricula.get(String(a.matricula_turma_disciplina_id)); return {
         id: a.aluno_id, matriculaTurmaDisciplinaId: a.matricula_turma_disciplina_id, matricula: a.matricula, nome: a.nome,

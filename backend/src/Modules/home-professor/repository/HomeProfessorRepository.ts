@@ -155,4 +155,59 @@ export class HomeProfessorRepository {
       .orderBy("dc.ordem")
       .orderBy("c.nome");
   }
+
+  listarCompetenciasPlanejadas(professorId: string, periodoId: string, turmaDisciplinaId?: string) {
+    const query = db("turma_disciplina as td")
+      .join("turma as t", "td.turma_id", "t.id")
+      .join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
+      .join("disciplina_competencia as dc", "cd.disciplina_id", "dc.disciplina_id")
+      .join("competencia as c", "dc.competencia_id", "c.id")
+      .where("td.professor_id", professorId)
+      .where("t.periodo_letivo_id", periodoId)
+      .whereRaw(`lower(td.status) in (${STATUS_ATIVO.map(() => "?").join(",")})`, STATUS_ATIVO)
+      .select(
+        "td.id as turma_disciplina_id", "c.id as competencia_id", "c.codigo", "c.nome", "c.tipo",
+        "dc.nivel_esperado", "dc.obrigatoria", "dc.ordem",
+      )
+      .orderBy("dc.ordem")
+      .orderBy("c.nome");
+    if (turmaDisciplinaId) query.where("td.id", turmaDisciplinaId);
+    return query;
+  }
+
+  listarAvaliacoesCompetencias(professorId: string, periodoId: string, turmaDisciplinaId?: string) {
+    const query = db("avaliacao_competencia as ac")
+      .join("avaliacao as av", "ac.avaliacao_id", "av.id")
+      .join("turma_disciplina as td", "av.turma_disciplina_id", "td.id")
+      .join("turma as t", "td.turma_id", "t.id")
+      .where("td.professor_id", professorId)
+      .where("t.periodo_letivo_id", periodoId)
+      .whereRaw(`lower(td.status) in (${STATUS_ATIVO.map(() => "?").join(",")})`, STATUS_ATIVO)
+      .select(
+        "td.id as turma_disciplina_id", "av.id as avaliacao_id", "ac.competencia_id",
+        "ac.peso_percentual", "av.tipo_avaliacao", "av.descricao_avaliacao", "av.valor",
+        "av.data_devolucao",
+      )
+      .orderByRaw("COALESCE(av.data_devolucao, av.data_lancamento::date) ASC");
+    if (turmaDisciplinaId) query.where("td.id", turmaDisciplinaId);
+    return query;
+  }
+
+  listarHorarios(professorId: string, periodoId: string, turmaDisciplinaId?: string) {
+    const query = db("horario_turma_disciplina as h")
+      .join("turma_disciplina as td", "h.turma_disciplina_id", "td.id")
+      .join("turma as t", "td.turma_id", "t.id")
+      .join("curso_disciplina as cd", "td.curso_disciplina_id", "cd.id")
+      .join("disciplinas as d", "cd.disciplina_id", "d.id")
+      .where("td.professor_id", professorId)
+      .where("t.periodo_letivo_id", periodoId)
+      .where("h.ativo", true)
+      .where("h.vigencia_fim", ">=", db.fn.now())
+      .select(
+        "h.id", "h.turma_disciplina_id", "h.dia_semana", "h.hora_inicio", "h.hora_fim", "h.local",
+        "h.vigencia_inicio", "h.vigencia_fim", "t.sigla as turma_sigla", "d.codigo as disciplina_codigo", "d.nome as disciplina_nome",
+      );
+    if (turmaDisciplinaId) query.where("td.id", turmaDisciplinaId);
+    return query;
+  }
 }

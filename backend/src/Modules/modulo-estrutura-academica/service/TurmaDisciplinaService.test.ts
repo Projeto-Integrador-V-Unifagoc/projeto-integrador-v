@@ -23,12 +23,12 @@ function criar(overrides: {
     ...overrides.turmaDisciplina,
   };
   const turmaRepository = {
-    buscarTurmaPorId: async () => ({ id: "t1", curso: { id: "c1" } }),
+    buscarTurmaPorId: async () => ({ id: "t1", curso: { id: "c1" }, matriz_curricular: { id: "mc1" } }),
     buscarTurmaRegistroPorId: async () => ({ id: "t1" }),
     ...overrides.turma,
   };
   const cursoDisciplinaRepository = {
-    buscarCursoDisciplinaPorId: async () => ({ id: "cd1", curso: { id: "c1" }, disciplina: { id: "d1" } }),
+    buscarCursoDisciplinaPorId: async () => ({ id: "cd1", curso: { id: "c1" }, matriz_curricular: { id: "mc1" }, disciplina: { id: "d1" } }),
     ...overrides.cursoDisciplina,
   };
   const professorRepository = {
@@ -69,6 +69,11 @@ describe("TurmaDisciplinaService.criarTurmaDisciplina", () => {
   it("rejeita disciplina de outro curso", async () => {
     const { service } = criar({ cursoDisciplina: { buscarCursoDisciplinaPorId: async () => ({ id: "cd1", curso: { id: "c2" } }) } });
     await assert.rejects(() => service.criarTurmaDisciplina("t1", { ...input }), /nao pertence a matriz curricular/);
+  });
+
+  it("rejeita disciplina de outra versao da matriz do mesmo curso", async () => {
+    const { service } = criar({ cursoDisciplina: { buscarCursoDisciplinaPorId: async () => ({ id: "cd1", curso: { id: "c1" }, matriz_curricular: { id: "mc2" } }) } });
+    await assert.rejects(() => service.criarTurmaDisciplina("t1", { ...input }), /versao de matriz/i);
   });
 
   it("rejeita professor inexistente", async () => {

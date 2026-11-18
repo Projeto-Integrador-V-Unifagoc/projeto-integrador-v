@@ -1,4 +1,4 @@
-import { Box, Button, Grid, LinearProgress, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, Grid, LinearProgress, Stack, Typography } from "@mui/material";
 import { ArrowRight, BookOpen, CalendarDays } from "lucide-react";
 import {
   AvisoDetalhe,
@@ -14,7 +14,7 @@ import {
 } from "../../components/DashboardLayout";
 import type { GravidadeAviso } from "../../components/DashboardLayout";
 import type { ConsolidadoFrequencia } from "../../models/frequencia-model";
-import type { DisciplinaAluno, TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
+import type { ClassificacaoCompetenciaAluno, DesempenhoCompetenciaAluno, DisciplinaAluno, TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
 import { SITUACAO_LABEL, type DisciplinaBoletim } from "../../models/nota-model";
 import { formatarDataPtBr, formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
 import { prazoHumano } from "../Agenda/agenda-utils";
@@ -33,12 +33,15 @@ interface DisciplinaDetalhesDrawerProps {
   boletim: DisciplinaBoletim | null;
   frequencia: ConsolidadoFrequencia | null;
   tarefas: TarefaAluno[];
+  competencias: DesempenhoCompetenciaAluno[];
   onFechar: () => void;
   onAbrirBoletim: () => void;
   onAbrirFrequencia: () => void;
 }
 
 const numero = (valor: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(valor);
+const rotuloCompetencia = (valor: ClassificacaoCompetenciaAluno) => ({ DADOS_INSUFICIENTES: "Dados insuficientes", DIFICULDADE: "Dificuldade", ATENCAO: "Atenção", ADEQUADO: "Adequado" })[valor];
+const corCompetencia = (valor: ClassificacaoCompetenciaAluno): "default" | "error" | "warning" | "success" => valor === "DIFICULDADE" ? "error" : valor === "ATENCAO" ? "warning" : valor === "ADEQUADO" ? "success" : "default";
 
 function ProjecaoNota({ boletim }: { boletim: DisciplinaBoletim | null }) {
   const projecao = calcularProjecaoNota(boletim);
@@ -77,6 +80,7 @@ export default function DisciplinaDetalhesDrawer({
   boletim,
   frequencia,
   tarefas,
+  competencias,
   onFechar,
   onAbrirBoletim,
   onAbrirFrequencia,
@@ -140,6 +144,35 @@ export default function DisciplinaDetalhesDrawer({
 
       <SecaoDetalhe titulo="Caminho até a média">
         <ProjecaoNota boletim={boletim} />
+      </SecaoDetalhe>
+
+      <SecaoDetalhe titulo="Desempenho por competência">
+        {competencias.length ? (
+          <Stack gap={1}>
+            {competencias.map((competencia) => (
+              <Box key={competencia.id} sx={{ ...sxCartaoDashboard, p: 1.5 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                  <Box minWidth={0}>
+                    <Typography variant="body2" fontWeight={700}>{competencia.codigo} · {competencia.nome}</Typography>
+                    <Typography variant="caption" sx={{ color: CORES_DASHBOARD.textoApagado }}>Nível esperado: {competencia.nivelEsperado.toLowerCase()}</Typography>
+                  </Box>
+                  <Chip size="small" color={corCompetencia(competencia.classificacao)} label={rotuloCompetencia(competencia.classificacao)} />
+                </Stack>
+                <Grid container spacing={1.5} mt={.25}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Stack direction="row" justifyContent="space-between"><Typography variant="caption">Aproveitamento</Typography><Typography variant="caption" fontWeight={700}>{fmtPct(competencia.media, 1)}</Typography></Stack>
+                    <LinearProgress variant="determinate" value={competencia.media ?? 0} color={competencia.classificacao === "DIFICULDADE" ? "error" : competencia.classificacao === "ATENCAO" ? "warning" : "primary"} sx={{ mt: .5, height: 5, borderRadius: 5 }} />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Stack direction="row" justifyContent="space-between"><Typography variant="caption">Cobertura</Typography><Typography variant="caption" fontWeight={700}>{fmtPct(competencia.cobertura, 1)}</Typography></Stack>
+                    <LinearProgress variant="determinate" value={competencia.cobertura} color={competencia.cobertura < 50 ? "warning" : "success"} sx={{ mt: .5, height: 5, borderRadius: 5 }} />
+                  </Grid>
+                </Grid>
+                <Typography variant="caption" display="block" mt={1} sx={{ color: CORES_DASHBOARD.textoApagado }}>{competencia.fontes.length ? `${competencia.fontes.length} ${competencia.fontes.length === 1 ? "avaliação mapeada" : "avaliações mapeadas"}` : "Nenhuma avaliação mapeada"}</Typography>
+              </Box>
+            ))}
+          </Stack>
+        ) : <AvisoDetalhe gravidade="info">Nenhuma competência vinculada a esta disciplina.</AvisoDetalhe>}
       </SecaoDetalhe>
 
       <SecaoDetalhe
