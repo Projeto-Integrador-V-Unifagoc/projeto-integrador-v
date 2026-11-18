@@ -79,6 +79,37 @@ export async function up(db: Knex): Promise<void> {
 }
 
 export async function down(db: Knex): Promise<void> {
+  // Com matrizes versionadas, o mesmo curso pode ter a mesma disciplina em mais de uma matriz
+  // (ex.: vigente e rascunho). O modelo anterior só aceita um vínculo por curso e disciplina, então,
+  // antes de restaurar essa unicidade, cada par fica com um único vínculo: o da matriz vigente ou,
+  // sem ela, o da matriz mais recente. As ofertas (turma_disciplina) que apontavam para os vínculos
+  // descartados passam para o vínculo mantido; os demais vínculos são removidos.
+  await db.raw(`DROP TABLE IF EXISTS curso_disciplina_rollback`);
+  await db.raw(`
+    CREATE TEMP TABLE curso_disciplina_rollback AS
+    SELECT id, FIRST_VALUE(id) OVER (
+             PARTITION BY curso_id, disciplina_id
+             ORDER BY (status = 'VIGENTE') DESC, vigencia_inicio DESC, criado_em DESC, id
+           ) AS manter_id
+      FROM (
+        SELECT cd.id, cd.curso_id, cd.disciplina_id, mc.status, mc.vigencia_inicio, mc.created_at AS criado_em
+          FROM ${SCHEMA}.curso_disciplina cd
+          JOIN ${SCHEMA}.matriz_curricular mc ON mc.id = cd.matriz_curricular_id
+      ) vinculos
+  `);
+  await db.raw(`
+    UPDATE ${SCHEMA}.turma_disciplina td
+       SET curso_disciplina_id = r.manter_id
+      FROM curso_disciplina_rollback r
+     WHERE td.curso_disciplina_id = r.id AND r.id <> r.manter_id
+  `);
+  await db.raw(`
+    DELETE FROM ${SCHEMA}.curso_disciplina cd
+     USING curso_disciplina_rollback r
+     WHERE cd.id = r.id AND r.id <> r.manter_id
+  `);
+  await db.raw(`DROP TABLE curso_disciplina_rollback`);
+
   await db.schema.withSchema(SCHEMA).alterTable("curso_disciplina", (table) => {
     table.dropIndex(["curso_id", "matriz_curricular_id"], "curso_disciplina_curso_matriz_idx");
     table.dropUnique(["matriz_curricular_id", "disciplina_id"], "curso_disciplina_matriz_disciplina_unique");
