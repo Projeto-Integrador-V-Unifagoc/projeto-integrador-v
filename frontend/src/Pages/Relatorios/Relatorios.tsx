@@ -31,7 +31,7 @@ import type { LucideIcon } from "lucide-react";
 import Button from "../../components/Button";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
-import { CORES_DASHBOARD, ESTADOS, PaginaCabecalho, sxBotaoPrimario, sxCartaoDashboard, sxSelo, sxTabelaDados } from "../../components/DashboardLayout";
+import { CORES_DASHBOARD, ESTADOS, PaginaCabecalho, sxBotaoPrimario, sxCartaoDashboard, sxConteudoPagina, sxPaginaPadrao, sxSelo, sxTabelaDados } from "../../components/DashboardLayout";
 import TextField from "../../components/TextField";
 import { useRelatorio } from "../../hooks/use-relatorio";
 import type {
@@ -761,7 +761,7 @@ export default function Relatorios() {
     <Container
       maxWidth={false}
       disableGutters
-      sx={{ border: "none", backgroundColor: "#FFF", p: 0, pb: 3, maxWidth: 1600, mx: "auto" }}
+      sx={{ ...sxPaginaPadrao, ...sxConteudoPagina }}
     >
       <Stack spacing={2}>
         <PaginaCabecalho

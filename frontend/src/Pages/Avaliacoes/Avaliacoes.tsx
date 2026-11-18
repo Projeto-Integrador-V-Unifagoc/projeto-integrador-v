@@ -17,17 +17,16 @@ import { ClipboardCheck, FileText, Pencil, Plus, Search, ShieldCheck, Trash2 } f
 import axios from "axios";
 import { ValidationError } from "yup";
 import Button from "../../components/Button";
-import { Calculator, ClipboardList, Puzzle, type LucideIcon } from "lucide-react";
+import { Calculator } from "lucide-react";
 import {
   CORES_DASHBOARD,
-  CORES_TIPO_AVALIACAO,
   DashboardPainel,
+  IconeTipoAvaliacao,
   IndicadorCard,
   PaginaCabecalho,
   PaginaPadrao,
   sxBotaoPrimario,
   sxCartaoDashboard,
-  sxIconeQuadrado,
   sxTabelaDados,
 } from "../../components/DashboardLayout";
 import type { IndicadorDashboard } from "../../components/DashboardLayout";
@@ -48,7 +47,6 @@ const mensagemErro = (erro: unknown, fallback: string) => axios.isAxiosError(err
 const nomeAtribuicao = (item: AtribuicaoAvaliacao) => `${item.turma_sigla || item.turma_descricao} - ${item.disciplina_nome}`;
 const campoSx = { "& .MuiFormHelperText-root": { minHeight: 20, m: 0, mt: 0.5 } };
 const formatarNumeroIndicador = (valor: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(valor);
-const ICONE_TIPO: Record<TipoAvaliacao, LucideIcon> = { PROVA: ClipboardList, TRABALHO: FileText, TPI: Puzzle };
 // Tipo como ícone pequeno + nome (sem moldura de chip); editar em cinza, excluir no vermelho do tema.
 const sxChipTipo = { height: "auto", bgcolor: "transparent", gap: 0.75, "& .MuiChip-icon": { m: 0 }, "& .MuiChip-label": { p: 0, fontSize: 14 } } as const;
 const sxTabelaAvaliacoes = { ...sxTabelaDados, "& .MuiDataGrid-cell[data-field='acoes'] .MuiIconButton-colorPrimary": { color: CORES_DASHBOARD.textoSuave } } as const;
@@ -152,14 +150,12 @@ export default function Avaliacoes() {
       headerName: "Tipo",
       width: 130,
       renderCell: ({ value }) => {
-        const Icone = ICONE_TIPO[value as TipoAvaliacao] ?? ClipboardList;
-        const cores = CORES_TIPO_AVALIACAO[value as TipoAvaliacao] ?? CORES_TIPO_AVALIACAO.PROVA;
         return (
           <Chip
             size="small"
             sx={sxChipTipo}
             label={ROTULO_TIPO_AVALIACAO[value as TipoAvaliacao]}
-            icon={<Box aria-hidden="true" sx={sxIconeQuadrado(cores, 20)}><Icone size={12} color={cores.texto} /></Box>}
+            icon={<IconeTipoAvaliacao tipo={String(value)} />}
           />
         );
       },

@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Skeleton, Stack, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import { ArrowLeft, CalendarDays, CheckCircle2, ClipboardList, FileText, Puzzle, RefreshCw, RotateCcw } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCircle2, RefreshCw } from "lucide-react";
 import {
   ALTURA_LINHA,
   CORES_DASHBOARD,
-  CORES_TIPO_AVALIACAO,
   DashboardPainel,
   ESTADOS,
+  IconeTipoAvaliacao,
   LinhaPainel,
   ListaPainel,
   PESO,
@@ -17,7 +16,6 @@ import {
   TIPO_DASHBOARD,
   sxBotaoSecundario,
   sxBotaoTexto,
-  sxIconeQuadrado,
   sxSelo,
 } from "../../components/DashboardLayout";
 import type { TomEstado } from "../../components/DashboardLayout";
@@ -25,8 +23,6 @@ import type { TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
 import { homeAlunoApi } from "../../services/home-aluno-api";
 import { formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
 import { corPrazo, diasAte, filtrarTarefasPorJanela, type JanelaAgenda } from "./agenda-utils";
-
-const ICONE_TIPO: Record<TipoTarefa, LucideIcon> = { PROVA: ClipboardList, TRABALHO: FileText, TPI: Puzzle, RECUPERACAO: RotateCcw };
 
 // Prazo como estado: vence hoje (ou passou) = crítico, até 3 dias = atenção, o resto neutro.
 const TOM_PRAZO: Record<ReturnType<typeof corPrazo>, TomEstado> = { error: "critico", warning: "atencao", info: "neutro", default: "neutro" };
@@ -52,7 +48,6 @@ function rotuloPrazo(dataIso: string) {
 function ItemAgenda({ tarefa }: { tarefa: TarefaAluno }) {
   const data = dataResumida(tarefa.dataVencimento);
   const tipo = tarefa.tipo as TipoTarefa;
-  const Icone = ICONE_TIPO[tipo] ?? ClipboardList;
   const tom = TOM_PRAZO[corPrazo(tarefa.dataVencimento)];
   return (
     <LinhaPainel rotulo={`${tarefa.titulo} — ${tarefa.disciplinaNome}`}>
@@ -63,9 +58,7 @@ function ItemAgenda({ tarefa }: { tarefa: TarefaAluno }) {
       <Box flex={1} minWidth={0}>
         <Typography noWrap title={tarefa.titulo} sx={{ fontSize: TIPO_DASHBOARD.corpo, fontWeight: PESO.forte }}>{tarefa.titulo}</Typography>
         <Stack direction="row" alignItems="center" gap={0.75} mt={0.25} minWidth={0} sx={{ color: CORES_DASHBOARD.textoApagado }}>
-          <Box aria-hidden="true" sx={sxIconeQuadrado(CORES_TIPO_AVALIACAO[tipo] ?? CORES_TIPO_AVALIACAO.PROVA, 20)}>
-            <Icone size={12} />
-          </Box>
+          <IconeTipoAvaliacao tipo={tipo} />
           <Typography noWrap sx={{ fontSize: TIPO_DASHBOARD.legenda }}>
             {tarefa.disciplinaNome} · {ROTULO_TIPO_AVALIACAO[tipo] ?? tarefa.tipo} · {formatarPontos(tarefa.valor)}
           </Typography>
@@ -98,6 +91,7 @@ export default function MinhaAgenda() {
 
   const carregar = useCallback(async () => {
     setErro(undefined);
+    setCarregando(true);
     try {
       setTarefas(await homeAlunoApi.minhasTarefas());
     } catch {
@@ -153,6 +147,12 @@ export default function MinhaAgenda() {
         {carregando ? (
           <Stack aria-label="Carregando agenda" aria-busy="true" gap={0.5} p={2}>
             {[0, 1, 2, 3].map((item) => <Skeleton key={item} variant="rounded" height={ALTURA_LINHA - 8} />)}
+          </Stack>
+        ) : erro && !tarefas.length ? (
+          <Stack minHeight={240} alignItems="center" justifyContent="center" textAlign="center" px={2}>
+            <Typography sx={{ fontSize: TIPO_DASHBOARD.secundario, color: CORES_DASHBOARD.textoApagado, maxWidth: 420 }}>
+              Sua agenda não pôde ser carregada. Use “Tentar novamente” acima.
+            </Typography>
           </Stack>
         ) : tarefasVisiveis.length ? (
           <ListaPainel rotulo="Avaliações programadas">

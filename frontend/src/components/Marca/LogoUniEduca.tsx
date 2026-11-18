@@ -3,7 +3,8 @@ import { Box, Stack } from "@mui/material";
 
 // Logo do sistema na versão horizontal, a partir de public/assets/logo-unieduca.svg:
 // mesmo capelo e mesmas cores ("Uni" azul-marinho, "Educa" azul). A Montserrat 800 é a fonte da
-// marca e vale só aqui; o restante da interface segue a fonte do tema.
+// marca e vale só aqui; o restante da interface segue a fonte do tema. Estas cores são só da logo:
+// o ciano da sidebar e do site institucional é CORES_DASHBOARD.marca.
 export const CORES_MARCA = { azulMarinho: "#0F2E6B", azul: "#159BE0", azulClaro: "#2BB6EF" } as const;
 export const FONTE_MARCA = '"Montserrat", "Segoe UI", Arial, sans-serif';
 

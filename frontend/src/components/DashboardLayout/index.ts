@@ -3,6 +3,7 @@ export type { DashboardLayoutProps } from "./DashboardLayout";
 export { default as DashboardCabecalho } from "./DashboardCabecalho";
 export { default as PaginaPadrao } from "./PaginaPadrao";
 export { default as PaginaCabecalho } from "./PaginaCabecalho";
+export { default as IconeTipoAvaliacao } from "./IconeTipoAvaliacao";
 export type { PaginaCabecalhoProps } from "./PaginaCabecalho";
 export { default as AssistenteIaCaixa } from "./AssistenteIaCaixa";
 export type { AssistenteIaCaixaProps } from "./AssistenteIaCaixa";

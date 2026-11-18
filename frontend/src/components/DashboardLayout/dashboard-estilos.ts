@@ -25,7 +25,10 @@ export const CORES_DASHBOARD = {
   acentoHover: "#055F7A",
   acentoSuave: "#E6F6FB",
   acentoSuaveHover: "#D3EEF7",
-  /** Ciano da marca (logo, sidebar). Contraste 2,4:1: nunca usar como texto. */
+  /**
+   * Ciano da sidebar e do site institucional. Contraste 2,4:1: nunca usar como texto.
+   * A logo do sistema não usa este valor: segue as cores do SVG oficial (CORES_MARCA, em components/Marca).
+   */
   marca: "#05B5E6",
 } as const;
 
@@ -163,7 +166,7 @@ export const sxBotaoTexto = {
 
 /**
  * Abas (MUI Tabs) no padrão: texto cinza, aba ativa em texto escuro 700 e indicador no acento.
- * Substitui o "primary" do tema (ciano claro, 2,4:1 sobre branco) nas telas de lançamento.
+ * O tema só daria a cor; aqui entram o tamanho, o peso e a linha de base iguais aos dos painéis.
  */
 export const sxAbas = {
   minHeight: 40,
@@ -198,8 +201,9 @@ export function sxTabelaLeve(colunas: string) {
 
 /**
  * Tabela de dados (DataTable/DataGrid) no padrão: fundo branco, cabeçalho em cinza frio com rótulo
- * 12/700, linhas sem zebra separadas por divisória fina. Aplicado pelo `sx` de cada uso para não mudar
- * o componente compartilhado (secretaria e professor seguem com o visual antigo até a fase deles).
+ * 12/700, linhas sem zebra separadas por divisória fina. É o visual padrão da DataTable compartilhada
+ * (components/DataTable/Table.tsx), em todos os perfis. Passar `sx={sxTabelaDados}` num uso só serve para
+ * zerar a margem superior da tabela dentro de um DashboardPainel.
  */
 export const sxTabelaDados = {
   mt: 0,
@@ -209,9 +213,9 @@ export const sxTabelaDados = {
   color: CORES_DASHBOARD.texto,
   fontSize: TIPO_DASHBOARD.secundario,
   "--DataGrid-rowBorderColor": CORES_DASHBOARD.divisoria,
-  // O DataGrid (v8) pinta cabeçalho, botões de ordenar e sobreposições com estas variáveis, que vêm do
-  // "paper" creme (#F9F7F0) do tema global. Ele as declara numa classe própria (.MuiDataGridVariables-*)
-  // injetada depois do sx; "&&" dobra a especificidade para o padrão prevalecer.
+  // O DataGrid (v8) pinta cabeçalho, sobra à direita do cabeçalho, botões de ordenar e sobreposições com
+  // estas variáveis, derivadas do "paper" do tema. Ele as declara numa classe própria (.MuiDataGridVariables-*)
+  // injetada depois do sx; "&&" dobra a especificidade para o cinza do cabeçalho prevalecer.
   "&&": {
     "--DataGrid-containerBackground": CORES_DASHBOARD.superficieSutil,
     "--DataGrid-t-header-background-base": CORES_DASHBOARD.superficieSutil,

@@ -1,4 +1,4 @@
-import type { TomEstado } from "../../components/DashboardLayout/dashboard-estilos";
+import { sxChipSelo, type TomEstado } from "../../components/DashboardLayout/dashboard-estilos";
 import type { SituacaoFrequencia, StatusFrequencia } from "../../models/frequencia-model";
 
 export type Aviso = { tipo: "success" | "error" | "info" | "warning"; texto: string };
@@ -46,3 +46,14 @@ const TOM_STATUS: Record<StatusFrequencia, TomEstado> = { PRESENTE: "neutro", AU
 
 export const tomSituacaoFrequencia = (s: SituacaoFrequencia): TomEstado => TOM_SITUACAO[s] ?? "neutro";
 export const tomStatusFrequencia = (s: StatusFrequencia): TomEstado => TOM_STATUS[s] ?? "neutro";
+
+/** Tom e ponto do selo de presença: a mesma regra para o selo das tabelas e o Chip da chamada. */
+export const seloStatusFrequencia = (s: StatusFrequencia) => {
+  const tom = tomStatusFrequencia(s);
+  return { tom, opcoes: { ponto: tom !== "neutro" } };
+};
+
+export const sxChipStatusFrequencia = (s: StatusFrequencia) => {
+  const { tom, opcoes } = seloStatusFrequencia(s);
+  return sxChipSelo(tom, opcoes);
+};

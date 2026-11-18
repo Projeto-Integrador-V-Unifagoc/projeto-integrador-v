@@ -1,18 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, CircularProgress, MenuItem, Stack, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
-import { ChevronDown, ClipboardList, FileText, Puzzle, RotateCcw, Star } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ChevronDown, Star } from "lucide-react";
 import {
   AvisoDetalhe,
   CORES_DASHBOARD,
-  CORES_TIPO_AVALIACAO,
+  IconeTipoAvaliacao,
   PESO,
   PaginaCabecalho,
   PaginaPadrao,
   TIPO_DASHBOARD,
   sxCartaoDashboard,
-  sxIconeQuadrado,
   sxSelo,
   sxTabelaDados,
 } from "../../components/DashboardLayout";
@@ -21,14 +19,12 @@ import DataTable from "../../components/DataTable/DataTable";
 import NoData from "../../components/DataTable/NoData";
 import TextField from "../../components/TextField";
 import { useNota } from "../../hooks/use-nota";
-import { SITUACAO_LABEL, type BoletimAluno, type DisciplinaBoletim, type TipoAvaliacaoNota } from "../../models/nota-model";
+import { SITUACAO_LABEL, type BoletimAluno, type DisciplinaBoletim } from "../../models/nota-model";
 import { formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
 import { corMedia } from "../Home/aluno/estilos-risco";
 import { formatarMedia, formatarNota, mensagemErro, tomSituacaoNota } from "./notas-utils";
 
 type AvaliacaoDisciplina = DisciplinaBoletim["avaliacoes"][number];
-
-const ICONE_TIPO: Record<TipoAvaliacaoNota, LucideIcon> = { PROVA: ClipboardList, TRABALHO: FileText, TPI: Puzzle, RECUPERACAO: RotateCcw };
 
 const TOM_MEDIA: Record<ReturnType<typeof corMedia>, TomEstado> = { error: "critico", warning: "atencao", success: "neutro", default: "neutro" };
 
@@ -38,17 +34,12 @@ const colunasAvaliacoes: GridColDef<AvaliacaoDisciplina>[] = [
     headerName: "Tipo",
     width: 140,
     sortable: false,
-    renderCell: ({ row }) => {
-      const Icone = ICONE_TIPO[row.tipo] ?? ClipboardList;
-      return (
-        <Stack direction="row" alignItems="center" gap={0.75} height="100%">
-          <Box aria-hidden="true" sx={sxIconeQuadrado(CORES_TIPO_AVALIACAO[row.tipo] ?? CORES_TIPO_AVALIACAO.PROVA, 20)}>
-            <Icone size={12} />
-          </Box>
-          <span>{ROTULO_TIPO_AVALIACAO[row.tipo]}</span>
-        </Stack>
-      );
-    },
+    renderCell: ({ row }) => (
+      <Stack direction="row" alignItems="center" gap={0.75} height="100%">
+        <IconeTipoAvaliacao tipo={row.tipo} />
+        <span>{ROTULO_TIPO_AVALIACAO[row.tipo]}</span>
+      </Stack>
+    ),
   },
   {
     field: "descricao",

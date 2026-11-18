@@ -14,7 +14,6 @@ import {
   sxBotaoPrimario,
   sxBotaoSecundario,
   sxCartaoDashboard,
-  sxChipSelo,
   sxConteudoPagina,
   sxPaginaPadrao,
   sxTabelaDados,
@@ -38,7 +37,7 @@ import {
   mensagemErro,
   perfilLocal,
   rotuloStatus,
-  tomStatusFrequencia,
+  sxChipStatusFrequencia,
 } from "./frequencia-utils";
 
 // Interruptor de presença no acento do padrão (o "success" do tema é verde puro).
@@ -195,7 +194,7 @@ export default function VisaoOperacional() {
                 }
               />
             ) : row.status ? (
-              <Chip size="small" label={rotuloStatus(row.status)} sx={sxChipSelo(tomStatusFrequencia(row.status), { ponto: row.status === "AUSENTE" })} />
+              <Chip size="small" label={rotuloStatus(row.status)} sx={sxChipStatusFrequencia(row.status)} />
             ) : (
               <Typography variant="body2" sx={{ color: CORES_DASHBOARD.textoApagado }}>
                 Não lançada
