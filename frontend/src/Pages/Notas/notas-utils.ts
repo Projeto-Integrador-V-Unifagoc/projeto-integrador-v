@@ -1,4 +1,18 @@
+import type { TomEstado } from "../../components/DashboardLayout/dashboard-estilos";
+import type { SituacaoNota } from "../../models/nota-model";
+
 export type Aviso = { tipo: "success" | "error" | "info" | "warning"; texto: string };
+
+// Situação da nota no padrão visual: cor só para o que pede ação (reprovação crítica,
+// recuperação em atenção); o resto fica neutro. Usado no boletim do aluno e no lançamento.
+const TOM_SITUACAO_NOTA: Record<SituacaoNota, TomEstado> = {
+  NAO_LANCADA: "neutro",
+  EM_ANDAMENTO: "neutro",
+  EM_RECUPERACAO: "atencao",
+  APROVADO: "neutro",
+  REPROVADO: "critico",
+};
+export const tomSituacaoNota = (situacao: SituacaoNota): TomEstado => TOM_SITUACAO_NOTA[situacao] ?? "neutro";
 
 // Perfil do usuário logado em minúsculas; usado para diferenciar secretaria, professor e aluno.
 export const perfilLocal = () => {

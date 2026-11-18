@@ -16,6 +16,7 @@ import {
 import CampoSenha from '../../components/CampoSenha';
 import Container from '../../components/Container';
 import FavIcon from '../../../public/assets/favIcon.svg';
+import { theme } from '../../theme';
 import { authService } from '../../services/auth-services';
 import { formatarEspera } from '../../services/limite-requisicoes';
 import { useEsperaLimite } from '../../hooks/use-espera-limite';
@@ -231,7 +232,7 @@ export default function RedefinirSenha() {
             <Link
               to="/login"
               style={{
-                color: '#05b5e6',
+                color: theme.palette.primary.main,
                 fontWeight: 'bold',
                 textDecoration: 'none',
               }}

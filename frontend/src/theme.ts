@@ -1,37 +1,44 @@
 import { createTheme } from "@mui/material";
+import { CORES_DASHBOARD, ESTADOS } from "./components/DashboardLayout/dashboard-estilos";
+
+// As cores vêm dos tokens do padrão visual (dashboard-estilos.ts): o mesmo azul de ação e o mesmo
+// vermelho em todas as telas, sem precisar mexer em cada página. Todas passam em contraste AA.
 
 export const theme = createTheme({
     palette: {
         primary: {
-            main: "#05b5e6",
-            light: "#66D1E6",
-            dark: "#05b5e6",
+            main: CORES_DASHBOARD.acento,
+            light: "#4FA3BE",
+            dark: CORES_DASHBOARD.acentoHover,
             contrastText: "#FFFFFF"
         },
         background: {
             default: "#FFF",
-            paper: "#F9F7F0"
+            paper: CORES_DASHBOARD.superficie
         },
         text: {
-            primary: "#363535",
-            secondary: "#302F2F"
+            primary: CORES_DASHBOARD.texto,
+            secondary: CORES_DASHBOARD.textoSuave
         },
         error: {
-            main: "#FF0000"
+            main: ESTADOS.critico.texto
         },
         success: {
-            main: "#008000"
+            main: ESTADOS.ok.texto
         },
         warning: {
-            main: "#C77700",
+            main: "#B54708",
             light: "#FFB74D",
-            dark: "#8A5200",
+            dark: ESTADOS.atencao.texto,
             contrastText: "#FFFFFF"
         },
+        info: {
+            main: CORES_DASHBOARD.acento
+        },
         grey: {
-            50: "#f5f5f5f8",
-            100: "#F5F4F5",
-            200: "#B2AFB6",
+            50: "#F9FAFB",
+            100: CORES_DASHBOARD.superficieSutil,
+            200: "#B9C0CB",
             300: "#98959D",
             400: "#7A767F",
             500: "#3E3C41",
@@ -62,14 +69,14 @@ export const theme = createTheme({
             styleOverrides: {
                 root: {
                     height: 36,
-                    color: "#080808",
+                    color: CORES_DASHBOARD.texto,
 
                     "&.MuiInputBase-multiline": {
                         height: "auto",
                     },
 
                     "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#B2AFB6",
+                        borderColor: "#B9C0CB",
                     },
 
                     "&:hover .MuiOutlinedInput-notchedOutline": {
@@ -77,7 +84,7 @@ export const theme = createTheme({
                     },
 
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#05b5e6",
+                        borderColor: CORES_DASHBOARD.acento,
                         borderWidth: 2,
                     },
                 },

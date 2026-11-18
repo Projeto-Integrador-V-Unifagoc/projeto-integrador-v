@@ -1,6 +1,9 @@
 export { default as DashboardLayout } from "./DashboardLayout";
 export type { DashboardLayoutProps } from "./DashboardLayout";
 export { default as DashboardCabecalho } from "./DashboardCabecalho";
+export { default as PaginaPadrao } from "./PaginaPadrao";
+export { default as PaginaCabecalho } from "./PaginaCabecalho";
+export type { PaginaCabecalhoProps } from "./PaginaCabecalho";
 export { default as AssistenteIaCaixa } from "./AssistenteIaCaixa";
 export type { AssistenteIaCaixaProps } from "./AssistenteIaCaixa";
 export { default as IndicadorCard } from "./IndicadorCard";
@@ -29,7 +32,12 @@ export {
   sxIconeQuadrado,
   sxNumeroColuna,
   sxSelo,
+  sxChipSelo,
+  sxPaginaPadrao,
+  sxConteudoPagina,
   sxTabelaLeve,
+  sxTabelaDados,
+  sxAbas,
   alturaReservada,
   sxSomenteLeitor,
   sxRotuloColuna,

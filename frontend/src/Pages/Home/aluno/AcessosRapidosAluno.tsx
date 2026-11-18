@@ -1,4 +1,4 @@
-import { Box, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Tooltip, Typography } from "@mui/material";
 import { ArrowUpRight, BookMarked, CalendarCheck, Sparkles, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { CORES_DASHBOARD, DashboardPainel, ESTADOS, PESO, TIPO_DASHBOARD, sxIconeQuadrado } from "../../../components/DashboardLayout";
@@ -39,9 +39,10 @@ function CartaoAtalho({ atalho }: { atalho: Atalho }) {
           }
         }}
         sx={{
-          height: "100%",
           display: "flex",
           flexDirection: "column",
+          gap: 1,
+          minHeight: 96,
           p: 1.5,
           borderRadius: 2,
           border: `1px solid ${CORES_DASHBOARD.borda}`,
@@ -53,14 +54,17 @@ function CartaoAtalho({ atalho }: { atalho: Atalho }) {
           "&:focus-visible": { outline: `2px solid ${CORES_DASHBOARD.acento}`, outlineOffset: 2 },
         }}
       >
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-          <Box aria-hidden="true" sx={sxIconeQuadrado(atalho.destaque ? { texto: "#FFFFFF", fundo: CORES_DASHBOARD.acento } : ESTADOS.acento, 34)}>
-            <Icone size={17} />
+        {/* Ícone acima do título (seta no canto), sem espaço vazio entre eles. */}
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box aria-hidden="true" sx={sxIconeQuadrado(atalho.destaque ? { texto: "#FFFFFF", fundo: CORES_DASHBOARD.acento } : ESTADOS.acento, 30)}>
+            <Icone size={16} />
           </Box>
-          <ArrowUpRight size={16} color={CORES_DASHBOARD.iconeApagado} aria-hidden="true" />
-        </Stack>
-        <Typography sx={{ mt: "auto", pt: 1.25, fontSize: TIPO_DASHBOARD.corpo, fontWeight: PESO.forte, lineHeight: 1.3 }}>{atalho.titulo}</Typography>
-        <Typography sx={{ fontSize: TIPO_DASHBOARD.legenda, color: CORES_DASHBOARD.textoApagado }}>{atalho.descricao}</Typography>
+          <ArrowUpRight size={16} color={CORES_DASHBOARD.iconeApagado} aria-hidden="true" style={{ flexShrink: 0 }} />
+        </Box>
+        <Box minWidth={0}>
+          <Typography noWrap sx={{ fontSize: TIPO_DASHBOARD.corpo, fontWeight: PESO.forte, lineHeight: 1.35 }}>{atalho.titulo}</Typography>
+          <Typography noWrap sx={{ fontSize: TIPO_DASHBOARD.legenda, color: CORES_DASHBOARD.textoApagado }}>{atalho.descricao}</Typography>
+        </Box>
       </Box>
     </Tooltip>
   );
@@ -78,8 +82,9 @@ export default function AcessosRapidosAluno({ navegar, onOrientacoesIa }: Acesso
     <DashboardPainel titulo="Acessos rápidos">
       {/* Sem "Ver relatórios": os relatórios do aluno repetem Minhas notas/Minha frequência
           e o acesso completo já está no menu lateral "Relatórios".
-          Grade 2×2 que ocupa a altura do painel: os cartões crescem junto com a linha. */}
-      <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gridAutoRows: "minmax(104px, 1fr)", gap: 1.25 }}>
+          Blocos compactos em grade 2×2 (~100 px de altura, ícone acima do título), em qualquer largura:
+          numa coluna só, os 4 blocos alongariam a linha de painéis. */}
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", alignContent: "start", gap: 1 }}>
         {atalhos.map((atalho) => <CartaoAtalho key={atalho.titulo} atalho={atalho} />)}
       </Box>
     </DashboardPainel>

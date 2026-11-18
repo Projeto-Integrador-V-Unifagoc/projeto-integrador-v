@@ -1,106 +1,96 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Alert, Box, Button, Skeleton, Stack, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { ArrowLeft, CalendarDays, CheckCircle2, ClipboardList, FileText, Puzzle, RefreshCw, RotateCcw } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Divider,
-  Paper,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-} from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
-import Container from "../../components/Container";
-import { CORES_DASHBOARD } from "../../components/DashboardLayout";
+  ALTURA_LINHA,
+  CORES_DASHBOARD,
+  CORES_TIPO_AVALIACAO,
+  DashboardPainel,
+  ESTADOS,
+  LinhaPainel,
+  ListaPainel,
+  PESO,
+  PaginaCabecalho,
+  PaginaPadrao,
+  TIPO_DASHBOARD,
+  sxBotaoSecundario,
+  sxBotaoTexto,
+  sxIconeQuadrado,
+  sxSelo,
+} from "../../components/DashboardLayout";
+import type { TomEstado } from "../../components/DashboardLayout";
 import type { TarefaAluno, TipoTarefa } from "../../models/home-aluno-model";
 import { homeAlunoApi } from "../../services/home-aluno-api";
-import {
-  COR_TIPO_AVALIACAO,
-  formatarDataPtBr,
-  formatarPontos,
-  ROTULO_TIPO_AVALIACAO,
-} from "../../utils/avaliacao";
-import {
-  corPrazo,
-  diasAte,
-  filtrarTarefasPorJanela,
-  prazoHumano,
-  type JanelaAgenda,
-} from "./agenda-utils";
+import { formatarPontos, ROTULO_TIPO_AVALIACAO } from "../../utils/avaliacao";
+import { corPrazo, diasAte, filtrarTarefasPorJanela, type JanelaAgenda } from "./agenda-utils";
+
+const ICONE_TIPO: Record<TipoTarefa, LucideIcon> = { PROVA: ClipboardList, TRABALHO: FileText, TPI: Puzzle, RECUPERACAO: RotateCcw };
+
+// Prazo como estado: vence hoje (ou passou) = crítico, até 3 dias = atenção, o resto neutro.
+const TOM_PRAZO: Record<ReturnType<typeof corPrazo>, TomEstado> = { error: "critico", warning: "atencao", info: "neutro", default: "neutro" };
 
 function dataResumida(dataIso: string) {
   const [ano, mes, dia] = dataIso.slice(0, 10).split("-").map(Number);
   const data = new Date(Date.UTC(ano, mes - 1, dia));
   return {
     dia: String(dia).padStart(2, "0"),
-    mes: new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" })
-      .format(data)
-      .replace(".", "")
-      .toUpperCase(),
+    mes: new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" }).format(data).replace(".", ""),
   };
+}
+
+/** A data já está no bloco à esquerda: o selo mostra só o prazo relativo. */
+function rotuloPrazo(dataIso: string) {
+  const dias = diasAte(dataIso);
+  if (dias < 0) return "Prazo passou";
+  if (dias === 0) return "Hoje";
+  if (dias === 1) return "Amanhã";
+  return `Em ${dias} dias`;
 }
 
 function ItemAgenda({ tarefa }: { tarefa: TarefaAluno }) {
   const data = dataResumida(tarefa.dataVencimento);
-  const dias = diasAte(tarefa.dataVencimento);
-
+  const tipo = tarefa.tipo as TipoTarefa;
+  const Icone = ICONE_TIPO[tipo] ?? ClipboardList;
+  const tom = TOM_PRAZO[corPrazo(tarefa.dataVencimento)];
   return (
-    <Stack direction="row" gap={{ xs: 1.5, sm: 2 }} py={2} alignItems="flex-start">
-      <Box
-        aria-hidden="true"
-        sx={(theme) => ({
-          width: 54,
-          minWidth: 54,
-          borderRadius: 2,
-          overflow: "hidden",
-          textAlign: "center",
-          border: `1px solid ${theme.palette.divider}`,
-          bgcolor: "#fff",
-        })}
-      >
-        <Typography display="block" variant="caption" fontWeight={800} color="primary.contrastText" bgcolor="primary.main" py={0.25}>
-          {data.mes}
-        </Typography>
-        <Typography display="block" fontSize={21} lineHeight={1.7} fontWeight={800}>{data.dia}</Typography>
+    <LinhaPainel rotulo={`${tarefa.titulo} — ${tarefa.disciplinaNome}`}>
+      <Box aria-hidden="true" sx={{ width: 44, flexShrink: 0, py: 0.5, borderRadius: 2, border: `1px solid ${CORES_DASHBOARD.borda}`, textAlign: "center" }}>
+        <Typography sx={{ fontSize: TIPO_DASHBOARD.legenda, lineHeight: 1.3, color: CORES_DASHBOARD.textoApagado }}>{data.mes}</Typography>
+        <Typography sx={{ fontSize: 18, fontWeight: PESO.forte, lineHeight: 1.2 }}>{data.dia}</Typography>
       </Box>
-
       <Box flex={1} minWidth={0}>
-        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={1}>
-          <Box minWidth={0}>
-            <Typography fontWeight={800}>{tarefa.titulo}</Typography>
-            <Typography variant="body2" color="text.secondary">{tarefa.disciplinaNome}</Typography>
+        <Typography noWrap title={tarefa.titulo} sx={{ fontSize: TIPO_DASHBOARD.corpo, fontWeight: PESO.forte }}>{tarefa.titulo}</Typography>
+        <Stack direction="row" alignItems="center" gap={0.75} mt={0.25} minWidth={0} sx={{ color: CORES_DASHBOARD.textoApagado }}>
+          <Box aria-hidden="true" sx={sxIconeQuadrado(CORES_TIPO_AVALIACAO[tipo] ?? CORES_TIPO_AVALIACAO.PROVA, 20)}>
+            <Icone size={12} />
           </Box>
-          <Typography fontWeight={800} whiteSpace="nowrap">{formatarPontos(tarefa.valor)}</Typography>
-        </Stack>
-        <Stack direction="row" flexWrap="wrap" gap={1} mt={1.25} alignItems="center">
-          <Chip
-            size="small"
-            variant="outlined"
-            color={COR_TIPO_AVALIACAO[tarefa.tipo as TipoTarefa]}
-            label={ROTULO_TIPO_AVALIACAO[tarefa.tipo as TipoTarefa]}
-          />
-          <Chip
-            size="small"
-            color={corPrazo(tarefa.dataVencimento)}
-            icon={<Clock3 size={14} />}
-            label={prazoHumano(tarefa.dataVencimento)}
-            variant={dias <= 3 ? "filled" : "outlined"}
-          />
-          <Typography variant="caption" color="text.secondary">Data: {formatarDataPtBr(tarefa.dataVencimento)}</Typography>
+          <Typography noWrap sx={{ fontSize: TIPO_DASHBOARD.legenda }}>
+            {tarefa.disciplinaNome} · {ROTULO_TIPO_AVALIACAO[tipo] ?? tarefa.tipo} · {formatarPontos(tarefa.valor)}
+          </Typography>
         </Stack>
       </Box>
-    </Stack>
+      <Box component="span" sx={sxSelo(tom, { ponto: tom !== "neutro" })}>{rotuloPrazo(tarefa.dataVencimento)}</Box>
+    </LinhaPainel>
   );
 }
 
+const sxSegmentado = {
+  "& .MuiToggleButton-root": {
+    height: 30,
+    px: 1.25,
+    textTransform: "none",
+    fontSize: TIPO_DASHBOARD.secundario,
+    fontWeight: PESO.forte,
+    color: CORES_DASHBOARD.textoSuave,
+    borderColor: CORES_DASHBOARD.bordaControle,
+    "&.Mui-selected, &.Mui-selected:hover": { bgcolor: CORES_DASHBOARD.superficieSutil, color: CORES_DASHBOARD.texto },
+  },
+} as const;
+
 export default function MinhaAgenda() {
   const navigate = useNavigate();
-  const theme = useTheme();
   const [tarefas, setTarefas] = useState<TarefaAluno[]>([]);
   const [janela, setJanela] = useState<JanelaAgenda>("todas");
   const [carregando, setCarregando] = useState(true);
@@ -121,81 +111,64 @@ export default function MinhaAgenda() {
     void carregar();
   }, [carregar]);
 
-  const tarefasVisiveis = useMemo(
-    () => filtrarTarefasPorJanela(tarefas, janela),
-    [tarefas, janela],
-  );
+  const tarefasVisiveis = useMemo(() => filtrarTarefasPorJanela(tarefas, janela), [tarefas, janela]);
   const totalSeteDias = filtrarTarefasPorJanela(tarefas, 7).length;
   const totalTrintaDias = filtrarTarefasPorJanela(tarefas, 30).length;
 
   return (
-    <Container sx={{ p: 0, border: 0, overflowY: "auto" }}>
-      <Stack gap={2.5}>
-        {/* Cabeçalho no padrão dos dashboards: sem tarja, título escuro e ícone em destaque suave. */}
-        <Stack component="header" direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={1.5}>
-          <Stack direction="row" alignItems="center" gap={1.75}>
-            <Box aria-hidden="true" sx={{ width: 44, height: 44, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: CORES_DASHBOARD.acentoSuave, color: CORES_DASHBOARD.acento }}>
-              <CalendarDays size={22} />
-            </Box>
-            <Box>
-              <Typography component="h1" fontWeight={700} letterSpacing={-0.6} lineHeight={1.2} sx={{ fontSize: { xs: 26, md: 32 } }}>Minha agenda</Typography>
-              <Typography variant="body1" sx={{ color: CORES_DASHBOARD.textoSuave }}>Avaliações futuras organizadas por prazo.</Typography>
-            </Box>
-          </Stack>
-          <Button startIcon={<ArrowLeft size={17} />} onClick={() => navigate("/home")} sx={{ width: "auto", height: 32, whiteSpace: "nowrap", color: CORES_DASHBOARD.acento }}>Voltar ao dashboard</Button>
-        </Stack>
+    <PaginaPadrao>
+      <PaginaCabecalho
+        titulo="Minha agenda"
+        subtitulo="Avaliações futuras organizadas por prazo."
+        icone={CalendarDays}
+        acoes={<Button startIcon={<ArrowLeft size={15} />} onClick={() => navigate("/home")} sx={sxBotaoTexto}>Voltar ao início</Button>}
+      />
 
-        {erro && (
-          <Alert severity="error" action={<Button color="inherit" onClick={() => void carregar()} startIcon={<RefreshCw size={15} />} sx={{ width: "auto" }}>Tentar novamente</Button>}>
-            {erro}
-          </Alert>
+      {erro && (
+        <Alert severity="error" action={<Button color="inherit" onClick={() => void carregar()} startIcon={<RefreshCw size={15} />} sx={{ width: "auto" }}>Tentar novamente</Button>}>
+          {erro}
+        </Alert>
+      )}
+
+      <DashboardPainel
+        titulo="Avaliações programadas"
+        contador={carregando ? undefined : tarefasVisiveis.length}
+        subtitulo={carregando ? undefined : `${totalSeteDias} em 7 dias · ${totalTrintaDias} em 30 dias`}
+        extra={(
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={janela}
+            onChange={(_evento, valor: JanelaAgenda | null) => valor && setJanela(valor)}
+            aria-label="Período da agenda"
+            sx={sxSegmentado}
+          >
+            <ToggleButton value={7} aria-label="Avaliações dos próximos 7 dias">7 dias</ToggleButton>
+            <ToggleButton value={30} aria-label="Avaliações dos próximos 30 dias">30 dias</ToggleButton>
+            <ToggleButton value="todas" aria-label="Todas as avaliações futuras">Todas</ToggleButton>
+          </ToggleButtonGroup>
         )}
-
-        <Paper variant="outlined" sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 3, bgcolor: "#fff" }}>
-          <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", md: "center" }} gap={2} mb={2}>
-            <Box>
-              <Typography component="h2" variant="h6" fontWeight={800}>Avaliações programadas</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {totalSeteDias} nos próximos 7 dias · {totalTrintaDias} nos próximos 30 dias
-              </Typography>
-            </Box>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              value={janela}
-              onChange={(_evento, valor: JanelaAgenda | null) => valor && setJanela(valor)}
-              aria-label="Período da agenda"
-              sx={{ "& .MuiToggleButton-root": { flex: { xs: 1, md: "initial" }, minWidth: { md: 88 }, height: 34, fontWeight: 700 } }}
-            >
-              <ToggleButton value={7} aria-label="Avaliações dos próximos 7 dias">7 dias</ToggleButton>
-              <ToggleButton value={30} aria-label="Avaliações dos próximos 30 dias">30 dias</ToggleButton>
-              <ToggleButton value="todas" aria-label="Todas as avaliações futuras">Todas</ToggleButton>
-            </ToggleButtonGroup>
+        semPadding
+      >
+        {carregando ? (
+          <Stack aria-label="Carregando agenda" aria-busy="true" gap={0.5} p={2}>
+            {[0, 1, 2, 3].map((item) => <Skeleton key={item} variant="rounded" height={ALTURA_LINHA - 8} />)}
           </Stack>
-
-          {carregando ? (
-            <Stack minHeight={280} alignItems="center" justifyContent="center" gap={1.5}>
-              <CircularProgress size={32} />
-              <Typography variant="body2" color="text.secondary">Carregando agenda...</Typography>
-            </Stack>
-          ) : tarefasVisiveis.length ? (
-            <Stack divider={<Divider flexItem />}>
-              {tarefasVisiveis.map((tarefa) => <ItemAgenda key={tarefa.avaliacaoId} tarefa={tarefa} />)}
-            </Stack>
-          ) : (
-            <Stack minHeight={280} alignItems="center" justifyContent="center" textAlign="center" gap={1.25}>
-              <Box sx={{ width: 54, height: 54, borderRadius: "50%", bgcolor: alpha(theme.palette.success.main, 0.1), color: "success.main", display: "grid", placeItems: "center" }}>
-                <CheckCircle2 size={29} />
-              </Box>
-              <Typography fontWeight={800}>Nenhuma avaliação neste período</Typography>
-              <Typography variant="body2" color="text.secondary" maxWidth={420}>
-                {janela === "todas" ? "Novas avaliações aparecerão aqui quando forem publicadas." : `Não há avaliações previstas para os próximos ${janela} dias.`}
-              </Typography>
-              {janela !== "todas" && <Button variant="outlined" onClick={() => setJanela("todas")} sx={{ width: "auto" }}>Ver todas as futuras</Button>}
-            </Stack>
-          )}
-        </Paper>
-      </Stack>
-    </Container>
+        ) : tarefasVisiveis.length ? (
+          <ListaPainel rotulo="Avaliações programadas">
+            {tarefasVisiveis.map((tarefa) => <ItemAgenda key={tarefa.avaliacaoId} tarefa={tarefa} />)}
+          </ListaPainel>
+        ) : (
+          <Stack minHeight={240} alignItems="center" justifyContent="center" textAlign="center" gap={0.75} px={2}>
+            <CheckCircle2 size={24} color={ESTADOS.ok.ponto} aria-hidden="true" />
+            <Typography sx={{ fontSize: TIPO_DASHBOARD.corpo, fontWeight: PESO.forte }}>Nenhuma avaliação neste período</Typography>
+            <Typography sx={{ fontSize: TIPO_DASHBOARD.secundario, color: CORES_DASHBOARD.textoApagado, maxWidth: 420 }}>
+              {janela === "todas" ? "Novas avaliações aparecerão aqui quando forem publicadas." : `Não há avaliações previstas para os próximos ${janela} dias.`}
+            </Typography>
+            {janela !== "todas" && <Button onClick={() => setJanela("todas")} sx={{ ...sxBotaoSecundario, mt: 0.5 }}>Ver todas as futuras</Button>}
+          </Stack>
+        )}
+      </DashboardPainel>
+    </PaginaPadrao>
   );
 }

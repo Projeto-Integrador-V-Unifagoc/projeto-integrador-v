@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UserMenu from "./UserMenu";
+import LogoUniEduca from "../../components/Marca/LogoUniEduca";
 
 import {
   AppBar,
   Box,
+  ButtonBase,
   IconButton,
   Stack,
   Toolbar,
-  Typography,
 } from "@mui/material";
 
 import { AccountCircle } from "@mui/icons-material";
@@ -73,18 +74,11 @@ export default function Header({ clicarMenu }: HeaderProps) {
             <Menu size={19} />
           </IconButton>
 
-          <Typography
-            component="div"
-            sx={(theme) => ({
-              color: theme.palette.primary.main,
-              flexGrow: 1,
-              fontWeight: "bold",
-              cursor: "pointer",
-            })}
-            onClick={navegarParaHome}
-          >
-            UniEduca
-          </Typography>
+          <Box sx={{ flexGrow: 1, display: "flex" }}>
+            <ButtonBase onClick={navegarParaHome} aria-label="UniEduca, ir para o início" sx={{ borderRadius: 1, px: 0.5, py: 0.25 }}>
+              <LogoUniEduca />
+            </ButtonBase>
+          </Box>
 
           <Stack flexDirection="row" alignItems="center">
             <Box

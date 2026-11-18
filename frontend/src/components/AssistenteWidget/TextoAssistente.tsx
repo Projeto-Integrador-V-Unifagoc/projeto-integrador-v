@@ -1,8 +1,9 @@
 import { Fragment, type ReactNode } from "react";
-import { Box, ButtonBase, Stack, Typography, alpha } from "@mui/material";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { AppWindow, ChevronRight } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 
+import { CORES_DASHBOARD } from "../DashboardLayout/dashboard-estilos";
 import { nomeDaTela, separarAtalhos, type Atalho } from "./atalhos";
 import { ehRotaInterna } from "./rotaInterna";
 
@@ -64,8 +65,8 @@ function blocos(texto: string): Bloco[] {
     return resultado.filter((b) => (b.tipo === "p" ? b.linhas.length > 0 : b.itens.length > 0));
 }
 
-/** Ciano escuro para o texto sobre o fundo claro: o ciano do tema com texto branco não passa de 2,4:1 de contraste. */
-const CIANO_TEXTO = "#036F8F";
+// Azul escuro do padrão sobre o azul suave: ≥ 5,5:1 de contraste também no hover.
+const AZUL_TEXTO = CORES_DASHBOARD.acentoHover;
 
 /**
  * A saída da resposta para a tela certa: uma faixa da largura do balão, fácil de tocar no celular.
@@ -88,10 +89,10 @@ function AtalhoDeTela({ atalho, aoNavegar }: { atalho: Atalho; aoNavegar?: () =>
                 borderRadius: 1.5,
                 justifyContent: "flex-start",
                 textAlign: "left",
-                color: CIANO_TEXTO,
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: AZUL_TEXTO,
+                bgcolor: CORES_DASHBOARD.acentoSuave,
                 transition: theme.transitions.create("background-color", { duration: theme.transitions.duration.shorter }),
-                "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.18) },
+                "&:hover": { bgcolor: CORES_DASHBOARD.acentoSuaveHover },
                 "&.Mui-focusVisible": { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
                 "@media (prefers-reduced-motion: reduce)": { transition: "none" },
             })}

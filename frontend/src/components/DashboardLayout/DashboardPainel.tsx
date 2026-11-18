@@ -35,6 +35,8 @@ export default function DashboardPainel({ titulo, subtitulo, contador, acao, ext
         alignItems="center"
         justifyContent="space-between"
         gap={1.5}
+        rowGap={1}
+        flexWrap="wrap"
         sx={{ minHeight: 48, px: 2, py: 1, borderBottom: `1px solid ${CORES_DASHBOARD.borda}` }}
       >
         <Stack direction="row" alignItems="center" gap={1} minWidth={0}>
@@ -63,7 +65,7 @@ export default function DashboardPainel({ titulo, subtitulo, contador, acao, ext
   );
 }
 
-const sxConteudoLinha = { flex: 1, display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1, textAlign: "left" } as const;
+const sxConteudoLinha = { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1, textAlign: "left" } as const;
 
 /**
  * Linha de lista do padrão: altura mínima ALTURA_LINHA (a mesma da tabela leve), divisória fina,

@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Stack, Typography } from "@mui/material";
+import { Alert, Button } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
-import Button from "../../components/Button";
-import { Card } from "../../components/Card";
-import Container from "../../components/Container";
+import { CalendarCheck } from "lucide-react";
+import {
+  AvisoDetalhe,
+  DashboardPainel,
+  PaginaCabecalho,
+  PaginaPadrao,
+  sxBotaoSecundario,
+  sxTabelaDados,
+} from "../../components/DashboardLayout";
 import DataTable from "../../components/DataTable/DataTable";
 import { useFrequencia } from "../../hooks/use-frequencia";
 import { formatarDataPtBr } from "../../utils/avaliacao";
@@ -75,9 +81,8 @@ export default function VisaoAluno() {
         renderCell: ({ row }) =>
           row.status === "AUSENTE" ? (
             <Button
-              variant="outlined"
               size="small"
-              sx={{ width: "auto", minWidth: 96 }}
+              sx={{ ...sxBotaoSecundario, height: 26 }}
               aria-label={`Justificar ausência de ${formatarDataPtBr(row.data)} em ${row.disciplinaNome}`}
               onClick={() => abrirJustificativa(row)}
             >
@@ -91,53 +96,41 @@ export default function VisaoAluno() {
   const carregando = api.operacoes.consulta;
 
   return (
-    <Container sx={{ p: { xs: 2, md: 3 } }}>
-      <Stack gap={2}>
-        <Typography component="h1" variant="h5" fontWeight={700}>
-          Minha Frequência
-        </Typography>
+    <PaginaPadrao>
+      <PaginaCabecalho titulo="Minha frequência" subtitulo="Frequência por disciplina e histórico aula a aula." icone={CalendarCheck} />
 
-        {aviso && (
-          <Alert severity={aviso.tipo} onClose={() => setAviso(undefined)}>
-            {aviso.texto}
-          </Alert>
-        )}
-        {possuiAlerta && (
-          <Alert severity="warning">
-            Sua frequência está em 80% ou menos em pelo menos uma disciplina. Acompanhe seu desempenho.
-          </Alert>
-        )}
+      {aviso && (
+        <Alert severity={aviso.tipo} onClose={() => setAviso(undefined)}>
+          {aviso.texto}
+        </Alert>
+      )}
+      {possuiAlerta && (
+        <AvisoDetalhe gravidade="media">
+          Sua frequência está em 80% ou menos em pelo menos uma disciplina. Acompanhe seu desempenho.
+        </AvisoDetalhe>
+      )}
 
-        <Card.Root elevation={0} variant="outlined">
-          <Card.Header>
-            <Card.Title>Consolidado por disciplina</Card.Title>
-          </Card.Header>
-          <Card.Content sx={{ minHeight: 480 }}>
-            <DataTable
-              rows={linhasConsolidado}
-              columns={colunasResumo}
-              loading={carregando}
-              emptyTitle="Nenhuma frequência lançada até o momento"
-              emptyDescription="Assim que o professor registrar a chamada, sua frequência aparecerá aqui."
-            />
-          </Card.Content>
-        </Card.Root>
+      <DashboardPainel titulo="Consolidado por disciplina" contador={linhasConsolidado.length || undefined}>
+        <DataTable
+          rows={linhasConsolidado}
+          columns={colunasResumo}
+          loading={carregando}
+          emptyTitle="Nenhuma frequência lançada até o momento"
+          emptyDescription="Assim que o professor registrar a chamada, sua frequência aparecerá aqui."
+          sx={sxTabelaDados}
+        />
+      </DashboardPainel>
 
-        <Card.Root elevation={0} variant="outlined">
-          <Card.Header>
-            <Card.Title>Histórico aula a aula</Card.Title>
-          </Card.Header>
-          <Card.Content sx={{ minHeight: 480 }}>
-            <DataTable
-              rows={historico}
-              columns={colunasAulas}
-              loading={carregando}
-              emptyTitle="Nenhuma aula encontrada no histórico"
-              emptyDescription="As aulas registradas pelo professor aparecerão aqui."
-            />
-          </Card.Content>
-        </Card.Root>
-      </Stack>
+      <DashboardPainel titulo="Histórico aula a aula" contador={historico.length || undefined}>
+        <DataTable
+          rows={historico}
+          columns={colunasAulas}
+          loading={carregando}
+          emptyTitle="Nenhuma aula encontrada no histórico"
+          emptyDescription="As aulas registradas pelo professor aparecerão aqui."
+          sx={sxTabelaDados}
+        />
+      </DashboardPainel>
 
       <JustificativaDialog
         open={Boolean(justificar)}
@@ -150,6 +143,6 @@ export default function VisaoAluno() {
         onClose={() => setJustificar(null)}
         onSave={salvarJustificativa}
       />
-    </Container>
+    </PaginaPadrao>
   );
 }

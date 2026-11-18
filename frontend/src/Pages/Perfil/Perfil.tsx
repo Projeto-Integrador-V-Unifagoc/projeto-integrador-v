@@ -17,6 +17,7 @@ import { Bot, Settings, UserRound } from "lucide-react";
 import ConfiguracaoEmailDialog from "../../components/ConfiguracaoEmail/ConfiguracaoEmailDialog";
 import ConfiguracaoIaDialog from "../../components/ConfiguracaoIa/ConfiguracaoIaDialog";
 import { useNotificacao } from "../../components/Notificacao/NotificationProvider";
+import { CORES_DASHBOARD } from "../../components/DashboardLayout/dashboard-estilos";
 import { authService } from "../../services/auth-services";
 
 interface Pessoa {
@@ -104,15 +105,15 @@ export default function Perfil() {
       <Box
         sx={{
           minHeight: 42,
-          bgcolor: "#f5f5f5",
-          border: "1px solid #e0e0e0",
+          bgcolor: CORES_DASHBOARD.superficieSutil,
+          border: `1px solid ${CORES_DASHBOARD.borda}`,
           borderRadius: 1,
           display: "flex",
           alignItems: "center",
           px: 2,
           py: 1,
           fontSize: 16,
-          color: "#555",
+          color: CORES_DASHBOARD.texto,
           wordBreak: "break-word",
         }}
       >
@@ -160,7 +161,7 @@ export default function Perfil() {
           sx={{
             fontSize: { xs: "1.8rem", sm: "2.3rem", md: "2.8rem" },
             fontWeight: 300,
-            color: "#5f6670",
+            color: CORES_DASHBOARD.textoSuave,
             letterSpacing: 1,
             textTransform: "uppercase",
           }}
@@ -176,7 +177,7 @@ export default function Perfil() {
               py: 2,
               fontWeight: "bold",
               color: "primary.main",
-              bgcolor: "#e9ecef",
+              bgcolor: CORES_DASHBOARD.acentoSuave,
               borderRadius: 10,
             }}
           />
@@ -187,7 +188,7 @@ export default function Perfil() {
                 color="primary"
                 onClick={() => setConfiguracaoAberta(true)}
                 aria-label="Configurar disparadores de e-mail"
-                sx={{ bgcolor: "#e9ecef", "&:hover": { bgcolor: "#dde1e6" } }}
+                sx={{ bgcolor: CORES_DASHBOARD.acentoSuave, "&:hover": { bgcolor: CORES_DASHBOARD.acentoSuaveHover } }}
               >
                 <Settings size={20} />
               </IconButton>
@@ -200,7 +201,7 @@ export default function Perfil() {
                 color="primary"
                 onClick={() => setConfiguracaoIaAberta(true)}
                 aria-label="Configurar assistente de IA"
-                sx={{ bgcolor: "#e9ecef", "&:hover": { bgcolor: "#dde1e6" } }}
+                sx={{ bgcolor: CORES_DASHBOARD.acentoSuave, "&:hover": { bgcolor: CORES_DASHBOARD.acentoSuaveHover } }}
               >
                 <Bot size={20} />
               </IconButton>
@@ -222,7 +223,7 @@ export default function Perfil() {
       <Paper
         elevation={0}
         sx={{
-          bgcolor: "#eeeeee",
+          bgcolor: CORES_DASHBOARD.superficieSutil,
           p: { xs: 2, sm: 3, md: 4 },
           mb: 4,
           borderRadius: 2,
@@ -242,7 +243,7 @@ export default function Perfil() {
               width: { xs: 110, sm: 150 },
               height: { xs: 110, sm: 150 },
               fontSize: { xs: 44, sm: 60 },
-              bgcolor: "#8a8a96",
+              bgcolor: CORES_DASHBOARD.textoApagado,
               border: "4px solid white",
             }}
           >

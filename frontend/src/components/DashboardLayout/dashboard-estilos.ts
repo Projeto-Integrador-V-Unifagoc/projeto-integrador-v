@@ -1,7 +1,8 @@
 import type { SxProps, Theme } from "@mui/material/styles";
 
 // Tokens visuais do padrão dos dashboards (aluno e professor): cor só para estado (risco, atraso),
-// uma cor de ação, dois pesos de fonte e nada abaixo de 12 px. Ficam isolados aqui para não alterar o tema global.
+// uma cor de ação, dois pesos de fonte e nada abaixo de 12 px. O tema global (theme.ts) lê as cores daqui,
+// então primary, error, success e o fundo dos componentes MUI seguem o mesmo padrão em todas as telas.
 // Todo par texto/fundo daqui é verificado (≥ 4,5:1, WCAG 1.4.3) em dashboard-estilos.test.ts.
 
 export const CORES_DASHBOARD = {
@@ -95,6 +96,18 @@ export function sxSelo(tom: TomEstado, { ponto = false }: { ponto?: boolean } = 
   } as const;
 }
 
+/** O mesmo selo aplicado a um Chip do MUI (para telas que já usam Chip). */
+export function sxChipSelo(tom: TomEstado, opcoes: { ponto?: boolean } = {}) {
+  return { ...sxSelo(tom, opcoes), height: "auto", border: 0, "& .MuiChip-label": { p: 0, overflow: "visible" } } as const;
+}
+
+/**
+ * Moldura das páginas internas: fundo branco, sem a margem lateral duplicada (o <main> já dá 24 px) e
+ * conteúdo limitado a 1600 px. Usada pelo PaginaPadrao e direto no Container de telas que mantêm o próprio.
+ */
+export const sxPaginaPadrao = { p: 0, pb: 3, border: 0, overflowY: "auto", bgcolor: CORES_DASHBOARD.superficie, color: CORES_DASHBOARD.texto } as const;
+export const sxConteudoPagina = { maxWidth: 1600, mx: "auto", width: "100%" } as const;
+
 /** Quadrado de ícone das linhas (28 px). Neutro por padrão. */
 export function sxIconeQuadrado(cores: { texto: string; fundo: string } = ESTADOS.neutro, tamanho = 28) {
   return {
@@ -127,6 +140,7 @@ export const sxBotaoPrimario = {
   bgcolor: CORES_DASHBOARD.acento,
   color: "#FFFFFF",
   "&:hover": { bgcolor: CORES_DASHBOARD.acentoHover, boxShadow: "none" },
+  "&.Mui-disabled": { bgcolor: CORES_DASHBOARD.superficieSutil, color: CORES_DASHBOARD.textoApagado },
 } as const;
 
 /** Ação secundária: contornada e neutra. */
@@ -136,6 +150,7 @@ export const sxBotaoSecundario = {
   color: CORES_DASHBOARD.texto,
   border: `1px solid ${CORES_DASHBOARD.bordaControle}`,
   "&:hover": { bgcolor: CORES_DASHBOARD.superficieSutil },
+  "&.Mui-disabled": { bgcolor: CORES_DASHBOARD.superficie, color: CORES_DASHBOARD.textoApagado, borderColor: CORES_DASHBOARD.borda },
 } as const;
 
 /** Ação de texto neutra (ex.: "Ver todos" no cabeçalho do painel). */
@@ -144,6 +159,25 @@ export const sxBotaoTexto = {
   px: 1,
   color: CORES_DASHBOARD.texto,
   "&:hover": { bgcolor: CORES_DASHBOARD.superficieSutil },
+} as const;
+
+/**
+ * Abas (MUI Tabs) no padrão: texto cinza, aba ativa em texto escuro 700 e indicador no acento.
+ * Substitui o "primary" do tema (ciano claro, 2,4:1 sobre branco) nas telas de lançamento.
+ */
+export const sxAbas = {
+  minHeight: 40,
+  borderBottom: `1px solid ${CORES_DASHBOARD.borda}`,
+  "& .MuiTab-root": {
+    minHeight: 40,
+    px: 1.5,
+    textTransform: "none",
+    fontSize: TIPO_DASHBOARD.secundario,
+    fontWeight: PESO.forte,
+    color: CORES_DASHBOARD.textoSuave,
+  },
+  "& .MuiTab-root.Mui-selected": { color: CORES_DASHBOARD.texto },
+  "& .MuiTabs-indicator": { backgroundColor: CORES_DASHBOARD.acento, height: 2 },
 } as const;
 
 /**
@@ -161,6 +195,39 @@ export function sxTabelaLeve(colunas: string) {
     linha: { ...subgrade, rowGap: 1, minHeight: ALTURA_LINHA, px: 2, py: 0.75, borderBottom: `1px solid ${CORES_DASHBOARD.divisoria}`, "&:last-of-type": { borderBottom: 0 } },
   } as const;
 }
+
+/**
+ * Tabela de dados (DataTable/DataGrid) no padrão: fundo branco, cabeçalho em cinza frio com rótulo
+ * 12/700, linhas sem zebra separadas por divisória fina. Aplicado pelo `sx` de cada uso para não mudar
+ * o componente compartilhado (secretaria e professor seguem com o visual antigo até a fase deles).
+ */
+export const sxTabelaDados = {
+  mt: 0,
+  backgroundColor: CORES_DASHBOARD.superficie,
+  border: `1px solid ${CORES_DASHBOARD.borda}`,
+  borderRadius: 2,
+  color: CORES_DASHBOARD.texto,
+  fontSize: TIPO_DASHBOARD.secundario,
+  "--DataGrid-rowBorderColor": CORES_DASHBOARD.divisoria,
+  // O DataGrid (v8) pinta cabeçalho, botões de ordenar e sobreposições com estas variáveis, que vêm do
+  // "paper" creme (#F9F7F0) do tema global. Ele as declara numa classe própria (.MuiDataGridVariables-*)
+  // injetada depois do sx; "&&" dobra a especificidade para o padrão prevalecer.
+  "&&": {
+    "--DataGrid-containerBackground": CORES_DASHBOARD.superficieSutil,
+    "--DataGrid-t-header-background-base": CORES_DASHBOARD.superficieSutil,
+    "--DataGrid-t-color-background-base": CORES_DASHBOARD.superficie,
+    "--DataGrid-t-color-background-overlay": CORES_DASHBOARD.superficie,
+    "--DataGrid-t-cell-background-pinned": CORES_DASHBOARD.superficie,
+  },
+  "& .MuiDataGrid-columnHeaders, & .MuiDataGrid-columnHeader, & .MuiDataGrid-filler, & .MuiDataGrid-scrollbarFiller": { backgroundColor: CORES_DASHBOARD.superficieSutil },
+  "& .MuiDataGrid-footerContainer .MuiIconButton-root": { backgroundColor: "transparent" },
+  "& .MuiDataGrid-columnHeaderTitle": { fontSize: TIPO_DASHBOARD.legenda, fontWeight: PESO.forte, color: CORES_DASHBOARD.textoSuave },
+  "& .MuiDataGrid-columnSeparator": { display: "none" },
+  "& .even, & .odd": { backgroundColor: CORES_DASHBOARD.superficie },
+  "& .MuiDataGrid-row:hover": { backgroundColor: CORES_DASHBOARD.superficieSutil },
+  "& .MuiDataGrid-cell": { borderColor: CORES_DASHBOARD.divisoria },
+  "& .MuiDataGrid-footerContainer": { backgroundColor: CORES_DASHBOARD.superficie, borderColor: CORES_DASHBOARD.divisoria },
+} as const;
 
 /** Altura mínima de uma linha de lista ou tabela (px, com a divisória). */
 export const ALTURA_LINHA = 56;

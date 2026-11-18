@@ -17,14 +17,26 @@ import { ClipboardCheck, FileText, Pencil, Plus, Search, ShieldCheck, Trash2 } f
 import axios from "axios";
 import { ValidationError } from "yup";
 import Button from "../../components/Button";
-import { Card } from "../../components/Card";
-import Container from "../../components/Container";
+import { Calculator, ClipboardList, Puzzle, type LucideIcon } from "lucide-react";
+import {
+  CORES_DASHBOARD,
+  CORES_TIPO_AVALIACAO,
+  DashboardPainel,
+  IndicadorCard,
+  PaginaCabecalho,
+  PaginaPadrao,
+  sxBotaoPrimario,
+  sxCartaoDashboard,
+  sxIconeQuadrado,
+  sxTabelaDados,
+} from "../../components/DashboardLayout";
+import type { IndicadorDashboard } from "../../components/DashboardLayout";
 import DataTable from "../../components/DataTable/DataTable";
 import { Dialog } from "../../components/Dialog";
 import TextField from "../../components/TextField";
 import type { AtribuicaoAvaliacao, Avaliacao, CriarAvaliacaoDTO, TipoAvaliacao } from "../../models/avaliacao-model";
 import { avaliacaoApi } from "../../services/avaliacao-api";
-import { COR_TIPO_AVALIACAO, formatarDataPtBr, formatarPontos, ROTULO_TIPO_AVALIACAO, type TipoAvaliacaoVisual } from "../../utils/avaliacao";
+import { formatarDataPtBr, formatarPontos, ROTULO_TIPO_AVALIACAO, type TipoAvaliacaoVisual } from "../../utils/avaliacao";
 import { avaliacaoSchema } from "../../validators/avaliacao-schema";
 
 const tipos: TipoAvaliacao[] = ["PROVA", "TPI", "TRABALHO"];
@@ -36,6 +48,10 @@ const mensagemErro = (erro: unknown, fallback: string) => axios.isAxiosError(err
 const nomeAtribuicao = (item: AtribuicaoAvaliacao) => `${item.turma_sigla || item.turma_descricao} - ${item.disciplina_nome}`;
 const campoSx = { "& .MuiFormHelperText-root": { minHeight: 20, m: 0, mt: 0.5 } };
 const formatarNumeroIndicador = (valor: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(valor);
+const ICONE_TIPO: Record<TipoAvaliacao, LucideIcon> = { PROVA: ClipboardList, TRABALHO: FileText, TPI: Puzzle };
+// Tipo como ícone pequeno + nome (sem moldura de chip); editar em cinza, excluir no vermelho do tema.
+const sxChipTipo = { height: "auto", bgcolor: "transparent", gap: 0.75, "& .MuiChip-icon": { m: 0 }, "& .MuiChip-label": { p: 0, fontSize: 14 } } as const;
+const sxTabelaAvaliacoes = { ...sxTabelaDados, "& .MuiDataGrid-cell[data-field='acoes'] .MuiIconButton-colorPrimary": { color: CORES_DASHBOARD.textoSuave } } as const;
 
 export default function Avaliacoes() {
   const [atribuicoes, setAtribuicoes] = useState<AtribuicaoAvaliacao[]>([]);
@@ -131,7 +147,23 @@ export default function Avaliacoes() {
   }
 
   const columns: GridColDef[] = [
-    { field: "tipo_avaliacao", headerName: "Tipo", width: 120, renderCell: ({ value }) => <Chip size="small" color={COR_TIPO_AVALIACAO[value as TipoAvaliacao]} variant="outlined" label={ROTULO_TIPO_AVALIACAO[value as TipoAvaliacao]} /> },
+    {
+      field: "tipo_avaliacao",
+      headerName: "Tipo",
+      width: 130,
+      renderCell: ({ value }) => {
+        const Icone = ICONE_TIPO[value as TipoAvaliacao] ?? ClipboardList;
+        const cores = CORES_TIPO_AVALIACAO[value as TipoAvaliacao] ?? CORES_TIPO_AVALIACAO.PROVA;
+        return (
+          <Chip
+            size="small"
+            sx={sxChipTipo}
+            label={ROTULO_TIPO_AVALIACAO[value as TipoAvaliacao]}
+            icon={<Box aria-hidden="true" sx={sxIconeQuadrado(cores, 20)}><Icone size={12} color={cores.texto} /></Box>}
+          />
+        );
+      },
+    },
     { field: "descricao_avaliacao", headerName: "Descrição", flex: 1, minWidth: 220, valueGetter: (_, row) => row.descricao_avaliacao || "Sem descrição" },
     { field: "valor", headerName: "Valor", width: 110, valueFormatter: (v) => formatarPontos(Number(v)) },
     { field: "data_lancamento", headerName: "Lançamento", width: 130, valueFormatter: (v) => formatarDataPtBr(String(v)) },
@@ -139,34 +171,37 @@ export default function Avaliacoes() {
     { field: "acoes", headerName: "Ações", width: 112, sortable: false, filterable: false, renderCell: ({ row }) => <Stack direction="row" spacing={0.5}><Tooltip title="Editar"><IconButton aria-label={`Editar avaliação ${row.descricao_avaliacao || ROTULO_TIPO_AVALIACAO[row.tipo_avaliacao as TipoAvaliacao]}`} size="small" color="primary" onClick={() => abrirEdicao(row)}><Pencil size={16} aria-hidden="true" /></IconButton></Tooltip><Tooltip title="Excluir"><IconButton aria-label={`Excluir avaliação ${row.descricao_avaliacao || ROTULO_TIPO_AVALIACAO[row.tipo_avaliacao as TipoAvaliacao]}`} size="small" color="error" onClick={() => setExcluir(row)}><Trash2 size={16} aria-hidden="true" /></IconButton></Tooltip></Stack> },
   ];
 
-  const indicadores = [
-    { label: "Provas", value: `${provas.length}/3`, detail: `${formatarNumeroIndicador(pontosProvas)}/60 pts`, icon: <ClipboardCheck size={22} aria-hidden="true" /> },
-    { label: "TPI", value: tpis.length ? "5/5 pts" : "0/5 pts", detail: undefined, icon: <ShieldCheck size={22} aria-hidden="true" /> },
-    { label: "Trabalhos", value: `${formatarNumeroIndicador(pontosTrabalhos)}/35 pts`, detail: undefined, icon: <FileText size={22} aria-hidden="true" /> },
-    { label: "Total", value: `${formatarNumeroIndicador(total)}/100 pts`, detail: undefined, icon: null },
+  // Os mesmos números de antes, no indicador do dashboard; todos neutros (colorir seria regra nova).
+  const indicadores: IndicadorDashboard[] = [
+    { id: "provas", titulo: "Provas", icone: ClipboardCheck, valor: `${provas.length}/3`, complemento: `${formatarNumeroIndicador(pontosProvas)}/60 pts` },
+    { id: "tpi", titulo: "TPI", icone: ShieldCheck, valor: tpis.length ? "5/5 pts" : "0/5 pts" },
+    { id: "trabalhos", titulo: "Trabalhos", icone: FileText, valor: `${formatarNumeroIndicador(pontosTrabalhos)}/35 pts` },
+    { id: "total", titulo: "Total", icone: Calculator, valor: `${formatarNumeroIndicador(total)}/100 pts` },
   ];
 
-  return <Container><Stack gap={2} py={2}>
-    <Box>
-      <Typography component="h1" variant="h5" fontWeight={700}>Gestão de avaliações</Typography>
-      <Typography color="text.secondary">Planeje as atividades por turma e disciplina: 3 provas, 1 TPI e até 35 pontos em trabalhos.</Typography>
-    </Box>
+  return <PaginaPadrao>
+    <PaginaCabecalho
+      titulo="Gestão de avaliações"
+      subtitulo="Planeje as atividades por turma e disciplina: 3 provas, 1 TPI e até 35 pontos em trabalhos."
+      icone={ClipboardCheck}
+    />
 
-    <Card.Root elevation={0} variant="outlined"><Card.Content>
-      {loadingAtribuicoes ? <Stack minHeight={56} direction="row" alignItems="center" justifyContent="center" gap={1}><CircularProgress size={20} /><Typography>Carregando atribuições...</Typography></Stack> : atribuicoes.length === 0 ? <Alert severity="info">Nenhuma atribuição ativa está disponível para o seu usuário.</Alert> : <Stack direction={{ xs: "column", md: "row" }} alignItems={{ md: "flex-start" }} gap={1.5}>
+    <Box sx={{ ...sxCartaoDashboard, p: 2 }}>
+      {loadingAtribuicoes ? <Stack minHeight={56} direction="row" alignItems="center" justifyContent="center" gap={1}><CircularProgress size={20} /><Typography sx={{ fontSize: 14 }}>Carregando atribuições...</Typography></Stack> : atribuicoes.length === 0 ? <Alert severity="info">Nenhuma atribuição ativa está disponível para o seu usuário.</Alert> : <Stack direction={{ xs: "column", md: "row" }} alignItems={{ md: "flex-start" }} gap={1.5}>
         <TextField select label="Turma e disciplina" value={contextoId} onChange={(e) => setContextoId(e.target.value)} sx={{ minWidth: { md: 320 }, flex: { md: 1 } }}>{atribuicoes.map((a) => <MenuItem key={a.id} value={a.id}>{nomeAtribuicao(a)}</MenuItem>)}</TextField>
         <TextField aria-label="Pesquisar avaliações" placeholder="Pesquisar avaliações" value={busca} onChange={(e) => setBusca(e.target.value)} sx={{ flex: { md: 1 } }} InputProps={{ startAdornment: <InputAdornment position="start"><Search size={16} aria-hidden="true" /></InputAdornment> }} />
-        <Button variant="contained" onClick={abrirCadastro} disabled={!contextoId} startIcon={<Plus size={16} aria-hidden="true" />} sx={{ height: 36, minWidth: 120, width: { xs: "100%", md: "auto" } }}>Adicionar</Button>
+        <Button onClick={abrirCadastro} disabled={!contextoId} startIcon={<Plus size={16} aria-hidden="true" />} sx={{ ...sxBotaoPrimario, height: 36, minWidth: 120, width: { xs: "100%", md: "auto" } }}>Adicionar</Button>
       </Stack>}
-    </Card.Content></Card.Root>
+    </Box>
 
     {(erro || sucesso) && <Alert severity={erro ? "error" : "success"} onClose={() => { setErro(null); setSucesso(null); }}>{erro || sucesso}</Alert>}
 
     {contextoId && <>
-      <Grid container spacing={2}>{indicadores.map(({ label, value, detail, icon }) => <Grid key={label} size={{ xs: 12, sm: 6, md: 3 }}><Card.Root elevation={0} variant="outlined" sx={{ height: "100%" }}><Card.Content sx={{ height: "100%", minHeight: 104, p: 2, "&:last-child": { pb: 2 } }}><Stack direction="row" alignItems="center" justifyContent="space-between" height="100%"><Stack gap={0.5}><Typography color="text.secondary" variant="body2">{label}</Typography><Stack direction="row" alignItems="baseline" gap={1}><Typography variant="h5" fontWeight={700}>{value}</Typography>{detail && <Typography variant="body2" fontWeight={700} color="text.secondary">{detail}</Typography>}</Stack></Stack><Box color="primary.main">{icon}</Box></Stack></Card.Content></Card.Root></Grid>)}</Grid>
-      <Card.Root elevation={0} variant="outlined"><Card.Header><Card.Title>Avaliações do contexto selecionado</Card.Title></Card.Header><Card.Content sx={{ minHeight: 480 }}><DataTable rows={rows} columns={columns} loading={loading} emptyTitle="Nenhuma avaliação encontrada" emptyDescription={avaliacoesRegulares.length === 0 ? "Adicione uma avaliação para começar." : "Revise o termo informado na pesquisa."} /></Card.Content></Card.Root>
+      <Grid container spacing={2}>{indicadores.map(({ id, ...indicador }) => <Grid key={id} size={{ xs: 12, sm: 6, md: 3 }}><IndicadorCard {...indicador} /></Grid>)}</Grid>
+      <DashboardPainel titulo="Avaliações do contexto selecionado" contador={rows.length || undefined}>
+        <DataTable rows={rows} columns={columns} loading={loading} emptyTitle="Nenhuma avaliação encontrada" emptyDescription={avaliacoesRegulares.length === 0 ? "Adicione uma avaliação para começar." : "Revise o termo informado na pesquisa."} sx={sxTabelaAvaliacoes} />
+      </DashboardPainel>
     </>}
-  </Stack>
 
   <Dialog.Root open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="md" aria-labelledby="dialog-avaliacao-title"><Dialog.Header><Dialog.Title><span id="dialog-avaliacao-title">{editingId ? "Editar avaliação" : "Nova avaliação"}</span></Dialog.Title><Dialog.ActionClose onClose={() => !saving && setDialogOpen(false)} /></Dialog.Header><Dialog.Content><Stack gap={2}>
     {formErro && <Alert severity="error">{formErro}</Alert>}
@@ -181,5 +216,5 @@ export default function Avaliacoes() {
   </Stack></Dialog.Content><Dialog.Footer><Button variant="outlined" disabled={saving} onClick={() => setDialogOpen(false)}>Cancelar</Button><Button variant="contained" disabled={saving} isLoading={saving} onClick={salvar}>Salvar</Button></Dialog.Footer></Dialog.Root>
 
   <Dialog.Root open={Boolean(excluir)} onClose={() => !deleting && setExcluir(null)} maxWidth="xs" aria-labelledby="dialog-exclusao-title"><Dialog.Header><Dialog.Title><span id="dialog-exclusao-title">Confirmar exclusão</span></Dialog.Title><Dialog.ActionClose onClose={() => !deleting && setExcluir(null)} /></Dialog.Header><Dialog.Content><Typography>Tem certeza que deseja excluir <strong>{excluir?.descricao_avaliacao || "esta avaliação"}</strong>? Esta ação não pode ser desfeita.</Typography></Dialog.Content><Dialog.Footer><Button variant="outlined" disabled={deleting} onClick={() => setExcluir(null)}>Cancelar</Button><Button variant="contained" color="error" disabled={deleting} isLoading={deleting} onClick={confirmarExclusao}>Excluir</Button></Dialog.Footer></Dialog.Root>
-  </Container>;
+  </PaginaPadrao>;
 }

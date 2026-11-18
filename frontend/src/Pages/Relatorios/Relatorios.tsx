@@ -19,6 +19,7 @@ import {
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import {
   Download,
+  FileBarChart,
   FileText,
   Search,
   ShieldCheck,
@@ -30,6 +31,7 @@ import type { LucideIcon } from "lucide-react";
 import Button from "../../components/Button";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
+import { CORES_DASHBOARD, ESTADOS, PaginaCabecalho, sxBotaoPrimario, sxCartaoDashboard, sxSelo, sxTabelaDados } from "../../components/DashboardLayout";
 import TextField from "../../components/TextField";
 import { useRelatorio } from "../../hooks/use-relatorio";
 import type {
@@ -631,7 +633,6 @@ export default function Relatorios() {
     [usuarioLogado.tipo_usuario]
   );
   const contexto = useMemo(() => contextoPerfil(perfil), [perfil]);
-  const IconePerfil = contexto.icone;
   const [busca, setBusca] = useState("");
   const [ano, setAno] = useState("Todos");
   const [tipo, setTipo] = useState("Todos");
@@ -720,7 +721,7 @@ export default function Relatorios() {
               <Button
                 variant="contained"
                 onClick={() => emitirRelatorio(params.row)}
-                sx={{ minWidth: 82, width: 82, height: 28, px: 1 }}
+                sx={{ ...sxBotaoPrimario, width: 82, height: 28 }}
               >
                 Emitir
               </Button>
@@ -755,57 +756,22 @@ export default function Relatorios() {
   }, [listarRelatorios, perfil]);
 
   return (
+    // Padrão visual das páginas internas (todos os perfis): moldura branca sem margem duplicada,
+    // largura máxima de 1600 px e cabeçalho de página.
     <Container
       maxWidth={false}
-      sx={{
-        border: "none",
-        backgroundColor: "#FFF",
-        py: 2,
-        px: { xs: 1.5, md: 2 },
-      }}
+      disableGutters
+      sx={{ border: "none", backgroundColor: "#FFF", p: 0, pb: 3, maxWidth: 1600, mx: "auto" }}
     >
       <Stack spacing={2}>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          justifyContent="space-between"
-          alignItems={{ xs: "flex-start", md: "center" }}
-          spacing={1.5}
-        >
-          <Box>
-            <Typography variant="h6" fontWeight="bold">
-              Relatorios
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {contexto.titulo}
-            </Typography>
-          </Box>
+        <PaginaCabecalho
+          titulo="Relatórios"
+          subtitulo={contexto.titulo}
+          icone={FileBarChart}
+          acoes={<Box component="span" sx={sxSelo("neutro")}>{labelPerfil(perfil)}</Box>}
+        />
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Chip
-              icon={<IconePerfil size={15} />}
-              label={labelPerfil(perfil)}
-              sx={{
-                backgroundColor: "#FFF",
-                color: "primary.main",
-                border: `1px solid ${theme.palette.primary.main}`,
-                fontWeight: 700,
-                "& .MuiChip-icon": {
-                  color: "primary.main",
-                },
-              }}
-            />
-          </Stack>
-        </Stack>
-
-        <Paper
-          elevation={0}
-          sx={{
-            border: `1px solid ${theme.palette.grey[100]}`,
-            borderRadius: "8px",
-            p: 2,
-            backgroundColor: "#FFF",
-          }}
-        >
+        <Paper elevation={0} sx={{ ...sxCartaoDashboard, p: 2 }}>
           <Stack spacing={2}>
             <Stack
               direction={{ xs: "column", md: "row" }}
@@ -817,8 +783,8 @@ export default function Relatorios() {
                   width: 38,
                   height: 38,
                   borderRadius: "8px",
-                  backgroundColor: "rgba(5, 181, 230, 0.12)",
-                  color: "primary.main",
+                  backgroundColor: ESTADOS.neutro.fundo,
+                  color: ESTADOS.neutro.texto,
                   display: { xs: "none", sm: "flex" },
                   alignItems: "center",
                   justifyContent: "center",
@@ -829,7 +795,7 @@ export default function Relatorios() {
               </Box>
 
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography fontWeight="bold" color="primary.main">
+                <Typography fontWeight="bold" sx={{ color: CORES_DASHBOARD.texto }}>
                   {contexto.escopo}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -949,27 +915,7 @@ export default function Relatorios() {
                 loading={carregando}
                 emptyTitle="Nenhum relatorio encontrado"
                 emptyDescription="Revise a busca ou altere os filtros selecionados."
-                sx={{
-                  mt: 0,
-                  backgroundColor: "#FFF",
-                  border: "none",
-                  minHeight: 300,
-                  "& .MuiDataGrid-main": {
-                    backgroundColor: "#FFF",
-                  },
-                  "& .MuiDataGrid-virtualScroller": {
-                    backgroundColor: "#FFF",
-                  },
-                  "& .MuiDataGrid-overlayWrapper": {
-                    backgroundColor: "#FFF",
-                  },
-                  "& .MuiDataGrid-overlayWrapperInner": {
-                    backgroundColor: "#FFF",
-                  },
-                  "& .MuiDataGrid-footerContainer": {
-                    backgroundColor: "#FFF",
-                  },
-                }}
+                sx={{ ...sxTabelaDados, border: "none", minHeight: 300 }}
               />
             </Box>
           </Box>
@@ -992,14 +938,7 @@ export default function Relatorios() {
             ) : null}
 
             {relatorios.map((relatorio) => (
-              <Card
-                key={relatorio.id}
-                elevation={0}
-                sx={{
-                  border: `1px solid ${theme.palette.grey[100]}`,
-                  borderRadius: "8px",
-                }}
-              >
+              <Card key={relatorio.id} elevation={0} sx={sxCartaoDashboard}>
                 <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
                   <Stack spacing={1.5}>
                     <Stack
@@ -1015,15 +954,7 @@ export default function Relatorios() {
                         </Typography>
                       </Box>
 
-                      <Chip
-                        size="small"
-                        label={labelTipo(relatorio.tipo)}
-                        sx={{
-                          backgroundColor: "#EDF8FB",
-                          color: "primary.main",
-                          fontWeight: 700,
-                        }}
-                      />
+                      <Box component="span" sx={sxSelo("neutro")}>{labelTipo(relatorio.tipo)}</Box>
                     </Stack>
 
                     <Divider />
@@ -1050,7 +981,7 @@ export default function Relatorios() {
                       variant="contained"
                       startIcon={<Download size={16} />}
                       onClick={() => emitirRelatorio(relatorio)}
-                      sx={{ width: "100%" }}
+                      sx={{ ...sxBotaoPrimario, width: "100%", height: 36 }}
                     >
                       Emitir PDF
                     </Button>

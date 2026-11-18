@@ -21,7 +21,7 @@ export default function Footer({ onSearch, onReset }: FooterProps) {
             mt={1}
             gap={1}
             sx={{
-                backgroundColor: '#F4F4F4',
+                backgroundColor: theme.palette.grey[100],
                 borderTop: `1px solid ${theme.palette.grey[200]}`,
                 height: '45px'
             }}

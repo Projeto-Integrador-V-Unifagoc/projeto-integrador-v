@@ -1,9 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Chip, FormControlLabel, Grid, MenuItem, Stack, Switch, Tab, Tabs, Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
-import { CheckCheck, RefreshCw, Save, Search } from "lucide-react";
+import { CalendarCheck, CheckCheck, RefreshCw, Save, Search } from "lucide-react";
 import Button from "../../components/Button";
 import { Card } from "../../components/Card";
+import {
+  CORES_DASHBOARD,
+  DashboardPainel,
+  ESTADOS,
+  PESO,
+  PaginaCabecalho,
+  sxAbas,
+  sxBotaoPrimario,
+  sxBotaoSecundario,
+  sxCartaoDashboard,
+  sxChipSelo,
+  sxConteudoPagina,
+  sxPaginaPadrao,
+  sxTabelaDados,
+} from "../../components/DashboardLayout";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
@@ -18,13 +33,19 @@ import type {
 } from "../../models/frequencia-model";
 import { colunasConsolidado } from "./frequencia-columns";
 import {
-  corStatus,
   formatarPercentual,
   hojeSP,
   mensagemErro,
   perfilLocal,
   rotuloStatus,
+  tomStatusFrequencia,
 } from "./frequencia-utils";
+
+// Interruptor de presença no acento do padrão (o "success" do tema é verde puro).
+const sxInterruptor = {
+  "& .MuiSwitch-switchBase.Mui-checked": { color: CORES_DASHBOARD.acento },
+  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: CORES_DASHBOARD.acento, opacity: 0.5 },
+} as const;
 
 export default function VisaoOperacional() {
   const api = useFrequencia();
@@ -155,8 +176,8 @@ export default function VisaoOperacional() {
                 control={
                   <Switch
                     size="small"
-                    color="success"
                     checked={row.status === "PRESENTE"}
+                    sx={sxInterruptor}
                     onChange={(e) => mudarStatus(row.id, e.target.checked ? "PRESENTE" : "AUSENTE")}
                     inputProps={{ "aria-label": `Frequência de ${row.nome}` }}
                   />
@@ -164,22 +185,19 @@ export default function VisaoOperacional() {
                 label={
                   <Typography
                     variant="body2"
-                    color={
-                      row.status === "PRESENTE"
-                        ? "success.main"
-                        : row.status === "AUSENTE"
-                          ? "error.main"
-                          : "text.disabled"
-                    }
+                    sx={{
+                      color: row.status === "PRESENTE" ? CORES_DASHBOARD.texto : row.status === "AUSENTE" ? ESTADOS.atencao.texto : CORES_DASHBOARD.textoApagado,
+                      fontWeight: row.status === "AUSENTE" ? PESO.forte : PESO.regular,
+                    }}
                   >
                     {row.status ? rotuloStatus(row.status) : "Não lançada"}
                   </Typography>
                 }
               />
             ) : row.status ? (
-              <Chip size="small" variant="outlined" color={corStatus(row.status)} label={rotuloStatus(row.status)} />
+              <Chip size="small" label={rotuloStatus(row.status)} sx={sxChipSelo(tomStatusFrequencia(row.status), { ponto: row.status === "AUSENTE" })} />
             ) : (
-              <Typography variant="body2" color="text.disabled">
+              <Typography variant="body2" sx={{ color: CORES_DASHBOARD.textoApagado }}>
                 Não lançada
               </Typography>
             )}
@@ -197,14 +215,12 @@ export default function VisaoOperacional() {
   const acoesProfessor = podeEditar && chamada.length > 0;
 
   return (
-    <Container sx={{ p: { xs: 2, md: 3 } }}>
-      <Stack gap={2}>
-        <Typography component="h1" variant="h5" fontWeight={700}>
-          Frequência
-        </Typography>
+    <Container disableGutters sx={sxPaginaPadrao}>
+      <Stack gap={2} sx={sxConteudoPagina}>
+        <PaginaCabecalho titulo="Frequência" subtitulo="Chamada por aula e relatório consolidado da turma." icone={CalendarCheck} />
 
-        <Card.Root elevation={0} variant="outlined">
-          <Card.Content>
+        <Card.Root elevation={0} variant="outlined" sx={sxCartaoDashboard}>
+          <Card.Content sx={{ p: 2, "&:last-child": { pb: 2 } }}>
             <Grid container spacing={1.5} alignItems="flex-start">
               <Grid size={{ xs: 12, md: podeEditar ? 5 : 7 }}>
                 <TextField
@@ -247,7 +263,7 @@ export default function VisaoOperacional() {
                   disabled={!turmaId}
                   isLoading={api.operacoes.chamada}
                   startIcon={<Search size={16} aria-hidden="true" />}
-                  sx={{ height: 36, width: "100%", minWidth: 120 }}
+                  sx={{ ...sxBotaoSecundario, height: 36, width: "100%", minWidth: 120 }}
                 >
                   Carregar
                 </Button>
@@ -256,18 +272,10 @@ export default function VisaoOperacional() {
           </Card.Content>
         </Card.Root>
 
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs
-            value={aba}
-            onChange={(_, v) => setAba(v)}
-            textColor="primary"
-            indicatorColor="primary"
-            aria-label="Visões de frequência da turma"
-          >
+        <Tabs value={aba} onChange={(_, v) => setAba(v)} aria-label="Visões de frequência da turma" sx={sxAbas}>
             <Tab label="Chamada" id="frequencia-tab-chamada" aria-controls="frequencia-painel-chamada" />
             <Tab label="Relatório" id="frequencia-tab-relatorio" aria-controls="frequencia-painel-relatorio" />
-          </Tabs>
-        </Box>
+        </Tabs>
 
         {aba === 0 && (
           <Box role="tabpanel" id="frequencia-painel-chamada" aria-labelledby="frequencia-tab-chamada">
@@ -275,36 +283,33 @@ export default function VisaoOperacional() {
               {acoesProfessor && (
                 <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" gap={1}>
                   <Button
-                    variant="outlined"
                     onClick={todosPresentes}
                     startIcon={<CheckCheck size={16} aria-hidden="true" />}
-                    sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
+                    sx={{ ...sxBotaoSecundario, height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
                   >
                     Marcar todos presentes
                   </Button>
                   <Button
-                    variant="contained"
                     onClick={salvar}
                     disabled={!alterado || api.operacoes.salvamento}
                     isLoading={api.operacoes.salvamento}
                     startIcon={<Save size={16} aria-hidden="true" />}
-                    sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
+                    sx={{ ...sxBotaoPrimario, height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
                   >
                     Salvar chamada completa
                   </Button>
                 </Stack>
               )}
-              <Card.Root elevation={0} variant="outlined">
-                <Card.Content sx={{ minHeight: 480 }}>
-                  <DataTable
-                    rows={chamada}
-                    columns={colunasChamada}
-                    loading={api.operacoes.chamada}
-                    emptyTitle="Nenhuma chamada encontrada para a data selecionada"
-                    emptyDescription="Selecione a turma e a data e clique em Carregar."
-                  />
-                </Card.Content>
-              </Card.Root>
+              <DashboardPainel titulo="Chamada" contador={chamada.length || undefined}>
+                <DataTable
+                  rows={chamada}
+                  columns={colunasChamada}
+                  loading={api.operacoes.chamada}
+                  emptyTitle="Nenhuma chamada encontrada para a data selecionada"
+                  emptyDescription="Selecione a turma e a data e clique em Carregar."
+                  sx={sxTabelaDados}
+                />
+              </DashboardPainel>
             </Stack>
           </Box>
         )}
@@ -314,27 +319,25 @@ export default function VisaoOperacional() {
             <Stack gap={2}>
               <Stack direction="row" justifyContent="flex-end">
                 <Button
-                  variant="contained"
                   onClick={relatorio}
                   disabled={!turmaId}
                   isLoading={api.operacoes.relatorio}
                   startIcon={<RefreshCw size={16} aria-hidden="true" />}
-                  sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 180 }}
+                  sx={{ ...sxBotaoSecundario, height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 180 }}
                 >
                   Atualizar relatório
                 </Button>
               </Stack>
-              <Card.Root elevation={0} variant="outlined">
-                <Card.Content sx={{ minHeight: 480 }}>
-                  <DataTable
-                    rows={linhasRelatorio}
-                    columns={colunasRelatorio}
-                    loading={api.operacoes.relatorio}
-                    emptyTitle="Nenhum registro de frequência encontrado"
-                    emptyDescription="Atualize o relatório para visualizar a frequência consolidada da turma."
-                  />
-                </Card.Content>
-              </Card.Root>
+              <DashboardPainel titulo="Relatório consolidado" contador={linhasRelatorio.length || undefined}>
+                <DataTable
+                  rows={linhasRelatorio}
+                  columns={colunasRelatorio}
+                  loading={api.operacoes.relatorio}
+                  emptyTitle="Nenhum registro de frequência encontrado"
+                  emptyDescription="Atualize o relatório para visualizar a frequência consolidada da turma."
+                  sx={sxTabelaDados}
+                />
+              </DashboardPainel>
             </Stack>
           </Box>
         )}

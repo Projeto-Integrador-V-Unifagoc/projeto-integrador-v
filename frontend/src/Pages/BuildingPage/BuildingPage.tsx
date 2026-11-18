@@ -28,7 +28,7 @@ export default function BuildingPage() {
         border: `1px solid ${theme.palette.grey[200]}`,
         borderRadius: '8px',
         height: '100%',
-        backgroundColor: '#F4F4F4',
+        backgroundColor: theme.palette.grey[100],
       })}
     >
       <Box

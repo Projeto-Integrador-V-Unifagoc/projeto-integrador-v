@@ -1,3 +1,4 @@
+import type { TomEstado } from "../../components/DashboardLayout/dashboard-estilos";
 import type { SituacaoFrequencia, StatusFrequencia } from "../../models/frequencia-model";
 
 export type Aviso = { tipo: "success" | "error" | "info" | "warning"; texto: string };
@@ -22,15 +23,6 @@ export const mensagemErro = (erro: unknown) => {
 export const formatarPercentual = (valor: number | null | undefined) =>
   valor == null ? "—" : `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(valor)}%`;
 
-type ChipColor = "success" | "warning" | "error" | "default";
-
-const COR_SITUACAO: Record<SituacaoFrequencia, ChipColor> = {
-  REGULAR: "success",
-  ALERTA: "warning",
-  RISCO_REPROVACAO: "error",
-  NAO_LANCADO: "default",
-};
-
 const ROTULO_SITUACAO: Record<SituacaoFrequencia, string> = {
   REGULAR: "Regular",
   ALERTA: "Alerta",
@@ -39,7 +31,6 @@ const ROTULO_SITUACAO: Record<SituacaoFrequencia, string> = {
 };
 
 // Situação: a cor reforça, mas o rótulo sempre comunica o estado (sem depender só de cor).
-export const corSituacao = (s: SituacaoFrequencia): ChipColor => COR_SITUACAO[s] ?? "default";
 export const rotuloSituacao = (s: SituacaoFrequencia): string => ROTULO_SITUACAO[s] ?? s;
 
 const COR_STATUS: Record<StatusFrequencia, "success" | "error"> = { PRESENTE: "success", AUSENTE: "error" };
@@ -47,3 +38,11 @@ const ROTULO_STATUS: Record<StatusFrequencia, string> = { PRESENTE: "Presente", 
 
 export const corStatus = (s: StatusFrequencia) => COR_STATUS[s];
 export const rotuloStatus = (s: StatusFrequencia) => ROTULO_STATUS[s];
+
+// Tons no padrão visual (selos): risco de reprovação é crítico, alerta e ausência são atenção;
+// regular, não lançado e presente ficam neutros.
+const TOM_SITUACAO: Record<SituacaoFrequencia, TomEstado> = { REGULAR: "neutro", ALERTA: "atencao", RISCO_REPROVACAO: "critico", NAO_LANCADO: "neutro" };
+const TOM_STATUS: Record<StatusFrequencia, TomEstado> = { PRESENTE: "neutro", AUSENTE: "atencao" };
+
+export const tomSituacaoFrequencia = (s: SituacaoFrequencia): TomEstado => TOM_SITUACAO[s] ?? "neutro";
+export const tomStatusFrequencia = (s: StatusFrequencia): TomEstado => TOM_STATUS[s] ?? "neutro";

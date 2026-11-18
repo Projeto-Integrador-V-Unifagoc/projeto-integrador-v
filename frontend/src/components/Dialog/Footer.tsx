@@ -17,7 +17,7 @@ export function Footer({ children }: StackProps) {
             gap={1}
             minHeight={{ xs: "96px", sm: "48px" }}
             sx={{
-                backgroundColor: '#F4F4F4',
+                backgroundColor: theme.palette.grey[100],
                 "& > button": {
                     width: { xs: "100%", sm: "auto" },
                     minWidth: 88,

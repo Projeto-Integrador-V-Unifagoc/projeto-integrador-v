@@ -1,6 +1,7 @@
 import { DataGrid, type DataGridProps } from "@mui/x-data-grid";
 import { ptBR } from "@mui/x-data-grid/locales";
 import { theme } from "../../theme";
+import { CORES_DASHBOARD } from "../DashboardLayout/dashboard-estilos";
 import NoData from "./NoData";
 import SkeletonOverlay from "./Skeleton";
 import CustomPagination from "./Pagination";
@@ -39,7 +40,8 @@ export default function Table({ emptyTitle, emptyDescription, ...props }: TableP
       }}
       sx={{
         mt: 1,
-        backgroundColor: '#F4F4F4',
+        backgroundColor: CORES_DASHBOARD.superficie,
+        borderColor: CORES_DASHBOARD.borda,
         overflowX: 'auto',
         minHeight: { xs: 420, sm: 480 },
 
@@ -49,20 +51,25 @@ export default function Table({ emptyTitle, emptyDescription, ...props }: TableP
         },
 
         "& .MuiDataGrid-columnHeader": {
-          backgroundColor: "#F1F5F9",
+          backgroundColor: CORES_DASHBOARD.superficieSutil,
         },
 
         "& .MuiDataGrid-columnHeaderTitle": {
           fontWeight: 'bold',
-          color: 'black'
+          color: CORES_DASHBOARD.texto
         },
 
         "& .even": {
           backgroundColor: "#FFF",
         },
 
+        // Sem zebra: linhas brancas separadas por divisória fina, como as tabelas dos dashboards.
         "& .odd": {
-          backgroundColor: "#F1F5F9",
+          backgroundColor: "#FFF",
+        },
+
+        "& .MuiDataGrid-cell": {
+          borderColor: CORES_DASHBOARD.divisoria,
         },
 
         "& .MuiDataGrid-row:hover": {

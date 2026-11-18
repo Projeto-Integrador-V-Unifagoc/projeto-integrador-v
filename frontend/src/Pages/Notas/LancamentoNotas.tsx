@@ -1,9 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Box, Chip, Grid, MenuItem, Stack, Tab, Tabs, Typography } from "@mui/material";
 import type { GridColDef, GridRowModel } from "@mui/x-data-grid";
-import { RefreshCw, Save, ShieldCheck } from "lucide-react";
+import { ClipboardPen, RefreshCw, Save, ShieldCheck } from "lucide-react";
 import Button from "../../components/Button";
-import { Card } from "../../components/Card";
+import {
+  AvisoDetalhe,
+  CORES_DASHBOARD,
+  DashboardPainel,
+  PESO,
+  PaginaCabecalho,
+  sxAbas,
+  sxBotaoPrimario,
+  sxBotaoSecundario,
+  sxCartaoDashboard,
+  sxChipSelo,
+  sxConteudoPagina,
+  sxPaginaPadrao,
+  sxTabelaDados,
+} from "../../components/DashboardLayout";
 import Container from "../../components/Container";
 import DataTable from "../../components/DataTable/DataTable";
 import TextField from "../../components/TextField";
@@ -11,7 +25,6 @@ import { useNotificacao } from "../../components/Notificacao/NotificationProvide
 import { useNota } from "../../hooks/use-nota";
 import {
   SITUACAO_LABEL,
-  situacaoCor,
   type AlunoLancamento,
   type AlunoRecuperacao,
   type AtribuicaoNota,
@@ -21,7 +34,7 @@ import {
   type SituacaoNota,
 } from "../../models/nota-model";
 import AutorizacaoDialog from "./AutorizacaoDialog";
-import { formatarMedia, formatarNotaValor, mensagemErro, perfilLocal } from "./notas-utils";
+import { formatarMedia, formatarNotaValor, mensagemErro, perfilLocal, tomSituacaoNota } from "./notas-utils";
 
 type LinhaLancamento = AlunoLancamento & { id: string };
 type LinhaRecuperacao = AlunoRecuperacao & { id: string; valor: number | null };
@@ -29,23 +42,24 @@ type LinhaRendimento = Record<string, number | string | null>;
 type LinhaEditada = { id: string; alunoId: string; valor: unknown };
 
 // Situação sempre comunicada por rótulo; a cor apenas reforça (sem depender só de cor).
-const chipSituacao = (valor: unknown) => (
-  <Chip size="small" color={situacaoCor(valor as SituacaoNota)} label={SITUACAO_LABEL[valor as SituacaoNota]} />
-);
+const chipSituacao = (valor: unknown) => {
+  const tom = tomSituacaoNota(valor as SituacaoNota);
+  return <Chip size="small" label={SITUACAO_LABEL[valor as SituacaoNota]} sx={sxChipSelo(tom, { ponto: tom !== "neutro" })} />;
+};
 
 // Célula de nota em leitura: "Não lançada" (itálico) é visualmente distinto de zero e de erro;
 // alterações ainda não salvas recebem marcador (ponto + negrito), não apenas cor.
 const renderNota = (valor: number | null | undefined, alterada: boolean) =>
   valor === null || valor === undefined ? (
-    <Typography variant="body2" color="text.disabled" fontStyle="italic">
+    <Typography variant="body2" fontStyle="italic" sx={{ color: CORES_DASHBOARD.textoApagado }}>
       Não lançada
     </Typography>
   ) : (
     <Stack direction="row" alignItems="center" gap={0.5} title={alterada ? "Alteração não salva" : undefined}>
       {alterada && (
-        <Box component="span" aria-hidden="true" sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
+        <Box component="span" aria-hidden="true" sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: CORES_DASHBOARD.acento, flexShrink: 0 }} />
       )}
-      <Typography component="span" variant="body2" fontWeight={alterada ? 700 : 400}>
+      <Typography component="span" variant="body2" fontWeight={alterada ? PESO.forte : PESO.regular}>
         {formatarNotaValor(Number(valor))}
       </Typography>
     </Stack>
@@ -265,11 +279,11 @@ export default function LancamentoNotas() {
       width: 170,
       renderCell: ({ row }) =>
         row.prazoExpirado ? (
-          <Chip size="small" variant="outlined" color="error" label="Prazo expirado" />
+          <Chip size="small" label="Prazo expirado" sx={sxChipSelo("critico", { ponto: true })} />
         ) : row.lancada ? (
-          <Chip size="small" variant="outlined" color="success" label="No prazo" />
+          <Chip size="small" label="No prazo" sx={sxChipSelo("neutro")} />
         ) : (
-          <Typography variant="body2" color="text.disabled">
+          <Typography variant="body2" sx={{ color: CORES_DASHBOARD.textoApagado }}>
             —
           </Typography>
         ),
@@ -323,14 +337,11 @@ export default function LancamentoNotas() {
   const colunasTurmaTamanho = aba === 0 ? { xs: 12, md: 6 } : { xs: 12 };
 
   return (
-    <Container sx={{ p: { xs: 2, md: 3 } }}>
-      <Stack gap={2}>
-        <Typography component="h1" variant="h5" fontWeight={700}>
-          Lançamento de Notas
-        </Typography>
+    <Container disableGutters sx={sxPaginaPadrao}>
+      <Stack gap={2} sx={sxConteudoPagina}>
+        <PaginaCabecalho titulo="Lançamento de notas" subtitulo="Lance, acompanhe o rendimento e registre a recuperação da turma." icone={ClipboardPen} />
 
-        <Card.Root elevation={0} variant="outlined">
-          <Card.Content>
+        <Box sx={{ ...sxCartaoDashboard, p: 2 }}>
             <Grid container spacing={1.5} alignItems="flex-start">
               <Grid size={colunasTurmaTamanho}>
                 <TextField
@@ -364,38 +375,28 @@ export default function LancamentoNotas() {
                 </Grid>
               )}
             </Grid>
-          </Card.Content>
-        </Card.Root>
+        </Box>
 
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs
-            value={aba}
-            onChange={(_, v) => setAba(v)}
-            textColor="primary"
-            indicatorColor="primary"
-            aria-label="Visões de notas da turma"
-          >
+        <Tabs value={aba} onChange={(_, v) => setAba(v)} aria-label="Visões de notas da turma" sx={sxAbas}>
             <Tab label="Lançamento" id="notas-tab-lancamento" aria-controls="notas-painel-lancamento" />
             <Tab label="Rendimento" id="notas-tab-rendimento" aria-controls="notas-painel-rendimento" />
             <Tab label="Recuperação" id="notas-tab-recuperacao" aria-controls="notas-painel-recuperacao" />
-          </Tabs>
-        </Box>
+        </Tabs>
 
         {aba === 0 && (
           <Box role="tabpanel" id="notas-painel-lancamento" aria-labelledby="notas-tab-lancamento">
             <Stack gap={2}>
               {lancamento && (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ fontSize: 13, color: CORES_DASHBOARD.textoSuave }}>
                   {lancamento.avaliacao.disciplina.nome} · {lancamento.avaliacao.tipo} · máximo {formatarNotaValor(max)} pontos
                 </Typography>
               )}
               {linhas.some((l) => l.prazoExpirado) && ehSecretaria && (
                 <Stack direction="row" justifyContent="flex-end">
                   <Button
-                    variant="outlined"
                     onClick={() => setAutorizar(true)}
                     startIcon={<ShieldCheck size={16} aria-hidden="true" />}
-                    sx={{ height: 30, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
+                    sx={{ ...sxBotaoSecundario, width: { xs: "100%", sm: "auto" }, minWidth: 200 }}
                   >
                     Autorizar retificação
                   </Button>
@@ -404,30 +405,28 @@ export default function LancamentoNotas() {
               {podeEditar && (
                 <Stack direction="row" justifyContent="flex-end">
                   <Button
-                    variant="contained"
                     onClick={salvarLancamento}
                     disabled={!alterado || api.carregando}
                     isLoading={api.carregando}
                     startIcon={<Save size={16} aria-hidden="true" />}
-                    sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 160 }}
+                    sx={{ ...sxBotaoPrimario, height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 160 }}
                   >
                     Salvar lote
                   </Button>
                 </Stack>
               )}
-              <Card.Root elevation={0} variant="outlined">
-                <Card.Content sx={{ minHeight: 480 }}>
-                  <DataTable
-                    rows={linhas}
-                    columns={colunasLancamento}
-                    loading={api.carregando}
-                    processRowUpdate={processarLinha("linhas", max)}
-                    onProcessRowUpdateError={(e) => notificar((e as Error).message, "error")}
-                    emptyTitle="Nenhum aluno para lançamento"
-                    emptyDescription="Selecione a turma e a avaliação para carregar os alunos."
-                  />
-                </Card.Content>
-              </Card.Root>
+              <DashboardPainel titulo="Notas da avaliação" contador={linhas.length || undefined}>
+                <DataTable
+                  rows={linhas}
+                  columns={colunasLancamento}
+                  loading={api.carregando}
+                  processRowUpdate={processarLinha("linhas", max)}
+                  onProcessRowUpdateError={(e) => notificar((e as Error).message, "error")}
+                  emptyTitle="Nenhum aluno para lançamento"
+                  emptyDescription="Selecione a turma e a avaliação para carregar os alunos."
+                  sx={sxTabelaDados}
+                />
+              </DashboardPainel>
             </Stack>
           </Box>
         )}
@@ -437,27 +436,25 @@ export default function LancamentoNotas() {
             <Stack gap={2}>
               <Stack direction="row" justifyContent="flex-end">
                 <Button
-                  variant="contained"
                   onClick={carregarRendimento}
                   disabled={!turmaId || api.carregando}
                   isLoading={api.carregando}
                   startIcon={<RefreshCw size={16} aria-hidden="true" />}
-                  sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 180 }}
+                  sx={{ ...sxBotaoSecundario, height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 180 }}
                 >
                   Atualizar rendimento
                 </Button>
               </Stack>
-              <Card.Root elevation={0} variant="outlined">
-                <Card.Content sx={{ minHeight: 480 }}>
-                  <DataTable
-                    rows={linhasRendimento}
-                    columns={colunasRendimento}
-                    loading={api.carregando}
-                    emptyTitle="Nenhum rendimento para exibir"
-                    emptyDescription="Selecione a turma para visualizar o rendimento consolidado."
-                  />
-                </Card.Content>
-              </Card.Root>
+              <DashboardPainel titulo="Rendimento da turma" contador={linhasRendimento.length || undefined}>
+                <DataTable
+                  rows={linhasRendimento}
+                  columns={colunasRendimento}
+                  loading={api.carregando}
+                  emptyTitle="Nenhum rendimento para exibir"
+                  emptyDescription="Selecione a turma para visualizar o rendimento consolidado."
+                  sx={sxTabelaDados}
+                />
+              </DashboardPainel>
             </Stack>
           </Box>
         )}
@@ -465,37 +462,35 @@ export default function LancamentoNotas() {
         {aba === 2 && (
           <Box role="tabpanel" id="notas-painel-recuperacao" aria-labelledby="notas-tab-recuperacao">
             <Stack gap={2}>
-              <Typography variant="body2" color="text.secondary">
+              <AvisoDetalhe gravidade="info">
                 Alunos elegíveis (média parcial abaixo de 60% com etapa regular concluída). Recuperação de 0 a 100; a média final é o maior
                 valor entre a média parcial e a recuperação.
-              </Typography>
+              </AvisoDetalhe>
               {!periodoFechado && (
                 <Stack direction="row" justifyContent="flex-end">
                   <Button
-                    variant="contained"
                     onClick={salvarRecuperacao}
                     disabled={!alteradoRec || api.carregando}
                     isLoading={api.carregando}
                     startIcon={<Save size={16} aria-hidden="true" />}
-                    sx={{ height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 180 }}
+                    sx={{ ...sxBotaoPrimario, height: 36, width: { xs: "100%", sm: "auto" }, minWidth: 180 }}
                   >
                     Salvar recuperação
                   </Button>
                 </Stack>
               )}
-              <Card.Root elevation={0} variant="outlined">
-                <Card.Content sx={{ minHeight: 480 }}>
-                  <DataTable
-                    rows={linhasRec}
-                    columns={colunasRecuperacao}
-                    loading={api.carregando}
-                    processRowUpdate={processarLinha("recuperacao", 100)}
-                    onProcessRowUpdateError={(e) => notificar((e as Error).message, "error")}
-                    emptyTitle="Nenhum aluno elegível para recuperação"
-                    emptyDescription="Apenas alunos com média parcial abaixo de 60% e etapa regular concluída aparecem aqui."
-                  />
-                </Card.Content>
-              </Card.Root>
+              <DashboardPainel titulo="Recuperação" contador={linhasRec.length || undefined}>
+                <DataTable
+                  rows={linhasRec}
+                  columns={colunasRecuperacao}
+                  loading={api.carregando}
+                  processRowUpdate={processarLinha("recuperacao", 100)}
+                  onProcessRowUpdateError={(e) => notificar((e as Error).message, "error")}
+                  emptyTitle="Nenhum aluno elegível para recuperação"
+                  emptyDescription="Apenas alunos com média parcial abaixo de 60% e etapa regular concluída aparecem aqui."
+                  sx={sxTabelaDados}
+                />
+              </DashboardPainel>
             </Stack>
           </Box>
         )}

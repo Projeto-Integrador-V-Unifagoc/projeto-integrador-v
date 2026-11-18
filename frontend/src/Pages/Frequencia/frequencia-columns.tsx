@@ -1,8 +1,10 @@
-import { Chip, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import type { GridColDef } from "@mui/x-data-grid";
+import { CORES_DASHBOARD } from "../../components/DashboardLayout";
 import { formatarDataPtBr } from "../../utils/avaliacao";
 import type { SituacaoFrequencia, StatusFrequencia } from "../../models/frequencia-model";
-import { corSituacao, corStatus, formatarPercentual, rotuloSituacao, rotuloStatus } from "./frequencia-utils";
+import { formatarPercentual } from "./frequencia-utils";
+import { SeloSituacaoFrequencia, SeloStatusFrequencia } from "./SelosFrequencia";
 
 // Colunas do consolidado, compartilhadas entre a visão do aluno e o relatório operacional.
 export const colunasConsolidado = (incluirAluno: boolean): GridColDef[] => [
@@ -17,9 +19,7 @@ export const colunasConsolidado = (incluirAluno: boolean): GridColDef[] => [
     field: "situacao",
     headerName: "Situação",
     width: 180,
-    renderCell: ({ value }) => (
-      <Chip size="small" color={corSituacao(value as SituacaoFrequencia)} label={rotuloSituacao(value as SituacaoFrequencia)} />
-    ),
+    renderCell: ({ value }) => <SeloSituacaoFrequencia situacao={value as SituacaoFrequencia} />,
   },
 ];
 
@@ -31,9 +31,7 @@ export const colunasHistorico = (acoes: GridColDef): GridColDef[] => [
     field: "status",
     headerName: "Status",
     width: 130,
-    renderCell: ({ value }) => (
-      <Chip size="small" variant="outlined" color={corStatus(value as StatusFrequencia)} label={rotuloStatus(value as StatusFrequencia)} />
-    ),
+    renderCell: ({ value }) => <SeloStatusFrequencia status={value as StatusFrequencia} />,
   },
   {
     field: "motivoJustificativa",
@@ -44,7 +42,7 @@ export const colunasHistorico = (acoes: GridColDef): GridColDef[] => [
       value ? (
         <Typography variant="body2">{String(value)}</Typography>
       ) : (
-        <Typography variant="body2" color="text.disabled">
+        <Typography variant="body2" sx={{ color: CORES_DASHBOARD.textoApagado }}>
           —
         </Typography>
       ),
