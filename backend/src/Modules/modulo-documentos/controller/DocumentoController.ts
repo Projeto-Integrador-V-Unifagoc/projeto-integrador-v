@@ -9,6 +9,21 @@ import {
 import { conferirConteudoDoArquivo, descartarArquivo } from "../service/ValidacaoArquivo";
 
 const service = new DocumentoService();
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.resolve(process.cwd(), "uploads");
+
+// O caminho salvo é absoluto no ambiente em que o upload ocorreu (ex.: /app/uploads no
+// Docker ou C:\... local). Se não existir mais ali, procura pelo nome no UPLOAD_DIR atual.
+export function resolverCaminhoArquivo(salvo: string): string | null {
+    if (!salvo) return null;
+    const nome = salvo.split(/[\\/]/).pop() ?? "";
+    const candidatos = [
+        path.resolve(salvo),
+        path.resolve(UPLOAD_DIR, nome),
+        path.resolve(UPLOAD_DIR, "documentos", nome),
+    ];
+    return candidatos.find((c) => nome && fs.existsSync(c) && fs.statSync(c).isFile()) ?? null;
+}
 const authContext = new DocumentoAuthContext();
 
 export class DocumentoController {
@@ -136,9 +151,9 @@ export class DocumentoController {
                 });
             }
 
-            const caminho = path.resolve(doc.caminho_arquivo);
+            const caminho = resolverCaminhoArquivo(doc.caminho_arquivo);
 
-            if (!fs.existsSync(caminho)) {
+            if (!caminho) {
                 return res.status(404).json({
                     error: "Arquivo não encontrado.",
                 });

@@ -66,7 +66,21 @@ export const documentoApi = {
   },
 
   async abrirArquivo(id: string): Promise<string> {
-    const response = await api.get(`/documentos/${id}/arquivo`, { responseType: "blob" });
-    return URL.createObjectURL(response.data as Blob);
+    try {
+      const response = await api.get(`/documentos/${id}/arquivo`, { responseType: "blob" });
+      return URL.createObjectURL(response.data as Blob);
+    } catch (err: any) {
+      // Com responseType "blob" o corpo do erro chega como Blob; converte para JSON
+      // para que a mensagem do backend apareça para a secretaria.
+      const dados = err?.response?.data;
+      if (dados instanceof Blob) {
+        try {
+          err.response.data = JSON.parse(await dados.text());
+        } catch {
+          /* mantém o erro original */
+        }
+      }
+      throw err;
+    }
   },
 };
