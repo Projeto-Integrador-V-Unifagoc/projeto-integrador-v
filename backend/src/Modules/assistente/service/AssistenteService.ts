@@ -129,6 +129,21 @@ export function removerFechamentoDeCortesia(texto: string): string {
 type ChamadaDeFerramenta = { id?: string; name: string; args: Record<string, unknown> };
 
 /**
+ * Modelos costumam mandar número em campo de texto (a matrícula "1234" chega como 1234), e a validação do
+ * schema recusaria a chamada. Só esse caso é convertido; o resto segue para a validação como veio.
+ */
+export function numerosComoTexto(schema: unknown, args: Record<string, unknown>): Record<string, unknown> {
+    const propriedades = (schema as any)?.properties;
+    if (!propriedades || !args || typeof args !== "object") return args;
+    return Object.fromEntries(
+        Object.entries(args).map(([campo, valor]) => [
+            campo,
+            propriedades[campo]?.type === "string" && typeof valor === "number" && Number.isFinite(valor) ? String(valor) : valor,
+        ]),
+    );
+}
+
+/**
  * Executa uma chamada de ferramenta sem nunca derrubar a conversa: ferramenta de outro perfil ou argumentos
  * fora do formato (o LangChain lança ToolInputParsingException) voltam ao modelo como mensagem, e ele corrige
  * a chamada na rodada seguinte em vez de o usuário receber um erro genérico.
@@ -138,7 +153,7 @@ async function executarChamada(chamada: ChamadaDeFerramenta, porNome: Map<string
     const ferramenta = porNome.get(chamada.name);
     if (!ferramenta) return responder("FERRAMENTA_INDISPONIVEL: essa consulta não existe para este usuário.");
     try {
-        return await ferramenta.invoke({ ...chamada, type: "tool_call" });
+        return await ferramenta.invoke({ ...chamada, args: numerosComoTexto(ferramenta.schema, chamada.args), type: "tool_call" });
     } catch (err) {
         console.warn(`[assistente] argumentos inválidos para ${chamada.name}:`, (err as Error)?.message);
         return responder(

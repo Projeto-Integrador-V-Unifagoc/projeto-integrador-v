@@ -2,6 +2,7 @@ import type { Request } from "express";
 import { tool } from "@langchain/core/tools";
 
 import { perfilDoUsuario, type PerfilAssistente } from "../conhecimento/carregador";
+import { validarMatricula } from "../../modulo-gestao-alunos/service/matricula";
 
 /**
  * Ferramentas de consulta a dados acadêmicos reais.
@@ -31,6 +32,7 @@ export interface FontesDeDados {
     frequenciaDoAluno(req: Request, alunoId: string): Promise<unknown>;
     turmasEDisciplinas(req: Request): Promise<unknown>;
     buscarAlunos(req: Request, nome: string): Promise<unknown>;
+    buscarAlunoPorMatricula(req: Request, matricula: string): Promise<unknown>;
 }
 
 /** Deixa no boletim só as disciplinas (turma/disciplina) que o professor leciona e recalcula o alerta. */
@@ -47,6 +49,20 @@ function preguicoso<T>(criar: () => T): () => T {
 }
 
 const acessoNegado = () => Object.assign(new Error("Acesso negado."), { status: 403 });
+
+/** O serviço de alunos não verifica perfil: a trava fica aqui, além das ferramentas só existirem para a secretaria. */
+function exigirSecretaria(req: Request) {
+    if (perfilDoUsuario((req as any)?.user?.tipo_usuario) !== "secretaria") throw acessoNegado();
+}
+
+/** Só o necessário para identificar o aluno: nada de CPF, endereço ou e-mail. */
+const identificacaoDoAluno = (a: any) => ({
+    alunoId: a.id,
+    nome: a.pessoa?.nome,
+    matricula: a.matricula,
+    curso: a.curso?.nome ?? null,
+    periodo: a.periodo,
+});
 
 /**
  * Os serviços só são carregados quando usados (evita ciclos de import e mantém o módulo leve nos testes)
@@ -97,17 +113,16 @@ export function fontesPadrao(): FontesDeDados {
             }));
         },
         buscarAlunos: async (req, nome) => {
-            // O serviço de alunos não verifica perfil: a trava fica aqui, além da ferramenta só existir para a secretaria.
-            if (perfilDoUsuario((req as any)?.user?.tipo_usuario) !== "secretaria") throw acessoNegado();
+            exigirSecretaria(req);
             const lista: any[] = await alunos().listarAlunos({ nome });
-            // Só o necessário para identificar o aluno: nada de CPF, endereço ou e-mail.
-            return lista.slice(0, 15).map((a) => ({
-                alunoId: a.id,
-                nome: a.pessoa?.nome,
-                matricula: a.matricula,
-                curso: a.curso?.nome ?? null,
-                periodo: a.periodo,
-            }));
+            return lista.slice(0, 15).map(identificacaoDoAluno);
+        },
+        buscarAlunoPorMatricula: async (req, matricula) => {
+            exigirSecretaria(req);
+            const aluno = await alunos().buscarIdentificacaoPorMatricula(matricula);
+            // 404 vira NAO_ENCONTRADO: "sem registros" faria o modelo dizer que ainda não há dados lançados.
+            if (!aluno) throw Object.assign(new Error("Aluno não encontrado."), { status: 404 });
+            return identificacaoDoAluno(aluno);
         },
     };
 }
@@ -243,6 +258,16 @@ export function criarFerramentasDeDados(perfil: PerfilAssistente, usuario: Usuar
                 if (nome.length < 3) throw Object.assign(new Error("Informe ao menos 3 letras do nome."), { status: 400 });
                 return fontes.buscarAlunos(req, nome.slice(0, 80));
             },
+        ),
+        ferramenta(
+            "buscarAlunoPorMatricula",
+            "Encontra um aluno pelo número de matrícula: alunoId, nome, matrícula, curso e período. Use quando o usuário informar a matrícula.",
+            {
+                type: "object",
+                properties: { matricula: { type: "string", description: "Número da matrícula do aluno, só dígitos." } },
+                required: ["matricula"],
+            },
+            (a) => fontes.buscarAlunoPorMatricula(req, validarMatricula(a.matricula)),
         ),
         rendimentoDaTurma,
         frequenciaDaTurma,

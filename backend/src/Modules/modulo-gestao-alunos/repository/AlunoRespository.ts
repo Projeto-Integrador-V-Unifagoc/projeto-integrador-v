@@ -90,6 +90,23 @@ export class AlunoRepository {
         return row ? AlunoMapper.toDomain(row) : null;
     }
 
+    async buscarIdentificacaoPorMatricula(matricula: string) {
+        const row = await db("aluno")
+            .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
+            .leftJoin("curso", "aluno.curso_id", "=", "curso.id")
+            .where("aluno.matricula", matricula)
+            .select("aluno.id", "aluno.matricula", "aluno.periodo", "pessoa.nome", "curso.nome as curso_nome")
+            .first();
+        if (!row) return null;
+        return {
+            id: row.id,
+            matricula: row.matricula,
+            periodo: row.periodo,
+            pessoa: { nome: row.nome },
+            curso: row.curso_nome ? { nome: row.curso_nome } : undefined,
+        };
+    }
+
     async buscarAlunoPorCpfOuMatricula(query: string) {
         const rows = await db("aluno")
             .join("pessoa", "aluno.pessoa_id", "=", "pessoa.id")
